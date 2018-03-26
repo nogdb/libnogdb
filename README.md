@@ -1,7 +1,6 @@
 # NogDB
 
-[![Build Status](https://img.shields.io/badge/build-passing-green.svg)]()
-[![Testing Status](https://img.shields.io/badge/test-passing-green.svg)]()
+[![Build Status](https://travis-ci.org/nogdb/nogdb.svg?branch=develop)](https://travis-ci.org/nogdb/nogdb)
 [![Version](https://img.shields.io/badge/version-0.10.0%20beta-blue.svg)]()
 [![Production Status](https://img.shields.io/badge/status-unstable-red.svg)]()
 
