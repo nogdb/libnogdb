@@ -1,0 +1,49 @@
+sudo: false
+
+language: cpp
+
+dist: trusty
+
+compiler:
+#  - gcc
+  - clang
+
+os:
+#  - linux
+  - osx
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-5.0
+    packages:
+      - valgrind
+      - cmake
+      - gcc-7
+      - g++-7
+      - clang-5.0
+
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+      brew update;
+      if [ -L /usr/local/include/c++ ]; then rm /usr/local/include/c++; fi;
+      brew install valgrind gcc@7;
+    fi
+  - if [ "$CXX" = "g++" ]; then
+      export CXX="g++-7" CC="gcc-7";
+    fi
+  - echo ${CC}
+  - echo ${CXX}
+  - ${CXX} --version
+  - cmake --version
+
+before_script:
+  - mkdir -p bin
+  - mkdir -p build
+
+script:
+  - sh install_make.sh
+  - make
+  - cmake .
+  - cmake --build .
