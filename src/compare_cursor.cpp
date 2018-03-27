@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "shared_lock.hpp"
-#include "config.hpp"
+#include "constant.hpp"
 #include "env_handler.hpp"
 #include "datastore.hpp"
 #include "graph.hpp"

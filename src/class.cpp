@@ -25,7 +25,7 @@
 
 #include "shared_lock.hpp"
 #include "schema.hpp"
-#include "config.hpp"
+#include "constant.hpp"
 #include "base_txn.hpp"
 #include "env_handler.hpp"
 #include "datastore.hpp"

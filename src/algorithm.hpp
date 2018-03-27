@@ -25,7 +25,7 @@
 #include <functional>
 #include <cassert>
 
-#include "config.hpp"
+#include "constant.hpp"
 #include "datastore.hpp"
 #include "graph.hpp"
 #include "parser.hpp"

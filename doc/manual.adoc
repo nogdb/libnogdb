@@ -1,0 +1,2313 @@
+# NogDB Documentation [v0.11.0]
+================================
+:toc:
+:toc-placement: preamble
+:toclevels: 3
+:Author: Peerawich Promjai
+:Email: peerawich@throughwave.co.th
+:Date: 26/03/2018
+:cpp: C++
+
+[big]#**CAUTION:** This manual is only _partially_ written. This message will be removed when it is completed.#
+
+== Database Context
+
+A database context must be initialized to create a connection to NogDB before calling any database operation.
+Noted that a particular database can be opened by only one process at a time and its database context
+needs to be treated as a singleton object in multi-thread programmings.
+
+When the context is created:
+
+* If a database directory doesn't exist, it will make a new one with a default database schema.
+* If a database directory has already existed, it will load the existing database schema and information into memory.
+
+[source,cpp]
+------------
+// default constructor
+nogdb::Context ctx{"mygraph.db"};
+
+// alternative constructors with specific configuration
+// -- with a maximum database number
+nogdb::Context ctx{"mygraph.db", static_cast<unsigned int>(128)};
+// -- with a maximum database size (in Bytes)
+nogdb::Context ctx{"mygraph.db", static_cast<unsigned long>(4294967296)};
+// -- with a maximum database number and database size
+nogdb::Context ctx{"mygraph.db", 128, 4294967296UL};
+------------
+
+[NOTE]
+=====
+* Each database must have its own individual database context object.
+* It is allowed to have more than one database context when it uses more than one database instance simultaneously (one database per one context).
+
+=====
+
+== Database Information
+
+Once a database has been created, its associated information will be stored in `nogdb::DBInfo` in a database context which consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2", options="header"]
+.Attributes of `nogdb::DBInfo`
+|===
+|Name
+|Description
+
+|dbPath
+|A path to the database folder.
+
+|maxDB
+|A maximum number of databases that can be handled.
+
+|maxDBSize
+|the largest size of a database.
+
+|maxPropertyId
+|The largest property number(id) in the entire database.
+
+|numProperty
+|A number of properties in the database.
+
+|maxClassId
+|The largest class number(id) in the entire database.
+
+|numClass
+|A number of classes in the database.
+
+|===
+// end::b-col-indv[]
+
+==== Example:
+
+[source,cpp]
+------------
+const nogdb::DBInfo& dbInfo = ...(some functions that return nogdb::DBInfo)...;
+
+// -- print out a database path
+std::cout << dbInfo.dbPath << std::endl;
+// -- print out a number of current existing class
+std::cout << dbInfo.numClass << std::endl;
+------------
+
+== Class
+
+A class could be equivalent to a table in a relational database and it must be created prior to storing any associated information.
+There are two available types of classes in NogDB, which are Vertex and Edge, represented by `nogdb::ClassDescriptor`.
+Vertices and edges must be explicitly specified when creating any classes since they are corresponding to different graph operations.
+
+[NOTE]
+=====
+* A class name must consist of valid characters such as A-Z, a-z, dash (-) and underscore (_).
+=====
+
+=== Class Descriptor
+
+The `nogdb::ClassDescriptor` consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2", options="header"]
+.Attributes of `nogdb::ClassDescriptor`
+|===
+|Name
+|Description
+
+|id
+|An unique id of a class.
+
+|name
+|A unique name of a class.
+
+|type
+|A particular type of a class (can be either vertex or edge). 
+
+|properties
+|A set of properties belongs to a class represented by a STL container `std::map<K, V>` when `K` is `std::string` for a property name and `V` is `nogdb::PropertyDescriptor` for a property descriptor.
+
+|super
+|A name of a super-class (aka. a base class) if any.
+
+|sub
+|A list of sub-classes (aka. derived classes) if any.
+
+|===
+// end::b-col-indv[]
+
+==== Example:
+
+[source,cpp]
+------------
+const nogdb::ClassDescriptor& classDesc = ...(some functions that return nogdb::ClassDescriptor)...;
+
+// -- print out class name
+std::cout << classDesc.name << std::endl;
+// -- print out class type
+std::cout << classDesc.type << std::endl;
+------------
+
+=== Class Types
+
+Generally, there are two types of the class in a graph database such as vertex and edge.
+A vertex is a node in the graph while an edge is a link that joins two vertices together.
+The major different between a vertex and an edge is that the vertex could be standalone and sometimes has no relations with other vertices.
+However, two endpoints of edges, the source and destination nodes, must be specified especially in a directed graph.
+Therefore, a type of the class should be wisely and appropriately chosen for your program design and usage because it cannot be changed later.  
+
+[source,cpp]
+------------
+// -- enum value for Vertex
+nogdb::ClassType::VERTEX;
+// -- enum value for Edge
+nogdb::ClassType::EDGE;
+------------
+
+== Property
+
+In a graph database, both vertex and edge can have their own defined properties.
+For example, a vertex that represents a person may have some attributes, such as `FullName`, `PhoneNumber`, and `Age`, defined
+as properties in a class `Persons`. An edge that represents a relationship between `Persons` may have some attributes,
+such as `RelationType`, defined as properties in a class `Relations`.
+
+[source,cpp]
+------------
+// an example of a definition of a 'persons' vertex
+{
+    "persons": {
+        "_type": "vertex",
+        "_properties": [
+            { "_name": "FullName", "_type": "text" },
+            { "_name": "PhoneNumber", "_type" : "text" },
+            { "_name": "Age", "_type": "integer" }
+        ]
+    }
+}
+------------
+
+[source,cpp]
+------------
+// an example of a definition of a 'relations' edge
+{
+    "relations": {
+        "_type": "edge",
+        "_properties": [
+            { "_name": "RelationType", "_type": "text" }
+        ]
+    }
+}
+------------
+
+[NOTE]
+=====
+* A property name must consist of valid characters such as A-Z, a-z, dash (-) and underscore (_).
+=====
+
+=== Property Descriptor
+
+The `nogdb::PropertyDescriptor` consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2", options="header"]
+.Attributes of `nogdb::PropertyDescriptor`
+|===
+|Name
+|Description
+
+|id
+|A unique id of a property.
+
+|type
+|A particular data type of a property (see Types of Properties below for more information).
+
+|indexInfo
+|A set of database indexing information associated with the property.
+
+|===
+// end::b-col-indv[]
+
+==== Example:
+[source,cpp]
+------------
+// an example of a relationship between ClassDescriptor and PropertyDescriptor in Schema 
+const nogdb::ClassDescriptor& classDesc = ...(some functions that return nogdb::ClassDescriptor)...;
+
+// iterate through all properties
+for(const auto& property: classDesc.properties) {
+    // -- get a name of property as std::string
+    auto propertyName = property.first
+    // -- get const nogdb::PropertyDescriptor
+    auto propertyDescriptor = property.second
+}
+------------
+
+=== Types of Properties
+
+There are 11 supported types of properties as listed below:
+
+[cols="1,2,2", options="header"]
+.Types of class properties
+|===
+|Type Name
+|Enum Value
+|Range of Values
+
+|signed 8-bit int
+|`nogdb::PropertyType::TINYINT`
+|-128 to 127
+
+|unsigned 8-bit int
+|`nogdb::PropertyType::UNSIGNED_TINYINT`
+|0 to 255
+
+|signed 16-bit int
+|`nogdb::PropertyType::SMALLINT`
+|–32,768 to 32,767
+
+|unsigned 16-bit int
+|`nogdb::PropertyType::UNSIGNED_SMALLINT`
+|0 to 65,535
+
+|signed 32-bit int
+|`nogdb::PropertyType::INTEGER`
+|–2,147,483,648 to 2,147,483,647
+
+|unsigned 32-bit int
+|`nogdb::PropertyType::UNSIGNED_INTEGER`
+|0 to 4,294,967,295
+
+|signed 64-bit int
+|`nogdb::PropertyType::BIGINT`
+|–9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+
+|unsigned 64-bit int
+|`nogdb::PropertyType::UNSIGNED_BIGINT`
+|0 to 18,446,744,073,709,551,615
+
+|varchar or string
+|`nogdb::PropertyType::TEXT`
+|no boundary
+
+|double
+|`nogdb::PropertyType::REAL`
+|1.7E +/- 308 (15 digits)
+
+|Blob
+|`nogdb::PropertyType::BLOB`
+|no boundary
+
+|===
+
+== Types and Operations
+
+=== Bytes
+`nogdb::Bytes` is a representation of binary data objects which can be converted to some appropriate primitive data types such as `integer`, `unsigned integer`, `std::string`, and etc.
+
+[source,cpp]
+------------
+// to create a binary object or blob from a pointer (or an array) of unsigned char
+nogdb::Bytes b(<unsigned char[]>, <size of unsigned char[]>);
+
+// to create a binary object from primitive types
+nogdb::Bytes b(const T& value);
+------------
+
+==== GET RAW BYTES
+[source,cpp]
+------------
+unsigned char* raw = b.getRaw();
+------------
+* Description:
+** To get a raw data (unsigned char*) from the object.
+* Return:
+** a pointer of `unsigned char` - A raw data that is stored in the object.
+
+==== TO <PRIMITIVE TYPE>
+[source,cpp]
+------------
+int8_t c = b.toTinyIntU();
+uint8_t c = b.toTinyInt();
+int16_t c = b.toSmallIntU();
+uint16_t c = b.toSmallInt();
+int32_t c = b.toIntU();
+uint32_t c = b.toInt();
+int64_t c = b.toBigIntU();
+uint64_t c = b.toBigInt();
+std::string c = b.toText();
+double c = b.toReal();
+------------
+* Description:
+** To convert a binary object to some primitive types.
+* Return:
+** An appropriate type of the returned value.
+
+==== SIZE
+[source,cpp]
+------------
+size_t len = b.size();
+------------
+* Description:
+** To get a size of data in a binary object.
+* Return:
+** `size_t` - A size of data in a binary object.
+
+==== EMPTY
+[source,cpp]
+------------
+bool isnull = b.empty();
+------------
+* Description:
+** To check if the data object is null.
+* Return:
+** `bool` - A boolean value indicating whether the object is empty or not.
+
+==== CONVERT TO
+[source,cpp]
+------------
+b.convertTo(T& object);
+------------
+* Description:
+** To convert bytes to an original object.
+* Return:
+** `void` - No values returned but the result of conversion will be stored into `T& object`.
+
+=== Record Id
+A record id, `nogdb::RecordId`, is a pair of a class id and a position id. Each class has its own id and this helps to indicate to which
+class a record belongs. A position id represents a unique number of a record in a class.
+
+=== Record
+Typically, `nogdb::Record` is returned as a part of results from any record retrieval operations, representing a set of properties and values in `nogdb::Bytes`.
+
+[source,cpp]
+------------
+// constructor, or create an empty record
+nogdb::Record r{};
+------------
+
+==== GET
+[source,cpp]
+------------
+nogdb::Bytes value = r.get(const std::string& propName);
+------------
+* Description:
+** To retrieve a value from a specific property in a record.
+* Parameter:
+** propName - A name of a property to be retrieved.
+* Return:
+** `nogdb::Bytes` - A value as `nogdb::Bytes`.
+
+==== GET PROPERTIES
+[source,cpp]
+------------
+const std::vector<std::string>& values = r.getProperties();
+------------
+* Description:
+** To retrieve names from all existing properties in a record.
+* Return:
+** `std::vector<std::string>` - A set of existing property names.
+
+==== GET <PRIMITIVE TYPE>
+[source,cpp]
+------------
+uint8_t val = r.getTinyIntU(const std::string& propName);
+int8_t val = r.getTinyInt(const std::string& propName);
+uint16_t val = r.getSmallIntU(const std::string& propName);
+int16_t val = r.getSmallInt(const std::string& propName);
+uint32_t val = r.getIntU(const std::string& propName);
+int32_t val = r.getInt(const std::string& propName);
+uint64_t val = r.getBigIntU(const std::string& propName);
+int64_t val = r.getBigInt(const std::string& propName);
+double val = r.getReal(const std::string& propName);
+std::string val = r.getText(const std::string& propName);
+------------
+* Description:
+** To retrieve a value from a specific property in a record as in an appropriate type.
+* Parameter:
+** propName - A name of a property to be retrieved.
+* Return:
+** A primitive-typed value depending on a member function.
+* Exceptions:
+** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
+
+==== SET
+[source,cpp]
+------------
+r.set(const std::string& propName, const T& value);
+------------
+* Description:
+** To set a value of a property in a record.
+* Parameters:
+** propName - A name of a property.
+** value - A value of with an appropriate data type corresponding to the schema.
+
+==== UNSET
+[source,cpp]
+------------
+r.unset(const std::string& propName);
+------------
+* Description:
+** To clear an individual property and its value in a record.
+* Parameter:
+** propName - A name of a property to be deleted.
+
+==== CLEAR
+[source,cpp]
+------------
+r.clear();
+------------
+* Description:
+** To clear all properties and values in a record.
+
+==== EMPTY
+[source,cpp]
+------------
+bool isNull = r.empty();
+------------
+* Description:
+** To check if a record is empty.
+
+=== Record Descriptor
+A record descriptor, `nogdb::RecordDescriptor`, is used to represent a record. It contains some useful information
+for records retrieval. In the current version of NogDB, the `nogdb::RecordDescriptor` consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2", options="header"]
+.Attributes of `nogdb::RecordDescriptor`
+|===
+|Name
+|Description
+
+|rid
+|A record id.
+
+|===
+// end::b-col-indv[]
+
+=== Result, Result Set, and Result Set Cursor
+An individual result returned from retrieval operations is represented as `nogdb::Result` which consists of two attributes:
+
+// tag::b-col-indv[]
+[cols="1,2", options="header"]
+.Attributes of `nogdb::Result`
+|===
+|Name
+|Description
+
+|descriptor
+|A `nogdb::RecordDescriptor` object that contains information about the record.
+
+|record
+|A `nogdb::Record` object that contains properties and values retrieved from a class in a database.
+
+|===
+// end::b-col-indv[]
+
+In addition, a set of results, `nogdb::ResultSet`, can also be returned from any record retrieval operations
+when there are more than (or even less than) one record matching to the condition.
+
+==== Example:
+
+[source,cpp]
+------------
+// to get a set of results returned from a record retrieval function
+nogdb::ResultSet res = ...(some functions that return nogdb::ResultSet)...;
+for(const nogdb::Result& item: res) {
+    // -- do something with `nogdb::RecordDescriptor`
+    auto recordDescriptor = item.descriptor
+    // -- do something with `nogdb::Record`
+    auto record = item.record
+}
+------------
+
+In contrast, a set of cursors as results, `nogdb::ResultSetCursor`, which is only returned from any cursor retrieval operations, can be used for iterating through each record descriptor in a set of results without pre-loading records into memory.
+The cursor may help to reduce memory usage in client programs and avoid out-of-memory problems. A concept of `nogdb::ResultSetCursor` is that it always points to a single record in a result set at a time while it provides a number of member functions
+to move its cursor to the previous or next record freely. The usage of `nogdb::ResultSetCursor` can be demonstrated as in the example below:
+
+==== Example:
+
+[source,cpp]
+------------
+nogdb::ResultSetCursor rssCursor =  ...(some functions that return nogdb::ResultSetCursor)...;
+
+// -- check if there is the next record
+bool isNext = rssCursor.hasNext();
+
+// -- check if there is the previous record
+bool isPrevious = rssCursor.hasPrevious(); // useful when checking if it is the first record in the result set
+
+// -- check if there is the 4th record
+bool isAtPosition = rssCursor.hasAt(3); // starting with index 0
+
+// -- move cursor to the next record
+bool hasNext = rssCursor.next();
+
+// -- move cursor to the previous record
+bool hasPrevious = rssCursor.previous();
+
+// -- move cursor to the 4th record
+bool hasAtPosition = rssCursor.to(3);
+
+// -- move cursor to the first record
+rssCursor.first();
+
+// -- move cursor to the last record
+rssCursor.last();
+
+// -- check if there is no records in the result set
+bool isEmpty = rssCursor.empty();
+
+// -- get a number of records in the result set
+size_t size = rssCursor.size(); // or
+size_t count = rssCursor.count();
+
+// -- access to the record & descriptor at the current position of the cursor
+nogdb::RecordDescriptor rdesc = rssCursor->descriptor;
+nogdb::Record record = rssCursor->record;
+------------
+
+=== Condition
+
+A comparable object in NogDB which is used to compare records with a defined condition.
+
+[source,cpp]
+------------
+// constructors
+auto condition = nogdb::Condition(propName); // having NOT NULL operation by default
+auto condition = !nogdb::Condition(propName); // for a negative condition
+
+// -- IS NULL: available for numeric, string, and blob types
+auto condition = nogdb::Condition(propName).null();
+
+// -- EQUAL: available for numeric, string, and blob types
+auto condition = nogdb::Condition(propName).eq(propValue);
+
+// -- GREATER: available for numeric and string types
+auto condition = nogdb::Condition(propName).gt(propValue);
+
+// -- GREATER EQUAL: available for numeric and string types
+auto condition = nogdb::Condition(propName).ge(propValue);
+
+// -- LESS: available for numeric and string types
+auto condition = nogdb::Condition(propName).lt(propValue);
+
+// -- LESS EQUAL: available for numeric and string types
+auto condition = nogdb::Condition(propName).le(propValue);
+
+// -- CONTAIN: available ONLY for string type
+auto condition = nogdb::Condition(propName).contain(propSubstring);
+
+// -- BEGIN WITH: available ONLY for string type
+auto condition = nogdb::Condition(propName).beginWith(propSubstring);
+
+// -- END WITH: available ONLY for string type
+auto condition = nogdb::Condition(propName).endWith(propSubstring);
+
+// -- LIKE: available ONLY for string type
+// using '%' for representing zero, one, or multiple characters
+// and using '_' for representing a single character
+auto condition = nogdb::Condition(propName).like(propPattern);
+
+// -- REGEX: available ONLY for string type
+auto condition = nogdb::Condition(propName).regex(propPattern);
+
+//Note that comparing string in a condition can apply ignoreCase() to perform case insensitive matching. By default, it is case sensitive.
+auto condition = nogdb::Condition(propName).contain(propSubstring).ignoreCase();
+auto condition = nogdb::Condition(propName).beginWith(propSubstring).ignoreCase();
+auto condition = nogdb::Condition(propName).endWith(propSubstring).ignoreCase();
+auto condition = nogdb::Condition(propName).like(propPattern).ignoreCase();
+auto condition = nogdb::Condition(propName).regex(propPattern).ignoreCase();
+
+// -- IN: available for numeric and string types
+auto condition = nogdb::Condition(propName).in(propValue1, propValue2, ...);
+auto condition = nogdb::Condition(propName).in(std::vector<T>{...});
+auto condition = nogdb::Condition(propName).in(std::list<T>{...});
+auto condition = nogdb::Condition(propName).in(std::set<T>{...});
+
+// -- BETWEEN: available for numeric and string types
+auto condition = nogdb::Condition(propName).between(propLowerBound, propUpperBound); // including all boundary values, {true, true} by default
+auto condition = nogdb::Condition(propName).between(propLowerBound, propUpperBound, {false, true}); // excluding lower bound value in the search result
+auto condition = nogdb::Condition(propName).between(propLowerBound, propUpperBound, {true, false}); // excluding upper bound value in the search result
+auto condition = nogdb::Condition(propName).between(propLowerBound, propUpperBound, {false, false}); // excluding all boundary values in the search result
+
+------------
+
+[NOTE]
+=====
+* `ignoreCase()` is available only with a string type. Applying `ignoreCase()` to other types will take no effects.
+* The current version of NogDB cannot correctly match two special characters that are used in `like(...)` such as '%' and '\_'. There are no escape characters available at this moment to ignore those two characters in a condition. Instead, using `regex(...)` can help to avoid this kind of a problem when explicitly searching '%' or '\_' is needed.
+=====
+
+=== MultiCondition
+
+Another comparable object in NogDB but more complex since it is a combination of condition objects.
+Only one possible way to create an object of `nogdb::MultiCondition` is to use functions `operator&&` and `operator||` to combine a condition with one another or with a defined multi-condition itself.
+
+==== Example:
+
+[source,cpp]
+------------
+// -- Example 1.
+nogdb::MultiCondition m = condition1 && condition2;
+nogdb::MultiCondition m = condition1.operator&&(multi_condition1);
+nogdb::MultiCondition m = multi_condition1 || condition1;
+nogdb::MultiCondition m = multi_condition1.operator||(multi_condition2);
+
+// -- Example 2.
+nogdb::Condition cond1{propName1, value1};
+nogdb::Condition cond2{propName2, value2};
+nogdb::MultiCondition mc1 = cond1 && cond2;
+
+// after creating cond3 and cond4
+nogdb::MultiCondition mc2 = cond3 && cond4;
+
+// combine two multi-conditions for a complex one
+nogdb::MultiCondition mc3 = mc1 || mc 2;
+
+// a demonstration of a complex multi-condition in one go: (cond1 AND cond2) OR (cond3 AND cond4)
+auto mcond = (cond1 && cond2) || (cond3 && cond4);
+
+// directly execute the multi-condition and return a result as boolean 'true' if conditions match a record
+bool res = mcond.execute(const nogdb::Record& r, const nogdb::PropertyMapType& propertyTypes);
+------------
+
+=== Path Filter
+A path filtering is a set of a pointer to comparable functions that can be used for graph traversal and finding the shortest path with conditions on vertices and edges.
+
+==== Example:
+
+[source,cpp]
+------------
+auto vertexCondition = [](const nogdb::Record& r) {
+    // return true or false
+};
+
+auto edgeCondition = [](const nogdb::Record& r) {
+    // return true or false
+};
+
+nogdb::PathFilter pathFilter{};
+pathFilter.setVertex(vertexCondition);
+pathFilter.setEdge(edgeCondition);
+
+// checking if vertex and edge conditions are set
+pathFilter.isEnable(); // return true or false
+pathFilter.isSetVertex(); // return true or false
+pathFilter.isSetEdge(); // return true or false
+------------
+
+=== Class Filter
+A class filtering is a set of class names which is internally represented as `std::set<std::string>` used to choose only some particular classes in the result set of edge functions like `*InEdge`, `*OutEdge`, `*AllEdge`, and graph traversal functions.
+
+[source,cpp]
+------------
+// constructor
+nogdb::ClassFilter classFilter{"className1", "className2", ...};
+
+nogdb::ClassFilter classFilter{classNameAsVector};
+nogdb::ClassFilter classFilter{classNameAsList};
+nogdb::ClassFilter classFilter{classNameAsSet};
+
+nogdb::ClassFilter classFilter{classNameAsVector.cbegin(), classNameAsVector.cend()};
+nogdb::ClassFilter classFilter{classNameAsList.cbegin(), classNameAsList.cend()};
+nogdb::ClassFilter classFilter{classNameAsSet.cbegin(), classNameAsSet.cend()};
+
+classFilter.add("className3"); // now having {"className1", "className2", "className3"} for filtering classes
+classFilter.remove("className2"); // now having {"className1", "className3"} for filtering classes
+size_t size = classFilter.size();
+bool isEmpty = classFilter.empty();
+std::set<std::string> classNames = classFilter.getClassName();
+------------
+
+== Transaction
+
+Database operations can be performed and controlled via a transaction.
+According to a concept of NogDB transaction, MVCC is applied together with copy-on-write which allows multiple readers not to block a writer when using the same database context and vice versa.
+Generally, the database will take an effect after the transaction is committed and it will be untouched if the transaction is rolled back or not yet completed.
+
+=== Transaction modes
+
+[source,cpp]
+------------
+// -- enum value for read-write txn
+nogdb::Txn::Mode::READ_WRITE
+// -- enum value for read-only txn
+nogdb::Txn::Mode::READ_ONLY
+------------
+
+=== Transaction Operations
+
+[source,cpp]
+------------
+// -- constructor, begin a transaction
+nogdb::Txn txn(ctx, nogdb::Txn::Mode::READ_WRITE); // to create a read-write txn
+nogdb::Txn txn(ctx, nogdb::Txn::Mode::READ_ONLY); // to create a read-only txn
+
+// -- commit
+txn.commit();
+
+// -- rollback or abort
+txn.rollback();
+------------
+
+=== Transaction Stats
+
+Some global transaction information such as the maximum number of transaction id, the maximum number of graph version id, and the oldest active read-only transaction
+can be retrieved via `getMaxTxnId()`, `getMaxVersionId()`, and `getMinActiveTxnId()` respectively as the examples below:
+
+==== Example:
+
+[source,cpp]
+------------
+// -- getting the maximum number of transaction id
+TxnId res = ctx.getMaxTxnId();
+// -- getting the maximum number of graph version id
+TxnId res = ctx.getMaxVersionId();
+// -- the oldest active read-only transaction
+std::pair<TxnId, TxnId> res = ctx.getMinActiveTxnId(); // a pair of particular txn id and latest graph version id related to it
+------------
+
+[NOTE]
+=====
+* A read-only transaction cannot be used for executing create/update/delete operations, only read operations are allowed, otherwise, the exceptions will be thrown.
+* Multiple read-only transactions can be created and valid simultaneously without being blocked.
+* Read-write transactions will block each other excluding read-only transactions. In other words, only one read-write transaction can be valid (accessing to the critical section) during the period of time until committed or aborted.
+* If a transaction is not committed before its desctructor is called, the transaction will be aborted automatically.
+* Transactions that have already been committed or aborted cannot be usable. Forcing to use a completed transaction will result in the exception thrown.
+=====
+
+== Database Indexing
+
+The main purpose of database indexing is to increase the performance of querying data records in a large data set. This may not help to make graph traversal operations work faster but
+retrieving data records from data storage would definitely take advantages of database indexing. Some data retrieval operations that can significantly work
+with NogDB database indexing are such as `find(...)` and `findCursor(...)` on vertices and edges (only with `nogdb::Condition` and `nogdb::MultiCondition`).
+
+[NOTE]
+=====
+* According to the current version of NogDB, only B+ Tree is available for underlying index data structure with no composite keys.
+* Range searching and unique constraint are fully supported.
+* Indexing does not have a concept of inheritance which means creating an index on a property of a super class will not affect to any sub classes even though they are using that property from their super class.
+=====
+
+== Class Operations  - `nogdb::Class`
+
+=== CREATE
+[source,cpp]
+------------
+const nogdb::ClassDescriptor create(nogdb::Txn&                        txn,
+                                    const std::string&                 name, 
+                                    nogdb::ClassType                   type
+                                   )
+------------
+* Description:
+** To create a new class.
+* Parameters:
+** txn - A database transaction.
+** name - A name of a class that will be created.
+** type - A type of a class. Note that there are two class types available, `nogdb::ClassType::VERTEX` (or vertex) and `nogdb::ClassType::EDGE` (or edge).
+* Return:
+** `nogdb::ClassDescriptor` - A class descriptor of a created class.
+* Exceptions:
+** `CTX_EMPTY_CLASSNAME` - A length of class name is zero.
+** `CTX_INVALID_CLASSTYPE` - A type of class is not valid.
+** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
+** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+
+=== CREATE EXTEND
+[source,cpp]
+------------
+const nogdb::ClassDescriptor createExtend(nogdb::Txn&                      txn,
+                                          const std::string&               className, 
+                                          const std::string&               superClassName
+                                         )
+------------
+* Description:
+** To create a sub-class (aka. a derived class) of a super class (aka. a base class).
+* Parameters:
+** txn - A database transaction.
+** className - A name of a sub-class that will be created.
+** superClassName - A name of a super class that will be derived from.
+* Return:
+** `nogdb::ClassDescriptor` - A class descriptor of a created sub-class.
+* Exceptions:
+** `CTX_EMPTY_CLASSNAME` - A length of class name is zero.
+** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
+** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+
+=== ALTER
+[source,cpp]
+------------
+void alter(nogdb::Txn&           txn,
+           const std::string&    oldClassName,
+           const std::string&    newClassName
+          )
+------------
+* Description: 
+** To modify a class name.
+* Parameters:
+** txn - A database transaction.
+** oldName - An old name of a class that will be changed from.
+** newName - A new name of a class that will be changed to.
+* Exceptions:
+** `CTX_EMPTY_CLASSNAME` - A length of a new class name is zero.
+** `CTX_NOEXST_CLASS` - An old class does not exist.
+** `CTX_DUPLICATE_CLASS` - A new class name has already existed.
+
+=== DROP
+[source,cpp]
+------------
+void drop(nogdb::Txn&           txn,
+          const std::string&    name
+         )
+------------
+* Description:
+** To drop a class.
+* Parameters:
+** txn - A database transaction.
+** name - A name of a class that will be dropped.
+* Exceptions:
+** `CTX_INVALID_CLASSTYPE` - A type of class is not valid.
+** `CTX_NOEXST_CLASS` - A class does not exist.
+
+== Property Operations  - `nogdb::Property`
+
+=== ADD
+[source,cpp]
+------------
+const nogdb::PropertyDescriptor add(nogdb::Txn&             txn,
+                                    const std::string&      className, 
+                                    const std::string&      propertyName, 
+                                    nogdb::PropertyType     type
+                                   )
+------------
+* Description:
+** To add a property to a class.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class that a property will be added into.
+** propertyName - A name of a property that will be added.
+** type - A type of a property. (Please refer to "Types of Properties").
+* Return:
+** `nogdb::PropertyDescriptor` - A property descriptor of a created property.
+* Exceptions:
+** `CTX_EMPTY_PROPERTYNAME` - A length of property name is zero.
+** `CTX_INVALID_PROPTYPE` - A type of class is not valid.
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_DUPLICATE_PROPERTY` - A specified property name has already existed.
+** `CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
+** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+
+=== ALTER
+[source,cpp]
+------------
+void alter(nogdb::Txn&           txn,
+           const std::string&    className,
+           const std::string&    oldName, 
+           const std::string&    newName
+          )
+------------
+* Description: 
+** To modify a property's name.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class to which a property currently belongs.
+** oldName - An old name of a property that will be changed from.
+** newName - A new name of a property that will be changed to.
+* Exceptions:
+** `CTX_EMPTY_PROPERTYNAME` - A length of a new property name is zero.
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
+** `CTX_DUPLICATE_PROPERTY` - A new property  name has already existed.
+** `CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
+
+=== REMOVE
+[source,cpp]
+------------
+void remove(nogdb::Txn&           txn,
+            const std::string&    className,
+            const std::string&    propertyName
+           )
+------------
+* Description: 
+** To delete a property.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class to which a property currently belongs.
+** propertyName - A name of an existing property that will be deleted.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+
+=== CREATE INDEX
+[source,cpp]
+------------
+void createIndex(nogdb::Txn&             txn,
+                 const std::string&      className,
+                 const std::string&      propertyName,
+                 bool                    isUnique
+                )
+------------
+* Description:
+** To create an index on a specified property.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class to which a property currently belongs.
+** propertyName - A name of an existing property that will be indexed.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `CTX_INVALID_PROPTYPE_INDEX` - A property type does not support database indexing.
+** `CTX_DUPLICATE_INDEX` - An index has already existed.
+** `CTX_INVALID_INDEX_CONSTRAINT` - An index could not be created with a unique constraint due to some duplicated values in existing records.
+
+=== DROP INDEX
+[source,cpp]
+------------
+void dropIndex(nogdb::Txn&              txn,
+               const std::string&       className,
+               const std::string&       propertyName
+              )
+------------
+* Description:
+** To drop an index on a specified property.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class to which a property currently belongs.
+** propertyName - A name of an existing property with an index that will be removed.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_NOEXST_INDEX` - An index does not exist on a specified class and property.
+
+== Database Operations - `nogdb::Db`
+
+=== GET DB INFO
+[source,cpp]
+------------
+const nogdb::DBInfo getDbInfo(const nogdb::Txn& txn)
+------------
+* Description:
+** To retrieve a database (metadata) information.
+* Parameters:
+** txn - A database transaction.
+* Returns:
+** `nogdb::DBInfo` - A database information
+
+=== GET SCHEMA
+[source,cpp]
+------------
+// -- Version 1
+const std::vector<nogdb::ClassDescriptor> getSchema(const nogdb::Txn& txn)
+
+// -- Version 2
+const nogdb::ClassDescriptor getSchema(const nogdb::Txn&      ctx,
+                                       const std::string&     className
+                                      )
+const nogdb::ClassDescriptor getSchema(const nogdb::Txn&      ctx,
+                                       const ClassId&         classId
+                                      )
+------------
+* Description:
+** To retrieve a schema information.
+** [Version 1]: return a __read-only__ a list of schema `nogdb::ClassDescriptor` object for the whole classes in the database schema. 
+** [Version 2]: return a __read-only__ `nogdb::ClassDescriptor` object.
+* Parameters:
+** txn - A database transaction.
+** className - A specified name of a class to be retrieved (only for version 2).
+** classId - An id of a class to be retrieved (only for version 2).
+* Returns:
+** `std::vector<nogdb::ClassDescriptor>` - A list of classes in the whole database schema.
+** or `nogdb::ClassDescriptor` -  A schema of a specified class.
+
+=== GET RECORD
+[source,cpp]
+------------
+nogdb::Record getRecord(const nogdb::Txn&                 txn,
+                        const nogdb::RecordDescriptor&    recordDescriptor
+                       )
+------------
+* Description:
+** To get a record from a record descriptor.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor.
+* Return:
+** `nogdb::Record` - A record of a specified record descriptor.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+
+== Vertex Operations - `nogdb::Vertex`
+
+=== GET
+[source,cpp]
+------------
+nogdb::ResultSet get(const nogdb::Txn&       txn,
+                     const std::string&      className
+                    )
+------------
+* Description:
+** To get all vertices in specific classes.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of a vertex.
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+=== GET CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor getCursor(const nogdb::Txn&       txn,
+                                 const std::string&      className
+                                )
+------------
+* Description:
+** To get all vertices in specific classes.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of a vertex.
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+
+=== GET IN-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
+                           const nogdb::RecordDescriptor&    recordDescriptor,
+                           const nogdb::ClassFilter&         classFilter
+                          )
+------------
+* Description:
+** To find edges which are incoming edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET IN-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
+                                       const nogdb::RecordDescriptor&    recordDescriptor,
+                                       const nogdb::ClassFilter&         classFilter
+                                      )
+------------
+* Description:
+** To find edges which are incoming edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET OUT-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet getOutEdge(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const nogdb::ClassFilter&         classFilter
+                           )
+------------
+* Description:
+** To find edges which are outgoing edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET OUT-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const nogdb::ClassFilter&         classFilter
+                                       )
+------------
+* Description:
+** To find edges which are outgoing edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET ALL-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet getAllEdge(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const nogdb::ClassFilter&         className
+                           )
+------------
+* Description:
+** To find all edges (both direction) which are associated with a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET ALL-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const nogdb::ClassFilter&         className
+                                       )
+------------
+* Description:
+** To find all edges (both direction) which are associated with a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSet get(const nogdb::Txn&           txn,
+                     const std::string&          className,
+                     const nogdb::Condition&     condition
+                    )
+------------
+* Description: 
+** To find vertices with a given condition.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+
+=== GET CURSOR WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
+                                 const std::string&          className,
+                                 const nogdb::Condition&     condition
+                                )
+------------
+* Description:
+** To find vertices with a given condition.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+
+=== GET IN-EDGE WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
+                           const nogdb::RecordDescriptor&    recordDescriptor,
+                           const nogdb::Condition&           condition,
+                           const nogdb::ClassFilter&         classFilter
+                          )
+------------
+* Description: 
+** To find edges with a given condition which are incoming edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET IN-EDGE CURSOR WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
+                                       const nogdb::RecordDescriptor&    recordDescriptor,
+                                       const nogdb::Condition&           condition,
+                                       const nogdb::ClassFilter&         classFilter
+                                       )
+------------
+* Description:
+** To find edges with a given condition which are incoming edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET OUT-EDGE WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSet getOutEdge(const nogdb::Txn&                txn,
+                            const nogdb::RecordDescriptor&   recordDescriptor,
+                            const nogdb::Condition&          condition,
+                            const nogdb::ClassFilter&        classFilter
+                           )
+------------
+* Description: 
+** To find edges with a given condition which are outgoing edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET OUT-EDGE CURSOR WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                txn,
+                                        const nogdb::RecordDescriptor&   recordDescriptor,
+                                        const nogdb::Condition&          condition,
+                                        const nogdb::ClassFilter&        classFilter
+                                       )
+------------
+* Description:
+** To find edges with a given condition which are outgoing edges of a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET ALL-EDGE WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSet getAllEdge(const nogdb::Txn&                txn,
+                            const nogdb::RecordDescriptor&   recordDescriptor,
+                            const nogdb::Condition&          condition,
+                            const nogdb::ClassFilter&        classFilter
+                           )
+------------
+* Description: 
+** To find edges (both direction) that are associated with a vertex, and with a given condition.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== GET ALL-EDGE CURSOR WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                txn,
+                                        const nogdb::RecordDescriptor&   recordDescriptor,
+                                        const nogdb::Condition&          condition,
+                                        const nogdb::ClassFilter&        classFilter
+                                       )
+------------
+* Description:
+** To find edges (both direction) that are associated with a vertex, and with a given condition.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - a record descriptor of a vertex.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== CREATE
+[source,cpp]
+------------
+const nogdb::RecordDescriptor create(nogdb::Txn&             txn,
+                                     const std::string&      className,
+                                     const nogdb::Record&    record
+                                    )
+------------
+* Description:
+** To create a vertex.
+* Parameters:
+** txn - A database transaction.
+** className - A name of a class.
+** record - A record object as `nogdb::Record` (can be empty if not specified).
+* Return:
+** `nogdb::RecordDescriptor` - A record descriptor of a created vertex.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** Some possible LMDB errors: `MDB_PANIC`, `MDB_MAP_RESIZED`, `MDB_READERS_FULL`, `MDB_NOTFOUND`, `MDB_DBS_FULL`, `MDB_MAP_FULL`, `MDB_TXN_FULL`
+
+=== UPDATE
+[source,cpp]
+------------
+void update(nogdb::Txn&                       txn,
+            const nogdb::RecordDescriptor&    recordDescriptor,
+            const nogdb::Record&              record
+           )
+------------
+* Description:
+** To update a vertex.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor.
+** record - A new record object with modified properties and values.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DESTROY
+[source,cpp]
+------------
+void destroy(nogdb::Txn&                       txn,
+             const nogdb::RecordDescriptor&    recordDescriptor
+            )
+void destroy(nogdb::Txn&                       txn,
+             const std::string&                className
+            )
+------------
+* Description:
+** To delete a vertex or all vertices in the same class. All associated edges will be deleted as well.
+* Parameters:
+** txn - A database transaction.
+** recordDesciptor - A record descriptor.
+** className - A class name of vertices that will be entirely deleted.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+== Edge Operations - `nogdb::Edge`
+
+=== GET
+[source,cpp]
+------------
+nogdb::ResultSet get(const nogdb::Txn&        txn,
+                     const std::string&       className
+                    )
+------------
+* Description:
+** To get all edges in a specific class.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of an edge.
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+=== GET CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor getCursor(const nogdb::Txn&        txn,
+                                 const std::string&       className
+                                )
+------------
+* Description:
+** To get all edges in a specific class.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of an edge.
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+=== GET SOURCE
+[source,cpp]
+------------
+nogdb::ResultSet getSrc(const nogdb::Txn&                 txn,
+                        const nogdb::RecordDescriptor&    recordDescriptor
+                       )
+------------
+* Description:
+** To find a vertex which is a source node of an out-edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of an out-edge.
+* Return:
+** A set of results including source and destination vertices.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+
+=== GET DESTINATION
+[source,cpp]
+------------
+nogdb::Result getDst(const nogdb::Txn&                 txn,
+                     const nogdb::RecordDescriptor&    recordDescriptor
+                    )
+------------
+* Description:
+** To find a vertex which is a destination node of an in-edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of an out-edge.
+* Return:
+** A result of record descriptor and record.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+
+=== GET SOURCE & DESTINATION
+[source,cpp]
+------------
+nogdb::Result getSrcDst(const nogdb::Txn&                 txn,
+                        const nogdb::RecordDescriptor&    recordDescriptor
+                       )
+------------
+* Description:
+** To find both source and destication vertices which is associated with an interesting edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of an interesting edge.
+* Return:
+** A result of record descriptor and record.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+
+=== GET WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSet get(const nogdb::Txn&           txn,
+                     const std::string&          className,
+                     const nogdb::Condition&     condition
+                    )
+------------
+* Description: 
+** To find edges with a given condition.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of an edge.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
+
+=== GET CURSOR WITH CONDITION
+[source,cpp]
+------------
+nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
+                                 const std::string&          className,
+                                 const nogdb::Condition&     condition
+                                )
+------------
+* Description:
+** To find edges with a given condition.
+* Parameters:
+** txn - A database transaction.
+** className - A class name as `std::string` of an edge.
+** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
+
+=== CREATE
+[source,cpp]
+------------
+const nogdb::RecordDescriptor create(nogdb::Txn&                        txn,
+                                     const std::string&                 className,
+                                     const nogdb::RecordDescriptor&     srcVertexRecordDescriptor,
+                                     const nogdb::RecordDescriptor&     dstVertexRecordDescriptor,
+                                     const nogdb::Record&               record,
+                                    )
+------------
+* Description:
+** To create an edge.
+* Parameters:
+** txn - A database transaction.
+** srcVertexRecordDescriptor - A record descriptor of a source vertex.
+** dstVertexRecordDescriptor - A record descriptor of a destinaton vertex.
+** record - A record object as `nogdb::Record` (can be empty if not specified).
+* Return:
+** `nogdb::RecordDescriptor` - A record descriptor of a created edge.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+
+=== UPDATE
+[source,cpp]
+------------
+void update(nogdb::Txn&                        txn,
+            const nogdb::RecordDescriptor&     recordDescriptor,
+            const nogdb::Record&               record
+           )
+------------
+* Description:
+** To update an edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor.
+** record - A new record object with modified properties and values.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+
+=== UPDATE SOURCE
+[source,cpp]
+------------
+void updateSrc(nogdb::Txn&                       txn,
+               const nogdb::RecordDescriptor&    recordDescriptor,
+               const nogdb::RecordDescriptor&    newSrcVertexRecordDescriptor
+              )
+------------
+* Description:
+** To update a source vertex of an edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of an edge itself.
+** newSrcVertexRecordDescriptor - A record descriptor of a new source vertex.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+
+=== UPDATE DESTINATION
+[source,cpp]
+------------
+void updateDst(nogdb::Txn&                       txn,
+               const nogdb::RecordDescriptor&    recordDescriptor,
+               const nogdb::RecordDescriptor&    newDstVertexRecordDescriptor
+              )
+------------
+* Description:
+** To update a destination vertex of an edge.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of an edge itself.
+** newDstVertexRecordDescriptor - A record descriptor of a new destination vertex.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+
+=== DESTROY
+[source,cpp]
+------------
+void destroy(nogdb::Txn&                       txn,
+             const nogdb::RecordDescriptor&    recordDescriptor
+            )
+void destroy(nogdb::Txn&           txn,
+             const std::string&    className
+            )
+------------
+* Description:
+** To delete an edge or all edges in the same class.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor.
+** className - A class name of edges that will be entirely deleted.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+
+== Traverse (Graph) Operations - `nogdb::Traverse`
+
+=== BFS TRAVERSE IN-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet inEdgeBfs(const nogdb::Txn&                 txn,
+                           const nogdb::RecordDescriptor&    recordDescriptor,
+                           const unsigned int                minDepth,
+                           const unsigned int                maxDepth,
+                           const nogdb::PathFilter&          pathFilter,
+                           const nogdb::ClassFilter&         classFilter
+                          )
+------------
+* Description:
+** To find vertices as a result of in-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== BFS TRAVERSE IN-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor inEdgeBfsCursor(const nogdb::Txn&                 txn,
+                                       const nogdb::RecordDescriptor&    recordDescriptor,
+                                       const unsigned int                minDepth,
+                                       const unsigned int                maxDepth,
+                                       const nogdb::PathFilter&          pathFilter,
+                                       const nogdb::ClassFilter&         classFilter
+                                      )
+------------
+* Description:
+** To find vertices as a result of in-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== BFS TRAVERSE OUT-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet outEdgeBfs(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const unsigned int                minDepth,
+                            const unsigned int                maxDepth,
+                            const nogdb::PathFilter&          pathFilter,
+                            const nogdb::ClassFilter&         classFilter
+                           )
+------------
+* Description:
+** To find vertices as a result of out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== BFS TRAVERSE OUT-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor outEdgeBfsCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const unsigned int                minDepth,
+                                        const unsigned int                maxDepth,
+                                        const nogdb::PathFilter&          pathFilter,
+                                        const nogdb::ClassFilter&         classFilter
+                                       )
+------------
+* Description:
+** To find vertices as a result of out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== BFS TRAVERSE ALL-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet allEdgeBfs(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const unsigned int                minDepth,
+                            const unsigned int                maxDepth,
+                            const nogdb::PathFilter&          pathFilter,
+                            const nogdb::ClassFilter&         classFilter
+                           )
+------------
+* Description:
+** To find vertices as a result of in- and out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== BFS TRAVERSE ALL-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor allEdgeBfsCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const unsigned int                minDepth,
+                                        const unsigned int                maxDepth,
+                                        const nogdb::PathFilter&          pathFilter,
+                                        const nogdb::ClassFilter&         classFilter
+                                       )
+------------
+* Description:
+** To find vertices as a result of in- and out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE IN-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet inEdgeDfs(const nogdb::Txn&                 txn,
+                           const nogdb::RecordDescriptor&    recordDescriptor,
+                           const unsigned int                minDepth,
+                           const unsigned int                maxDepth,
+                           const nogdb::PathFilter&          pathFilter,
+                           const nogdb::ClassFilter&         classFilter
+                          )
+------------
+* Description:
+** To find vertices as a result of in-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE IN-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor inEdgeDfsCursor(const nogdb::Txn&                 txn,
+                                       const nogdb::RecordDescriptor&    recordDescriptor,
+                                       const unsigned int                minDepth,
+                                       const unsigned int                maxDepth,
+                                       const nogdb::PathFilter&          pathFilter,
+                                       const nogdb::ClassFilter&         classFilter
+                                      )
+------------
+* Description:
+** To find vertices as a result of in-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE OUT-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet outEdgeDfs(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const unsigned int                minDepth,
+                            const unsigned int                maxDepth,
+                            const nogdb::PathFilter&          pathFilter,
+                            const nogdb::ClassFilter&         classFilter
+                           )
+------------
+* Description:
+** To find vertices as a result of out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE OUT-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor outEdgeDfsCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const unsigned int                minDepth,
+                                        const unsigned int                maxDepth,
+                                        const nogdb::PathFilter&          pathFilter,
+                                        const nogdb::ClassFilter&         classFilter
+                                       )
+------------
+* Description:
+** To find vertices as a result of out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE ALL-EDGE
+[source,cpp]
+------------
+nogdb::ResultSet allEdgeDfs(const nogdb::Txn&                 txn,
+                            const nogdb::RecordDescriptor&    recordDescriptor,
+                            const unsigned int                minDepth,
+                            const unsigned int                maxDepth,
+                            const T&                          className,
+                            const PathFilter&                 pathFilter
+                           )
+------------
+* Description:
+** To find vertices as a result of in- and out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** className - A class name as `std::string` or a set of class names as `std::set<std::string>` of an edge (or edges). If this parameter is specified, only edges with a given class name (or class names) will be used for graph traversal (optional).
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== DFS TRAVERSE ALL-EDGE CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor allEdgeDfsCursor(const nogdb::Txn&                 txn,
+                                        const nogdb::RecordDescriptor&    recordDescriptor,
+                                        const unsigned int                minDepth,
+                                        const unsigned int                maxDepth,
+                                        const T&                          className,
+                                        const PathFilter&                 pathFilter
+                                       )
+------------
+* Description:
+** To find vertices as a result of in- and out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
+* Parameters:
+** txn - A database transaction.
+** recordDescriptor - A record descriptor of a vertex.
+** minDepth - A minimum level of graph traversal.
+** maxDepth - A maximum level of graph traversal.
+** className - A class name as `std::string` or a set of class names as `std::set<std::string>` of an edge (or edges). If this parameter is specified, only edges with a given class name (or class names) will be used for graph traversal (optional).
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+* Return:
+** `nogdb::ResultSetCursor` - A cursor of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+
+=== SHORTEST PATH
+[source,cpp]
+------------
+nogdb::ResultSet shortestPath(const nogdb::Txn&                 txn,
+                              const nogdb::RecordDescriptor&    srcVertexRecordDescriptor,
+                              const nogdb::RecordDescriptor&    dstVertexRecordDescriptor,
+                              const nogdb::PathFilter&          pathFilter,
+                              const nogdb::ClassFilter&         classFilter
+                             )
+------------
+* Description:
+** To find all vertices in the shortest path (BFS) from a source vertex to a destination vertex.
+* Parameters:
+** txn - A database transaction.
+** srcVertexRecordDescriptor - A record descriptor of a source vertex.
+** dstVertexRecordDescriptor - A record descriptor of a destination vertex.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+
+=== SHORTEST PATH CURSOR
+[source,cpp]
+------------
+nogdb::ResultSetCursor shortestPathCursor(const nogdb::Txn&                 txn,
+                                          const nogdb::RecordDescriptor&    srcVertexRecordDescriptor,
+                                          const nogdb::RecordDescriptor&    dstVertexRecordDescriptor,
+                                          const nogdb::PathFilter&          pathFilter,
+                                          const nogdb::ClassFilter&         classFilter
+                                         )
+------------
+* Description:
+** To find all vertices in the shortest path (BFS) from a source vertex to a destination vertex.
+* Parameters:
+** txn - A database transaction.
+** srcVertexRecordDescriptor - A record descriptor of a source vertex.
+** dstVertexRecordDescriptor - A record descriptor of a destination vertex.
+** pathFilter - A path filtering object for conditional graph traversal (optional).
+** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
+* Return:
+** `nogdb::ResultSet` - A set of results.
+* Exceptions:
+** `CTX_NOEXST_CLASS` - A class does not exist.
+** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+
+
+== Error Handling
+
+An exception will be always thrown if there are any errors that occur in the function.
+To handle these errors gracefully, try-catch could be useful, otherwise, the user's program will be aborted.
+
+[source,cpp]
+-----------
+try {
+  	// ... do something
+} catch (const nogdb::Error& ex) {
+	std::cout << ex.code() << " " << ex.what() << std::endl;
+}
+-----------
+
+[TIP]
+=====
+* `ex.code()` - return an error code.
+* `ex.what()` - return an error message as `const char *`.
+=====
+
+A list of errors:
+
+// tag::b-col-indv[]
+[cols="1,1,2", options="header"]
+.General Error Code
+|===
+|Exception
+|Code
+|Description
+
+|ALL_OK
+|0x0
+|Everything is okay.
+
+|===
+// end::b-col-indv[]
+
+// tag::b-col-indv[]
+[cols="1,1,2", options="header"]
+.Context Error Code
+|===
+|Exception
+|Code
+|Description
+
+|CTX_INVALID_CLASSTYPE
+|0x1000
+|A type of class is not valid.
+
+|CTX_DUPLICATE_CLASS
+|0x1010
+|A specified class name has already existed.
+
+|CTX_NOEXST_CLASS
+|0x1020
+|A class does not exist.
+
+|CTX_EMPTY_CLASSNAME
+|0x1030
+|A length of class name is zero.
+
+|CTX_MISMATCH_CLASSTYPE
+|0x1990
+|A type of a class does not match as expected.
+
+|CTX_MISMATCH_CLASSTYPE
+|0x1990
+|A type of a class does not match as expected.
+
+|CTX_INVALID_PROPTYPE
+|0x2000
+|A type of a property is not valid.
+
+|CTX_DUPLICATE_PROPERTY
+|0x2010
+|A specified property name has already existed.
+
+|CTX_NOEXST_PROPERTY
+|0x2020
+|A property does not exist.
+
+|CTX_EMPTY_PROPERTYNAME
+|0x2030
+|A length of property name is zero.
+
+|CTX_OVERRIDE_PROPERTY
+|0x2040
+|A specified property name has already existed in some sub-classes.
+
+|CTX_CONFLICT_PROPTYPE
+|0x2050
+|Some properties do not have the same type.
+
+|CTX_IN_USED_PROPERTY
+|0x2060
+|A property is used by one or more database indexes
+
+|[.line-through]#CTX_EMPTY_RECORD#
+|[.line-through]#0x3000#
+|[.line-through]#A class has no properties (required at least one).#
+
+|CTX_INVALID_COMPARATOR
+|0x4000
+|A comparator is not defined.
+
+|CTX_INVALID_PROPTYPE_INDEX
+|0x6000
+|A property type doesn't support database indexing
+
+|CTX_NOEXST_INDEX
+|0x6010
+|An index doesn't exist on given class and property
+
+|CTX_DUPLICATE_INDEX
+|0x6020
+|A specified index has already existed
+
+|CTX_INVALID_INDEX_CONSTRAINT
+|0x6030
+|An index couldn't be created with a unique constraint due to some duplicated values in existing records
+
+|CTX_UNIQUE_CONSTRAINT
+|0x6040
+|A record has some duplicated values when a unique constraint is applied
+
+|CTX_IS_LOCKED
+|0x9fc0
+|A context is locked or being used.
+
+|CTX_LIMIT_DBSCHEMA
+|0x9fd0
+|A limitation of a database schema has been reached.
+
+|CTX_INTERNAL_ERR
+|0x9fe0
+|There might be some errors internally.
+
+|CTX_UNKNOWN_ERR
+|0x9ff0
+|An unknown error related to the database context.
+
+|CTX_NOT_IMPLEMENTED
+|0x9fff
+|A function or class has not been implemented yet.
+
+|===
+// end::b-col-indv[]
+
+// tag::b-col-indv[]
+[cols="1,1,2", options="header"]
+.Graph Error Code
+|===
+|Exception
+|Code
+|Description
+
+|GRAPH_DUP_VERTEX
+|0x100
+|A duplicated vertex in a graph.
+
+|GRAPH_NOEXST_VERTEX
+|0x101
+|A vertex doesn't exist.
+
+|GRAPH_NOEXST_SRC
+|0x102
+|A source vertex doesn't exist.
+
+|GRAPH_NOEXST_DST
+|0x103
+|A destination vertex doesn't exist.
+
+|GRAPH_DUP_EDGE
+|0x200
+|A duplicated edge in a graph.
+
+|GRAPH_NOEXST_EDGE
+|0x201
+|An edge doesn't exist.
+
+|GRAPH_UNKNOWN_ERR
+|0x9ff
+|An unknown error related to the graph structure.
+
+|===
+// end::b-col-indv[]
+
+// tag::b-col-indv[]
+[cols="1,1,2", options="header"]
+.Transaction Error Code
+|===
+|Exception
+|Code
+|Description
+
+|TXN_INVALID_MODE
+|0xa00
+|An operation couldn't be executed due to an invalid transaction mode
+
+|TXN_COMPLETED
+|0xa01
+|An operation couldn't be executed due to a completed transaction
+
+|TXN_VERSION_MAXREACH
+|0xa02
+|The transaction version has been reached the maximum value
+
+|TXN_UNKNOWN_ERR
+|0xfff
+|An unknown error related to the transaction control.
+
+|===
+// end::b-col-indv[]
+
+[NOTE]
+=====
+* For LMDB, the error and exceptions can be referred to http://104.237.133.194/doc/group__errors.html
+* `CTX_UNKNOWN_ERR` and `GRAPH_UNKNOWN_ERR` are the default exceptions which could be thrown from any operations in a case of errors.
+=====

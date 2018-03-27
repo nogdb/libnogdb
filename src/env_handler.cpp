@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 
 #include "utils.hpp"
-#include "config.hpp"
+#include "constant.hpp"
 #include "env_handler.hpp"
 
 namespace nogdb {

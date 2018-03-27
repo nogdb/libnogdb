@@ -25,7 +25,7 @@
 #include <set>
 #include <utility>
 
-#include "config.hpp"
+#include "constant.hpp"
 #include "txn_object.hpp"
 #include "spinlock.hpp"
 

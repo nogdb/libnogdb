@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "shared_lock.hpp"
-#include "config.hpp"
+#include "constant.hpp"
 #include "base_txn.hpp"
 #include "env_handler.hpp"
 #include "datastore.hpp"
