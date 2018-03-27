@@ -29,7 +29,7 @@
 
 #include "blob.hpp"
 #include "keyval.hpp"
-#include "config.hpp"
+#include "constant.hpp"
 #include "env_handler.hpp"
 #include "datastore.hpp"
 #include "parser.hpp"

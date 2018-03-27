@@ -1,17 +1,21 @@
 sudo: false
-
 language: cpp
-
 dist: trusty
+
+branches:
+  only:
+    - master
+    - develop
+    - /^feature\/.*$/
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
 
 compiler:
 #  - gcc
   - clang
-
 os:
 #  - linux
   - osx
-
 addons:
   apt:
     sources:
