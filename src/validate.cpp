@@ -19,6 +19,9 @@
  *
  */
 
+#include <algorithm>
+#include <regex>
+
 #include "validate.hpp"
 
 #include "nogdb_txn.h"
@@ -34,16 +37,20 @@ namespace nogdb {
         }
     }
 
-    void Validate::isNotEmptyClassname(const std::string &className) {
-        if (className.length() <= 0) {
-            throw Error(CTX_EMPTY_CLASSNAME, Error::Type::CONTEXT);
+    void Validate::isClassNameValid(const std::string &className) {
+        if (!isNameValid(className)) {
+            throw Error(CTX_INVALID_CLASSNAME, Error::Type::CONTEXT);
         }
     }
 
-    void Validate::isNotEmptyPropname(const std::string &propName) {
-        if (propName.length() <= 0) {
-            throw Error(CTX_EMPTY_PROPERTYNAME, Error::Type::CONTEXT);
+    void Validate::isPropertyNameValid(const std::string &propName) {
+        if (!isNameValid(propName)) {
+            throw Error(CTX_INVALID_PROPERTYNAME, Error::Type::CONTEXT);
         }
+    }
+
+    bool Validate::isNameValid(const std::string &name) {
+        return std::regex_match(name, std::regex("^[A-Za-z0-9\\-_]+$"));
     }
 
     void Validate::isClassTypeValid(const ClassType &type) {

@@ -42,7 +42,7 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validations
-        Validate::isNotEmptyPropname(propertyName);
+        Validate::isPropertyNameValid(propertyName);
         Validate::isPropertyTypeValid(type);
 
         auto &dbInfo = txn.txnBase->dbInfo;
@@ -89,7 +89,7 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validation
-        Validate::isNotEmptyPropname(newPropertyName);
+        Validate::isPropertyNameValid(newPropertyName);
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);

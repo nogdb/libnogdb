@@ -804,7 +804,7 @@ const nogdb::ClassDescriptor create(nogdb::Txn&                        txn,
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created class.
 * Exceptions:
-** `CTX_EMPTY_CLASSNAME` - A length of class name is zero.
+** `CTX_INVALID_CLASSNAME` - A length of class name is zero.
 ** `CTX_INVALID_CLASSTYPE` - A type of class is not valid.
 ** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
 ** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
@@ -826,7 +826,7 @@ const nogdb::ClassDescriptor createExtend(nogdb::Txn&                      txn,
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created sub-class.
 * Exceptions:
-** `CTX_EMPTY_CLASSNAME` - A length of class name is zero.
+** `CTX_INVALID_CLASSNAME` - A length of class name is zero.
 ** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
 ** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
 
@@ -845,7 +845,7 @@ void alter(nogdb::Txn&           txn,
 ** oldName - An old name of a class that will be changed from.
 ** newName - A new name of a class that will be changed to.
 * Exceptions:
-** `CTX_EMPTY_CLASSNAME` - A length of a new class name is zero.
+** `CTX_INVALID_CLASSNAME` - A length of a new class name is zero.
 ** `CTX_NOEXST_CLASS` - An old class does not exist.
 ** `CTX_DUPLICATE_CLASS` - A new class name has already existed.
 
@@ -886,7 +886,7 @@ const nogdb::PropertyDescriptor add(nogdb::Txn&             txn,
 * Return:
 ** `nogdb::PropertyDescriptor` - A property descriptor of a created property.
 * Exceptions:
-** `CTX_EMPTY_PROPERTYNAME` - A length of property name is zero.
+** `CTX_INVALID_PROPERTYNAME` - A length of property name is zero.
 ** `CTX_INVALID_PROPTYPE` - A type of class is not valid.
 ** `CTX_NOEXST_CLASS` - A class does not exist.
 ** `CTX_DUPLICATE_PROPERTY` - A specified property name has already existed.
@@ -910,7 +910,7 @@ void alter(nogdb::Txn&           txn,
 ** oldName - An old name of a property that will be changed from.
 ** newName - A new name of a property that will be changed to.
 * Exceptions:
-** `CTX_EMPTY_PROPERTYNAME` - A length of a new property name is zero.
+** `CTX_INVALID_PROPERTYNAME` - A length of a new property name is zero.
 ** `CTX_NOEXST_CLASS` - A class does not exist.
 ** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
 ** `CTX_DUPLICATE_PROPERTY` - A new property  name has already existed.
@@ -2149,9 +2149,9 @@ A list of errors:
 |0x1020
 |A class does not exist.
 
-|CTX_EMPTY_CLASSNAME
+|CTX_INVALID_CLASSNAME
 |0x1030
-|A length of class name is zero.
+|A class name is empty or contains invalid characters
 
 |CTX_MISMATCH_CLASSTYPE
 |0x1990
@@ -2173,9 +2173,9 @@ A list of errors:
 |0x2020
 |A property does not exist.
 
-|CTX_EMPTY_PROPERTYNAME
+|CTX_INVALID_PROPERTYNAME
 |0x2030
-|A length of property name is zero.
+|A property name is empty or contains invalid characters
 
 |CTX_OVERRIDE_PROPERTY
 |0x2040

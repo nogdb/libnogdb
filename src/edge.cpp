@@ -518,55 +518,55 @@ namespace nogdb {
         }
     }
 
-    ResultSet Edge::find(const Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::find(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::find(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition);
     }
 
-    ResultSetCursor Edge::findCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::findCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::findCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSet Edge::findIndex(const Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition, true);
     }
 
-    ResultSet Edge::findIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition, true);
     }
 
-    ResultSetCursor Edge::findCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::findCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

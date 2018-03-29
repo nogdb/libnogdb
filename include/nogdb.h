@@ -45,11 +45,9 @@ namespace nogdb {
 
         ~Class() noexcept = delete;
 
-        static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type,
-                                            const PropertyMapType &properties = PropertyMapType{});
+        static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type);
 
-        static const ClassDescriptor createExtend(Txn &txn, const std::string &className, const std::string &superClass,
-                                                  const PropertyMapType &properties = PropertyMapType{});
+        static const ClassDescriptor createExtend(Txn &txn, const std::string &className, const std::string &superClass);
 
         static void drop(Txn &txn, const std::string &className);
 
@@ -118,97 +116,97 @@ namespace nogdb {
         static ResultSetCursor getAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor,
                                                 const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet find(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet find(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet find(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet findIndex(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet findIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor findCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor findCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
 
         static ResultSet
-        findInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+                  const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSet
+        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+                  const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSet
+        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+                  const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSet
+        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        findInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        findInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        findOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
-                    const ClassFilter &classFilter = ClassFilter{});
+        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        findOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
-                    const ClassFilter &classFilter = ClassFilter{});
+        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        findOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
-                    const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSet
-        findAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
-                    const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSet
-        findAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
-                    const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSet
-        findAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
-                    const ClassFilter &classFilter = ClassFilter{});
+        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+        getInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+                        const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSetCursor
+        getInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+                        const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSetCursor
+        getInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+                        const ClassFilter &classFilter = ClassFilter{});
+
+        static ResultSetCursor
+        getOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
                          const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+        getOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
                          const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+        getOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
                          const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
-                          const ClassFilter &classFilter = ClassFilter{});
+        getAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+                         const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
-                          const ClassFilter &classFilter = ClassFilter{});
+        getAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+                         const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
-        findOutEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
-                          const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSetCursor
-        findAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
-                          const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSetCursor
-        findAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
-                          const ClassFilter &classFilter = ClassFilter{});
-
-        static ResultSetCursor
-        findAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
-                          const ClassFilter &classFilter = ClassFilter{});
+        getAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+                         const ClassFilter &classFilter = ClassFilter{});
     };
 
     //*************************************************************
@@ -246,25 +244,25 @@ namespace nogdb {
 
         static ResultSet getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet find(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet find(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet find(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet findIndex(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet findIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor findCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor findCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor findCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
     };
 
     //*************************************************************

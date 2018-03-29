@@ -1,4 +1,11 @@
 # Change Log
+## v0.11.0-beta
+* General changes:
+  * All `nogdb::Vertex::find*(...)` and `nogdb::Edge::find*(...)` functions are obsoleted and have been renamed to `nogdb::Vertex::get*(...)` and `nogdb::Edge::get*(...)` respectively.
+  * `nogdb::Class::create(...)` and `nogdb::Class::createExtend(...)` with `PropertyMapType` functions are deprecated.
+* Implemented enhancements:
+  * Adding some class and property name restrictions.
+  
 ## v0.10.0-beta [2018-03-24]
 * General changes:
   * `nogdb::Condition` and `nogdb::Comparator` have been re-designed by combining them into one functionality as `nogdb::Comparator` has become member functions of `nogdb::Condition`, for example, `eq(...)`, `lt(...)`, `contain(...)`, and etc. This would help to support more comparators such as `in(...)`, `like(...)`, `regex(...)` and some comparators that utilize the advantages of NogDB indexing such as range search and `between(...)`.
@@ -138,7 +145,7 @@
 * Implemented enhancements:
   * Increasing a performance of edge record retrieval by reducing a number of created objects as a parameter when passing through a function `get_resolved_records` for getting records from `record_descriptor`.
   * A duplication in an implementation of edge retrieval functions has been revised and eliminated.
-  * `nogdb::exec::create_class`, `nogdb::exec::add_property`, and `nogdb::exec::alter_property` can now prevent using an empty string as classname and property name for creating classes and properties. Additional exceptions, `CTX_EMPTY_CLASSNAME` and `CTX_EMPTY_PROPERTYNAME`, will be returned from those schema operations if an empty string provided.  
+  * `nogdb::exec::create_class`, `nogdb::exec::add_property`, and `nogdb::exec::alter_property` can now prevent using an empty string as classname and property name for creating classes and properties. Additional exceptions, `CTX_INVALID_CLASSNAME` and `CTX_INVALID_PROPERTYNAME`, will be returned from those schema operations if an empty string provided.  
 * Fixed bugs:
   * `nogdb::exec::update_vertex_dst` previously threw an exception of `type std::out_of_range: map::at:  key not found`. This problem has been resolved by changing `oldTarget` in `graph::alter_edge_dst` from `edge->source.lock()` to `edge->target.lock()` and now it can refer to the right direction.
   * Once an empty string has been set and stored into a database, calling `record.get(...).to_text()` can return an empty string instead of aborting a program with an assertion failure.
