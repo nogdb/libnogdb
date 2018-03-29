@@ -22,8 +22,6 @@
 #ifndef __VALIDATE_HPP_INCLUDED_
 #define __VALIDATE_HPP_INCLUDED_
 
-#include <algorithm>
-
 #include "schema.hpp"
 #include "base_txn.hpp"
 
@@ -40,9 +38,11 @@ namespace nogdb {
 
         static void isTransactionValid(const Txn &txn);
 
-        static void isNotEmptyClassname(const std::string &className);
+        static void isClassNameValid(const std::string &className);
 
-        static void isNotEmptyPropname(const std::string &propName);
+        static void isPropertyNameValid(const std::string &propName);
+
+        static bool isNameValid(const std::string& name);
 
         static void isClassTypeValid(const ClassType &type);
 

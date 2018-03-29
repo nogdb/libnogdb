@@ -40,20 +40,15 @@ namespace nogdb {
 
     const ClassDescriptor Class::create(Txn &txn,
                                         const std::string &className,
-                                        ClassType type,
-                                        const PropertyMapType &properties) {
+                                        ClassType type) {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validations
-        Validate::isNotEmptyClassname(className);
+        Validate::isClassNameValid(className);
         Validate::isClassTypeValid(type);
-        for (const auto &property : properties) {
-            Validate::isNotEmptyPropname(property.first);
-            Validate::isPropertyTypeValid(property.second);
-        }
 
         auto &dbInfo = txn.txnBase->dbInfo;
-        if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT) && (dbInfo.maxPropertyId + properties.size() > UINT16_MAX)) {
+        if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
             throw Error(CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
         } else {
             ++dbInfo.maxClassId;
@@ -78,27 +73,8 @@ namespace nogdb {
             // create interface for itself
             auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
             Datastore::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
-            if (!properties.empty()) {
-                auto propDBHandler = Datastore::openDbi(dsTxnHandler, TB_PROPERTIES, true);
-                auto classId = dbInfo.maxClassId;
-                for (const auto &property: properties) {
-                    auto totalLength = sizeof(property.second) + sizeof(ClassId) + strlen(property.first.c_str());
-                    auto value = Blob(totalLength);
-                    value.append(&(property.second), sizeof(property.second));
-                    value.append(&classId, sizeof(ClassId));
-                    value.append(property.first.c_str(), strlen(property.first.c_str()));
-                    Datastore::putRecord(dsTxnHandler, propDBHandler, ++beginMaxPropertyId, value, true);
-                }
-            }
 
             // update in-memory schema and info
-            auto classProperties = Schema::ClassProperty{};
-            for (const auto &property: properties) {
-                classProperties.emplace(property.first,
-                                        Schema::PropertyDescriptor{++dbInfo.maxPropertyId, property.second});
-                ++dbInfo.numProperty;
-            }
-            classDescriptor->properties.addLatestVersion(classProperties);
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
         } catch (Datastore::ErrorType &err) {
@@ -113,20 +89,15 @@ namespace nogdb {
 
     const ClassDescriptor Class::createExtend(Txn &txn,
                                               const std::string &className,
-                                              const std::string &superClass,
-                                              const std::map<std::string, PropertyType> &properties) {
+                                              const std::string &superClass) {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validations
-        Validate::isNotEmptyClassname(className);
-        Validate::isNotEmptyClassname(superClass);
-        for (const auto &property: properties) {
-            Validate::isNotEmptyPropname(property.first);
-            Validate::isPropertyTypeValid(property.second);
-        }
+        Validate::isClassNameValid(className);
+        Validate::isClassNameValid(superClass);
 
         auto &dbInfo = txn.txnBase->dbInfo;
-        if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT) && (dbInfo.maxPropertyId + properties.size() > UINT16_MAX)) {
+        if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
             throw Error(CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
         } else {
             ++dbInfo.maxClassId;
@@ -134,16 +105,9 @@ namespace nogdb {
 
         // schema validations
         Validate::isNotDuplicatedClass(txn, className);
+
         auto superClassDescriptor = Generic::getClassDescriptor(txn, superClass, ClassType::UNDEFINED);
         auto type = superClassDescriptor->type;
-        auto superClassInfo = Generic::getClassMapProperty(*txn.txnBase, superClassDescriptor);
-        for (const auto &property: properties) {
-            auto foundInfo = superClassInfo.nameToDesc.find(property.first);
-            if (foundInfo != superClassInfo.nameToDesc.cend()) {
-                throw Error(CTX_DUPLICATE_PROPERTY, Error::Type::CONTEXT);
-            }
-        }
-
         auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(dbInfo.maxClassId, className, type);
         auto beginMaxPropertyId = dbInfo.maxPropertyId;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
@@ -160,18 +124,6 @@ namespace nogdb {
             // create interface for itself
             auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
             Datastore::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
-            if (!properties.empty()) {
-                auto propDBHandler = Datastore::openDbi(dsTxnHandler, TB_PROPERTIES, true);
-                auto classId = dbInfo.maxClassId;
-                for (const auto &property: properties) {
-                    auto totalLength = sizeof(property.second) + sizeof(ClassId) + strlen(property.first.c_str());
-                    auto value = Blob(totalLength);
-                    value.append(&(property.second), sizeof(property.second));
-                    value.append(&classId, sizeof(ClassId));
-                    value.append(property.first.c_str(), strlen(property.first.c_str()));
-                    Datastore::putRecord(dsTxnHandler, propDBHandler, ++beginMaxPropertyId, value, true);
-                }
-            }
 
             // update in-memory schema and info
             auto superClassDescriptorPtr = txn.txnCtx.dbSchema->find(*txn.txnBase, superClassDescriptor->id);
@@ -183,13 +135,6 @@ namespace nogdb {
             superClassDescriptorPtr->sub.addLatestVersion(subClasses);
             txn.txnBase->addUncommittedSchema(superClassDescriptorPtr);
 
-            auto classProperties = Schema::ClassProperty{};
-            for (const auto &property: properties) {
-                classProperties.emplace(property.first,
-                                        Schema::PropertyDescriptor{++dbInfo.maxPropertyId, property.second});
-                ++dbInfo.numProperty;
-            }
-            classDescriptor->properties.addLatestVersion(classProperties);
             txn.txnCtx.dbSchema->insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
         } catch (Datastore::ErrorType &err) {
@@ -348,7 +293,7 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validations
-        Validate::isNotEmptyClassname(newClassName);
+        Validate::isClassNameValid(newClassName);
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, oldClassName);

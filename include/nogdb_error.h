@@ -47,12 +47,12 @@
 #define CTX_INVALID_CLASSTYPE           0x1000
 #define CTX_DUPLICATE_CLASS             0x1010
 #define CTX_NOEXST_CLASS                0x1020
-#define CTX_EMPTY_CLASSNAME             0x1030
+#define CTX_INVALID_CLASSNAME           0x1030
 #define CTX_MISMATCH_CLASSTYPE          0x1990
 #define CTX_INVALID_PROPTYPE            0x2000
 #define CTX_DUPLICATE_PROPERTY          0x2010
 #define CTX_NOEXST_PROPERTY             0x2020
-#define CTX_EMPTY_PROPERTYNAME          0x2030
+#define CTX_INVALID_PROPERTYNAME        0x2030
 #define CTX_OVERRIDE_PROPERTY           0x2040
 #define CTX_CONFLICT_PROPTYPE           0x2050
 #define CTX_IN_USED_PROPERTY            0x2060
@@ -140,10 +140,10 @@ namespace nogdb {
                             return "CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
                         case CTX_INVALID_COMPARATOR:
                             return "CTX_INVALID_COMPARATOR: A comparator is not defined";
-                        case CTX_EMPTY_CLASSNAME:
-                            return "CTX_EMPTY_CLASSNAME: A length of classname is zero";
-                        case CTX_EMPTY_PROPERTYNAME:
-                            return "CTX_EMPTY_PROPERTYNAME: A length of property name is zero";
+                        case CTX_INVALID_CLASSNAME:
+                            return "CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
+                        case CTX_INVALID_PROPERTYNAME:
+                            return "CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
                         case CTX_IS_LOCKED:
                             return "CTX_IS_LOCKED: A context is locked or being used";
                         case CTX_LIMIT_DBSCHEMA:

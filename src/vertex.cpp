@@ -443,25 +443,25 @@ namespace nogdb {
         return result;
     }
 
-    ResultSet Vertex::find(const Txn &txn,
+    ResultSet Vertex::get(const Txn &txn,
                            const std::string &className,
                            const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
 
-    ResultSet Vertex::find(const Txn &txn,
+    ResultSet Vertex::get(const Txn &txn,
                            const std::string &className,
                            bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
 
-    ResultSet Vertex::find(const Txn &txn,
+    ResultSet Vertex::get(const Txn &txn,
                            const std::string &className,
                            const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
     }
 
-    ResultSetCursor Vertex::findCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
@@ -469,21 +469,21 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::findCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::findCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSet Vertex::findInEdge(const Txn &txn,
+    ResultSet Vertex::getInEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const Condition &condition,
                                  const ClassFilter &classFilter) {
@@ -495,7 +495,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSet Vertex::findInEdge(const Txn &txn,
+    ResultSet Vertex::getInEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const MultiCondition &multiCondition,
                                  const ClassFilter &classFilter) {
@@ -507,7 +507,7 @@ namespace nogdb {
                                                   classFilter);
     }
 
-    ResultSet Vertex::findInEdge(const Txn &txn,
+    ResultSet Vertex::getInEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  bool (*condition)(const Record &record),
                                  const ClassFilter &classFilter) {
@@ -519,7 +519,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::findInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const Condition &condition,
                                              const ClassFilter &classFilter) {
@@ -534,7 +534,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::findInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const MultiCondition &multiCondition,
                                              const ClassFilter &classFilter) {
@@ -549,7 +549,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::findInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              bool (*condition)(const Record &record),
                                              const ClassFilter &classFilter) {
@@ -564,7 +564,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSet Vertex::findOutEdge(const Txn &txn,
+    ResultSet Vertex::getOutEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   const Condition &condition,
                                   const ClassFilter &classFilter) {
@@ -576,7 +576,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSet Vertex::findOutEdge(const Txn &txn,
+    ResultSet Vertex::getOutEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   const MultiCondition &multiCondition,
                                   const ClassFilter &classFilter) {
@@ -588,7 +588,7 @@ namespace nogdb {
                                                   classFilter);
     }
 
-    ResultSet Vertex::findOutEdge(const Txn &txn,
+    ResultSet Vertex::getOutEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   bool (*condition)(const Record &record),
                                   const ClassFilter &classFilter) {
@@ -600,7 +600,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::findOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const Condition &condition,
                                               const ClassFilter &classFilter) {
@@ -616,7 +616,7 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::findOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const MultiCondition &multiCondition,
                                               const ClassFilter &classFilter) {
@@ -632,7 +632,7 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::findOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               bool (*condition)(const Record &record),
                                               const ClassFilter &classFilter) {
@@ -647,7 +647,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSet Vertex::findAllEdge(const Txn &txn,
+    ResultSet Vertex::getAllEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   const Condition &condition,
                                   const ClassFilter &classFilter) {
@@ -659,7 +659,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSet Vertex::findAllEdge(const Txn &txn,
+    ResultSet Vertex::getAllEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   const MultiCondition &multiCondition,
                                   const ClassFilter &classFilter) {
@@ -671,7 +671,7 @@ namespace nogdb {
                                                   classFilter);
     }
 
-    ResultSet Vertex::findAllEdge(const Txn &txn,
+    ResultSet Vertex::getAllEdge(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   bool (*condition)(const Record &record),
                                   const ClassFilter &classFilter) {
@@ -683,7 +683,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::findAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const Condition &condition,
                                               const ClassFilter &classFilter) {
@@ -698,7 +698,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::findAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const MultiCondition &multiCondition,
                                               const ClassFilter &classFilter) {
@@ -713,7 +713,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::findAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               bool (*condition)(const Record &record),
                                               const ClassFilter &classFilter) {
@@ -728,22 +728,22 @@ namespace nogdb {
         return result;
     }
 
-    ResultSet Vertex::findIndex(const Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition, true);
     }
 
-    ResultSet Vertex::findIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
     }
 
-    ResultSetCursor Vertex::findCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Vertex::getCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::findCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
