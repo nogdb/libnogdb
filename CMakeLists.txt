@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8.2)
 
-project(nogdb VERSION 0.10.0 LANGUAGES CXX)
+project(nogdb VERSION 0.11.0 LANGUAGES CXX)
 
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 file(GLOB nogdb_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
