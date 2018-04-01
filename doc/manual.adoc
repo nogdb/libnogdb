@@ -2151,7 +2151,7 @@ A list of errors:
 
 |CTX_INVALID_CLASSNAME
 |0x1030
-|A class name is empty or contains invalid characters
+|A class name is empty or contains invalid characters.
 
 |CTX_MISMATCH_CLASSTYPE
 |0x1990
@@ -2175,7 +2175,7 @@ A list of errors:
 
 |CTX_INVALID_PROPERTYNAME
 |0x2030
-|A property name is empty or contains invalid characters
+|A property name is empty or contains invalid characters.
 
 |CTX_OVERRIDE_PROPERTY
 |0x2040

@@ -20,6 +20,7 @@ DEPOBJECTS  = $(LIBPATH)/lmdb/*.o
 DEPENDENCIES    = $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS     =
 TESTNAME    = runtest
+TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS
 
 all: lmdb $(ANAME) $(SONAME)
 
@@ -42,15 +43,17 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
     @mkdir -p $(BUILDDIR)
     $(CC) $(CFLAGS) $(HEADERS) -c $< -o $@
 
-#test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-#    $(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTNAME) $(LDFLAGS)
-#    $(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTNAME)_f $(LDFLAGS) $(EXTFLAGS)
-#    $(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTNAME) $(SONAME) $(LDFLAGS)
-#    $(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTNAME)_f $(SONAME) $(LDFLAGS) $(EXTFLAGS)
-#    @./runtest; rm -rf runtest.db
+test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+	$(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTNAME) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTNAME)_debug_address $(LDFLAGS) $(EXTFLAGS)
+	$(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTNAME) $(SONAME) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTNAME)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
+	@./runtest; rm -rf runtest.db
+	@./runtest_debug_address; rm -rf runtest.db
 
-#$(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
-#    $(CC) $(CFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
+$(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
+	$(CC) $(CFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
+
 
 install:
     @printf "Installing libnogdb..."

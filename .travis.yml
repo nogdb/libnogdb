@@ -49,5 +49,7 @@ before_script:
 script:
   - sh install_make.sh
   - make
+  - make test
   - cmake .
   - cmake --build .
+  - ctest

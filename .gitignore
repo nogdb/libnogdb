@@ -4,9 +4,11 @@
 *.a
 *.o
 runtest
+runtest_*
 boost_*
 *-test*
 *_f
+*_debug_*
 *-cli
 .cproject
 .project
