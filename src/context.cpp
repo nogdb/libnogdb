@@ -154,13 +154,12 @@ namespace nogdb {
         // create read-write in memory transaction
         BaseTxn baseTxn{*this, true, true};
         // retrieve classes information
-        Datastore::CursorHandler *classCursor = nullptr;
         try {
             auto inheritanceInfo = Schema::InheritanceInfo{};
-            classCursor = Datastore::openCursor(txn, classDBHandler);
-            for (auto classKeyValue = Datastore::getNextCursor(classCursor);
+            auto classCursor = Datastore::CursorHandlerWrapper(txn, classDBHandler);
+            for (auto classKeyValue = Datastore::getNextCursor(classCursor.get());
                  !classKeyValue.empty();
-                 classKeyValue = Datastore::getNextCursor(classCursor)) {
+                 classKeyValue = Datastore::getNextCursor(classCursor.get())) {
                 auto key = Datastore::getKeyAsNumeric<ClassId>(classKeyValue);
                 if (*key == ClassId{UINT16_EM_INIT}) {
                     continue;
@@ -184,24 +183,20 @@ namespace nogdb {
                 ++baseTxn.dbInfo.numClass;
             }
             dbSchema->apply(baseTxn, inheritanceInfo);
-            Datastore::closeCursor(classCursor);
         } catch (Datastore::ErrorType &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::closeCursor(classCursor);
             Datastore::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
 
         // retrieve properties and indexing information
-        Datastore::CursorHandler *propCursor = nullptr;
-        Datastore::CursorHandler *indexCursor = nullptr;
         try {
-            propCursor = Datastore::openCursor(txn, propDBHndler);
-            indexCursor = Datastore::openCursor(txn, indexDBHandler);
-            for (auto propKeyValue = Datastore::getNextCursor(propCursor);
+            auto propCursor = Datastore::CursorHandlerWrapper(txn, propDBHndler);
+            auto indexCursor = Datastore::CursorHandlerWrapper(txn, indexDBHandler);
+            for (auto propKeyValue = Datastore::getNextCursor(propCursor.get());
                  !propKeyValue.empty();
-                 propKeyValue = Datastore::getNextCursor(propCursor)) {
+                 propKeyValue = Datastore::getNextCursor(propCursor.get())) {
                 auto key = Datastore::getKeyAsNumeric<PropertyId>(propKeyValue);
                 if (*key == PropertyId{UINT16_EM_INIT}) {
                     continue;
@@ -224,9 +219,9 @@ namespace nogdb {
                 auto isUniqueNumeric = uint8_t{1};
                 auto indexId = IndexId{0};
                 auto classId = ClassId{0};
-                for (auto indexKeyValue = Datastore::getSetKeyCursor(indexCursor, propertyDescriptor.id);
+                for (auto indexKeyValue = Datastore::getSetKeyCursor(indexCursor.get(), propertyDescriptor.id);
                      !indexKeyValue.empty();
-                     indexKeyValue = Datastore::getNextDupCursor(indexCursor)) {
+                     indexKeyValue = Datastore::getNextDupCursor(indexCursor.get())) {
                     data = Datastore::getValueAsBlob(indexKeyValue);
                     offset = data.retrieve(&isCompositeNumeric, 0, sizeof(isCompositeNumeric));
                     offset = data.retrieve(&isUniqueNumeric, offset, sizeof(isUniqueNumeric));
@@ -247,22 +242,19 @@ namespace nogdb {
                 }
                 ++baseTxn.dbInfo.numProperty;
             }
-            Datastore::closeCursor(propCursor);
         } catch (Datastore::ErrorType &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::closeCursor(propCursor);
             Datastore::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
 
         // retrieve relations information
-        Datastore::CursorHandler *relationCursor = nullptr;
         try {
-            relationCursor = Datastore::openCursor(txn, relationDBHandler);
-            for (auto relationKeyValue = Datastore::getNextCursor(relationCursor);
+            auto relationCursor = Datastore::CursorHandlerWrapper(txn, relationDBHandler);
+            for (auto relationKeyValue = Datastore::getNextCursor(relationCursor.get());
                  !relationKeyValue.empty();
-                 relationKeyValue = Datastore::getNextCursor(relationCursor)) {
+                 relationKeyValue = Datastore::getNextCursor(relationCursor.get())) {
                 auto key = Datastore::getKeyAsString(relationKeyValue);
                 if (key == STRING_EM_INIT) {
                     continue;
@@ -295,27 +287,23 @@ namespace nogdb {
                 // update the relation in the graph structure
                 dbRelation->createEdge(baseTxn, edgeId, srcRid, dstRid);
             }
-            Datastore::closeCursor(relationCursor);
             baseTxn.commit(*this);
         } catch (const Error &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::closeCursor(relationCursor);
             Datastore::abortTxn(txn);
             throw err;
         } catch (Graph::ErrorType &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::closeCursor(relationCursor);
             Datastore::abortTxn(txn);
             throw Error(err, Error::Type::GRAPH);
         } catch (Datastore::ErrorType &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::closeCursor(relationCursor);
             Datastore::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }

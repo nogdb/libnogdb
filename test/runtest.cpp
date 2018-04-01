@@ -321,7 +321,7 @@ int main() {
 #endif
     // indexing
 #ifdef TEST_INDEX_OPERATIONS
-//    std::cout << "\n\x1B[96mEnd-to-end tests for advanced operations with inheritance should:\x1B[0m\n";
+//    std::cout << "\n\x1B[96mEnd-to-end tests for database indexing should:\x1B[0m\n";
 //    exec(test_create_index, "creating indexes for some properties");
 //    exec(test_create_index_extended_class, "creating indexes for some properties which belong to super classes");
 //    exec(test_create_invalid_index, "creating invalid indexes for some properties");

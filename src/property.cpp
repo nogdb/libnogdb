@@ -198,8 +198,8 @@ namespace nogdb {
                                                                  true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = Datastore::openCursor(dsTxnHandler, classDBHandler);
-                    auto keyValue = Datastore::getNextCursor(cursorHandler);
+                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
+                    auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                     while (!keyValue.empty()) {
                         auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                         if (*key != EM_MAXRECNUM) {
@@ -224,9 +224,8 @@ namespace nogdb {
                                 }
                             }
                         }
-                        keyValue = Datastore::getNextCursor(cursorHandler);
+                        keyValue = Datastore::getNextCursor(cursorHandler.get());
                     }
-                    Datastore::closeCursor(cursorHandler);
                     break;
                 }
                 case PropertyType::TINYINT:
@@ -244,8 +243,8 @@ namespace nogdb {
                                                true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = Datastore::openCursor(dsTxnHandler, classDBHandler);
-                    auto keyValue = Datastore::getNextCursor(cursorHandler);
+                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
+                    auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                     while (!keyValue.empty()) {
                         auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                         if (*key != EM_MAXRECNUM) {
@@ -283,9 +282,8 @@ namespace nogdb {
                                 }
                             }
                         }
-                        keyValue = Datastore::getNextCursor(cursorHandler);
+                        keyValue = Datastore::getNextCursor(cursorHandler.get());
                     }
-                    Datastore::closeCursor(cursorHandler);
                     break;
                 }
                 case PropertyType::TEXT: {
@@ -294,8 +292,8 @@ namespace nogdb {
                                                                  false, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = Datastore::openCursor(dsTxnHandler, classDBHandler);
-                    auto keyValue = Datastore::getNextCursor(cursorHandler);
+                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
+                    auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                     while (!keyValue.empty()) {
                         auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                         if (*key != EM_MAXRECNUM) {
@@ -309,9 +307,8 @@ namespace nogdb {
                                                      false, !isUnique);
                             }
                         }
-                        keyValue = Datastore::getNextCursor(cursorHandler);
+                        keyValue = Datastore::getNextCursor(cursorHandler.get());
                     }
-                    Datastore::closeCursor(cursorHandler);
                     break;
                 }
                 default:

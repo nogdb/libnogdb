@@ -258,6 +258,14 @@ namespace nogdb {
         mdb_cursor_close(cursorHandler);
     }
 
+    Datastore::CursorHandlerWrapper::CursorHandlerWrapper(TxnHandler *txnHandler, DBHandler dbHandler) {
+        cursorHandler = openCursor(txnHandler, dbHandler);
+    }
+
+    Datastore::CursorHandlerWrapper::~CursorHandlerWrapper() noexcept {
+        closeCursor(cursorHandler);
+    }
+
     std::string Datastore::getKeyAsString(const KeyValue &data) {
         return std::string(static_cast<char *>(data.key().mv_data), data.key().mv_size);
     }
