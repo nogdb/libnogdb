@@ -1,10 +1,10 @@
 /*
+ *  runtest_config.h - A configuration of runtest software
+ *
  *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
  *  <peerawich at throughwave dot co dot th>
  *
- *  This file is part of libnogdb, the NogDB core library in C++.
- *
- *  libnogdb is free software: you can redistribute it and/or modify
+ *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.

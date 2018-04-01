@@ -28,7 +28,7 @@ void test_txn_commit_nothing() {
     try {
         nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
         txnRw.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -88,7 +88,7 @@ void test_txn_create_only_vertex_commit() {
 
         txnRo4.rollback();
         txnRw2.rollback();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -122,7 +122,7 @@ void test_txn_create_only_vertex_rollback() {
         txnRo.commit();
         txnRw00.commit();
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -143,7 +143,7 @@ void test_txn_rollback_when_destroy() {
         auto res = nogdb::Vertex::get(txnRw, "islands", nogdb::Condition("name").eq("Koh Mak"));
         assert(!res.empty());
         assert(res[0].record.get("name").toText() == "Koh Mak");
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -152,7 +152,7 @@ void test_txn_rollback_when_destroy() {
         nogdb::Txn txnRo{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::get(txnRo, "islands", nogdb::Condition("name").eq("Koh Mak"));
         assert(res.empty());
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -172,7 +172,7 @@ void test_txn_delete_only_vertex_commit() {
         r.set("name", "Koh Mak").set("area", "87.92");
         vdesc = nogdb::Vertex::create(txnRw, "islands", r);
         txnRw.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -224,7 +224,7 @@ void test_txn_delete_only_vertex_commit() {
 
         txnRo4.rollback();
         txnRw2.rollback();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -239,7 +239,8 @@ void test_txn_delete_only_vertex_rollback() {
 
     try {
         nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-        auto vdesc = nogdb::Vertex::create(txnRw0, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+        auto vdesc = nogdb::Vertex::create(txnRw0, "islands",
+                                           nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
         txnRw0.commit();
 
         nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -263,7 +264,7 @@ void test_txn_delete_only_vertex_rollback() {
         nogdb::Txn txnRw00{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Vertex::destroy(txnRw00, vdesc);
         txnRw00.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -281,8 +282,10 @@ void test_txn_create_only_edge_commit() {
         nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-        auto vdesc2 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+        auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands",
+                                            nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+        auto vdesc2 = nogdb::Vertex::create(txnRw1, "islands",
+                                            nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
         nogdb::Edge::create(txnRw1, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -325,7 +328,7 @@ void test_txn_create_only_edge_commit() {
         txnRo4.rollback();
         txnRw2.rollback();
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -340,8 +343,10 @@ void test_txn_create_only_edge_rollback() {
 
     try {
         nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-        auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-        auto vdesc2 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+        auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands",
+                                            nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+        auto vdesc2 = nogdb::Vertex::create(txnRw1, "islands",
+                                            nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
         nogdb::Edge::create(txnRw1, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
 
         auto res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Kood"));
@@ -364,7 +369,7 @@ void test_txn_create_only_edge_rollback() {
         txnRo.commit();
         txnRw00.commit();
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -379,11 +384,13 @@ void test_txn_delete_only_edge_commit() {
 
     try {
         nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
-        auto vdesc1 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-        auto vdesc2 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+        auto vdesc1 = nogdb::Vertex::create(txnRw, "islands",
+                                            nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+        auto vdesc2 = nogdb::Vertex::create(txnRw, "islands",
+                                            nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
         nogdb::Edge::create(txnRw, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
         txnRw.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -430,7 +437,7 @@ void test_txn_delete_only_edge_commit() {
 
         txnRo4.rollback();
         txnRw2.rollback();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -451,7 +458,7 @@ void test_txn_delete_only_edge_rollback() {
         vdesc2 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
         nogdb::Edge::create(txnRw, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
         txnRw.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -494,7 +501,7 @@ void test_txn_delete_only_edge_rollback() {
 
         txnRo1.rollback();
         txnRo2.rollback();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -521,43 +528,43 @@ void test_txn_get_vertex_edge() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCases {
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e1);
-                assert(res.record.get("name").toText() == "1");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e1);
-                assert(res.record.get("name").toText() == "2");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e2);
-                assert(res.record.get("name").toText() == "1");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e2);
-                assert(res.record.get("name").toText() == "3");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2);
-                assert(res[0].record.get("name").toText() == "12");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v3);
-                assert(res[0].record.get("name").toText() == "13");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                assert(res.size() == 2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
-                assert(res[0].record.get("name").toText() == "12");
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
-                assert(res[0].record.get("name").toText() == "13");
-            }
+        std::vector<std::function<void(nogdb::Txn &)>> testCases{
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e1);
+                    assert(res.record.get("name").toText() == "1");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e1);
+                    assert(res.record.get("name").toText() == "2");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e2);
+                    assert(res.record.get("name").toText() == "1");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e2);
+                    assert(res.record.get("name").toText() == "3");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2);
+                    assert(res[0].record.get("name").toText() == "12");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v3);
+                    assert(res[0].record.get("name").toText() == "13");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+                    assert(res.size() == 2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
+                    assert(res[0].record.get("name").toText() == "12");
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
+                    assert(res[0].record.get("name").toText() == "13");
+                }
         };
 
         runTestCases(txnRw1, testCases, true);
@@ -576,7 +583,7 @@ void test_txn_get_vertex_edge() {
         runTestCases(txnRo1, testCases, false);
         runTestCases(txnRo2, testCases, false);
         runTestCases(txnRo3, testCases, false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -610,82 +617,82 @@ void test_txn_alter_vertex_edge_commit() {
         nogdb::Edge::updateDst(txnRw1, e2, v2);
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        std::vector<std::function<void(nogdb::Txn&)>> oldTestCases {
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e1);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e2);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e1);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e2);
-                assert(res.descriptor == v3);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2);
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v3);
-                assert(res[0].descriptor == e2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                assert(res.size() == 2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
-                assert(res[0].descriptor == e2);
-            }
+        std::vector<std::function<void(nogdb::Txn &)>> oldTestCases{
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e1);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e2);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e1);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e2);
+                    assert(res.descriptor == v3);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2);
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v3);
+                    assert(res[0].descriptor == e2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+                    assert(res.size() == 2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
+                    assert(res[0].descriptor == e2);
+                }
         };
 
-        std::vector<std::function<void(nogdb::Txn&)>> newTestCases {
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e1);
-                assert(res.descriptor == v3);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e2);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e1);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e2);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2);
-                assert(res.size() == 2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v3);
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                assert(res[0].descriptor == e2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"bridge"});
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"flight"});
-                assert(res[0].descriptor == e2);
-            }
+        std::vector<std::function<void(nogdb::Txn &)>> newTestCases{
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e1);
+                    assert(res.descriptor == v3);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e2);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e1);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e2);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2);
+                    assert(res.size() == 2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v3);
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+                    assert(res[0].descriptor == e2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"bridge"});
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"flight"});
+                    assert(res[0].descriptor == e2);
+                }
         };
 
         runTestCases(txnRw1, newTestCases, true);
@@ -704,7 +711,7 @@ void test_txn_alter_vertex_edge_commit() {
         runTestCases(txnRo1, oldTestCases, true);
         runTestCases(txnRo2, oldTestCases, true);
         runTestCases(txnRo3, oldTestCases, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -728,7 +735,7 @@ void test_txn_alter_vertex_edge_rollback() {
         e1 = nogdb::Edge::create(txnRw0, "bridge", v3, v2, nogdb::Record{}.set("name", "32"));
         e2 = nogdb::Edge::create(txnRw0, "flight", v1, v2, nogdb::Record{}.set("name", "12"));
         txnRw0.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -738,82 +745,82 @@ void test_txn_alter_vertex_edge_rollback() {
         nogdb::Edge::updateSrc(txnRw1, e1, v1);
         nogdb::Edge::updateDst(txnRw1, e2, v3);
 
-        std::vector<std::function<void(nogdb::Txn&)>> newTestCases {
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e1);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e2);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e1);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e2);
-                assert(res.descriptor == v3);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2);
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v3);
-                assert(res[0].descriptor == e2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                assert(res.size() == 2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
-                assert(res[0].descriptor == e2);
-            }
+        std::vector<std::function<void(nogdb::Txn &)>> newTestCases{
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e1);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e2);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e1);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e2);
+                    assert(res.descriptor == v3);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2);
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v3);
+                    assert(res[0].descriptor == e2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+                    assert(res.size() == 2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"flight"});
+                    assert(res[0].descriptor == e2);
+                }
         };
 
-        std::vector<std::function<void(nogdb::Txn&)>> oldTestCases {
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e1);
-                assert(res.descriptor == v3);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getSrc(txn, e2);
-                assert(res.descriptor == v1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e1);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Edge::getDst(txn, e2);
-                assert(res.descriptor == v2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2);
-                assert(res.size() == 2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v3);
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                assert(res[0].descriptor == e2);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"bridge"});
-                assert(res[0].descriptor == e1);
-            },
-            [&](const nogdb::Txn& txn) {
-                auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"flight"});
-                assert(res[0].descriptor == e2);
-            }
+        std::vector<std::function<void(nogdb::Txn &)>> oldTestCases{
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e1);
+                    assert(res.descriptor == v3);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getSrc(txn, e2);
+                    assert(res.descriptor == v1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e1);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Edge::getDst(txn, e2);
+                    assert(res.descriptor == v2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2);
+                    assert(res.size() == 2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v3);
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+                    assert(res[0].descriptor == e2);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"bridge"});
+                    assert(res[0].descriptor == e1);
+                },
+                [&](const nogdb::Txn &txn) {
+                    auto res = nogdb::Vertex::getInEdge(txn, v2, nogdb::ClassFilter{"flight"});
+                    assert(res[0].descriptor == e2);
+                }
         };
 
         runTestCases(txnRw1, newTestCases, true);
@@ -824,7 +831,7 @@ void test_txn_alter_vertex_edge_rollback() {
         nogdb::Txn txnRo{*ctx, nogdb::Txn::Mode::READ_ONLY};
         runTestCases(txnRw2, oldTestCases, true);
         runTestCases(txnRo, oldTestCases, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -888,7 +895,7 @@ void test_txn_create_only_vertex_multiversion_commit() {
         assert(!res.empty());
         res = nogdb::Vertex::get(txnRo4, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
         assert(!res.empty());
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -972,7 +979,7 @@ void test_txn_create_only_vertex_multiversion_rollback() {
         assert(!res.empty());
         res = nogdb::Vertex::get(txnRw2, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
         assert(res.empty());
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1034,7 +1041,7 @@ void test_txn_delete_only_vertex_multiversion_commit() {
         assert(!res.empty());
         res = nogdb::Vertex::get(txnRw2, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
         assert(res.empty());
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1096,7 +1103,7 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
         assert(!res.empty());
         res = nogdb::Vertex::get(txnRw2, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
         assert(!res.empty());
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1140,58 +1147,58 @@ void test_txn_create_edges_multiversion_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV0, testCasesV1, testCasesV2;
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV0, testCasesV1, testCasesV2;
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(res.empty());
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 1);
             assert(res[0].record.get("name").toText() == "bridge 21");
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(!res.empty());
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 1);
             assert(res[0].record.get("name").toText() == "bridge 23");
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
             assert(res[0].record.get("name").toText() == "bridge 12");
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(!res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(!res.empty());
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto e = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             auto res = nogdb::Edge::getSrc(txn, e[0].descriptor);
             assert(res.descriptor == v1);
             res = nogdb::Edge::getDst(txn, e[0].descriptor);
             assert(res.descriptor == v3);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 2);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 2);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
@@ -1203,7 +1210,7 @@ void test_txn_create_edges_multiversion_commit() {
         runTestCases(txnRo4, testCasesV2, true);
         runTestCases(txnRw2, testCasesV2, true);
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1245,24 +1252,24 @@ void test_txn_create_edges_multiversion_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV1;
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV1;
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(!res.empty());
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 1);
             assert(res[0].record.get("name").toText() == "bridge 23");
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
             assert(res[0].record.get("name").toText() == "bridge 12");
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
@@ -1273,7 +1280,7 @@ void test_txn_create_edges_multiversion_rollback() {
         runTestCases(txnRo4, testCasesV1, true);
         runTestCases(txnRw2, testCasesV1, true);
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1318,8 +1325,8 @@ void test_txn_delete_edges_multiversion_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV0, testCasesV1, testCasesV2;
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV0, testCasesV1, testCasesV2;
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(!res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -1327,19 +1334,19 @@ void test_txn_delete_edges_multiversion_commit() {
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 12"));
             assert(!res.empty());
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 2);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 2);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(!res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -1347,24 +1354,24 @@ void test_txn_delete_edges_multiversion_commit() {
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 12"));
             assert(res.empty());
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 2);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
             assert(res[0].descriptor == e4);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -1374,15 +1381,15 @@ void test_txn_delete_edges_multiversion_commit() {
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 21"));
             assert(!res.empty());
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 0);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 1);
             assert(res[0].descriptor == e2);
@@ -1394,7 +1401,7 @@ void test_txn_delete_edges_multiversion_commit() {
         runTestCases(txnRo3, testCasesV1, true);
         runTestCases(txnRo4, testCasesV2, true);
         runTestCases(txnRw2, testCasesV2, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1414,9 +1421,9 @@ void test_txn_delete_edges_multiversion_rollback() {
         auto v2 = nogdb::Vertex::create(txnRw00, "islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
         auto v3 = nogdb::Vertex::create(txnRw00, "islands", nogdb::Record{}.set("name", "Koh Tao"));
         auto e1 = nogdb::Edge::create(txnRw00, "bridge", v1, v2, nogdb::Record{}.set("name", "bridge 12"));
-        auto e2 =nogdb::Edge::create(txnRw00, "bridge", v2, v1, nogdb::Record{}.set("name", "bridge 21"));
-        auto e3 =nogdb::Edge::create(txnRw00, "bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
-        auto e4 =nogdb::Edge::create(txnRw00, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
+        auto e2 = nogdb::Edge::create(txnRw00, "bridge", v2, v1, nogdb::Record{}.set("name", "bridge 21"));
+        auto e3 = nogdb::Edge::create(txnRw00, "bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
+        auto e4 = nogdb::Edge::create(txnRw00, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
 
         txnRw00.commit();
 
@@ -1439,8 +1446,8 @@ void test_txn_delete_edges_multiversion_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV1;
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV1;
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
             assert(!res.empty());
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -1448,20 +1455,20 @@ void test_txn_delete_edges_multiversion_rollback() {
             res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 12"));
             assert(res.empty());
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 2);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
             assert(res[0].descriptor == e4);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 2);
         });
@@ -1471,7 +1478,7 @@ void test_txn_delete_edges_multiversion_rollback() {
         runTestCases(txnRo3, testCasesV1, true);
         runTestCases(txnRo4, testCasesV1, true);
         runTestCases(txnRw2, testCasesV1, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1513,70 +1520,70 @@ void test_txn_modify_edges_multiversion_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV0, testCasesV1, testCasesV2;
-        testCasesV0.push_back([&](nogdb::Txn& txn) {
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV0, testCasesV1, testCasesV2;
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
             assert(res.descriptor == v1);
             res = nogdb::Edge::getDst(txn, e1);
             assert(res.descriptor == v2);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 1);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV0.push_back([&](nogdb::Txn& txn){
+        testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
             assert(res.descriptor == v1);
             res = nogdb::Edge::getDst(txn, e1);
             assert(res.descriptor == v3);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 1);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
             assert(res.descriptor == v2);
             res = nogdb::Edge::getDst(txn, e1);
             assert(res.descriptor == v3);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 0);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 1);
         });
-        testCasesV2.push_back([&](nogdb::Txn& txn){
+        testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 1);
         });
@@ -1587,7 +1594,7 @@ void test_txn_modify_edges_multiversion_commit() {
         runTestCases(txnRo3, testCasesV1, true);
         runTestCases(txnRo4, testCasesV2, true);
         runTestCases(txnRw2, testCasesV2, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1628,26 +1635,26 @@ void test_txn_modify_edges_multiversion_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        std::vector<std::function<void(nogdb::Txn&)>> testCasesV1;
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        std::vector<std::function<void(nogdb::Txn &)>> testCasesV1;
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
             assert(res.descriptor == v1);
             res = nogdb::Edge::getDst(txn, e1);
             assert(res.descriptor == v3);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
             assert(res.size() == 1);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
             assert(res.size() == 0);
         });
-        testCasesV1.push_back([&](nogdb::Txn& txn){
+        testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
             assert(res.size() == 1);
         });
@@ -1657,7 +1664,7 @@ void test_txn_modify_edges_multiversion_rollback() {
         runTestCases(txnRo3, testCasesV1, true);
         runTestCases(txnRo4, testCasesV1, true);
         runTestCases(txnRw2, testCasesV1, true);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1675,7 +1682,7 @@ void test_txn_stat() {
 
     try {
         ctx = new nogdb::Context{DATABASE_PATH};
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1694,7 +1701,7 @@ void test_txn_stat() {
         assert(ctx->getMaxVersionId() == 1);
         assert(ctx->getMinActiveTxnId() == std::make_pair(1, 1));
 
-        nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode ::READ_ONLY};
+        nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 3);
         assert(ctx->getMaxVersionId() == 1);
         assert(ctx->getMinActiveTxnId() == std::make_pair(1, 1));
@@ -1719,7 +1726,7 @@ void test_txn_stat() {
         assert(ctx->getMaxVersionId() == 1);
         assert(ctx->getMinActiveTxnId() == std::make_pair(2, 1));
 
-        nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode ::READ_ONLY};
+        nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 4);
         assert(ctx->getMaxVersionId() == 1);
         assert(ctx->getMinActiveTxnId() == std::make_pair(2, 1));
@@ -1736,8 +1743,8 @@ void test_txn_stat() {
         assert(ctx->getMaxVersionId() == 2);
         assert(ctx->getMinActiveTxnId() == std::make_pair(3, 1));
 
-        nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode ::READ_ONLY};
-        nogdb::Txn txnRo5{*ctx, nogdb::Txn::Mode ::READ_ONLY};
+        nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+        nogdb::Txn txnRo5{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 6);
         assert(ctx->getMaxVersionId() == 2);
         assert(ctx->getMinActiveTxnId() == std::make_pair(3, 1));
@@ -1754,7 +1761,7 @@ void test_txn_stat() {
         assert(ctx->getMaxVersionId() == 2);
         assert(ctx->getMinActiveTxnId() == std::make_pair(4, 2));
 
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1772,7 +1779,7 @@ void test_txn_reopen_ctx() {
         auto v1 = nogdb::Vertex::create(*txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         auto v2 = nogdb::Vertex::create(*txn, "islands", nogdb::Record{}.set("name", "Koh Tao"));
         txn->commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1781,7 +1788,7 @@ void test_txn_reopen_ctx() {
 
     try {
         ctx = new nogdb::Context{DATABASE_PATH};
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1794,7 +1801,7 @@ void test_txn_reopen_ctx() {
         auto v2 = nogdb::Vertex::get(*txn, "islands", nogdb::Condition("name").eq("Koh Tao"));
         nogdb::Edge::create(*txn, "bridge", v1[0].descriptor, v2[0].descriptor, nogdb::Record{}.set("name", "red"));
         txn->commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1803,7 +1810,7 @@ void test_txn_reopen_ctx() {
 
     try {
         ctx = new nogdb::Context{DATABASE_PATH};
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
@@ -1816,14 +1823,14 @@ void test_txn_reopen_ctx() {
         assert(!res.empty());
         assert(res[0].record.get("name").toText() == "Koh Samui");
         assert(res[1].record.get("name").toText() == "Koh Tao");
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
 
     destroy_edge_bridge();
     destroy_vertex_island();
-    
+
 }
 
 void test_txn_invalid_operations() {
@@ -1836,7 +1843,7 @@ void test_txn_invalid_operations() {
 
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, TXN_COMPLETED, "TXN_COMPLETED");
     }
 
@@ -1846,7 +1853,7 @@ void test_txn_invalid_operations() {
 
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, TXN_COMPLETED, "TXN_COMPLETED");
     }
 
@@ -1856,7 +1863,7 @@ void test_txn_invalid_operations() {
 
         nogdb::Vertex::get(txn, "islands");
         assert(false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, MDB_BAD_TXN, "MDB_BAD_TXN");
     }
 
@@ -1866,7 +1873,7 @@ void test_txn_invalid_operations() {
 
         nogdb::Vertex::get(txn, "islands");
         assert(false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, MDB_BAD_TXN, "MDB_BAD_TXN");
     }
 
@@ -1874,7 +1881,7 @@ void test_txn_invalid_operations() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, TXN_INVALID_MODE, "TXN_INVALID_MODE");
     }
 

@@ -38,7 +38,7 @@ void test_create_index() {
         nogdb::Property::createIndex(txn, "index_test", "index_bigint", true);
         nogdb::Property::createIndex(txn, "index_test", "index_real", false);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -46,13 +46,13 @@ void test_create_index() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
         txn.rollback();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -67,7 +67,7 @@ void test_create_index_extended_class() {
         nogdb::Property::add(txn, "index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
         nogdb::Property::add(txn, "index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -87,7 +87,7 @@ void test_create_index_extended_class() {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text_2", true);
         nogdb::Property::createIndex(txn, "index_test_2", "index_int_2", false);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -95,13 +95,13 @@ void test_create_index_extended_class() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 2);
             }
         }
         schema = nogdb::Db::getSchema(txn, "index_test_2");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_text_2" || property.first == "index_int_2") {
                     assert(property.second.indexInfo.size() == 1);
@@ -111,7 +111,7 @@ void test_create_index_extended_class() {
             }
         }
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -124,42 +124,42 @@ void test_create_invalid_index() {
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_blob", true);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_PROPTYPE_INDEX, "CTX_INVALID_PROPTYPE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text_2", false);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text_x", false);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_3", "index_text", false);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text", true);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text", true);
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
     }
 
@@ -179,7 +179,7 @@ void test_drop_index() {
         nogdb::Property::dropIndex(txn, "index_test", "index_bigint");
         nogdb::Property::dropIndex(txn, "index_test", "index_real");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -187,18 +187,18 @@ void test_drop_index() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
         schema = nogdb::Db::getSchema(txn, "index_test_2");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -209,7 +209,7 @@ void test_drop_index_extended_class() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -217,13 +217,13 @@ void test_drop_index_extended_class() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
         schema = nogdb::Db::getSchema(txn, "index_test_2");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_int_2") {
                     assert(property.second.indexInfo.size() == 0);
@@ -232,7 +232,7 @@ void test_drop_index_extended_class() {
                 }
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -250,21 +250,21 @@ void test_drop_index_extended_class() {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_bigint");
         nogdb::Property::dropIndex(txn, "index_test_2", "index_real");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
             assert(property.second.indexInfo.size() == 0);
         }
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_text_2")
                 assert(property.second.indexInfo.size() == 0);
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -275,54 +275,54 @@ void test_drop_invalid_index() {
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
@@ -332,7 +332,7 @@ void test_drop_invalid_index() {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_2");
         nogdb::Class::drop(txn, "index_test_2");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -393,7 +393,7 @@ void test_create_index_with_records() {
                 .set("index_real", 2.0)
         );
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -411,7 +411,7 @@ void test_create_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test", "index_bigint", true);
         nogdb::Property::createIndex(txn, "index_test", "index_real", false);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -419,12 +419,12 @@ void test_create_index_with_records() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -439,7 +439,7 @@ void test_create_index_extended_class_with_records() {
         nogdb::Property::add(txn, "index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
         nogdb::Property::add(txn, "index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -503,7 +503,7 @@ void test_create_index_extended_class_with_records() {
                 .set("index_int_2", int32_t{0})
         );
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -523,19 +523,19 @@ void test_create_index_extended_class_with_records() {
         nogdb::Property::createIndex(txn, "index_test_2", "index_bigint", false);
         nogdb::Property::createIndex(txn, "index_test_2", "index_real", true);
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 2);
             }
         }
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_text_2" || property.first == "index_int_2") {
                     assert(property.second.indexInfo.size() == 1);
@@ -544,7 +544,7 @@ void test_create_index_extended_class_with_records() {
                 }
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -555,7 +555,7 @@ void test_create_invalid_index_with_records() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Class::createExtend(txn, "index_test_3", "index_test");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -599,7 +599,7 @@ void test_create_invalid_index_with_records() {
                 .set("index_real", 2.0)
         );
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -609,7 +609,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_text", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -617,7 +617,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_tinyint_u", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -625,7 +625,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_tinyint", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -633,7 +633,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_smallint_u", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -641,7 +641,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_smallint", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -649,7 +649,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_int_u", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -657,7 +657,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_int", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -665,7 +665,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_bigint_u", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -673,7 +673,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_bigint", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
 
@@ -681,7 +681,7 @@ void test_create_invalid_index_with_records() {
         nogdb::Property::createIndex(txn, "index_test_3", "index_real", true);
         assert(false);
     }
-    catch(const nogdb::Error& ex) {
+    catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
     }
     txn.rollback();
@@ -690,7 +690,7 @@ void test_create_invalid_index_with_records() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Class::drop(txn, "index_test_3");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -711,7 +711,7 @@ void test_drop_index_with_records() {
         nogdb::Property::dropIndex(txn, "index_test", "index_bigint");
         nogdb::Property::dropIndex(txn, "index_test", "index_real");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -719,18 +719,18 @@ void test_drop_index_with_records() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
         schema = nogdb::Db::getSchema(txn, "index_test_2");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -741,7 +741,7 @@ void test_drop_index_extended_class_with_records() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -749,13 +749,13 @@ void test_drop_index_extended_class_with_records() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto schema = nogdb::Db::getSchema(txn, "index_test");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
         schema = nogdb::Db::getSchema(txn, "index_test_2");
-        for(const auto& property: schema.properties) {
+        for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_int_2") {
                     assert(property.second.indexInfo.size() == 0);
@@ -764,7 +764,7 @@ void test_drop_index_extended_class_with_records() {
                 }
             }
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -782,21 +782,21 @@ void test_drop_index_extended_class_with_records() {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_bigint");
         nogdb::Property::dropIndex(txn, "index_test_2", "index_real");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
             assert(property.second.indexInfo.size() == 0);
         }
-        for(const auto& property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_text_2")
                 assert(property.second.indexInfo.size() == 0);
         }
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -807,54 +807,54 @@ void test_drop_invalid_index_with_records() {
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
@@ -864,7 +864,7 @@ void test_drop_invalid_index_with_records() {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_2");
         nogdb::Class::drop(txn, "index_test_2");
         txn.commit();
-    } catch(const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }

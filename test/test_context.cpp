@@ -68,7 +68,7 @@ void test_context() {
 	std::string dbname{DATABASE_PATH};
 	try {
 		ctx = new nogdb::Context(dbname);
-	} catch(const nogdb::Error& ex) {
+	} catch (const nogdb::Error &ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
 		assert(false);
 	}

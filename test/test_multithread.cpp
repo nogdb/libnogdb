@@ -40,7 +40,7 @@ void do_job(unsigned int type) {
             auto resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 34"));
             assert(!res.empty());
             txn.commit();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -49,7 +49,7 @@ void do_job(unsigned int type) {
         try {
             nogdb::Txn txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
             auto res = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
-            for(const auto& r: res) nogdb::Vertex::destroy(txn, r.descriptor);
+            for (const auto &r: res) nogdb::Vertex::destroy(txn, r.descriptor);
             res = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
             assert(res.empty());
             auto resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -57,7 +57,7 @@ void do_job(unsigned int type) {
             resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(res.empty());
             txn.commit();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -71,7 +71,7 @@ void do_job(unsigned int type) {
             auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
             assert(res.size() == 2);
             txn.commit();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -87,7 +87,7 @@ void do_job(unsigned int type) {
             auto resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 34"));
             assert(!res.empty());
             txn.rollback();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -96,7 +96,7 @@ void do_job(unsigned int type) {
         try {
             nogdb::Txn txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
             auto res = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
-            for(const auto& r: res) nogdb::Vertex::destroy(txn, r.descriptor);
+            for (const auto &r: res) nogdb::Vertex::destroy(txn, r.descriptor);
             res = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
             assert(res.empty());
             auto resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -104,7 +104,7 @@ void do_job(unsigned int type) {
             resE = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 23"));
             assert(res.empty());
             txn.rollback();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -118,7 +118,7 @@ void do_job(unsigned int type) {
             auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
             assert(res.size() == 2);
             txn.rollback();
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -140,7 +140,7 @@ void do_job(unsigned int type) {
             resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh B"));
             res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
             assert(res.size() == 1);
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -165,7 +165,7 @@ void do_job(unsigned int type) {
             resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
             res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
             assert(res.size() == 2);
-        } catch (const nogdb::Error& ex) {
+        } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
         }
@@ -188,7 +188,7 @@ void test_txn_multithreads() {
         nogdb::Edge::create(txn, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
 
         txn.commit();
-    } catch (const nogdb::Error& ex) {
+    } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(false);
     }
