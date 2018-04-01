@@ -113,7 +113,6 @@ namespace nogdb {
                              const PropertyDescriptor &propertyDescriptor) {
         if (auto classDescriptorPtr = find(txn, classId)) {
             auto properties = classDescriptorPtr->properties.getLatestVersion();
-            assert(properties.second);
             auto newProperties = properties.first;
             newProperties.emplace(propertyName, propertyDescriptor);
             classDescriptorPtr->properties.addLatestVersion(newProperties);
