@@ -22,11 +22,16 @@ LDFLAGS		=
 TESTNAME	= runtest
 TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
+CCNAME      = $(shell g++ --version 2> /dev/null | grep -e 'clang')
 
 ifneq (,$(filter $(UNAME_OS),rhel centos))
 	EXTFLAGS=
 else
 	EXTFLAGS+=-fsanitize=address
+endif
+
+ifneq ($(CCNAME),"clang")
+    LDFLAGS+=-pthread -latomic
 endif
 
 all: lmdb $(ANAME) $(SONAME)

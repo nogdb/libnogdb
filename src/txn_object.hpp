@@ -93,13 +93,12 @@ namespace nogdb {
                    currentState.status == StatusFlag::COMMITTED_DELETE;
         }
 
-    protected:
         TxnObject() = default;
 
         virtual ~TxnObject() noexcept = default;
 
     private:
-        AtomicState state{};
+        AtomicState state{State{}};
     };
 
     struct TxnStat {

@@ -21,6 +21,7 @@
 
 #include <iostream> // for debugging
 #include <limits>
+#include <tuple>
 
 #include "shared_lock.hpp"
 #include "env_handler.hpp"
@@ -157,7 +158,7 @@ namespace nogdb {
                         if (auto vertexPtr = vertex.second) {
                             auto currentStatus = vertexPtr->getState().second;
                             if (currentStatus == TxnObject::StatusFlag::UNCOMMITTED_DELETE) {
-                                tmpDeletedVertices.emplace_back(std::make_tuple(vertexPtr->rid, versionId));
+                                tmpDeletedVertices.emplace_back(std::make_pair(vertexPtr->rid, versionId));
                             } else if (currentStatus == TxnObject::StatusFlag::UNCOMMITTED_CREATE) {
                                 ctx.dbRelation->vertices.lockAndEmplace(vertex.first, vertex.second);
                             }

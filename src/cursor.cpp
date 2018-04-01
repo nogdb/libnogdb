@@ -31,24 +31,21 @@ namespace nogdb {
 
     ResultSetCursor::ResultSetCursor(Txn &txn_)
             : txn{txn_}, currentIndex{-1} {
-        classPropertyInfos = new ClassPropertyCache();
+        classPropertyInfos = std::unique_ptr<ClassPropertyCache>(new ClassPropertyCache());
     }
 
-    ResultSetCursor::~ResultSetCursor() noexcept {
-        delete classPropertyInfos;
-    }
+    ResultSetCursor::~ResultSetCursor() noexcept {}
 
     ResultSetCursor::ResultSetCursor(const ResultSetCursor &rc) : txn{rc.txn} {
         metadata = rc.metadata;
-        classPropertyInfos = new ClassPropertyCache(*(rc.classPropertyInfos));
+        classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
         currentIndex = rc.currentIndex;
     }
 
     ResultSetCursor &ResultSetCursor::operator=(const ResultSetCursor &rc) {
         if (this != &rc) {
-            //TODO: add delete classPropertyInfos?
             txn = rc.txn;
-            classPropertyInfos = new ClassPropertyCache(*(rc.classPropertyInfos));
+            classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
             metadata = rc.metadata;
             currentIndex = rc.currentIndex;
         }
@@ -59,17 +56,16 @@ namespace nogdb {
         txn = rc.txn;
         metadata = std::move(rc.metadata);
         currentIndex = rc.currentIndex;
-        classPropertyInfos = rc.classPropertyInfos;
+        classPropertyInfos = std::move(rc.classPropertyInfos);
         rc.classPropertyInfos = nullptr;
     }
 
     ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
         if (this != &rc) {
-            //TODO: add delete classPropertyInfos?
             txn = rc.txn;
             metadata = std::move(rc.metadata);
             currentIndex = rc.currentIndex;
-            classPropertyInfos = rc.classPropertyInfos;
+            classPropertyInfos = std::move(rc.classPropertyInfos);
             rc.classPropertyInfos = nullptr;
         }
         return *this;

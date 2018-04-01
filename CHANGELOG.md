@@ -3,6 +3,8 @@
 * General changes:
   * All `nogdb::Vertex::find*(...)` and `nogdb::Edge::find*(...)` functions are obsoleted and have been renamed to `nogdb::Vertex::get*(...)` and `nogdb::Edge::get*(...)` respectively.
   * `nogdb::Class::create(...)` and `nogdb::Class::createExtend(...)` with `PropertyMapType` functions are deprecated.
+* New features:
+  * A member function `getProperties(...)` in `nogdb::Record` which returns a set of property names in a record is available.
 * Implemented enhancements:
   * Adding some class and property name restrictions.
   

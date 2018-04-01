@@ -393,6 +393,16 @@ nogdb::Bytes value = r.get(const std::string& propName);
 * Return:
 ** `nogdb::Bytes` - A value as `nogdb::Bytes`.
 
+==== GET ALL
+[source,cpp]
+------------
+const std::map<std::string, nogdb::Bytes>& values = r.getAll();
+------------
+* Description:
+** To retrieve all values from all properties in a record.
+* Return:
+** `std::map<std::string, nogdb::Bytes>` - A key-value container as pairs of property names and value in `nogdb::Bytes`.
+
 ==== GET PROPERTIES
 [source,cpp]
 ------------

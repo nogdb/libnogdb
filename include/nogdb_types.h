@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <memory>
 #include <ostream>
 
 //*************************************************************
@@ -171,6 +172,8 @@ namespace nogdb {
         Record &set(const std::string &propName, const nogdb::Bytes &b);
 
         const std::map<std::string, Bytes> &getAll() const;
+
+        std::vector<std::string> getProperties() const;
 
         Bytes get(const std::string &propName) const;
 
@@ -330,7 +333,7 @@ namespace nogdb {
         typedef std::unordered_map<ClassId, ClassPropertyInfo> ClassPropertyCache;
 
         Txn &txn;
-        ClassPropertyCache *classPropertyInfos;
+        std::unique_ptr<ClassPropertyCache> classPropertyInfos;
         std::vector<RecordDescriptor> metadata{};
         long long currentIndex;
         Result result;

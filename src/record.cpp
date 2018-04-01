@@ -57,6 +57,14 @@ namespace nogdb {
         }
     }
 
+    std::vector<std::string> Record::getProperties() const {
+        auto propertyNames = std::vector<std::string>{};
+        for(const auto& property: properties) {
+            propertyNames.emplace_back(property.first);
+        }
+        return propertyNames;
+    }
+
     uint8_t Record::getTinyIntU(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
