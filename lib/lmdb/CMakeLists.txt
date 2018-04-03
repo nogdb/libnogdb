@@ -1,27 +1,17 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 
-project(lmdb
-    LANGUAGES C
-)
+project(lmdb LANGUAGES C)
 
-set(lmdb_SOURCE
-    mdb.c
-    midl.c
-)
+set(lmdb_SOURCE mdb.c midl.c)
 
-add_library(lmdb_OBJ OBJECT
-    ${lmdb_SOURCE}
-)
-add_library(lmdb
-    $<TARGET_OBJECTS:lmdb_OBJ>
-)
+add_library(lmdb_OBJ OBJECT ${lmdb_SOURCE})
+add_library(lmdb $<TARGET_OBJECTS:lmdb_OBJ>)
 target_include_directories(lmdb
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_compile_options(lmdb
     PRIVATE
-        -ggdb
         -Ofast
         -fPIC
         -W
