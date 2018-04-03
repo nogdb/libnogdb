@@ -23,6 +23,7 @@
 #define RUNTEST_UTILS_H_
 
 #include <string>
+#include <functional>
 #include "nogdb.h"
 
 inline void init() {

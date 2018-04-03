@@ -10,46 +10,45 @@ branches:
     - /^hotfix\/.*$/
     - /^release\/.*$/
 
-compiler:
-#  - gcc
-  - clang
-os:
-#  - linux
-  - osx
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-5.0
-    packages:
-      - valgrind
-      - cmake
-      - gcc-7
-      - g++-7
-      - clang-5.0
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.9
+            - g++-4.9
+            - gcc-multilib
+            - valgrind
+      env:
+        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+    - os: osx
+      osx_image: xcode8
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       brew update;
-      if [ -L /usr/local/include/c++ ]; then rm /usr/local/include/c++; fi;
-      brew install valgrind gcc@7;
+      brew install valgrind;
     fi
-  - if [ "$CXX" = "g++" ]; then
-      export CXX="g++-7" CC="gcc-7";
-    fi
+
+before_script:
   - echo ${CC}
   - echo ${CXX}
   - ${CXX} --version
-  - cmake --version
-
-before_script:
-  - mkdir -p bin
-  - mkdir -p build
+  - export TESTPREFIX="runtest"
+  - sh install_make.sh
 
 script:
-  - sh install_make.sh
-  - make
-  - make test
-  - cmake .
-  - cmake --build .
-  - ctest
+  - make CXX=${CXX} CC=${CC}
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+        make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX};
+        make test_address CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX};
+        valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX};
+    fi

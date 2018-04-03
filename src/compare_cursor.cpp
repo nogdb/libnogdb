@@ -48,8 +48,8 @@ namespace nogdb {
         try {
             for (const auto &classInfo: classInfos) {
                 auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::openCursor(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
+                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
@@ -59,7 +59,7 @@ namespace nogdb {
                         if (condition.comp != Condition::Comparator::IS_NULL &&
                             condition.comp != Condition::Comparator::NOT_NULL) {
                             if (tmpRecord.get(condition.propName).empty()) {
-                                keyValue = Datastore::getNextCursor(cursorHandler);
+                                keyValue = Datastore::getNextCursor(cursorHandler.get());
                                 continue;
                             }
                             if (compareBytesValue(tmpRecord.get(condition.propName), type, condition)) {
@@ -82,9 +82,8 @@ namespace nogdb {
                             }
                         }
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler);
+                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
-                Datastore::closeCursor(cursorHandler);
             }
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
@@ -101,8 +100,8 @@ namespace nogdb {
         try {
             for (const auto &classInfo: classInfos) {
                 auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::openCursor(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
+                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
@@ -113,9 +112,8 @@ namespace nogdb {
                             result.push_back(RecordDescriptor{classInfo.id, *key});
                         }
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler);
+                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
-                Datastore::closeCursor(cursorHandler);
             }
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
@@ -454,8 +452,8 @@ namespace nogdb {
         try {
             for (const auto &classInfo: classInfos) {
                 auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::openCursor(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
+                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
@@ -466,9 +464,8 @@ namespace nogdb {
                             result.push_back(RecordDescriptor{classInfo.id, *key});
                         }
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler);
+                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
-                Datastore::closeCursor(cursorHandler);
             }
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);

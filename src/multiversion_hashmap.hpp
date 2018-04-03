@@ -141,8 +141,8 @@ namespace nogdb {
     template<typename FirstKeyT, typename SecondKeyT, typename T>
     class TwoLevelMultiVersionHashMap {
     public:
-        typedef MultiVersionHashMap<SecondKeyT, T> MultiVersionHashMap;
-        typedef std::unordered_map<FirstKeyT, std::unique_ptr<MultiVersionHashMap>> OuterHashMap;
+        typedef MultiVersionHashMap<SecondKeyT, T> MultiVersionHashMapT;
+        typedef std::unordered_map<FirstKeyT, std::unique_ptr<MultiVersionHashMapT>> OuterHashMap;
 
         TwoLevelMultiVersionHashMap() = default;
 
@@ -154,7 +154,7 @@ namespace nogdb {
             RWSpinLockGuard<RWSpinLock> _(spinlock_, RWSpinLockMode::EXCLUSIVE_SPLOCK);
             auto iter = outerHashMap_.find(key1);
             if (iter == outerHashMap_.cend()) {
-                auto multiVersionHashMap = std::unique_ptr<MultiVersionHashMap>(new MultiVersionHashMap{});
+                auto multiVersionHashMap = std::unique_ptr<MultiVersionHashMapT>(new MultiVersionHashMapT{});
                 auto objectPtr = multiVersionHashMap->insert(key2, object);
                 outerHashMap_.emplace(key1, std::move(multiVersionHashMap));
                 return objectPtr;

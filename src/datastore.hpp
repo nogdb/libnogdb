@@ -125,6 +125,20 @@ namespace nogdb {
 
         static void closeCursor(CursorHandler *cursorHandler);
 
+        class CursorHandlerWrapper {
+        public:
+            CursorHandlerWrapper(TxnHandler *txnHandler, DBHandler dbHandler);
+
+            ~CursorHandlerWrapper() noexcept;
+
+            CursorHandler* get() {
+                return cursorHandler;
+            }
+
+        private:
+            mutable CursorHandler *cursorHandler;
+        };
+
         template<typename K>
         static void putRecord(TxnHandler *txnHandler, DBHandler dbHandler, const K &key, const std::string &value,
                               bool isAppend = false, bool isOverwrite = true) {
@@ -156,8 +170,9 @@ namespace nogdb {
             }
         }
 
-        static void putRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key, const std::string &value,
-                              bool isAppend = false, bool isOverwrite = true);
+        static void
+        putRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key, const std::string &value,
+                  bool isAppend = false, bool isOverwrite = true);
 
         static void putRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key, const Blob &value,
                               bool isAppend = false, bool isOverwrite = true);
@@ -226,7 +241,8 @@ namespace nogdb {
 
         static void deleteRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key);
 
-        static void deleteRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key, const Blob &value);
+        static void
+        deleteRecord(TxnHandler *txnHandler, DBHandler dbHandler, const std::string &key, const Blob &value);
 
         template<typename K>
         static const K *getKeyAsNumeric(const KeyValue &keyValue) noexcept {

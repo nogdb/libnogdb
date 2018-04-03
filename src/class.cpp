@@ -182,8 +182,8 @@ namespace nogdb {
             // delete all associated relations
             auto relationDBHandler = Datastore::openDbi(dsTxnHandler, TB_RELATIONS);
             auto dbHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-            auto cursor = Datastore::openCursor(dsTxnHandler, dbHandler);
-            auto keyValue = Datastore::getNextCursor(cursor);
+            auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dbHandler);
+            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
             while (!keyValue.empty()) {
                 auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                 if (*key != EM_MAXRECNUM) {
@@ -205,9 +205,8 @@ namespace nogdb {
                     }
                     rids.push_back(recordId);
                 }
-                keyValue = Datastore::getNextCursor(cursor);
+                keyValue = Datastore::getNextCursor(cursorHandler.get());
             }
-            Datastore::closeCursor(cursor);
 
             // drop the actual table
             Datastore::dropDbi(dsTxnHandler, dbHandler);
