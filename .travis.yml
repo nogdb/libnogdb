@@ -18,23 +18,25 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-4.9
-            - g++-4.9
+            - gcc-6
+            - g++-6
             - gcc-multilib
             - valgrind
       env:
-        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
       osx_image: xcode8
       env:
         - MATRIX_EVAL="CC=clang && CXX=clang++"
 
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+        brew update;
+    fi
 
 install:
+  - eval "${MATRIX_EVAL}"
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      brew update;
       brew install valgrind;
     fi
 
@@ -47,8 +49,10 @@ before_script:
 
 script:
   - make CXX=${CXX} CC=${CC}
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-        make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX};
-        make test_address CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX};
-        valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX};
+  - make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX}
+  - if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
+      make test_address CXX=${CXX} CC=${CC} LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} ;
+    else
+      make test_address CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} ;
     fi
+  - valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
