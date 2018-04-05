@@ -18,7 +18,7 @@
 * Multiple platforms support, e.g. Unix, Linux, BSD and Mac OS X (macOS)
 
 ## Dependency
-* GCC (gcc/g++) or LLVM (clang/clang++ 3.8.0 or above) compiler that supports C++11
+* GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
 
 ## Limitations
 * A particular database can be opened and accessed by only one single process at a time. For a multi-threaded application, the database context must be created as a singleton and shared between threads. However, the application can open multiple different databases by using separated database contexts.
