@@ -30,7 +30,7 @@
 #include "env_handler.hpp"
 #include "algorithm.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_compare.h"
 
 #define RECORD_NOT_EXIST                0

@@ -26,7 +26,7 @@
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
-### With Makefile
+### With Makefile (debug mode by default)
 ```
 $ sh install_make.sh
 $ make && make test
@@ -37,7 +37,7 @@ $ make clean
 ### With CMake
 ```
 $ cmake .
-$ make && make test
+$ cmake --build . && ctest
 $ sudo make install
 $ make clean
 ```
@@ -59,12 +59,15 @@ See the [NogDB Docs](https://github.com/nogdb/nogdb/wiki) on Wiki pages for more
 ## Getting support
 We are happy to help you using NogDB library. If you have any questions, you can find help by just simply [opening a Github issue here](https://github.com/nogdb/nogdb/issues) on this repository.
 
+For feature requests and bug reports, before you create an issue, please search existing issues in case perhaps it has already been created or even fixed. When you are going to create feature requests, please be clear about your requirements. It would be perfect if you can provide some use cases and examples of proposing features. 
+In the other hands, when you are going to create bug reports, please include information as much as possible. They could be, for example, the version of NogDB, details of your environment (OS, CPU, memory, the version of compiler, etc.), some test cases to demonstrate the issue, and/or anything you see it is useful to make us reproduce the problem easier if applicable.
+
 ## Contributing
 Contributions are very welcome!
 
 NogDB is an open source project that allows you to contribute to the project by creating additional features, or even fixing bugs if you see an issue and would like to implement it.
 
-See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/master/CONTRIBUTING.md) for more details about the workflow, how to prepare your pull request, and some sorts of code conventions plus style, 
+See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/develop/CONTRIBUTING.md) for more details about the workflow, how to prepare your pull request, and some sorts of code conventions plus style, 
 
 ## License & copyright
 Copyright (c) 2018 NogDB contributors.

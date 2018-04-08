@@ -24,7 +24,7 @@
 #include "generic.hpp"
 #include "schema.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_types.h"
 
 namespace nogdb {

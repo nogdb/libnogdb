@@ -36,7 +36,7 @@
 #include "generic.hpp"
 #include "schema.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 
 namespace nogdb {
     Result Generic::getRecordResult(Txn &txn,

@@ -35,7 +35,7 @@
 #include "index.hpp"
 #include "utils.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_compare.h"
 
 namespace nogdb {
