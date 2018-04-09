@@ -40,7 +40,7 @@
 #include "concurrent.hpp"
 #include "txn_object.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_types.h"
 
 namespace nogdb {

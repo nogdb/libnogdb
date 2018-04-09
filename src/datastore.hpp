@@ -29,7 +29,7 @@
 #include "blob.hpp"
 #include "keyval.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 
 namespace nogdb {
     struct Datastore {

@@ -25,7 +25,7 @@
 #include "schema.hpp"
 #include "base_txn.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_context.h"
 #include "nogdb_types.h"
 #include "nogdb_txn.h"

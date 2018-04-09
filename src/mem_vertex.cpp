@@ -24,7 +24,7 @@
 #include "base_txn.hpp"
 #include "graph.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_types.h"
 
 namespace nogdb {

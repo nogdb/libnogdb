@@ -30,7 +30,7 @@
 #include <set>
 #include <memory>
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 #include "nogdb_types.h"
 
 namespace nogdb {

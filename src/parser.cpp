@@ -27,7 +27,7 @@
 #include "generic.hpp"
 #include "parser.hpp"
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 
 namespace nogdb {
 

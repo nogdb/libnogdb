@@ -28,7 +28,7 @@
 #include "base_txn.hpp"
 #include "utils.hpp" // for benchmarking
 
-#include "nogdb_error.h"
+#include "nogdb_errors.h"
 
 namespace nogdb {
 
