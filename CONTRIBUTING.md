@@ -9,6 +9,11 @@ Once you have submitted your pull request to `develop`, we will start the discus
 and merge it. Please make sure that you basically understand and follow our development guideline prior to starting the contribution. However, we
 do not seriously restrict to the current guideline that much. If you have a better idea, we are always accept it. 
 
+## Contributor License Agreements
+
+We need to add you to the list of contributors if you want to contribute to NogDB. It is compulsory to sign [our CLA](http://nogdb.org/community/cla) before starting the contribution. 
+Please take a few second to access the CLA and sign it.
+
 ## Workflow
 We simply follow Gitflow workflow by Vincent Driessen for branching model. There are six kinds of branches in our project:
  - `master` - The most stable branch that is ready to use in production.
@@ -171,16 +176,16 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
  - Use Code > Reformat Code in CLion as a default code formatter (optional).
 
 ## Submit your PR
-Once your patches are ready, you then need to submit your pull request to the official repository.
+1. Once your patches are ready, you then need to submit your pull request to the official repository. Make sure that you have already signed our contributors license agreement above.
 
-If your changes are related to performance enhancement, new features, adding more tests, and fixing non-critical bugs in `develop`, you should have your branch prefix name as `feature/` and generate a pull request from your branch against `develop`.
+2. Re-check your branch name and decide what kind of changes you want to submit.
+   1. If your changes are related to performance enhancement, new features, adding more tests, and fixing non-critical bugs in `develop`, you should have your branch prefix name as `feature/` and generate a pull request from your branch against `develop`.
+   2. If your changes are all about fixing critical issues in production, you should have your branch prefix name as `hotfix/` and generate a pull request from your branch against `master`.
+   3. In a similar way, if your changes are in documentation, you should have your branch name as `document/` and generate a pull request from your branch against `develop`.
 
-If your changes are all about fixing critical issues in production, you should have your branch prefix name as `hotfix/` and generate a pull request from your branch against `master`.
+3. It is important to add your pull request details of your change including the appropriate tests especially for your change. Your pull request cannot be merged if there are no tests provided for your change or it causes any existing test failures.
 
-In a similar way, if your changes are in documentation, you should have your branch name as `doc/` and generate a pull request from your branch against `develop`.
-
-It is important to 
-
+4. Include the issue number you worked on (if applicable) and the name you used to sign the CLA.
 
 ## Continuous integration testing
 NogDB uses Travis CI for continuous integration testing. It significantly verifies the build and performs the test process via Makefile on multiple platforms with different compilers for `master` and `developer` including any branches beginning with `feature/*`, `hotfix/*`, and `release/*`.
