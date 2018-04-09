@@ -3,11 +3,10 @@
 We'd love to say **"You are welcome to contribute to NogDB!"**. Just three simple steps that you need to follow before we accept your code:
 - Fork the NogDB official repository (normally from `develop` branch).
 - Make your change and develop on a feature branch of your fork.
-- Submit your pull request and provide us a brief description about what you did change.
+- Submit your pull request and provide a description about your change.
 
 Once you have submitted your pull request to `develop`, we will start the discussion, request for some changes (if any, but we'd like to submit your PR straight away),
-and merge it. Please make sure that you basically understand and follow our development guideline prior to starting the contribution. However, we
-do not seriously restrict to the current guideline that much. If you have a better idea, we are always accept it. 
+and merge it. Please make sure that you basically understand and follow our development guideline prior to starting the contribution.
 
 ## Contributor License Agreements
 
@@ -17,7 +16,7 @@ Please take a few second to access the CLA and sign it.
 ## Workflow
 We simply follow Gitflow workflow by Vincent Driessen for branching model. There are six kinds of branches in our project:
  - `master` - The most stable branch that is ready to use in production.
- - `develop` - The most up-to-date branch that contains latest changes which are likely to pass all tests (but not yet ready for production).
+ - `develop` - The most up-to-date branch that contains latest changes which pass all tests (but not yet ready for production).
  - `release/<version>` - The stable branch with a particular version as a snapshot of `develop` that contains some patches which are ready to use in production.
  - `feature/<what to implement>` - The unstable branch for feature development (highly not recommended to use in production). 
  - `hotfix/<what to fix>` - The branch that is created for fixing issues in `master`.
@@ -173,7 +172,6 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
     ...
  }
  ```
- - Use Code > Reformat Code in CLion as a default code formatter (optional).
 
 ## Submit your PR
 1. Once your patches are ready, you then need to submit your pull request to the official repository. Make sure that you have already signed our contributors license agreement above.
@@ -183,12 +181,12 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
    2. If your changes are all about fixing critical issues in production, you should have your branch prefix name as `hotfix/` and generate a pull request from your branch against `master`.
    3. In a similar way, if your changes are in documentation, you should have your branch name as `document/` and generate a pull request from your branch against `develop`.
 
-3. It is important to add your pull request details of your change including the appropriate tests especially for your change. Your pull request cannot be merged if there are no tests provided for your change or it causes any existing test failures.
+3. It is important to add your pull request details of your change including the appropriate tests especially for your change. Your pull request cannot be merged if there are no tests provided for your change or it causes any test failures.
 
 4. Include the issue number you worked on (if applicable) and the name you used to sign the CLA.
 
 ## Continuous integration testing
-NogDB uses Travis CI for continuous integration testing. It significantly verifies the build and performs the test process via Makefile on multiple platforms with different compilers for `master` and `developer` including any branches beginning with `feature/*`, `hotfix/*`, and `release/*`.
+NogDB uses Travis CI for continuous integration testing. It significantly verifies the build and performs the test process via Makefile on multiple platforms with different compilers for `master` and `develop` including any branches beginning with `feature/*`, `hotfix/*`, and `release/*`.
 We also test the NogDB library with memory profiler such as Valgrind and AddressSanitizer to troubleshoot memory leak problems. Ensure that your pull request can pass all continuous integration testing modules. Check out [.travis.yml](https://github.com/nogdb/nogdb/blob/master/.travis.yml) to fully see how the code is built and tested.
 Again, your changes in Makefile and CI scripts are not forbidden. We'd love to see it improved if you idea is awesome.
 
