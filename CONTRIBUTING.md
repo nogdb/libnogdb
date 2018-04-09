@@ -6,7 +6,7 @@ We'd love to say **"You are welcome to contribute to NogDB!"**. Just three simpl
 - Submit your pull request and provide a description about your change.
 
 Once you have submitted your pull request to `develop`, we will start the discussion, request for some changes (if any, but we'd like to submit your PR straight away),
-and merge it. Please make sure that you basically understand and follow our development guideline prior to starting the contribution.
+and merge it. Please make sure that you basically understand and follow our development guideline prior to the beginning of your contribution.
 
 ## Contributor License Agreements
 
@@ -114,7 +114,7 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
  // bad
  RecordDescriptor *recordDescriptorPtr = new RecordDescriptor();
  ```
- - Prefer having a left curly brace in the same line. 
+ - Prefer to have a left curly brace in the same line. 
  ```cpp
  // good
  if (x == 1) {
