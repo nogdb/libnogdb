@@ -321,19 +321,19 @@ int main() {
 #endif
     // indexing
 #ifdef TEST_INDEX_OPERATIONS
-//    std::cout << "\n\x1B[96mEnd-to-end tests for database indexing should:\x1B[0m\n";
-//    exec(test_create_index, "creating indexes for some properties");
-//    exec(test_create_index_extended_class, "creating indexes for some properties which belong to super classes");
-//    exec(test_create_invalid_index, "creating invalid indexes for some properties");
-//    exec(test_drop_index, "dropping indexes for some properties");
-//    exec(test_drop_index_extended_class, "dropping indexes for some properties which belong to super classes");
-//    exec(test_drop_invalid_index, "dropping invalid indexes for some properties");
-//    exec(test_create_index_with_records, "creating indexes for some properties with existing records");
-//    exec(test_create_index_extended_class_with_records, "creating indexes for some properties which belong to super classes with existing records");
-//    exec(test_create_invalid_index_with_records, "creating invalid indexes with existing records");
-//    exec(test_drop_index_with_records, "dropping indexes for some properties with existing records");
-//    exec(test_drop_index_extended_class_with_records, "dropping indexes for some properties which belong to super classes with existing records");
-//    exec(test_drop_invalid_index_with_records, "dropping invalid indexes with existing records");
+    std::cout << "\n\x1B[96mEnd-to-end tests for database indexing should:\x1B[0m\n";
+    exec(test_create_index, "creating indexes for some properties");
+    exec(test_create_index_extended_class, "creating indexes for some properties which belong to super classes");
+    exec(test_create_invalid_index, "creating invalid indexes for some properties");
+    exec(test_drop_index, "dropping indexes for some properties");
+    exec(test_drop_index_extended_class, "dropping indexes for some properties which belong to super classes");
+    exec(test_drop_invalid_index, "dropping invalid indexes for some properties");
+    exec(test_create_index_with_records, "creating indexes for some properties with existing records");
+    exec(test_create_index_extended_class_with_records, "creating indexes for some properties which belong to super classes with existing records");
+    exec(test_create_invalid_index_with_records, "creating invalid indexes with existing records");
+    exec(test_drop_index_with_records, "dropping indexes for some properties with existing records");
+    exec(test_drop_index_extended_class_with_records, "dropping indexes for some properties which belong to super classes with existing records");
+    exec(test_drop_invalid_index_with_records, "dropping invalid indexes with existing records");
 #endif
     // ctx
 #ifdef TEST_CONTEXT_OPERATIONS
