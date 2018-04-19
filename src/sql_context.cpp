@@ -417,9 +417,8 @@ void Context::traverse(const string &direction, const set<string> &classFilter, 
                 && strcasecmp("ALL", direction.c_str()) != 0)
             {
                 throw Error(SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
-            }
-            if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
-                && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0)
+            } else /*if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
+                && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0) */
             {
                 throw Error(SQL_INVALID_TRAVERSE_STRATEGY, Error::Type::SQL);
             }
@@ -459,7 +458,6 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
             if (type == ClassType::VERTEX) {
                 ResultSetCursor res = this->selectVertex(className, where);
                 return ResultSet(res, skip, limit);
-
             } else if (type == ClassType::EDGE) {
                 ResultSetCursor res = this->selectEdge(className, where);
                 return ResultSet(res, skip, limit);
@@ -491,6 +489,9 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
             }
             return result;
         }
+
+        default:
+            return ResultSet{};
     }
 }
 
@@ -506,23 +507,25 @@ ResultSet Context::select(const RecordDescriptorSet &rids) {
 
 nogdb::ResultSetCursor Context::selectVertex(const string &className, const Where &where) {
     switch (where.type) {
-        case WhereType::NO_COND:
-            return Vertex::getCursor(this->txn, className);
         case WhereType::CONDITION:
             return nogdb::Vertex::getCursor(this->txn, className, where.get<Condition>());
         case WhereType::MULTI_COND:
             return nogdb::Vertex::getCursor(this->txn, className, where.get<MultiCondition>());
+        case WhereType::NO_COND:
+        default:
+            return Vertex::getCursor(this->txn, className);
     }
 }
 
 nogdb::ResultSetCursor Context::selectEdge(const string &className, const Where &where) {
     switch (where.type) {
-        case WhereType::NO_COND:
-            return nogdb::Edge::getCursor(this->txn, className);
         case WhereType::CONDITION:
             return nogdb::Edge::getCursor(this->txn, className, where.get<Condition>());
         case WhereType::MULTI_COND:
             return nogdb::Edge::getCursor(this->txn, className, where.get<MultiCondition>());
+        case WhereType::NO_COND:
+        default:
+            return nogdb::Edge::getCursor(this->txn, className);
     }
 }
 
@@ -683,6 +686,7 @@ pair<string, Bytes> Context::selectProjectionItem(const Result &input, const Pro
             resA.first = aliasProj.second;
             return resA;
         }
+        default: assert(false); abort();
     }
 }
 

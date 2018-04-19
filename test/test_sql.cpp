@@ -532,8 +532,8 @@ void test_sql_select_vertex_with_rid() {
         assert(result.type() == result.RESULT_SET);
         auto res = result.get<ResultSet>();
         assert(res.size() == 2);
-        assert(res[0].descriptor == rid1 && res[1].descriptor == rid2
-               || res[0].descriptor == rid2 && res[1].descriptor == rid1);
+        assert((res[0].descriptor == rid1 && res[1].descriptor == rid2)
+               || (res[0].descriptor == rid2 && res[1].descriptor == rid1));
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

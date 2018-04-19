@@ -24,6 +24,7 @@ set(COMPILE_OPTIONS
     -Wall
     -Wno-unused-parameter
     -Wno-unused-variable
+    -Wno-unknown-pragmas
     -fPIC
 )
 
