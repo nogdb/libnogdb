@@ -1,3 +1,4 @@
+CC		?= gcc
 CXX		?= g++
 AR		= ar
 CXXFLAGS	= -std=c++11 -ggdb -Ofast -Os -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations
@@ -20,9 +21,11 @@ DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
 TESTPREFIX	?= runtest
-TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS
+TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
 CCNAME      = $(shell $(CXX) --version 2> /dev/null | grep -oe 'clang')
+LEMONDIR	= $(LIBPATH)/lemonxx
+LEMONPP		= $(LIBPATH)/lemon++
 
 ifneq (,$(filter $(UNAME_OS), rhel centos))
 	EXTFLAGS=
@@ -33,6 +36,11 @@ endif
 ifneq ($(CCNAME), clang)
     LDFLAGS+=-pthread -latomic
 endif
+
+ifeq (, $(wildcard $(SRCDIR)/sql_parser.cpp))
+	SOURCES += $(SRCDIR)/sql_parser.cpp
+endif
+
 
 all: verbose lmdb $(ANAME) $(SONAME)
 
@@ -65,6 +73,12 @@ $(SONAME): $(OBJECTS)
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(HEADERS) -c $< -o $@
+
+$(SRCDIR)/sql.cpp: $(SRCDIR)/sql_parser.cpp
+$(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
+	@cd $(SRCDIR); ../$(LEMONPP) -q -T../$(LEMONDIR)/lempar.cxx sql_parser.y
+$(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
+	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
 
 test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)

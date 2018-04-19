@@ -30,14 +30,36 @@ set(COMPILE_OPTIONS
 ## TARGET lmdb
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb)
 
+## TARGET lemon++
+set(lemon_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lemonxx)
+set(lemon_SOURCE ${lemon_DIR}/lemon.c)
+set_source_files_properties(${lemon_SOURCE} PROPERTIES COMPILE_FLAGS -w)
+add_executable(lemon++ EXCLUDE_FROM_ALL ${lemon_SOURCE})
+target_compile_definitions(lemon++ PUBLIC LEMONPLUSPLUS=1 TEMPLATE_EXTENSION=\".cxx\")
+
+## TARGET sql_parser
+set(sql_parser_CPP ${CMAKE_CURRENT_SOURCE_DIR}/src/sql_parser.cpp)
+set(sql_parser_Y ${CMAKE_CURRENT_SOURCE_DIR}/src/sql_parser.y)
+set_source_files_properties(${sql_parser_CPP} PROPERTIES COMPILE_FLAGS -w)
+add_custom_target(sql_parser.cpp
+    DEPENDS lemon++ ${sql_parser_CPP} ${sql_parser_Y}
+)
+add_custom_command(
+    OUTPUT ${sql_parser_CPP}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+    COMMAND lemon++ -q -T${lemon_DIR}/lempar.cxx ${sql_parser_Y}
+    MAIN_DEPENDENCY ${sql_parser_Y}
+)
+
 ## TARGET nogdb
 add_library(nogdb
     ${nogdb_SOURCE}
     ${nogdb_HEADER}
     ${nogdb_PUBLIC}
     $<TARGET_OBJECTS:lmdb_OBJ>
+    ${sql_parser_CPP}
 )
-add_dependencies(nogdb lmdb_OBJ)
+add_dependencies(nogdb lmdb_OBJ sql_parser.cpp)
 target_include_directories(nogdb
     PRIVATE
         /usr/local/include
@@ -195,6 +217,17 @@ target_compile_options(runtest_txn
 add_test(build_runtest_txn "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target runtest_txn)
 add_test(NAME test_txn COMMAND runtest_txn)
 set_tests_properties(test_txn PROPERTIES DEPENDS ctest_build_test_txn)
+
+add_executable(runtest_sql EXCLUDE_FROM_ALL ${nogdb_TEST} ${nogdb_TEST_HEADER})
+target_link_libraries(runtest_sql nogdb)
+target_compile_options(runtest_sql
+    PRIVATE
+        ${TEST_COMPILE_OPTIONS}
+        -DTEST_SQL_OPERATIONS
+)
+add_test(build_runtest_sql "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target runtest_sql)
+add_test(NAME test_sql COMMAND runtest_sql)
+set_tests_properties(test_sql PROPERTIES DEPENDS ctest_build_test_sql)
 
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)

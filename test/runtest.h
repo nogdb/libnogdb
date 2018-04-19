@@ -371,4 +371,43 @@ extern void test_txn_stat();
 extern void test_txn_multithreads();
 #endif
 
+// sql operations testing
+#ifdef TEST_SQL_OPERATIONS
+extern void test_sql_unrecognized_token_error();
+extern void test_sql_syntax_error();
+extern void test_sql_create_class();
+extern void test_sql_create_class_if_not_exists();
+extern void test_sql_create_class_extend();
+extern void test_sql_create_invalid_class();
+extern void test_sql_alter_class_name();
+extern void test_sql_drop_class();
+extern void test_sql_drop_class_if_exists();
+extern void test_sql_drop_invalid_class();
+extern void test_sql_add_property();
+extern void test_sql_alter_property();
+extern void test_sql_delete_property();
+extern void test_sql_create_vertex();
+extern void test_sql_create_edges();
+extern void test_sql_select_vertex();
+extern void test_sql_select_vertex_with_rid();
+extern void test_sql_select_property();
+extern void test_sql_select_count();
+extern void test_sql_select_walk();
+extern void test_sql_select_method_property();
+extern void test_sql_select_alias_property();
+extern void test_sql_select_vertex_condition();
+extern void test_sql_select_vertex_with_expression();
+extern void test_sql_select_nested_condition();
+extern void test_sql_select_skip_limit();
+extern void test_sql_select_group_by();
+extern void test_sql_update_vertex_with_rid();
+extern void test_sql_update_vertex_with_condition();
+extern void test_sql_delete_vertex_with_rid();
+extern void test_sql_delete_vertex_with_condition();
+extern void test_sql_delete_edge_with_rid();
+extern void test_sql_delete_edge_with_condition();
+extern void test_sql_validate_property_type();
+extern void test_sql_traverse();
+#endif
+
 #endif

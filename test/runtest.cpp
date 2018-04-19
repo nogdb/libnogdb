@@ -418,6 +418,46 @@ int main() {
     //exec(test_txn_multithreads, "committing txn with multi-threads programming");
 #endif
 
+    // sql
+#ifdef TEST_SQL_OPERATIONS
+    std::cout << "[info]\n[info] End-to-end tests for sql operations should:\n";
+    exec(test_sql_unrecognized_token_error, "executing unrecognized token error sql command");
+    exec(test_sql_syntax_error, "executing syntax error sql command");
+    exec(test_sql_create_class, "creating a class with sql command");
+    exec(test_sql_create_class_if_not_exists, "creating a class with sql command (if not exists)");
+    exec(test_sql_create_class_extend, "creating an extended class with sql command");
+    exec(test_sql_create_invalid_class, "creating an invalid class with sql command");
+    exec(test_sql_alter_class_name, "modifying a class name with sql command");
+    exec(test_sql_drop_class, "dropping a class with sql command");
+    exec(test_sql_drop_class_if_exists, "dropping a class with sql command (if exists)");
+    exec(test_sql_drop_invalid_class, "dropping an invalid class with sql command");
+    exec(test_sql_add_property, "creating properties with sql command");
+    exec(test_sql_alter_property, "modifying a property with sql command");
+    exec(test_sql_delete_property, "deleting properties with sql command");
+    exec(test_sql_create_vertex, "creating a vertex with sql command");
+    exec(test_sql_create_edges, "creating edges with sql command");
+    exec(test_sql_select_vertex, "retrieving data from vertices with sql");
+    exec(test_sql_select_vertex_with_rid, "retrieving data from vertices with record descriptor with sql command");
+    exec(test_sql_select_property, "retrieving data with specific property with sql command");
+    exec(test_sql_select_count, "retrieving count of data with sql command");
+    exec(test_sql_select_walk, "retrieving data by walk on graph with sql command");
+    exec(test_sql_select_method_property, "retrieving data with method property with sql command");
+    exec(test_sql_select_alias_property, "retrieving data with alias property with sql command");
+    exec(test_sql_select_vertex_condition, "finding records from a vertex class with a given condition with sql command");
+    exec(test_sql_select_vertex_with_expression, "finding records from a vertex class with a given expression with sql command");
+    exec(test_sql_select_nested_condition, "finding records from vertex class by nested condition with sql command");
+    exec(test_sql_select_skip_limit, "retrieving data with specific length with sql command");
+    exec(test_sql_select_group_by, "retrieving data with 'group by' sql command");
+    exec(test_sql_update_vertex_with_rid, "updating a vertex by rid with sql command");
+    exec(test_sql_update_vertex_with_condition, "updating a vertex by condition with sql command");
+    exec(test_sql_delete_vertex_with_rid, "deleting a vertex and edge around vertex by rid with sql command");
+    exec(test_sql_delete_vertex_with_condition, "deleting a vertex and edge around vertex by condition with sql command");
+    exec(test_sql_delete_edge_with_rid, "deleting an edge by rid with sql command");
+    exec(test_sql_delete_edge_with_condition, "deleting an edge by condition with sql command");
+    exec(test_sql_validate_property_type, "validating every property type on sql command");
+    exec(test_sql_traverse, "traversing graph with sql command");
+#endif
+
     std::cout << "\n[\x1B[32mSuccess\x1B[0m] Test passed: " << tnum << "/" << tnum << ", "
               << "Time elapse: " << float(clock() - begin_time) / CLOCKS_PER_SEC * 1000 << "ms\n";
 
