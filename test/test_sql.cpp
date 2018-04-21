@@ -1,9 +1,10 @@
 /*
- *  test_sql.cpp - A sub-test for testing a sql process
+ *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
+ *  <kasidej dot bu at throughwave dot co dot th>
  *
- *  Copyright (C) 2017, Throughwave (Thailand) Co., Ltd.
+ *  This file is part of libnogdb, the NogDB core library in C++.
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  libnogdb is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
