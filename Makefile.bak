@@ -1,7 +1,8 @@
+CC		?= gcc
 CXX		?= g++
 AR		= ar
 CXXFLAGS	= -std=c++11
-TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-but-set-variable -Wno-unknown-warning-option
+TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option
 DEBUGFLAGS  ?= -ggdb
 OPTFLAGS    ?= -Ofast -Os
 EXTFLAGS	=
@@ -22,9 +23,11 @@ DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
 TESTPREFIX	?= runtest
-TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS
+TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
 CCNAME      = $(shell $(CXX) --version 2> /dev/null | grep -oe 'clang')
+LEMONDIR	= $(LIBPATH)/lemonxx
+LEMONPP		= $(LEMONDIR)/lemon++
 
 ifneq (,$(filter $(UNAME_OS), rhel centos))
 	EXTFLAGS=
@@ -36,7 +39,13 @@ ifneq ($(CCNAME), clang)
     LDFLAGS+=-pthread -latomic
 endif
 
-all: verbose lmdb $(ANAME) $(SONAME)
+ifeq (, $(wildcard $(SRCDIR)/sql_parser.cpp))
+	SOURCES += $(SRCDIR)/sql_parser.cpp
+endif
+
+
+#all: verbose lmdb $(ANAME) $(SONAME)
+all: verbose lmdb $(ANAME)
 
 verbose:
 	@echo "Build environment and variables..."
@@ -61,23 +70,34 @@ $(ANAME): $(OBJECTS)
 	$(AR) rcs $@ $(OBJECTS) $(DEPOBJECTS)
 	@echo "nogdb static library has been created... [Done]"
 
-$(SONAME): $(OBJECTS)
-	@echo "Building nogdb shared library... "
-	$(CXX) -L/usr/local/lib -shared -o $@ $(OBJECTS) $(DEPENDENCIES) $(LDFLAGS)
-	@echo "nogdb shared library has been created... [Done]"
+#$(SONAME): $(OBJECTS)
+#	@echo "Building nogdb shared library... "
+#	$(CXX) -L/usr/local/lib -shared -o $@ $(OBJECTS) $(DEPENDENCIES) $(LDFLAGS)
+#	@echo "nogdb shared library has been created... [Done]"
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
-test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+$(BUILDDIR)/sql_parser.o: $(SRCDIR)/sql_parser.cpp
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
+
+$(SRCDIR)/sql.cpp: $(SRCDIR)/sql_parser.cpp
+$(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
+	@cd $(SRCDIR); ../$(LEMONPP) -q -T../$(LEMONDIR)/lempar.cxx sql_parser.y
+$(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
+	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
+
+#test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test: lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
-test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+#test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test_address: lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
@@ -107,6 +127,7 @@ clean:
 	@find * -name "*.o" -type f -exec rm -f {} \;
 	@find * -name "*.a" -type f -exec rm -f {} \;
 	@find * -name "*.so" -type f -exec rm -f {} \;
+	@rm -f $(SRCDIR)/sql_parser.cpp $(SRCDIR)/sql_parser.h
 	@echo " [Done]"
 
 .PHONY: all lmdb test install uninstall clean

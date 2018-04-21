@@ -69,6 +69,22 @@
 #define CTX_UNKNOWN_ERR                 0x9ff0
 #define CTX_NOT_IMPLEMENTED             0x9fff
 
+#define SQL_UNRECOGNIZED_TOKEN          0xa001
+#define SQL_SYNTAX_ERROR                0xa002
+#define SQL_STACK_OVERFLOW              0xa003
+#define SQL_NUMBER_FORMAT_EXCEPTION     0xa004
+#define SQL_INVALID_ALTER_ATTR          0xa005
+#define SQL_INVALID_COMPARATOR          0xa006
+#define SQL_INVALID_FUNCTION_NAME       0xa007
+#define SQL_INVALID_FUNCTION_ARGS       0xa008
+#define SQL_INVALID_PROJECTION          0xa009
+#define SQL_INVALID_TRAVERSE_DIRECTION  0xa00a
+#define SQL_INVALID_TRAVERSE_MIN_DEPTH  0xa00b
+#define SQL_INVALID_TRAVERSE_MAX_DEPTH  0xa00c
+#define SQL_INVALID_TRAVERSE_STRATEGY   0xa00d
+#define SQL_NOT_IMPLEMENTED             0xaf01
+#define SQL_UNKNOWN_ERR                 0xafff
+
 namespace nogdb {
 
 //*************************************************************
@@ -81,13 +97,17 @@ namespace nogdb {
             DATASTORE = 'd',
             GRAPH = 'g',
             CONTEXT = 'c',
-            TRANSACTION = 't'
+            TRANSACTION = 't',
+            SQL = 's'
         };
 
         Error(int code, Type type) : code_{code}, type_{type} {}
 
         virtual int code() const {
             return code_;
+        }
+        virtual Type type() const {
+            return type_;
         }
 
         virtual const char *what() const throw() {
@@ -175,6 +195,40 @@ namespace nogdb {
                         case TXN_UNKNOWN_ERR:
                         default:
                             return "TXN_UNKNOWN_ERR: Unknown";
+                    }
+                case Type::SQL:
+                    switch(code_) {
+                        case SQL_UNRECOGNIZED_TOKEN:
+                            return "SQL_UNRECOGNIZED_TOKEN: A SQL has some word or keyword that can't recognize.";
+                        case SQL_SYNTAX_ERROR:
+                            return "SQL_SYNTAX_ERROR: A SQL syntax error.";
+                        case SQL_STACK_OVERFLOW:
+                            return "SQL_STACK_OVERFLOW: A parser stack overflow.";
+                        case SQL_NUMBER_FORMAT_EXCEPTION:
+                            return "SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or overlimit.";
+                        case SQL_INVALID_ALTER_ATTR:
+                            return "SQL_INVALID_ALTER_ATTR: A attribute of alter is invalid (or unknown).";
+                        case SQL_INVALID_COMPARATOR:
+                            return "SQL_INVALID_COMPARATOR: A comparator is invalid for this function.";
+                        case SQL_INVALID_FUNCTION_NAME:
+                            return "SQL_INVALID_FUNCTION_NAME: A function name is invalid (or unknown).";
+                        case SQL_INVALID_FUNCTION_ARGS:
+                            return "SQL_INVALID_FUNCTION_ARGS: A arguments of function is invalid (invalid args).";
+                        case SQL_INVALID_PROJECTION:
+                            return "SQL_INVALID_PROJECTION: Projection(s) of select statement is invalid.";
+                        case SQL_INVALID_TRAVERSE_DIRECTION:
+                            return "SQL_INVALID_TRAVERSE_DIRECTION: Traverse direction must be in, out or all.";
+                        case SQL_INVALID_TRAVERSE_MIN_DEPTH:
+                            return "SQL_INVALID_TRAVERSE_MIN_DEPTH: Traverse minimum depth must be unsigned integer.";
+                        case SQL_INVALID_TRAVERSE_MAX_DEPTH:
+                            return "SQL_INVALID_TRAVERSE_MAX_DEPTH: Traverse maximum depth must be unsigned integer.";
+                        case SQL_INVALID_TRAVERSE_STRATEGY:
+                            return "SQL_INVALID_TRAVERSE_STRATEGY: Traverse strategy must be DEPTH_FIRST or BREADTH_FIRST.";
+                        case SQL_NOT_IMPLEMENTED:
+                            return "SQL_NOT_IMPLEMENTED: A function has not been implemented yet.";
+                        case SQL_UNKNOWN_ERR:
+                        default:
+                            return "SQL_UNKNOWN_ERROR: Unknown";
                     }
                 default:
                     return "UNKNOWN_ERR: Unknown";

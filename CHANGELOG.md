@@ -6,6 +6,7 @@
   * The maximum size of property value has been increased and now it can be up to 2,147,483,648 bytes (from 65,536 bytes previously).
 * New features:
   * A member function `getProperties(...)` in `nogdb::Record` which returns a set of property names in a record is available.
+  * Support SQL for graph manipulation, retrieval, and traversal via `nogdb::SQL::execute(...)`.
 * Implemented enhancements:
   * Adding some class and property name restrictions.
   * Improving the way to internally handle a cursor pointer of `MDB_cursor` in order to prevent memory leak problems by applying RAII principle for `Datastore::CursorHandlerWrapper`.

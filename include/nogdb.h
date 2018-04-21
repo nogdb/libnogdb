@@ -33,6 +33,7 @@
 #include "nogdb_types.h"
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
+#include "nogdb_sql.h"
 
 namespace nogdb {
 
@@ -47,7 +48,8 @@ namespace nogdb {
 
         static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type);
 
-        static const ClassDescriptor createExtend(Txn &txn, const std::string &className, const std::string &superClass);
+        static const ClassDescriptor
+        createExtend(Txn &txn, const std::string &className, const std::string &superClass);
 
         static void drop(Txn &txn, const std::string &className);
 
@@ -404,6 +406,7 @@ namespace nogdb {
                                                   const ClassFilter &classFilter = ClassFilter{});
 
     };
+
 }
 
 #endif
