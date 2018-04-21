@@ -128,6 +128,7 @@ extern void test_get_invalid_edge();
 #ifdef TEST_MISC_OPERATIONS
 extern void test_get_set_empty_value();
 extern void test_get_invalid_record();
+extern void test_get_set_large_record();
 extern void test_standalone_vertex();
 extern void test_delete_vertex_with_edges();
 extern void test_delete_all_vertices_with_edges();

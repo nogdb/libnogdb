@@ -80,6 +80,70 @@ void test_get_invalid_record() {
     }
 }
 
+void test_get_set_large_record() {
+    init_vertex_book();
+
+    auto testString1 = std::string(1024, 'a');
+    auto testString2 = std::string(127, 'b');
+    auto testString3 = std::string(128, 'c');
+
+    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto tmp = nogdb::RecordDescriptor{};
+    try {
+        nogdb::Record r{};
+        r.set("title", testString1).set("price", 1.0).set("pages", 10);
+        nogdb::Vertex::create(txn, "books", r);
+        r.set("title", testString2).set("price", 2.0).set("pages", 20);
+        nogdb::Vertex::create(txn, "books", r);
+        r.set("title", testString3).set("price", 3.0).set("pages", 30);
+        nogdb::Vertex::create(txn, "books", r);
+
+        txn.commit();
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    try {
+        auto res = nogdb::Vertex::get(txn, "books");
+        for(auto const& r: res) {
+            auto price = r.record.getReal("price");
+            if (price == 1.0) {
+                assert(r.record.getInt("pages") == 10);
+                assert(r.record.getText("title") == testString1);
+            } else if (price == 2.0) {
+                assert(r.record.getInt("pages") == 20);
+                assert(r.record.getText("title") == testString2);
+            } else if (price == 3.0) {
+                assert(r.record.getInt("pages") == 30);
+                assert(r.record.getText("title") == testString3);
+            } else {
+                assert(false);
+            }
+        }
+
+        res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString1));
+        assert(res.size() == 1);
+        assert(res[0].record.getInt("pages") == 10);
+
+        res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString2));
+        assert(res.size() == 1);
+        assert(res[0].record.getInt("pages") == 20);
+
+        res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString3));
+        assert(res.size() == 1);
+        assert(res[0].record.getInt("pages") == 30);
+
+        txn.rollback();
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    destroy_vertex_book();
+}
+
 void test_standalone_vertex() {
     init_vertex_book();
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
