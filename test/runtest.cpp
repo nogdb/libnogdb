@@ -160,6 +160,7 @@ int main() {
     std::cout << "\n\x1B[96mEnd-to-end tests for advanced operations should:\x1B[0m\n";
     exec(test_get_set_empty_value, "setting and getting an empty value of a record");
     exec(test_get_invalid_record, "getting an invalid record");
+    exec(test_get_set_large_record, "setting and getting a large size of value in a record");
     exec(test_standalone_vertex, "getting in-edges and out-edges from a standalone vertex");
     exec(test_delete_vertex_with_edges, "deleting a vertex (with edges)");
     exec(test_delete_all_vertices_with_edges, "deleting all vertices in the same class (with edges)");

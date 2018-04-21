@@ -40,35 +40,9 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-        auto dataSize = size_t{0};
-        auto properties = decltype(classInfo.nameToDesc){};
+        auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        // calculate a raw data size of properties in a record
-        for (const auto &property: record.getAll()) {
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
-            }
-            // check if having any index
-            for (const auto &indexIter: foundProperty->second.indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace(
-                            property.first,
-                            std::make_tuple(
-                                    foundProperty->second.type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                    break;
-                }
-            }
-            dataSize += sizeof(PropertyId) + sizeof(uint16_t); // for storing a property id and size
-            dataSize += property.second.size(); // for storing a property value itself
-            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
-        }
-        auto value = Parser::parseRecord(*txn.txnBase, dataSize, properties, record);
+        auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         const PositionId *maxRecordNum = nullptr;
         auto maxRecordNumValue = 0U;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
@@ -100,35 +74,9 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-        auto dataSize = size_t{0};
-        auto properties = decltype(classInfo.nameToDesc){};
+        auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        // calculate a raw data size of properties in a record
-        for (const auto &property: record.getAll()) {
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
-            }
-            // check if having any index
-            for (const auto &indexIter: foundProperty->second.indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace(
-                            property.first,
-                            std::make_tuple(
-                                    foundProperty->second.type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                    break;
-                }
-            }
-            dataSize += sizeof(PropertyId) + sizeof(uint16_t); // for storing a property id and size
-            dataSize += property.second.size(); // for storing a property value itself
-            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
-        }
-        auto value = Parser::parseRecord(*txn.txnBase, dataSize, properties, record);
+        auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
