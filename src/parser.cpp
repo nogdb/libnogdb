@@ -125,17 +125,17 @@ namespace nogdb {
                 auto optionFlag = uint8_t{};
                 offset = rawData.retrieve(&propertyId, offset, sizeof(PropertyId));
                 rawData.retrieve(&optionFlag, offset, sizeof(optionFlag));
-                auto propertySize = uint32_t{};
+                auto propertySize = size_t{};
                 if ((optionFlag & 0x1) == 1) {
                     //extra large size of value (exceed 127 bytes)
                     auto tmpSize =  uint32_t{};
                     offset = rawData.retrieve(&tmpSize, offset, sizeof(uint32_t));
-                    propertySize = static_cast<uint32_t>(tmpSize >> 1);
+                    propertySize = static_cast<size_t>(tmpSize >> 1);
                 } else {
                     //normal size of value (not exceed 127 bytes)
                     auto tmpSize = uint8_t{};
                     offset = rawData.retrieve(&tmpSize, offset, sizeof(uint8_t));
-                    propertySize = static_cast<uint32_t>(tmpSize >> 1);
+                    propertySize = static_cast<size_t>(tmpSize >> 1);
                 }
                 auto foundInfo = classPropertyInfo.idToName.find(propertyId);
                 if (foundInfo != classPropertyInfo.idToName.cend()) {

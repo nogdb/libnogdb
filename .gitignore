@@ -35,3 +35,4 @@ cmake-build-debug
 lib/lemonxx/lemon++
 src/sql_parser.cpp
 src/sql_parser.h
+lemon++

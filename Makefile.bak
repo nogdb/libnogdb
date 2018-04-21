@@ -2,7 +2,7 @@ CC		?= gcc
 CXX		?= g++
 AR		= ar
 CXXFLAGS	= -std=c++11
-TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-but-set-variable -Wno-unknown-warning-option
+TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option
 DEBUGFLAGS  ?= -ggdb
 OPTFLAGS    ?= -Ofast -Os
 EXTFLAGS	=
@@ -44,7 +44,8 @@ ifeq (, $(wildcard $(SRCDIR)/sql_parser.cpp))
 endif
 
 
-all: verbose lmdb $(ANAME) $(SONAME)
+#all: verbose lmdb $(ANAME) $(SONAME)
+all: verbose lmdb $(ANAME)
 
 verbose:
 	@echo "Build environment and variables..."
@@ -69,17 +70,17 @@ $(ANAME): $(OBJECTS)
 	$(AR) rcs $@ $(OBJECTS) $(DEPOBJECTS)
 	@echo "nogdb static library has been created... [Done]"
 
-$(SONAME): $(OBJECTS)
-	@echo "Building nogdb shared library... "
-	$(CXX) -L/usr/local/lib -shared -o $@ $(OBJECTS) $(DEPENDENCIES) $(LDFLAGS)
-	@echo "nogdb shared library has been created... [Done]"
+#$(SONAME): $(OBJECTS)
+#	@echo "Building nogdb shared library... "
+#	$(CXX) -L/usr/local/lib -shared -o $@ $(OBJECTS) $(DEPENDENCIES) $(LDFLAGS)
+#	@echo "nogdb shared library has been created... [Done]"
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
 $(BUILDDIR)/sql_parser.o: $(SRCDIR)/sql_parser.cpp
-	$(CXX) $(CXXFLAGS) -w $(HEADERS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
 $(SRCDIR)/sql.cpp: $(SRCDIR)/sql_parser.cpp
 $(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
@@ -87,14 +88,16 @@ $(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
 $(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
 	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
 
-test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+#test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test: lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
-test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+#test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test_address: lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)

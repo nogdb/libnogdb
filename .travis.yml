@@ -22,6 +22,7 @@ matrix:
             - g++-6
             - gcc-multilib
             - valgrind
+            - cmake
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
@@ -45,6 +46,7 @@ before_script:
   - echo ${CXX}
   - ${CXX} --version
   - export TESTPREFIX="runtest"
+  - cmake . && cmake --build .
   - sh install_make.sh
 
 script:
