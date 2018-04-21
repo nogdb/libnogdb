@@ -353,7 +353,7 @@ void test_create_index_with_records() {
                 .set("index_int_u", uint32_t{100})
                 .set("index_int", int32_t{-100})
                 .set("index_bigint_u", uint64_t{1000})
-                .set("index_bigint", int16_t{-1000})
+                .set("index_bigint", int64_t{-1000})
                 .set("index_real", 2.0)
         );
         nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
@@ -365,7 +365,7 @@ void test_create_index_with_records() {
                 .set("index_int_u", uint32_t{200})
                 .set("index_int", int32_t{200})
                 .set("index_bigint_u", uint64_t{2000})
-                .set("index_bigint", int16_t{2000})
+                .set("index_bigint", int64_t{2000})
                 .set("index_real", 8.4)
         );
         nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
@@ -377,7 +377,7 @@ void test_create_index_with_records() {
                 .set("index_int_u", uint32_t{0})
                 .set("index_int", int32_t{0})
                 .set("index_bigint_u", uint64_t{0})
-                .set("index_bigint", int16_t{0})
+                .set("index_bigint", int64_t{0})
                 .set("index_real", 0.0)
         );
         nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
@@ -455,7 +455,7 @@ void test_create_index_extended_class_with_records() {
                 .set("index_int_u", uint32_t{100})
                 .set("index_int", int32_t{-100})
                 .set("index_bigint_u", uint64_t{1000})
-                .set("index_bigint", int16_t{-1000})
+                .set("index_bigint", int64_t{-1000})
                 .set("index_real", 2.0)
                 .set("index_text_2", "AAA")
                 .set("index_int_2", int32_t{-999})
@@ -469,7 +469,7 @@ void test_create_index_extended_class_with_records() {
                 .set("index_int_u", uint32_t{200})
                 .set("index_int", int32_t{200})
                 .set("index_bigint_u", uint64_t{2000})
-                .set("index_bigint", int16_t{2000})
+                .set("index_bigint", int64_t{2000})
                 .set("index_real", 8.4)
                 .set("index_text_2", "ZZZ")
                 .set("index_int_2", int32_t{99999})
@@ -483,7 +483,7 @@ void test_create_index_extended_class_with_records() {
                 .set("index_int_u", uint32_t{0})
                 .set("index_int", int32_t{0})
                 .set("index_bigint_u", uint64_t{0})
-                .set("index_bigint", int16_t{0})
+                .set("index_bigint", int64_t{0})
                 .set("index_real", 0.0)
                 .set("index_text_2", ".")
                 .set("index_int_2", int32_t{0})
@@ -497,7 +497,7 @@ void test_create_index_extended_class_with_records() {
                 .set("index_int_u", uint32_t{123123})
                 .set("index_int", int32_t{0})
                 .set("index_bigint_u", uint64_t{123123123})
-                .set("index_bigint", int16_t{0})
+                .set("index_bigint", int64_t{0})
                 .set("index_real", 123.123)
                 .set("index_text_2", "helloworld")
                 .set("index_int_2", int32_t{0})
@@ -571,7 +571,7 @@ void test_create_invalid_index_with_records() {
                 .set("index_int_u", uint32_t{100})
                 .set("index_int", int32_t{-100})
                 .set("index_bigint_u", uint64_t{1000})
-                .set("index_bigint", int16_t{-1000})
+                .set("index_bigint", int64_t{-1000})
                 .set("index_real", 2.0)
         );
         nogdb::Vertex::create(txn, "index_test_3", nogdb::Record{}
@@ -583,7 +583,7 @@ void test_create_invalid_index_with_records() {
                 .set("index_int_u", uint32_t{200})
                 .set("index_int", int32_t{200})
                 .set("index_bigint_u", uint64_t{2000})
-                .set("index_bigint", int16_t{2000})
+                .set("index_bigint", int64_t{2000})
                 .set("index_real", 8.4)
         );
         nogdb::Vertex::create(txn, "index_test_3", nogdb::Record{}
@@ -595,7 +595,7 @@ void test_create_invalid_index_with_records() {
                 .set("index_int_u", uint32_t{100})
                 .set("index_int", int32_t{-100})
                 .set("index_bigint_u", uint64_t{1000})
-                .set("index_bigint", int16_t{-1000})
+                .set("index_bigint", int64_t{-1000})
                 .set("index_real", 2.0)
         );
         txn.commit();

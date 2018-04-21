@@ -1,7 +1,9 @@
 CXX		?= g++
 AR		= ar
-CXXFLAGS	= -std=c++11 -ggdb -Ofast -Os -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations
-TCFLAGS		= -Wno-unused-but-set-variable -Wno-unknown-warning-option
+CXXFLAGS	= -std=c++11
+TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-but-set-variable -Wno-unknown-warning-option
+DEBUGFLAGS  ?= -ggdb
+OPTFLAGS    ?= -Ofast -Os
 EXTFLAGS	=
 SRCDIR		= src
 BUILDDIR	= build
@@ -43,6 +45,8 @@ verbose:
 	@echo "CCNAME=$(CCNAME)"
 	@echo "UNAME_OS=$(UNAME_OS)"
 	@echo "LDFLAGS=$(LDFLAGS)"
+	@echo "DEBUGFLAGS=$(DEBUGFLAGS)"
+	@echo "OPTFLAGS=$(OPTFLAGS)"
 	@echo "EXTFLAGS=$(EXTFLAGS)"
 	@echo "TESTPREFIX=$(TESTPREFIX)"
 
@@ -64,20 +68,20 @@ $(SONAME): $(OBJECTS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CXXFLAGS) $(HEADERS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
 test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
-	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
 test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
-	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
-	$(CXX) $(CXXFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
 
 install:
 	@printf "Installing libnogdb..."

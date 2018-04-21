@@ -22,6 +22,8 @@
 #ifndef __PARSER_HPP_INCLUDED_
 #define __PARSER_HPP_INCLUDED_
 
+#include <map>
+
 #include "blob.hpp"
 #include "keyval.hpp"
 #include "schema.hpp"
@@ -30,6 +32,10 @@
 
 namespace nogdb {
 
+    constexpr size_t UINT8_BITS_COUNT = 8 * sizeof(uint8_t);
+    constexpr size_t UINT16_BITS_COUNT = 8 * sizeof(uint16_t);
+    constexpr size_t UINT32_BITS_COUNT = 8 * sizeof(uint32_t);
+
     struct Parser {
         Parser() = delete;
 
@@ -37,9 +43,17 @@ namespace nogdb {
 
         static Blob parseRecord(const BaseTxn &txn, size_t dataSize, const ClassProperty &properties, const Record &record);
 
-        static Blob parseRecord(const BaseTxn &txn, const Schema::ClassDescriptorPtr &classDescriptor, const Record &record);
+        static Blob parseRecord(const BaseTxn &txn,
+                                const Schema::ClassDescriptorPtr &classDescriptor,
+                                const Record &record,
+                                ClassPropertyInfo& classInfo,
+                                std::map<std::string, std::tuple<PropertyType, IndexId, bool>>& indexInfos);
 
         static Record parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo);
+
+        inline static size_t getRawDataSize(size_t size) {
+            return sizeof(PropertyId) + size + ((size >= std::pow(2, UINT8_BITS_COUNT - 1))? sizeof(uint32_t): sizeof(uint8_t));
+        };
     };
 
 }
