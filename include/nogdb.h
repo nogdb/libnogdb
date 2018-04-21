@@ -33,6 +33,7 @@
 #include "nogdb_types.h"
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
+#include "nogdb_sql.h"
 
 namespace nogdb {
 
@@ -47,7 +48,8 @@ namespace nogdb {
 
         static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type);
 
-        static const ClassDescriptor createExtend(Txn &txn, const std::string &className, const std::string &superClass);
+        static const ClassDescriptor
+        createExtend(Txn &txn, const std::string &className, const std::string &superClass);
 
         static void drop(Txn &txn, const std::string &className);
 
@@ -405,49 +407,6 @@ namespace nogdb {
 
     };
 
-    namespace sql_parser { class Context; }
-
-    class SQL {
-        public:
-            SQL() = delete;
-            ~SQL() noexcept = delete;
-            SQL& operator=(const SQL& _) = delete;
-
-            class Result {
-            public:
-                friend class sql_parser::Context;
-                Result() : t(NO_RESULT), value(nullptr) {}
-
-                enum Type {
-                    NO_RESULT,
-                    ERROR,
-                    CLASS_DESCRIPTOR,
-                    PROPERTY_DESCRIPTOR,
-                    RECORD_DESCRIPTORS,
-                    RESULT_SET,
-                };
-                inline Type type() {
-                    return this->t;
-                }
-                template <typename T>
-                inline T& get() const {
-                    return *std::static_pointer_cast<T>(this->value);
-                }
-
-            private:
-                Result(Type t_, std::shared_ptr<void> value_) : t(t_), value(value_) {}
-                Result(Error *e) : t(ERROR), value(e) {}
-                Result(ClassDescriptor *classD) : t(CLASS_DESCRIPTOR), value(classD) {}
-                Result(PropertyDescriptor *propD) : t(PROPERTY_DESCRIPTOR), value(propD) {}
-                Result(std::vector<RecordDescriptor> *recDs) : t(RECORD_DESCRIPTORS), value(recDs) {}
-                Result(ResultSet *res) : t(RESULT_SET), value(res) {}
-
-                Type t;
-                std::shared_ptr<void> value;
-            };
-
-        static const Result execute(Txn &txn, const std::string &sql);
-    };
 }
 
 #endif

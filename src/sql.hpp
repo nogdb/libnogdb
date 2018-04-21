@@ -1,9 +1,10 @@
 /*
- *  sql.hpp - A sql-operations for sql_parser.y
- *
  *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
+ *  <kasidej dot bu at throughwave dot co dot th>
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of libnogdb, the NogDB core library in C++.
+ *
+ *  libnogdb is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
@@ -18,30 +19,39 @@
  *
  */
 
-#ifndef __SQL_H_INCLUDED_
-#define __SQL_H_INCLUDED_
+#ifndef __SQL_HPP_INCLUDED_
+#define __SQL_HPP_INCLUDED_
 
 #include <iostream>
 #include <sstream>
 
-#include "../include/nogdb.h"
-
+#include "nogdb.h"
 
 namespace nogdb {
+
     namespace sql_parser {
 
         using namespace std;
 
         /* Forward declaration */
         class Token;
+
         class PropertyType;
+
         class Bytes;
+
         class RecordDescriptor;
+
         class Record;
+
         class Result;
+
         class ResultSet;
+
         typedef set<RecordDescriptor> RecordDescriptorSet;
+
         class CreateEdgeArgs;
+
         class SelectArgs;
 
         /*
@@ -62,14 +72,17 @@ namespace nogdb {
                 string s = string(this->z, this->n);
                 return dequote(s);
             }
+
             inline string toRawString() const {
                 return string(this->z, this->n);
             }
+
             Bytes toBytes() const;
 
         private:
             bool operator<(const Token &other) const;
-            string& dequote(string &z) const;
+
+            string &dequote(string &z) const;
         };
 
         enum class PropertyTypeExt {
@@ -79,9 +92,11 @@ namespace nogdb {
         class PropertyType {
         public:
             PropertyType(const nogdb::PropertyType &t_) : t(BASE), base(t_) {}
+
             PropertyType(const PropertyTypeExt &t_) : t(EXTEND), ext(t_) {}
 
             bool operator==(const PropertyType &other) const;
+
             bool operator!=(const PropertyType &other) const;
 
             inline nogdb::PropertyType toBase() const {
@@ -89,7 +104,9 @@ namespace nogdb {
             }
 
         private:
-            enum {BASE, EXTEND} t;
+            enum {
+                BASE, EXTEND
+            } t;
             union {
                 nogdb::PropertyType base;
                 PropertyTypeExt ext;
@@ -99,17 +116,25 @@ namespace nogdb {
         class Bytes : public nogdb::Bytes {
         public:
             Bytes();
+
             template<typename T>
             Bytes(T data, PropertyType type_) : nogdb::Bytes(data), t(type_) {}
-            Bytes(const unsigned char* data, size_t len, PropertyType type_);
+
+            Bytes(const unsigned char *data, size_t len, PropertyType type_);
+
             Bytes(nogdb::Bytes &&bytes_, PropertyType type_ = nogdb::PropertyType::UNDEFINED);
+
             Bytes(PropertyType type_);
+
             Bytes(ResultSet &&res);
 
             bool operator<(const Bytes &other) const;
+
             inline PropertyType type() const { return this->t; }
-            inline ResultSet& results() const { return *this->r; }
-            inline const nogdb::Bytes& getBase() const { return *this; }
+
+            inline ResultSet &results() const { return *this->r; }
+
+            inline const nogdb::Bytes &getBase() const { return *this; }
 
         private:
             PropertyType t;
@@ -121,15 +146,21 @@ namespace nogdb {
         class RecordDescriptor : public nogdb::RecordDescriptor {
         public:
             using nogdb::RecordDescriptor::RecordDescriptor;
+
             RecordDescriptor() : nogdb::RecordDescriptor() {}
+
             RecordDescriptor(const Token &classID, const Token &positionID)
-            : nogdb::RecordDescriptor(stoi(string(classID.z, classID.n)),
-                                      stoi(string(positionID.z, positionID.n))) {}
+                    : nogdb::RecordDescriptor(stoi(string(classID.z, classID.n)),
+                                              stoi(string(positionID.z, positionID.n))) {}
+
             RecordDescriptor(const nogdb::RecordDescriptor &recD) : nogdb::RecordDescriptor(recD) {}
+
             RecordDescriptor(nogdb::RecordDescriptor &&recD) : nogdb::RecordDescriptor(move(recD)) {}
+
             bool operator<(const RecordDescriptor &other) const {
                 return this->rid < other.rid;
             }
+
             string toString() const {
                 // format: "#<classID>:<posID>"
                 return "#" + to_string(this->rid.first) + ":" + to_string(this->rid.second);
@@ -140,15 +171,23 @@ namespace nogdb {
         class Record {
         public:
             Record() = default;
+
             Record(nogdb::Record &&rec);
-            Record& set(const string &propName, const Bytes &value);
-            Record& set(const string &propName, Bytes &&value);
-            Record& set(pair<string, Bytes> &&prop);
-            const map<string, Bytes>& getAll() const;
+
+            Record &set(const string &propName, const Bytes &value);
+
+            Record &set(const string &propName, Bytes &&value);
+
+            Record &set(pair<string, Bytes> &&prop);
+
+            const map<string, Bytes> &getAll() const;
+
             Bytes get(const string &propName) const;
+
             bool empty() const;
+
             nogdb::Record toBaseRecord() const;
-            
+
         private:
             map<string, Bytes> properties{};
         };
@@ -157,7 +196,9 @@ namespace nogdb {
         class Result {
         public:
             Result() = default;
+
             Result(nogdb::Result &&result) : Result(move(result.descriptor), move(result.record)) {}
+
             Result(RecordDescriptor &&rid, Record &&record_) : descriptor(move(rid)), record(move(record_)) {}
 
             RecordDescriptor descriptor{};
@@ -172,8 +213,11 @@ namespace nogdb {
         public:
             using vector<Result>::vector;
             using vector<Result>::insert;
+
             ResultSet();
+
             ResultSet(nogdb::ResultSet &&res);
+
             ResultSet(nogdb::ResultSetCursor &res, int skip, int limit);
 
             string descriptorsToString() const;
@@ -181,10 +225,12 @@ namespace nogdb {
 
         class Condition : public nogdb::Condition {
         public:
-            Condition(const string& propName = "") : nogdb::Condition(propName) {}
+            Condition(const string &propName = "") : nogdb::Condition(propName) {}
+
             Condition(const nogdb::Condition &rhs) : nogdb::Condition(rhs) {}
 
             using nogdb::Condition::eq;
+
             Condition eq(const Bytes &value) const {
                 if (!value.empty()) {
                     return this->eq(value.getBase());
@@ -196,17 +242,18 @@ namespace nogdb {
 
 
         /* A class for arguments holder */
-        template <class E>
+        template<class E>
         class Holder {
         public:
             Holder() : Holder(static_cast<E>(0)) {}
+
             Holder(E type_, shared_ptr<void> value_ = nullptr) : type(type_), value(value_) {}
 
             E type;
             shared_ptr<void> value;
 
-            template <typename T>
-            inline T& get() const {
+            template<typename T>
+            inline T &get() const {
                 return *static_pointer_cast<T>(this->value);
             }
 
@@ -248,32 +295,48 @@ namespace nogdb {
             };
 
             Function() = default;
-            Function(const string &name, vector<Projection> &&args={});
+
+            Function(const string &name, vector<Projection> &&args = {});
 
             string name;
             Id id;
             vector<Projection> args;
 
             Bytes execute(Txn &txn, const Result &input) const;
+
             Bytes executeGroupResult(const ResultSet &input) const;
+
             Bytes executeExpand(Txn &txn, ResultSet &input) const;
+
             bool isGroupResult() const;
+
             bool isWalkResult() const;
+
             bool isExpand() const;
+
             string toString() const;
 
         private:
             static Bytes count(const ResultSet &input, const vector<Projection> &args);
+
 //            static Bytes min(const ResultSet &input, const vector<Projection> &args);
 //            static Bytes max(const ResultSet &input, const vector<Projection> &args);
             static Bytes walkIn(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkInEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkInVertex(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkOut(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkOutEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkOutVertex(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkBoth(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+
             static Bytes expand(Txn &txn, ResultSet &input, const vector<Projection> &args);
 
             static ClassFilter argsToClassFilter(const vector<Projection> &args);
@@ -283,8 +346,9 @@ namespace nogdb {
         class CreateEdgeArgs {
         public:
             CreateEdgeArgs() = default;
+
             CreateEdgeArgs(const Token &name_, Target &&src_, Target &&dest_, nogdb::Record &&prop_)
-                : name(name_.toString()), src(move(src_)), dest(move(dest_)), prop(move(prop_)) {};
+                    : name(name_.toString()), src(move(src_)), dest(move(dest_)), prop(move(prop_)) {};
 
             string name;
             Target src;
@@ -296,8 +360,12 @@ namespace nogdb {
         class SelectArgs {
         public:
             SelectArgs() = default;
-            SelectArgs(vector<Projection> &&proj, Target &&from_, Where &&where_, const string &group_, void *order_, int skip_, int limit_)
-            : projections(move(proj)), from(move(from_)), where(move(where_)), group(group_), order(order_), skip(skip_), limit(limit_) {}
+
+            SelectArgs(vector<Projection> &&proj, Target &&from_, Where &&where_, const string &group_, void *order_,
+                       int skip_, int limit_)
+                    : projections(move(proj)), from(move(from_)), where(move(where_)), group(group_), order(order_),
+                      skip(skip_), limit(limit_) {}
+
             ~SelectArgs() = default;
 
             vector<Projection> projections;
@@ -313,8 +381,9 @@ namespace nogdb {
         class UpdateArgs {
         public:
             UpdateArgs() = default;
+
             UpdateArgs(Target &&target_, nogdb::Record &&prop_, Where &&where_)
-            : target(move(target_)), prop(move(prop_)), where(move(where_)) {}
+                    : target(move(target_)), prop(move(prop_)), where(move(where_)) {}
 
             Target target;
             nogdb::Record prop;
@@ -324,7 +393,8 @@ namespace nogdb {
         /* An arguments for delete vertex statement */
         class DeleteVertexArgs {
         public:
-            DeleteVertexArgs()  = default;
+            DeleteVertexArgs() = default;
+
             DeleteVertexArgs(Target &&target_, Where &&where_) : target(move(target_)), where(move(where_)) {}
 
             Target target;
@@ -335,8 +405,9 @@ namespace nogdb {
         class DeleteEdgeArgs {
         public:
             DeleteEdgeArgs() = default;
+
             DeleteEdgeArgs(Target &&target_, Target &&from_, Target &&to_, Where &&where_)
-            : target(move(target_)), from(move(from_)), to(move(to_)), where(move(where_)) {}
+                    : target(move(target_)), from(move(from_)), to(move(to_)), where(move(where_)) {}
 
             Target target;
             Target from;

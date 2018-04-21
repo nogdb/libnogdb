@@ -1,9 +1,10 @@
 /*
- *  sql_context.cpp - An implementation of sql-related operations.
- *
  *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
+ *  <kasidej dot bu at throughwave dot co dot th>
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of libnogdb, the NogDB core library in C++.
+ *
+ *  libnogdb is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
@@ -20,18 +21,18 @@
 
 #include <cassert>
 
-#include "nogdb.h"
 #include "constant.hpp"
 #include "sql.hpp"
 #include "sql_parser.h"
-
 #include "sql_context.hpp"
+
+#include "nogdb.h"
 
 using namespace std;
 using namespace nogdb::sql_parser;
 
-#define CLASS_DESCDRIPTOR_TEMPORARY -2
-#define PROPERTY_DESCRIPTOR_TEMPORARY -2
+#define CLASS_DESCDRIPTOR_TEMPORARY     -2
+#define PROPERTY_DESCRIPTOR_TEMPORARY   -2
 
 #pragma mark - Context
 
@@ -67,11 +68,11 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
         ALTER_NAME,
         UNDEFINED
     };
-    static const map<string, AlterAttr, function<bool(const string&, const string&)>> attrMap(
-        {
-            { "NAME", ALTER_NAME }
-        },
-        [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+    static const map<string, AlterAttr, function<bool(const string &, const string &)>> attrMap(
+            {
+                    {"NAME", ALTER_NAME}
+            },
+            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
     );
 
     try {
@@ -116,29 +117,30 @@ void Context::dropClass(const Token &tName, char checkIfExists) {
     }
 }
 
-void Context::createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, char checkIfNotExists) {
-    map<std::string, nogdb::PropertyType, std::function<bool(const std::string&, const std::string&)>> mapType(
-        {
-            { "TINYINT", nogdb::PropertyType::TINYINT },
-            { "UNSIGNED_TINYINT", nogdb::PropertyType::UNSIGNED_TINYINT },
-            { "SMALLINT", nogdb::PropertyType::SMALLINT },
-            { "UNSIGNED_SMALLINT", nogdb::PropertyType::UNSIGNED_SMALLINT },
-            { "INTEGER", nogdb::PropertyType::INTEGER },
-            { "UNSIGNED_INTEGER", nogdb::PropertyType::UNSIGNED_INTEGER },
-            { "BIGINT", nogdb::PropertyType::BIGINT },
-            { "UNSIGNED_BIGINT", nogdb::PropertyType::UNSIGNED_BIGINT },
-            { "TEXT", nogdb::PropertyType::TEXT },
-            { "REAL", nogdb::PropertyType::REAL },
-            { "BLOB", nogdb::PropertyType::BLOB },
-        },  
-        [](const std::string &a, const std::string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
-                                                                                                                                            );
+void
+Context::createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, char checkIfNotExists) {
+    map<std::string, nogdb::PropertyType, std::function<bool(const std::string &, const std::string &)>> mapType(
+            {
+                    {"TINYINT",           nogdb::PropertyType::TINYINT},
+                    {"UNSIGNED_TINYINT",  nogdb::PropertyType::UNSIGNED_TINYINT},
+                    {"SMALLINT",          nogdb::PropertyType::SMALLINT},
+                    {"UNSIGNED_SMALLINT", nogdb::PropertyType::UNSIGNED_SMALLINT},
+                    {"INTEGER",           nogdb::PropertyType::INTEGER},
+                    {"UNSIGNED_INTEGER",  nogdb::PropertyType::UNSIGNED_INTEGER},
+                    {"BIGINT",            nogdb::PropertyType::BIGINT},
+                    {"UNSIGNED_BIGINT",   nogdb::PropertyType::UNSIGNED_BIGINT},
+                    {"TEXT",              nogdb::PropertyType::TEXT},
+                    {"REAL",              nogdb::PropertyType::REAL},
+                    {"BLOB",              nogdb::PropertyType::BLOB},
+            },
+            [](const std::string &a, const std::string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+    );
     PropertyDescriptor result;
     try {
         nogdb::PropertyType t;
         try {
             t = mapType.at(tType.toString());
-        } catch(...) {
+        } catch (...) {
             t = nogdb::PropertyType::UNDEFINED;
         }
 
@@ -163,11 +165,11 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
         ALTER_NAME,
         UNDEFINED
     };
-    static const map<string, AlterAttr, function<bool(const string&, const string&)>> attrMap(
-        {
-            { "NAME", ALTER_NAME }
-        },
-        [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+    static const map<string, AlterAttr, function<bool(const string &, const string &)>> attrMap(
+            {
+                    {"NAME", ALTER_NAME}
+            },
+            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
     );
 
     try {
@@ -231,7 +233,8 @@ void Context::createEdge(const CreateEdgeArgs &args) {
         vector<nogdb::RecordDescriptor> result{};
         for (const auto &src: srcVertex) {
             for (const auto &dest: destVertex) {
-                nogdb::RecordDescriptor r = Edge::create(this->txn, args.name, src.descriptor, dest.descriptor, args.prop);
+                nogdb::RecordDescriptor r = Edge::create(this->txn, args.name, src.descriptor, dest.descriptor,
+                                                         args.prop);
                 result.push_back(move(r));
             }
         }
@@ -317,10 +320,12 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
                         edges = Vertex::getOutEdge(this->txn, src.descriptor, ClassFilter({className}));
                         break;
                     case WhereType::CONDITION:
-                        edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<Condition>(), ClassFilter({className}));
+                        edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<Condition>(),
+                                                   ClassFilter({className}));
                         break;
                     case WhereType::MULTI_COND:
-                        edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<MultiCondition>(), ClassFilter({className}));
+                        edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<MultiCondition>(),
+                                                   ClassFilter({className}));
                         break;
                 }
                 // edgeDescs += edges;
@@ -338,10 +343,12 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
                             edges = Vertex::getInEdge(this->txn, dest.descriptor, ClassFilter({className}));
                             break;
                         case WhereType::CONDITION:
-                            edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<Condition>(), ClassFilter({className}));
+                            edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<Condition>(),
+                                                      ClassFilter({className}));
                             break;
                         case WhereType::MULTI_COND:
-                            edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<MultiCondition>(), ClassFilter({className}));
+                            edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<MultiCondition>(),
+                                                      ClassFilter({className}));
                             break;
                     }
                     // inEdgeDescs += edges
@@ -385,19 +392,21 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
     }
 }
 
-void Context::traverse(const string &direction, const set<string> &classFilter, const RecordDescriptor &root, long long minDepth, long long maxDepth, const string &strategy) {
+void Context::traverse(const string &direction, const set<string> &classFilter, const RecordDescriptor &root,
+                       long long minDepth, long long maxDepth, const string &strategy) {
 
-    typedef nogdb::ResultSet (*TraverseFunction)(const Txn&, const nogdb::RecordDescriptor&, unsigned int, unsigned int, const ClassFilter&);
-    static const map<string, TraverseFunction, function<bool(const string&, const string&)>> mapFunc(
-        {
-            { "INDEPTH_FIRST", Traverse::inEdgeDfs },
-            { "OUTDEPTH_FIRST", Traverse::outEdgeDfs },
-            { "ALLDEPTH_FIRST", Traverse::allEdgeDfs },
-            { "INBREADTH_FIRST", Traverse::inEdgeBfs },
-            { "OUTBREADTH_FIRST", Traverse::outEdgeBfs },
-            { "ALLBREADTH_FIRST", Traverse::allEdgeBfs }
-        },
-        [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+    typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int,
+                                                 unsigned int, const ClassFilter &);
+    static const map<string, TraverseFunction, function<bool(const string &, const string &)>> mapFunc(
+            {
+                    {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
+                    {"OUTDEPTH_FIRST",   Traverse::outEdgeDfs},
+                    {"ALLDEPTH_FIRST",   Traverse::allEdgeDfs},
+                    {"INBREADTH_FIRST",  Traverse::inEdgeBfs},
+                    {"OUTBREADTH_FIRST", Traverse::outEdgeBfs},
+                    {"ALLBREADTH_FIRST", Traverse::allEdgeBfs}
+            },
+            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
     );
 
     try {
@@ -414,8 +423,7 @@ void Context::traverse(const string &direction, const set<string> &classFilter, 
         } catch (...) {
             if (strcasecmp("IN", direction.c_str()) != 0
                 && strcasecmp("OUT", direction.c_str()) != 0
-                && strcasecmp("ALL", direction.c_str()) != 0)
-            {
+                && strcasecmp("ALL", direction.c_str()) != 0) {
                 throw Error(SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
             } else /*if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
                 && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0) */
@@ -472,7 +480,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
             if (skip > 0) {
                 result.erase(result.begin(), result.begin() + skip);
             }
-            if (limit >= 0 && (unsigned)limit < result.size()) {
+            if (limit >= 0 && (unsigned) limit < result.size()) {
                 result.resize(limit);
             }
             return result;
@@ -484,7 +492,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
             if (skip > 0) {
                 result.erase(result.begin(), result.begin() + skip);
             }
-            if (limit >= 0 && (unsigned)limit < result.size()) {
+            if (limit >= 0 && (unsigned) limit < result.size()) {
                 result.resize(limit);
             }
             return result;
@@ -535,15 +543,15 @@ ResultSet Context::selectWhere(ResultSet &input, const Where &where) {
     } else /* if (where.type == WhereType::CONDITION || where.type == WhereType::MULTI_COND) */ {
         static MultiCondition alwaysTrue = Condition(RECORD_ID_PROPERTY) || !Condition(RECORD_ID_PROPERTY);
         MultiCondition exp = (where.type == WhereType::MULTI_COND
-                          ? where.get<MultiCondition>()
-                          : where.get<Condition>() && alwaysTrue);
+                              ? where.get<MultiCondition>()
+                              : where.get<Condition>() && alwaysTrue);
         ResultSet result{};
 
         PropertyMapType map{};
         ClassId previousClassID = -1;
         for (ResultSet::const_iterator in = input.begin(); in != input.end(); in++) {
             ClassId classID = in->descriptor.rid.first;
-            if (classID == (ClassId)CLASS_DESCDRIPTOR_TEMPORARY ) {
+            if (classID == (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
                 map.clear();
                 map[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
                 map[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
@@ -577,8 +585,7 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
 
     if (projs.size() == 1
         && projs[0].type == ProjectionType::FUNCTION
-        && projs[0].get<Function>().isExpand())
-    {
+        && projs[0].get<Function>().isExpand()) {
         projs[0].get<Function>().executeExpand(this->txn, input);
         return move(input);
     }
@@ -617,14 +624,16 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
                 record.set(this->selectProjectionItem(in, proj, mapProps));
             }
             if (!record.empty()) {
-                results.emplace_back(nogdb::RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, results.size()), move(record));
+                results.emplace_back(nogdb::RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, results.size()),
+                                     move(record));
             }
         }
         return results;
     }
 }
 
-pair<string, Bytes> Context::selectProjectionItem(const Result &input, const Projection &proj, const PropertyMapType &map) {
+pair<string, Bytes>
+Context::selectProjectionItem(const Result &input, const Projection &proj, const PropertyMapType &map) {
     switch (proj.type) {
         case ProjectionType::PROPERTY: {
             string name = proj.get<string>();
@@ -686,7 +695,9 @@ pair<string, Bytes> Context::selectProjectionItem(const Result &input, const Pro
             resA.first = aliasProj.second;
             return resA;
         }
-        default: assert(false); abort();
+        default:
+            assert(false);
+            abort();
     }
 }
 
@@ -713,7 +724,7 @@ nogdb::ClassType Context::findClassType(const string &className) {
 }
 
 nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(ClassId classID) {
-    if (classID != (ClassId)CLASS_DESCDRIPTOR_TEMPORARY) {
+    if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
         const ClassProperty &classProp = Db::getSchema(this->txn, classID).properties;
         PropertyMapType map{};
         for (const auto &p: classProp) {

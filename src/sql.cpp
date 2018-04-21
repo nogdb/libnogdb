@@ -1,9 +1,10 @@
 /*
- *  sql.cpp - An implementation of sql-related operations.
- *
  *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
+ *  <kasidej dot bu at throughwave dot co dot th>
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of libnogdb, the NogDB core library in C++.
+ *
+ *  libnogdb is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
@@ -21,12 +22,12 @@
 #include <cassert>
 #include <cstring>
 
-#include "nogdb.h"
 #include "constant.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
-
 #include "sql.hpp"
+
+#include "nogdb.h"
 
 using namespace std;
 using namespace nogdb::sql_parser;
@@ -39,10 +40,10 @@ using namespace nogdb::sql_parser;
  ** character:  0..9a..fA..F
  */
 static inline uint8_t HexToInt(int h) {
-    assert((h>='0' && h<='9')
-           || (h>='a' && h<='f')
-           || (h>='A' && h<='F'));
-    return (uint8_t)((h + 9*(1&(h>>6))) & 0xf);
+    assert((h >= '0' && h <= '9')
+           || (h >= 'a' && h <= 'f')
+           || (h >= 'A' && h <= 'F'));
+    return (uint8_t) ((h + 9 * (1 & (h >> 6))) & 0xf);
 }
 
 /*
@@ -52,14 +53,14 @@ static inline uint8_t HexToInt(int h) {
  * the calling routine.
  */
 static unsigned char *HexToBlob(const char *z, int n) {
-    unsigned char *blob = (unsigned char *)malloc(n/2 + 1);
+    unsigned char *blob = (unsigned char *) malloc(n / 2 + 1);
     n--;
     if (blob) {
         int i;
-        for (i=0; i<n; i+=2) {
-            blob[i/2] = (HexToInt(z[i]) << 4) | HexToInt(z[i+1]);
+        for (i = 0; i < n; i += 2) {
+            blob[i / 2] = (HexToInt(z[i]) << 4) | HexToInt(z[i + 1]);
         }
-        blob[i/2] = 0;
+        blob[i / 2] = 0;
     }
     return blob;
 }
@@ -84,7 +85,7 @@ Bytes Token::toBytes() const {
             const char *z = this->z + 2;
             int n = this->n - 3;
             auto blob = unique_ptr<unsigned char[]>(HexToBlob(z, n));
-            return Bytes(blob.get(), n/2, nogdb::PropertyType::BLOB);
+            return Bytes(blob.get(), n / 2, nogdb::PropertyType::BLOB);
         }
         default:
             assert(false);
@@ -105,7 +106,7 @@ bool Token::operator<(const Token &other) const {
  * input does not begin with a quote character, then this routine
  * is a no-op.
  */
-string& Token::dequote(string &z) const {
+string &Token::dequote(string &z) const {
     char quote;
     int i, j;
     quote = z[0];
@@ -116,10 +117,10 @@ string& Token::dequote(string &z) const {
         if (quote == '[') {
             quote = ']';
         }
-        for (i=1, j=0; ;i++) {
+        for (i = 1, j = 0;; i++) {
             assert(z[i]);
             if (z[i] == quote) {
-                if (z[i+1] == quote) {
+                if (z[i + 1] == quote) {
                     z[j++] = quote;
                     i++;
                 } else {
@@ -154,7 +155,7 @@ bool PropertyType::operator!=(const PropertyType &other) const {
 Bytes::Bytes() : Bytes(nogdb::PropertyType::UNDEFINED) {
 }
 
-Bytes::Bytes(const unsigned char* data, size_t len, PropertyType type_) : nogdb::Bytes(data, len), t(type_) {
+Bytes::Bytes(const unsigned char *data, size_t len, PropertyType type_) : nogdb::Bytes(data, len), t(type_) {
 }
 
 Bytes::Bytes(nogdb::Bytes &&bytes_, PropertyType type_) : nogdb::Bytes(move(bytes_)), t(type_) {
@@ -164,8 +165,8 @@ Bytes::Bytes(PropertyType type_) : nogdb::Bytes(), t(type_) {
 }
 
 Bytes::Bytes(ResultSet &&res)
-    : nogdb::Bytes(res.descriptorsToString()), t(PropertyTypeExt::RESULT_SET), r(make_shared<ResultSet>(move(res)))
-{
+        : nogdb::Bytes(res.descriptorsToString()), t(PropertyTypeExt::RESULT_SET),
+          r(make_shared<ResultSet>(move(res))) {
 }
 
 bool Bytes::operator<(const Bytes &other) const {
@@ -185,21 +186,21 @@ Record::Record(nogdb::Record &&rec) {
     }
 }
 
-Record& Record::set(const string &propName, const Bytes &value) {
+Record &Record::set(const string &propName, const Bytes &value) {
     return this->set(propName, Bytes(value));
 }
 
-Record& Record::set(const string &propName, Bytes &&value) {
+Record &Record::set(const string &propName, Bytes &&value) {
     properties[propName] = move(value);
     return *this;
 }
 
-Record& Record::set(pair<string, Bytes> &&prop) {
+Record &Record::set(pair<string, Bytes> &&prop) {
     properties.insert(prop);
     return *this;
 }
 
-const map<string, Bytes>& Record::getAll() const {
+const map<string, Bytes> &Record::getAll() const {
     return this->properties;
 }
 
@@ -242,6 +243,7 @@ ResultSet::ResultSet(nogdb::ResultSet &&res) : vector<Result>() {
                  make_move_iterator(res.begin()),
                  make_move_iterator(res.end()));
 }
+
 ResultSet::ResultSet(nogdb::ResultSetCursor &res, int skip, int limit) : vector<Result>() {
     if (skip < 0) {
         skip = 0;
@@ -275,26 +277,25 @@ string ResultSet::descriptorsToString() const {
 #pragma mark - Function
 
 Function::Function(const string &name_, vector<Projection> &&args_)
-    : name(name_), args(move(args_))
-{
-    static const auto nameMap = map<string, Id, function<bool(const string&, const string&)>>
-    (
-        {
-            { "COUNT", Id::COUNT },
-            { "MIN", Id::MIN },
-            { "MAX", Id::MAX },
-            { "IN", Id::IN },
-            { "INE", Id::IN_E },
-            { "INV", Id::IN_V },
-            { "OUT", Id::OUT },
-            { "OUTE", Id::OUT_E },
-            { "OUTV", Id::OUT_V },
-            { "BOTH", Id::BOTH },
-            { "BOTHE", Id::BOTH_E },
-            { "EXPAND", Id::EXPAND },
-        },
-        [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
-    );
+        : name(name_), args(move(args_)) {
+    static const auto nameMap = map<string, Id, function<bool(const string &, const string &)>>
+            (
+                    {
+                            {"COUNT",  Id::COUNT},
+                            {"MIN",    Id::MIN},
+                            {"MAX",    Id::MAX},
+                            {"IN",     Id::IN},
+                            {"INE",    Id::IN_E},
+                            {"INV",    Id::IN_V},
+                            {"OUT",    Id::OUT},
+                            {"OUTE",   Id::OUT_E},
+                            {"OUTV",   Id::OUT_V},
+                            {"BOTH",   Id::BOTH},
+                            {"BOTHE",  Id::BOTH_E},
+                            {"EXPAND", Id::EXPAND},
+                    },
+                    [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+            );
 
     auto id_ = nameMap.find(name);
     if (id_ != nameMap.end()) {
@@ -308,24 +309,32 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
     assert(this->isGroupResult() == false);
     assert(this->isExpand() == false);
 
-    function<Bytes(Txn&, const Result&, const vector<Projection>&)> func;
+    function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
     switch (this->id) {
         case Id::IN:
-            func = walkIn; break;
+            func = walkIn;
+            break;
         case Id::IN_E:
-            func = walkInEdge; break;
+            func = walkInEdge;
+            break;
         case Id::IN_V:
-            func = walkInVertex; break;
+            func = walkInVertex;
+            break;
         case Id::OUT:
-            func = walkOut; break;
+            func = walkOut;
+            break;
         case Id::OUT_E:
-            func = walkOutEdge; break;
+            func = walkOutEdge;
+            break;
         case Id::OUT_V:
-            func = walkOutVertex; break;
+            func = walkOutVertex;
+            break;
         case Id::BOTH:
-            func = walkBoth; break;
+            func = walkBoth;
+            break;
         case Id::BOTH_E:
-            func = walkBothEdge; break;
+            func = walkBothEdge;
+            break;
         default:
             throw Error(SQL_INVALID_FUNCTION_NAME, Error::Type::SQL);
     }
@@ -333,10 +342,11 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
 }
 
 Bytes Function::executeGroupResult(const ResultSet &input) const {
-    function<Bytes(const ResultSet&, const vector<Projection>&)> func;
+    function<Bytes(const ResultSet &, const vector<Projection> &)> func;
     switch (this->id) {
         case Id::COUNT:
-            func = count; break;
+            func = count;
+            break;
         case Id::MAX:
 //            func = max; break;
         case Id::MIN:
@@ -354,7 +364,8 @@ Bytes Function::executeExpand(Txn &txn, ResultSet &input) const {
 bool Function::isGroupResult() const {
     switch (this->id) {
         case Id::COUNT:
-        case Id::MIN: case Id::MAX:
+        case Id::MIN:
+        case Id::MAX:
             return true;
         default:
             return false;
@@ -363,9 +374,14 @@ bool Function::isGroupResult() const {
 
 bool Function::isWalkResult() const {
     switch (this->id) {
-        case Id::IN: case Id::IN_E: case Id::IN_V:
-        case Id::OUT: case Id::OUT_E: case Id::OUT_V:
-        case Id::BOTH: case Id::BOTH_E:
+        case Id::IN:
+        case Id::IN_E:
+        case Id::IN_V:
+        case Id::OUT:
+        case Id::OUT_E:
+        case Id::OUT_V:
+        case Id::BOTH:
+        case Id::BOTH_E:
             return true;
         default:
             return false;
@@ -443,6 +459,7 @@ Bytes Function::walkInVertex(Txn &txn, const Result &input, const vector<Project
         throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
     }
 }
+
 Bytes Function::walkOut(nogdb::Txn &txn, const Result &input, const vector<Projection> &args) {
     ResultSet results{};
     Bytes rTmp = walkOutEdge(txn, input, args);
@@ -493,7 +510,8 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
                 for (const Result &in: input) {
                     Bytes out = func.execute(txn, in);
                     assert(out.type() == PropertyTypeExt::RESULT_SET);
-                    results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
+                    results.insert(results.end(), make_move_iterator(out.results().begin()),
+                                   make_move_iterator(out.results().end()));
                 }
             }
         } else {
@@ -563,23 +581,23 @@ nogdb::ClassFilter Function::argsToClassFilter(const vector<Projection> &args) {
 #define CC_ILLEGAL   27    /* Illegal character */
 
 static const unsigned char aiClass[] = {
-    /*         x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf */
-    /* 0x */   27, 27, 27, 27, 27, 27, 27, 27, 27,  7,  7, 27,  7,  7, 27, 27,
-    /* 1x */   27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
-    /* 2x */    7, 15,  8,  5,  4, 22, 24,  8, 17, 18, 21, 20, 23, 11, 26, 16,
-    /* 3x */    3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  5, 19, 12, 14, 13,  6,
-    /* 4x */    5,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-    /* 5x */    1,  1,  1,  1,  1,  1,  1,  1,  0,  1,  1,  9, 27,  9, 27,  1,
-    /* 6x */    8,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-    /* 7x */    1,  1,  1,  1,  1,  1,  1,  1,  0,  1,  1, 27, 10, 27, 25, 27,
-    /* 8x */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* 9x */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Ax */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Bx */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Cx */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Dx */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Ex */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    /* Fx */    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2
+        /*         x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf */
+        /* 0x */   27, 27, 27, 27, 27, 27, 27, 27, 27, 7, 7, 27, 7, 7, 27, 27,
+        /* 1x */   27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
+        /* 2x */    7, 15, 8, 5, 4, 22, 24, 8, 17, 18, 21, 20, 23, 11, 26, 16,
+        /* 3x */    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 19, 12, 14, 13, 6,
+        /* 4x */    5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        /* 5x */    1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 9, 27, 9, 27, 1,
+        /* 6x */    8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        /* 7x */    1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 27, 10, 27, 25, 27,
+        /* 8x */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* 9x */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Ax */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Bx */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Cx */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Dx */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Ex */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        /* Fx */    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
 
 /*
@@ -593,51 +611,51 @@ static const unsigned char aiClass[] = {
 #define IdChar(C)  (((unsigned char)C)&0x80 || isalnum(C))
 
 static int keywordCode(const char *z, int n, int *pType) {
-    static const auto kw = map<string, int, function<bool(const string&, const string&)>>(
-        {
-            { "ALTER", TK_ALTER },
-            { "AND", TK_AND },
-            { "AS", TK_AS },
-            { "ASC", TK_ASC },
-            { "BEGIN", TK_BEGIN },
-            { "BY", TK_BY },
-            { "CASE", TK_CASE },
-            { "CLASS", TK_CLASS },
-            { "CONTAIN", TK_CONTAIN },
-            { "CREATE", TK_CREATE },
-            { "DELETE", TK_DELETE },
-            { "DESC", TK_DESC },
-            { "DROP", TK_DROP },
-            { "EDGE", TK_EDGE },
-            { "END", TK_END },
-            { "EXISTS", TK_EXISTS },
-            { "EXTENDS", TK_EXTENDS },
-            { "FROM", TK_FROM },
-            { "GROUP", TK_GROUP },
-            { "IF", TK_IF },
-            { "IS", TK_IS },
-            { "LIKE", TK_LIKE },
-            { "LIMIT", TK_LIMIT },
-            { "MAXDEPTH", TK_MAXDEPTH },
-            { "MINDEPTH", TK_MINDEPTH },
-            { "NOT", TK_NOT },
-            { "NULL", TK_NULL },
-            { "OR", TK_OR },
-            { "ORDER", TK_ORDER },
-            { "PROPERTY", TK_PROPERTY },
-            { "SELECT", TK_SELECT },
-            { "SET", TK_SET },
-            { "SKIP", TK_SKIP },
-            { "STRATEGY", TK_STRATEGY },
-            { "TO", TK_TO },
-            { "TRAVERSE", TK_TRAVERSE },
-            { "UPDATE", TK_UPDATE },
-            { "VERTEX", TK_VERTEX },
-            { "WHERE", TK_WHERE },
-            { "WITH", TK_WITH },
-        },
-        [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
-);
+    static const auto kw = map<string, int, function<bool(const string &, const string &)>>(
+            {
+                    {"ALTER",    TK_ALTER},
+                    {"AND",      TK_AND},
+                    {"AS",       TK_AS},
+                    {"ASC",      TK_ASC},
+                    {"BEGIN",    TK_BEGIN},
+                    {"BY",       TK_BY},
+                    {"CASE",     TK_CASE},
+                    {"CLASS",    TK_CLASS},
+                    {"CONTAIN",  TK_CONTAIN},
+                    {"CREATE",   TK_CREATE},
+                    {"DELETE",   TK_DELETE},
+                    {"DESC",     TK_DESC},
+                    {"DROP",     TK_DROP},
+                    {"EDGE",     TK_EDGE},
+                    {"END",      TK_END},
+                    {"EXISTS",   TK_EXISTS},
+                    {"EXTENDS",  TK_EXTENDS},
+                    {"FROM",     TK_FROM},
+                    {"GROUP",    TK_GROUP},
+                    {"IF",       TK_IF},
+                    {"IS",       TK_IS},
+                    {"LIKE",     TK_LIKE},
+                    {"LIMIT",    TK_LIMIT},
+                    {"MAXDEPTH", TK_MAXDEPTH},
+                    {"MINDEPTH", TK_MINDEPTH},
+                    {"NOT",      TK_NOT},
+                    {"NULL",     TK_NULL},
+                    {"OR",       TK_OR},
+                    {"ORDER",    TK_ORDER},
+                    {"PROPERTY", TK_PROPERTY},
+                    {"SELECT",   TK_SELECT},
+                    {"SET",      TK_SET},
+                    {"SKIP",     TK_SKIP},
+                    {"STRATEGY", TK_STRATEGY},
+                    {"TO",       TK_TO},
+                    {"TRAVERSE", TK_TRAVERSE},
+                    {"UPDATE",   TK_UPDATE},
+                    {"VERTEX",   TK_VERTEX},
+                    {"WHERE",    TK_WHERE},
+                    {"WITH",     TK_WITH},
+            },
+            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+    );
     try {
         *pType = kw.at(string(z, n));
     } catch (...) {
@@ -656,7 +674,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
                               * of the token. See the comment on the CC_ defines
                               * above. */
         case CC_SPACE:
-            for (i=1; aiClass[z[i]]==CC_SPACE; i++) { }
+            for (i = 1; aiClass[z[i]] == CC_SPACE; i++) {}
             *tokenType = TK_SPACE;
             return i;
         case CC_MINUS:
@@ -664,7 +682,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
                 *tokenType = TK_ILLEGAL;
                 return -1;
             }
-            i = 1 + getTokenID(z+1, tokenType);
+            i = 1 + getTokenID(z + 1, tokenType);
             if (*tokenType == TK_UNSIGNED) {
                 *tokenType = TK_SIGNED;
             }
@@ -689,7 +707,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             return -1;
         case CC_EQ:
             *tokenType = TK_EQ;
-            return 1 + (z[1]=='=');
+            return 1 + (z[1] == '=');
         case CC_LT:
             if (z[1] == '=') {
                 *tokenType = TK_LE;
@@ -728,9 +746,9 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             return -1;
         case CC_QUOTE: {
             int delim = z[0];
-            for(i=1; z[i]!='\0'; i++) {
+            for (i = 1; z[i] != '\0'; i++) {
                 if (z[i] == delim) {
-                    if (z[i+1] == delim) {
+                    if (z[i + 1] == delim) {
                         i++;
                     } else {
                         break;
@@ -739,10 +757,10 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             }
             if (z[i] == '\'' || z[i] == '"') {
                 *tokenType = TK_STRING;
-                return i+1;
+                return i + 1;
             } else if (z[i] != '\0') {
                 *tokenType = TK_IDENTITY;
-                return i+1;
+                return i + 1;
             } else {
                 *tokenType = TK_ILLEGAL;
                 return i;
@@ -753,12 +771,12 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             return 1;
         case CC_DIGIT:
             *tokenType = TK_UNSIGNED;
-            if (z[0]=='0' && (z[1]=='x' || z[1]=='X') && isxdigit(z[2])) {
+            if (z[0] == '0' && (z[1] == 'x' || z[1] == 'X') && isxdigit(z[2])) {
                 // 0x12347890abcdef
-                for (i=3; isxdigit(z[i]); i++) { }
+                for (i = 3; isxdigit(z[i]); i++) {}
                 return i;
             }
-            for (i=0; isdigit(z[i]); i++) { }
+            for (i = 0; isdigit(z[i]); i++) {}
             if (z[i] == '.') {
                 // 12.34
                 i++;
@@ -768,9 +786,9 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
                 *tokenType = TK_FLOAT;
             }
             if ((z[i] == 'e' || z[i] == 'E')
-                && (isdigit(z[i+1])
-                    || ((z[i+1]=='+' || z[i+1]=='-') && isdigit(z[i+2])))
-                ) {
+                && (isdigit(z[i + 1])
+                    || ((z[i + 1] == '+' || z[i + 1] == '-') && isdigit(z[i + 2])))
+                    ) {
                 // 12e34
                 i += 2;
                 while (isdigit(z[i])) {
@@ -809,7 +827,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             }
             return 1;
         case CC_KYWD:
-            for (i=1; aiClass[z[i]]<=CC_KYWD; i++) { }
+            for (i = 1; aiClass[z[i]] <= CC_KYWD; i++) {}
             if (IdChar(z[i])) {
                 /* This token started out using characters that can appear in keywords,
                  * but z[i] is a character not allowed within keywords, so this must
@@ -818,14 +836,14 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
                 break;
             }
             *tokenType = TK_IDENTITY;
-            return keywordCode((char*)z, i, tokenType);
+            return keywordCode((char *) z, i, tokenType);
         case CC_X:
             if (z[1] == '\'') {
                 *tokenType = TK_BLOB;
-                for (i=2; isxdigit(z[i]); i++) { }
-                if (z[i] != '\'' || i%2) {
+                for (i = 2; isxdigit(z[i]); i++) {}
+                if (z[i] != '\'' || i % 2) {
                     *tokenType = TK_ILLEGAL;
-                    while (z[i] && z[i]!='\'') {
+                    while (z[i] && z[i] != '\'') {
                         i++;
                     }
                 }
@@ -859,7 +877,7 @@ const nogdb::SQL::Result nogdb::SQL::execute(Txn &txn, const std::string &sql) {
 
     while (1) {
         if (zSql[0] != '\0') {
-            n = getTokenID((unsigned char *)zSql, &tokenType);
+            n = getTokenID((unsigned char *) zSql, &tokenType);
         } else {
             /* Upon reaching the end of input, call the parser two more times
              * with tokens TK_SEMI and 0, in that order. */
@@ -878,7 +896,7 @@ const nogdb::SQL::Result nogdb::SQL::execute(Txn &txn, const std::string &sql) {
             }
             zSql += n;
         } else {
-            parser->parse(tokenType, { zSql, n, tokenType });
+            parser->parse(tokenType, {zSql, n, tokenType});
             lastTokenParsed = tokenType;
             zSql += n;
             if (parser->rc != sql_parser::Context::SQL_OK) {
