@@ -680,11 +680,13 @@ Context::selectProjectionItem(const Result &input, const Projection &proj, const
             pair<string, Bytes> resA = this->selectProjectionItem(input, arrSelProj.first, map);
             if (resA.second.type() == PropertyTypeExt::RESULT_SET) {
                 ResultSet &inputB = resA.second.results();
-                if (arrSelProj.second >= inputB.size()) {
-                    throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
-                }
                 string outName = resA.first + "[" + to_string(arrSelProj.second) + "]";
-                return make_pair(move(outName), Bytes(ResultSet({inputB[arrSelProj.second]})));
+                if (arrSelProj.second < inputB.size()) {
+                    return make_pair(move(outName), Bytes(ResultSet({inputB[arrSelProj.second]})));
+                } else {
+                    Result emptyResult{RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, 0), Record()};
+                    return make_pair(move(outName), Bytes(ResultSet{emptyResult}));
+                }
             } else {
                 throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
             }

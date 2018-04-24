@@ -46,7 +46,7 @@ namespace nogdb {
 
             // parser error.
             void syntax_error(int tokenType, Token &token) {
-                cerr << "nogdb::SQL::execute: syntax error near " << string(token.z, token.n) << endl;
+                cerr << "nogdb::SQL::execute: syntax error near '" << string(token.z, token.n) << "'" << endl;
                 rc = SQL_ERROR;
                 result = SQL::Result(new Error(SQL_SYNTAX_ERROR, Error::Type::SQL));
             }

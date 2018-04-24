@@ -776,6 +776,18 @@ void test_sql_select_method_property() {
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.getText("propV") == "v1");
         assert(res[0].record.getText("out()[0].propV") == "v4");
+
+        result = SQL::execute(txn, "SELECT out()[2].propV FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assert(res.size() == 0);
+
+        result = SQL::execute(txn, "SELECT propV, out()[2].propV FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.getText("propV") == "v1");
+        assert(res[0].record.get("out()[0].propV").empty());
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
