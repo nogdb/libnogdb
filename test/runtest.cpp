@@ -421,7 +421,7 @@ int main() {
 
     // sql
 #ifdef TEST_SQL_OPERATIONS
-    std::cout << "[info]\n[info] End-to-end tests for sql operations should:\n";
+    std::cout << "\n\x1B[96mEnd-to-end tests for sql operations should:\x1B[0m\n";
     exec(test_sql_unrecognized_token_error, "executing unrecognized token error sql command");
     exec(test_sql_syntax_error, "executing syntax error sql command");
     exec(test_sql_create_class, "creating a class with sql command");

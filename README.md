@@ -13,6 +13,7 @@
 * Rapid graph traversal with vertex and edge relations cached in memory
 * Transactions with MVCC (full ACID semantics in data storage)
 * Multiple readers and single writer (no blocking between readers and writer)
+* SQL support for performing graph execution and querying graph information
 * Inheritance support for vertex and edge classes
 * Basic database indexing support based on B+Tree
 * Multiple platforms support, e.g. Unix, Linux, BSD and Mac OS X (macOS)
@@ -26,18 +27,18 @@
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
+### With CMake (recommended)
+```
+$ cmake .
+$ cmake --build .
+$ ctest --verbose
+$ sudo make install
+```
+
 ### With Makefile (debug mode by default)
 ```
 $ sh install_make.sh
 $ make && make test
-$ sudo make install
-$ make clean
-```
-
-### With CMake
-```
-$ cmake .
-$ cmake --build . && ctest
 $ sudo make install
 $ make clean
 ```
