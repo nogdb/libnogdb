@@ -54,8 +54,7 @@ script:
   - make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="" OPTFLAGS=""
   - if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
       make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} ;
-      valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
     else
       make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS="" TESTPREFIX=${TESTPREFIX} ;
     fi
-#  - valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
+  - valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
