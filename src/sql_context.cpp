@@ -251,7 +251,7 @@ void Context::select(const SelectArgs &args) {
         ResultSet result = this->selectPrivate(args);
         this->rc = SQL_OK;
         nogdb::ResultSet *tmp = new nogdb::ResultSet(result.size());
-        transform(result.begin(), result.end(), tmp->begin(), [](Result r) { return r.toBaseResult(); });
+        transform(result.cbegin(), result.cend(), tmp->begin(), [](const Result &r) { return r.toBaseResult(); });
         this->result = SQL::Result(tmp);
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
@@ -392,50 +392,13 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
     }
 }
 
-void Context::traverse(const string &direction, const set<string> &classFilter, const RecordDescriptor &root,
-                       long long minDepth, long long maxDepth, const string &strategy) {
-
-    typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int,
-                                                 unsigned int, const ClassFilter &);
-    static const map<string, TraverseFunction, function<bool(const string &, const string &)>> mapFunc(
-            {
-                    {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
-                    {"OUTDEPTH_FIRST",   Traverse::outEdgeDfs},
-                    {"ALLDEPTH_FIRST",   Traverse::allEdgeDfs},
-                    {"INBREADTH_FIRST",  Traverse::inEdgeBfs},
-                    {"OUTBREADTH_FIRST", Traverse::outEdgeBfs},
-                    {"ALLBREADTH_FIRST", Traverse::allEdgeBfs}
-            },
-            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
-    );
-
+void Context::traverse(const TraverseArgs &args) {
     try {
-        if (minDepth < 0 || minDepth > UINT_MAX) {
-            throw Error(SQL_INVALID_TRAVERSE_MIN_DEPTH, Error::Type::SQL);
-        }
-        if (maxDepth < 0 || maxDepth > UINT_MAX) {
-            throw Error(SQL_INVALID_TRAVERSE_MAX_DEPTH, Error::Type::SQL);
-        }
-
-        TraverseFunction func;
-        try {
-            func = mapFunc.at(direction + strategy);
-        } catch (...) {
-            if (strcasecmp("IN", direction.c_str()) != 0
-                && strcasecmp("OUT", direction.c_str()) != 0
-                && strcasecmp("ALL", direction.c_str()) != 0) {
-                throw Error(SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
-            } else /*if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
-                && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0) */
-            {
-                throw Error(SQL_INVALID_TRAVERSE_STRATEGY, Error::Type::SQL);
-            }
-        }
-
-        nogdb::ResultSet result = func(this->txn, root, minDepth, maxDepth, ClassFilter(classFilter));
-
+        ResultSet result = this->traversePrivate(args);
         this->rc = SQL_OK;
-        this->result = SQL::Result(new nogdb::ResultSet(move(result)));
+        nogdb::ResultSet *tmp = new nogdb::ResultSet(result.size());
+        transform(result.cbegin(), result.cend(), tmp->begin(), [](const Result &r) { return r.toBaseResult(); });
+        this->result = SQL::Result(tmp);
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
         this->result = SQL::Result(new Error(e));
@@ -488,6 +451,18 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
 
         case TargetType::NESTED: {
             auto result = this->selectPrivate(target.get<SelectArgs>());
+            result = this->selectWhere(result, where);
+            if (skip > 0) {
+                result.erase(result.begin(), result.begin() + skip);
+            }
+            if (limit >= 0 && (unsigned) limit < result.size()) {
+                result.resize(limit);
+            }
+            return result;
+        }
+
+        case TargetType::NESTED_TRAVERSE: {
+            auto result = this->traversePrivate(target.get<TraverseArgs>());
             result = this->selectWhere(result, where);
             if (skip > 0) {
                 result.erase(result.begin(), result.begin() + skip);
@@ -717,6 +692,46 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
         }
     }
     return move(input);
+}
+
+ResultSet Context::traversePrivate(const TraverseArgs &args) {
+    typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int,
+                                                 unsigned int, const ClassFilter &);
+    static const map<string, TraverseFunction, function<bool(const string &, const string &)>> mapFunc(
+       {
+           {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
+           {"OUTDEPTH_FIRST",   Traverse::outEdgeDfs},
+           {"ALLDEPTH_FIRST",   Traverse::allEdgeDfs},
+           {"INBREADTH_FIRST",  Traverse::inEdgeBfs},
+           {"OUTBREADTH_FIRST", Traverse::outEdgeBfs},
+           {"ALLBREADTH_FIRST", Traverse::allEdgeBfs}
+       },
+       [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+       );
+
+    if (args.minDepth < 0 || args.minDepth > UINT_MAX) {
+        throw Error(SQL_INVALID_TRAVERSE_MIN_DEPTH, Error::Type::SQL);
+    }
+    if (args.maxDepth < 0 || args.maxDepth > UINT_MAX) {
+        throw Error(SQL_INVALID_TRAVERSE_MAX_DEPTH, Error::Type::SQL);
+    }
+
+    TraverseFunction func;
+    try {
+        func = mapFunc.at(args.direction + args.strategy);
+    } catch (...) {
+        if (strcasecmp("IN", args.direction.c_str()) != 0
+            && strcasecmp("OUT", args.direction.c_str()) != 0
+            && strcasecmp("ALL", args.direction.c_str()) != 0) {
+            throw Error(SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
+        } else /*if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
+                && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0) */
+        {
+            throw Error(SQL_INVALID_TRAVERSE_STRATEGY, Error::Type::SQL);
+        }
+    }
+
+    return func(this->txn, args.root, args.minDepth, args.maxDepth, ClassFilter(args.filter));
 }
 
 

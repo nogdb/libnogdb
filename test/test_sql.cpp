@@ -1488,16 +1488,17 @@ void test_sql_validate_property_type() {
 void test_sql_traverse() {
     Txn txn(*ctx, Txn::Mode::READ_WRITE);
     Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
     Class::create(txn, "EL", ClassType::EDGE);
     Class::create(txn, "ER", ClassType::EDGE);
 
     try {
-        auto v1 = Vertex::create(txn, "V");
-        auto v21 = Vertex::create(txn, "V");
-        auto v22 = Vertex::create(txn, "V");
-        auto v31 = Vertex::create(txn, "V");
-        auto v32 = Vertex::create(txn, "V");
-        auto v33 = Vertex::create(txn, "V");
+        auto v1 = Vertex::create(txn, "V", Record().set("p", "v1"));
+        auto v21 = Vertex::create(txn, "V", Record().set("p", "v21"));
+        auto v22 = Vertex::create(txn, "V", Record().set("p", "v22"));
+        auto v31 = Vertex::create(txn, "V", Record().set("p", "v31"));
+        auto v32 = Vertex::create(txn, "V", Record().set("p", "v32"));
+        auto v33 = Vertex::create(txn, "V", Record().set("p", "v33"));
         auto e1_21 = Edge::create(txn, "EL", v1, v21);
         auto e1_22 = Edge::create(txn, "ER", v1, v22);
         auto e21_31 = Edge::create(txn, "EL", v21, v31);
@@ -1527,6 +1528,11 @@ void test_sql_traverse() {
         result = SQL::execute(txn, "TRAVERSE all('EL') FROM " + to_string(v21) + " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
         assert(result.type() == result.RESULT_SET);
         assert(equalResultSet(result.get<ResultSet>(), Traverse::allEdgeBfs(txn, v21, 1, 1, {"EL"})));
+
+        result = SQL::execute(txn, "SELECT p FROM (TRAVERSE out() FROM " + to_string(v1) + ") WHERE p = 'v22'");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>().size() == 1);
+        assert(result.get<ResultSet>()[0].record.getText("p") == "v22");
     } catch (const Error &e) {
         cout << "\nError: " << e.what() << endl;
         assert(false);

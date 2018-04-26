@@ -206,6 +206,9 @@ select_target_without_class(A) ::= select_target_rids(rids). {
 select_target_without_class(A) ::= LP select_stmt(stmt) RP. {
     A = Target(TargetType::NESTED, make_shared<SelectArgs>(move(stmt)));
 }
+select_target_without_class(A) ::= LP traverse_stmt(stmt) RP. {
+    A = Target(TargetType::NESTED_TRAVERSE, make_shared<TraverseArgs>(move(stmt)));
+}
 
 %type select_target_rids { RecordDescriptorSet }
 select_target_rids(A) ::= rid(X). { A = RecordDescriptorSet{X}; }
@@ -292,13 +295,18 @@ to_edge_opt(A) ::= TO select_target_without_class(X). { A = X; }
 
 
 //////////////////// The TRAVERSE command ////////////////////
-cmd ::= TRAVERSE IDENTITY(direction) LP class_filter(filter) RP
+cmd ::= traverse_stmt(stmt) SEMI. {
+    this->traverse(stmt);
+}
+
+%type traverse_stmt { TraverseArgs }
+traverse_stmt(A) ::= TRAVERSE
+    IDENTITY(direction) LP class_filter(filter) RP
     FROM rid(root)
     min_depth_opt(min_depth) max_depth_opt(max_depth)
-    strategy_opt(strategy)
-    SEMI.
+    strategy_opt(strategy).
 {
-    this->traverse(direction.toString(), filter, root, min_depth, max_depth, strategy);
+    A = TraverseArgs{direction.toString(), filter, root, min_depth, max_depth, strategy};
 }
 
 %type class_filter { set<string> }

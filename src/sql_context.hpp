@@ -91,8 +91,7 @@ namespace nogdb {
             void deleteEdge(const DeleteEdgeArgs &args);
 
             // TRAVERSE operations
-            void traverse(const string &direction, const set <string> &classFilter, const RecordDescriptor &root,
-                          long long minDepth, long long maxDepth, const string &strategy);
+            void traverse(const TraverseArgs &args);
 
         private:
             void newTxnIfRootStmt(bool isRoot, Txn::Mode mode);
@@ -121,6 +120,8 @@ namespace nogdb {
             selectProjectionItem(const Result &input, const Projection &proj, const PropertyMapType &map);
 
             ResultSet selectGroupBy(ResultSet &input, const string &group);
+
+            ResultSet traversePrivate(const TraverseArgs &stmt);
 
             ClassType findClassType(const string &className);
 

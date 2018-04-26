@@ -204,7 +204,7 @@ namespace nogdb {
             RecordDescriptor descriptor{};
             Record record{};
 
-            nogdb::Result toBaseResult() {
+            nogdb::Result toBaseResult() const {
                 return nogdb::Result(descriptor, record.toBaseRecord());
             }
         };
@@ -262,9 +262,10 @@ namespace nogdb {
 
         enum class TargetType {
             NO_TARGET,
-            CLASS,      // std::string
-            RIDS,       // sql_parser::RecordDescriptorSet
-            NESTED,     // sql_parser::SelectArgs
+            CLASS,              // std::string
+            RIDS,               // sql_parser::RecordDescriptorSet
+            NESTED,             // sql_parser::SelectArgs
+            NESTED_TRAVERSE,    // sql_paresr::TraverseArgs
         };
         enum class WhereType {
             NO_COND,
@@ -415,7 +416,18 @@ namespace nogdb {
             Where where;
         };
 
-//        shared_ptr<Condition> newCondition(const Token &tPropName, const Bytes &value, Comparator comp = Comparator::EQUAL);
+        /* An arguments for tarverse statement */
+        class TraverseArgs {
+        public:
+            TraverseArgs() = default;
+
+            string direction;
+            set<string> filter;
+            RecordDescriptor root;
+            long long minDepth;
+            long long maxDepth;
+            string strategy;
+        };
     };
 }
 
