@@ -34,6 +34,15 @@ using namespace nogdb::sql_parser;
 #define CLASS_DESCDRIPTOR_TEMPORARY     -2
 #define PROPERTY_DESCRIPTOR_TEMPORARY   -2
 
+
+#pragma mark - Helper
+
+typedef function<bool(const string &, const string &)> StringCaseCompare;
+static bool stringcasecmp(const string &a, const string &b) {
+    return strcasecmp(a.c_str(), b.c_str()) < 0;
+}
+
+
 #pragma mark - Context
 
 void Context::createClass(const Token &tName, const Token &tExtend, char checkIfNotExists) {
@@ -68,11 +77,11 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
         ALTER_NAME,
         UNDEFINED
     };
-    static const map<string, AlterAttr, function<bool(const string &, const string &)>> attrMap(
+    static const auto attrMap = map<string, AlterAttr, StringCaseCompare>(
             {
                     {"NAME", ALTER_NAME}
             },
-            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+            stringcasecmp
     );
 
     try {
@@ -119,7 +128,7 @@ void Context::dropClass(const Token &tName, char checkIfExists) {
 
 void
 Context::createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, char checkIfNotExists) {
-    map<std::string, nogdb::PropertyType, std::function<bool(const std::string &, const std::string &)>> mapType(
+    static const auto mapType = map<std::string, nogdb::PropertyType, StringCaseCompare>(
             {
                     {"TINYINT",           nogdb::PropertyType::TINYINT},
                     {"UNSIGNED_TINYINT",  nogdb::PropertyType::UNSIGNED_TINYINT},
@@ -133,8 +142,9 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
                     {"REAL",              nogdb::PropertyType::REAL},
                     {"BLOB",              nogdb::PropertyType::BLOB},
             },
-            [](const std::string &a, const std::string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+            stringcasecmp
     );
+
     PropertyDescriptor result;
     try {
         nogdb::PropertyType t;
@@ -165,11 +175,11 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
         ALTER_NAME,
         UNDEFINED
     };
-    static const map<string, AlterAttr, function<bool(const string &, const string &)>> attrMap(
+    static const auto attrMap = map<string, AlterAttr, StringCaseCompare>(
             {
                     {"NAME", ALTER_NAME}
             },
-            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+            stringcasecmp
     );
 
     try {
@@ -308,9 +318,11 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
 
         if (args.target.type == TargetType::CLASS) {
             ResultSet srcs, dests;
-            RecordDescriptorSet outEdgeDescs{}, inEdgeDescs{};
+            RecordDescriptorSet outEdgeRids{}, inEdgeRids{};
 
             string className = args.target.get<string>();
+
+            // get outEdge from these sources.
             srcs = this->select(args.from, Where());
             const auto whereType = args.where.type;
             for (const auto &src: srcs) {
@@ -330,11 +342,12 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
                 }
                 // edgeDescs += edges;
                 for (auto &edge: edges) {
-                    outEdgeDescs.insert(move(edge.descriptor));
+                    outEdgeRids.insert(move(edge.descriptor));
                 }
             }
 
-            if (!outEdgeDescs.empty() || args.from.type == TargetType::NO_TARGET) {
+            // get inEdge from these desination. (skip if can't find source)
+            if (!outEdgeRids.empty() || args.from.type == TargetType::NO_TARGET) {
                 ResultSet dests = this->select(args.to, Where());
                 for (const auto &dest: dests) {
                     ResultSet edges;
@@ -353,20 +366,21 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
                     }
                     // inEdgeDescs += edges
                     for (auto &edge: edges) {
-                        inEdgeDescs.insert(move(edge.descriptor));
+                        inEdgeRids.insert(move(edge.descriptor));
                     }
                 }
             }
 
+            // process target.
             if (args.from.type != TargetType::NO_TARGET
                 && args.to.type != TargetType::NO_TARGET) {
-                set_intersection(outEdgeDescs.begin(), outEdgeDescs.end(),
-                                 inEdgeDescs.begin(), inEdgeDescs.end(),
+                set_intersection(outEdgeRids.begin(), outEdgeRids.end(),
+                                 inEdgeRids.begin(), inEdgeRids.end(),
                                  inserter(targets, targets.begin()));
             } else if (args.from.type != TargetType::NO_TARGET) {
-                targets = move(inEdgeDescs);
+                targets = move(inEdgeRids);
             } else if (args.to.type != TargetType::NO_TARGET) {
-                targets = move(outEdgeDescs);
+                targets = move(outEdgeRids);
             } else /* if (from == NO_TARGET && to == NO_TARGET) */ {
                 ResultSetCursor edges = this->selectEdge(className, args.where);
                 while (edges.next()) {
@@ -374,12 +388,10 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
                 }
             }
         } else if (args.target.type == TargetType::RIDS) {
-            auto edges = this->select(args.target.get<RecordDescriptorSet>());
-            for (auto &edge: edges) {
-                targets.insert(move(edge.descriptor));
-            }
+            targets = args.target.get<RecordDescriptorSet>();
         }
 
+        // delete.
         for (const auto &target: targets) {
             Edge::destroy(this->txn, target);
         }
@@ -425,7 +437,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
 
         case TargetType::CLASS: {
             string &className = target.get<string>();
-            ClassType type = this->findClassType(className);
+            ClassType type = Context::findClassType(this->txn, className);
             if (type == ClassType::VERTEX) {
                 ResultSetCursor res = this->selectVertex(className, where);
                 return ResultSet(res, skip, limit);
@@ -440,25 +452,13 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
         case TargetType::RIDS: {
             ResultSet result = this->select(target.get<RecordDescriptorSet>());
             result = this->selectWhere(result, where);
-            if (skip > 0) {
-                result.erase(result.begin(), result.begin() + skip);
-            }
-            if (limit >= 0 && (unsigned) limit < result.size()) {
-                result.resize(limit);
-            }
-            return result;
+            return result.limit(skip, limit);
         }
 
         case TargetType::NESTED: {
             auto result = this->selectPrivate(target.get<SelectArgs>());
             result = this->selectWhere(result, where);
-            if (skip > 0) {
-                result.erase(result.begin(), result.begin() + skip);
-            }
-            if (limit >= 0 && (unsigned) limit < result.size()) {
-                result.resize(limit);
-            }
-            return result;
+            return result.limit(skip, limit);
         }
 
         case TargetType::NESTED_TRAVERSE: {
@@ -520,36 +520,7 @@ ResultSet Context::selectWhere(ResultSet &input, const Where &where) {
         MultiCondition exp = (where.type == WhereType::MULTI_COND
                               ? where.get<MultiCondition>()
                               : where.get<Condition>() && alwaysTrue);
-        ResultSet result{};
-
-        PropertyMapType map{};
-        ClassId previousClassID = -1;
-        for (ResultSet::const_iterator in = input.begin(); in != input.end(); in++) {
-            ClassId classID = in->descriptor.rid.first;
-            if (classID == (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
-                map.clear();
-                map[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
-                map[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
-                for (const auto &prop: in->record.getAll()) {
-                    map[prop.first] = prop.second.type().toBase();
-                }
-            } else if (classID != previousClassID) {
-                map.clear();
-                map[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
-                map[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
-                const ClassProperty &classProp = Db::getSchema(this->txn, classID).properties;
-                for (const auto &p: classProp) {
-                    map[p.first] = p.second.type;
-                }
-            }
-
-            if (exp.execute(in->record.toBaseRecord(), map)) {
-                result.push_back(move(*in));
-            }
-
-            previousClassID = classID;
-        }
-        return result;
+        return Context::executeCondition(this->txn, input, exp);
     }
 }
 
@@ -558,6 +529,7 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
         return move(input);
     }
 
+    // expand function.
     if (projs.size() == 1
         && projs[0].type == ProjectionType::FUNCTION
         && projs[0].get<Function>().isExpand()) {
@@ -580,12 +552,13 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
     }
 
     if (grouped) {
+        // if input is not empty, use last record for other projection.
         if (!input.empty()) {
             const Result &last = input.back();
-            PropertyMapType mapProps = this->getPropertyMapTypeFromClassDescriptor(last.descriptor.rid.first);
+            PropertyMapType mapProps = Context::getPropertyMapTypeFromClassDescriptor(this->txn, last.descriptor.rid.first);
             for (const Projection &proj: projs) {
                 if (proj.type != ProjectionType::FUNCTION || proj.get<Function>().isGroupResult() == false) {
-                    tmpRec.set(this->selectProjectionItem(last, proj, mapProps));
+                    tmpRec.set(to_string(proj), Context::getProjectionItem(this->txn, last, proj, mapProps));
                 }
             }
         }
@@ -594,9 +567,9 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
         ResultSet results{};
         for (const Result &in: input) {
             Record record{};
-            PropertyMapType mapProps = this->getPropertyMapTypeFromClassDescriptor(in.descriptor.rid.first);
+            PropertyMapType mapProps = Context::getPropertyMapTypeFromClassDescriptor(this->txn, in.descriptor.rid.first);
             for (const Projection &proj: projs) {
-                record.set(this->selectProjectionItem(in, proj, mapProps));
+                record.set(to_string(proj), Context::getProjectionItem(this->txn, in, proj, mapProps));
             }
             if (!record.empty()) {
                 results.emplace_back(nogdb::RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, results.size()),
@@ -604,77 +577,6 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
             }
         }
         return results;
-    }
-}
-
-pair<string, Bytes>
-Context::selectProjectionItem(const Result &input, const Projection &proj, const PropertyMapType &map) {
-    switch (proj.type) {
-        case ProjectionType::PROPERTY: {
-            string name = proj.get<string>();
-            if (name == CLASS_NAME_PROPERTY) {
-                string className = Db::getSchema(this->txn, input.descriptor.rid.first).name;
-                return make_pair(move(name), Bytes(className, nogdb::PropertyType::TEXT));
-            } else if (name == RECORD_ID_PROPERTY) {
-                return make_pair(move(name), Bytes(input.descriptor, nogdb::PropertyType::BLOB));
-            } else {
-                Bytes b = input.record.get(name);
-                if (b.empty() || b.type() != nogdb::PropertyType::UNDEFINED) {
-                    return make_pair(move(name), move(b));
-                } else {
-                    return make_pair(move(name), Bytes(b.getRaw(), b.size(), map.at(name)));
-                }
-            }
-        }
-        case ProjectionType::FUNCTION: {
-            Function func = proj.get<Function>();
-            if (func.isGroupResult() || func.isExpand()) {
-                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
-            }
-            return make_pair(func.toString(), func.execute(this->txn, input));
-        }
-        case ProjectionType::METHOD: {
-            pair<Projection, Projection> mProj = proj.get<pair<Projection, Projection>>();
-            pair<string, Bytes> resA = this->selectProjectionItem(input, mProj.first, map);
-            if (resA.second.type() == PropertyTypeExt::RESULT_SET) {
-                ResultSet &inputB = resA.second.results();
-                if (inputB.size() == 1) {
-                    const Result &in = inputB.front();
-                    PropertyMapType mapProps = this->getPropertyMapTypeFromClassDescriptor(in.descriptor.rid.first);
-                    pair<string, Bytes> resB = this->selectProjectionItem(in, mProj.second, mapProps);
-                    return make_pair(resA.first + "." + resB.first, move(resB.second));
-                } else {
-                    throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
-                }
-            } else {
-                throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
-            }
-        }
-        case ProjectionType::ARRAY_SELECTOR: {
-            pair<Projection, unsigned long> arrSelProj = proj.get<pair<Projection, unsigned long>>();
-            pair<string, Bytes> resA = this->selectProjectionItem(input, arrSelProj.first, map);
-            if (resA.second.type() == PropertyTypeExt::RESULT_SET) {
-                ResultSet &inputB = resA.second.results();
-                string outName = resA.first + "[" + to_string(arrSelProj.second) + "]";
-                if (arrSelProj.second < inputB.size()) {
-                    return make_pair(move(outName), Bytes(ResultSet({inputB[arrSelProj.second]})));
-                } else {
-                    Result emptyResult{RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, 0), Record()};
-                    return make_pair(move(outName), Bytes(ResultSet{emptyResult}));
-                }
-            } else {
-                throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
-            }
-        }
-        case ProjectionType::ALIAS: {
-            pair<Projection, string> aliasProj = proj.get<pair<Projection, string>>();
-            pair<string, Bytes> resA = this->selectProjectionItem(input, aliasProj.first, map);
-            resA.first = aliasProj.second;
-            return resA;
-        }
-        default:
-            assert(false);
-            abort();
     }
 }
 
@@ -697,7 +599,7 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
 ResultSet Context::traversePrivate(const TraverseArgs &args) {
     typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int,
                                                  unsigned int, const ClassFilter &);
-    static const map<string, TraverseFunction, function<bool(const string &, const string &)>> mapFunc(
+    static const auto mapFunc = map<string, TraverseFunction, StringCaseCompare>(
        {
            {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
            {"OUTDEPTH_FIRST",   Traverse::outEdgeDfs},
@@ -706,8 +608,8 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
            {"OUTBREADTH_FIRST", Traverse::outEdgeBfs},
            {"ALLBREADTH_FIRST", Traverse::allEdgeBfs}
        },
-       [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
-       );
+       stringcasecmp
+    );
 
     if (args.minDepth < 0 || args.minDepth > UINT_MAX) {
         throw Error(SQL_INVALID_TRAVERSE_MIN_DEPTH, Error::Type::SQL);
@@ -734,15 +636,128 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     return func(this->txn, args.root, args.minDepth, args.maxDepth, ClassFilter(args.filter));
 }
 
+Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {
+    switch (proj.type) {
+        case ProjectionType::PROPERTY:
+            return Context::getProjectionItemProperty(txn, input, proj.get<string>(), map);
+        case ProjectionType::FUNCTION: {
+            Function func = proj.get<Function>();
+            if (func.isGroupResult() || func.isExpand()) {
+                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+            }
+            return func.execute(txn, input);
+        }
+        case ProjectionType::METHOD: {
+            const auto &method = proj.get<pair<Projection, Projection>>();
+            return Context::getProjectionItemMethod(txn, input, method.first, method.second, map);
+        }
+        case ProjectionType::ARRAY_SELECTOR: {
+            const auto &arrSel = proj.get<pair<Projection, unsigned long>>();
+            return Context::getProjectionItemArraySelector(txn, input, arrSel.first, arrSel.second, map);
+        }
+        case ProjectionType::CONDITION: {
+            const auto &cond = proj.get<pair<Projection, Condition>>();
+            if (cond.first.type != ProjectionType::FUNCTION) {
+                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+            }
+            return Context::getProjectionItemCondition(txn, input, cond.first.get<Function>(), cond.second);
+        }
+        case ProjectionType::ALIAS:
+            return Context::getProjectionItem(txn, input, proj.get<pair<Projection, string>>().first, map);
+        default:
+            assert(false);
+            abort();
+    }
+}
 
-nogdb::ClassType Context::findClassType(const string &className) {
-    auto classD = Db::getSchema(this->txn, className);
+Bytes Context::getProjectionItemProperty(Txn &txn, const Result &input, const string &propName, const PropertyMapType &map) {
+    if (propName == CLASS_NAME_PROPERTY) {
+        string className = Db::getSchema(txn, input.descriptor.rid.first).name;
+        return Bytes(className, nogdb::PropertyType::TEXT);
+    } else if (propName == RECORD_ID_PROPERTY) {
+        return Bytes(input.descriptor, nogdb::PropertyType::BLOB);
+    } else {
+        Bytes b = input.record.get(propName);
+        if (b.empty() || b.type() != nogdb::PropertyType::UNDEFINED) {
+            return b;
+        } else {
+            return Bytes(b.getRaw(), b.size(), map.at(propName));
+        }
+    }
+}
+
+Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Projection &firstProj, const Projection &secondProj, const PropertyMapType &map) {
+    Bytes resA = Context::getProjectionItem(txn, input, firstProj, map);
+    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+        ResultSet &inputB = resA.results();
+        if (inputB.size() == 1) {
+            const Result &in = inputB.front();
+            PropertyMapType mapProps = Context::getPropertyMapTypeFromClassDescriptor(txn, in.descriptor.rid.first);
+            return Context::getProjectionItem(txn, in, secondProj, mapProps);
+        } else {
+            ResultSet results;
+            PropertyMapType mapProps{};
+            ClassId previousClassID = -1;
+            for (const Result &in: inputB) {
+                if (in.descriptor.rid.first != previousClassID) {
+                    mapProps = Context::getPropertyMapTypeFromClassDescriptor(txn, in.descriptor.rid.first);
+                }
+                Bytes resB = Context::getProjectionItem(txn, in, secondProj, mapProps);
+                if (resB.type() != PropertyTypeExt::RESULT_SET) {
+                    throw Error(SQL_INVALID_PROJECTION_METHOD, Error::Type::SQL);
+                }
+                results.insert(results.end(), make_move_iterator(resB.results().begin()), make_move_iterator(resB.results().end()));
+            }
+            return Bytes(move(results));
+        }
+    } else {
+        throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
+    }
+}
+
+Bytes Context::getProjectionItemArraySelector(Txn &txn, const Result &input, const Projection &proj, unsigned long index, const PropertyMapType &map) {
+    Bytes resA = Context::getProjectionItem(txn, input, proj, map);
+    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+        ResultSet &inputB = resA.results();
+        if (index < inputB.size()) {
+            return Bytes(ResultSet({inputB[index]}));
+        } else {
+            Result emptyResult{RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, 0), Record()};
+            return Bytes(ResultSet{emptyResult});
+        }
+    } else {
+        throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
+    }
+}
+
+Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const Function &func, const Condition &cond) {
+    if (!func.isWalkResult()) {
+        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+    }
+
+    Bytes resA = func.execute(txn, input);
+    if (resA.type() != PropertyTypeExt::RESULT_SET) {
+        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+    }
+
+
+    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+        static MultiCondition alwaysTrue = Condition(RECORD_ID_PROPERTY) || !Condition(RECORD_ID_PROPERTY);
+        ResultSet result = Context::executeCondition(txn, resA.results(), cond && alwaysTrue);
+        return Bytes(move(result));
+    } else {
+        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+    }
+}
+
+nogdb::ClassType Context::findClassType(Txn &txn, const string &className) {
+    auto classD = Db::getSchema(txn, className);
     return classD.type;
 }
 
-nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(ClassId classID) {
+nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID) {
     if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
-        const ClassProperty &classProp = Db::getSchema(this->txn, classID).properties;
+        const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
         PropertyMapType map{};
         for (const auto &p: classProp) {
             map[p.first] = p.second.type;
@@ -751,4 +766,38 @@ nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(ClassId cl
     } else {
         return PropertyMapType{};
     }
+}
+
+ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const MultiCondition &conds) {
+    ResultSet result{};
+    PropertyMapType mapProp{};
+    ClassId previousClassID = -1;
+    for (auto in = input.begin(); in != input.end(); in++) {
+        ClassId classID = in->descriptor.rid.first;
+        if (classID == (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
+            mapProp.clear();
+            mapProp[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
+            mapProp[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
+            for (const auto &prop: in->record.getAll()) {
+                mapProp[prop.first] = prop.second.type().toBase();
+            }
+        } else if (classID != previousClassID) {
+            mapProp.clear();
+            mapProp[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
+            mapProp[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
+            const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
+            for (const auto &p: classProp) {
+                mapProp[p.first] = p.second.type;
+            }
+        } else /* if (classID == previousClassID) */ {
+            // no-op;
+        }
+
+        if (conds.execute(in->record.toBaseRecord(), mapProp)) {
+            result.push_back(move(*in));
+        }
+
+        previousClassID = classID;
+    }
+    return result;
 }

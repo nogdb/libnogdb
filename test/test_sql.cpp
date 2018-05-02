@@ -645,20 +645,23 @@ void test_sql_select_walk() {
     auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
 
     Class::create(txn, "v", ClassType::VERTEX);
+    Property::add(txn, "v", "p", PropertyType::TEXT);
     Class::create(txn, "eA", ClassType::EDGE);
+    Property::add(txn, "eA", "p", PropertyType::TEXT);
     Class::create(txn, "eB", ClassType::EDGE);
+    Property::add(txn, "eB", "p", PropertyType::TEXT);
 
     try {
-        auto v1 = Vertex::create(txn, "v");
-        auto v2 = Vertex::create(txn, "v");
-        auto v3 = Vertex::create(txn, "v");
-        auto v4 = Vertex::create(txn, "v");
-        auto v5 = Vertex::create(txn, "v");
-        auto eA13 = Edge::create(txn, "eA", v1, v3);
-        auto eB14 = Edge::create(txn, "eB", v1, v4);
-        auto eA23 = Edge::create(txn, "eA", v2, v3);
-        auto eB24 = Edge::create(txn, "eB", v2, v4);
-        auto eA35 = Edge::create(txn, "eA", v3, v5);
+        auto v1 = Vertex::create(txn, "v", Record().set("p", "v1"));
+        auto v2 = Vertex::create(txn, "v", Record().set("p", "v2"));
+        auto v3 = Vertex::create(txn, "v", Record().set("p", "v3"));
+        auto v4 = Vertex::create(txn, "v", Record().set("p", "v4"));
+        auto v5 = Vertex::create(txn, "v", Record().set("p", "v5"));
+        auto eA13 = Edge::create(txn, "eA", v1, v3, Record().set("p", "e13"));
+        auto eB14 = Edge::create(txn, "eB", v1, v4, Record().set("p", "e14"));
+        auto eA23 = Edge::create(txn, "eA", v2, v3, Record().set("p", "e23"));
+        auto eB24 = Edge::create(txn, "eB", v2, v4, Record().set("p", "e24"));
+        auto eA35 = Edge::create(txn, "eA", v3, v5, Record().set("p", "e35"));
 
         auto result = SQL::execute(txn, "SELECT expand(outE()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
@@ -728,6 +731,19 @@ void test_sql_select_walk() {
         assert(res.size() == 2);
         assert(res[0].descriptor == v2);
         assert(res[1].descriptor == v1);
+
+        result = SQL::execute(txn, "SELECT expand(in('eA').out('eB')) FROM " + to_string(v3));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assert(res.size() == 2);
+        assert(res[0].descriptor == v4);
+        assert(res[1].descriptor == v4);
+
+        result = SQL::execute(txn, "SELECT expand(outE()[p='e13'].inV()) FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assert(res.size() == 1);
+        assert(res[0].descriptor == v3);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
