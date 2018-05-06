@@ -51,6 +51,11 @@ namespace nogdb {
 
         static Record parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo);
 
+        static Record parseRawDataWithBasicInfo(const std::string className,
+                                                const RecordId& rid,
+                                                const KeyValue &keyValue,
+                                                const ClassPropertyInfo &classPropertyInfo);
+
         inline static size_t getRawDataSize(size_t size) {
             return sizeof(PropertyId) + size + ((size >= std::pow(2, UINT8_BITS_COUNT - 1))? sizeof(uint32_t): sizeof(uint8_t));
         };

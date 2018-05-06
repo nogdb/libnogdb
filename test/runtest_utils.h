@@ -22,6 +22,7 @@
 #ifndef RUNTEST_UTILS_H_
 #define RUNTEST_UTILS_H_
 
+#include <sstream>
 #include <string>
 #include <functional>
 #include "nogdb.h"
@@ -260,6 +261,12 @@ inline void cursorTester(nogdb::ResultSetCursor &rsCursor,
             }
         }
     }
+}
+
+inline std::string rid2str(const nogdb::RecordId &rid) {
+    std::stringstream ss{};
+    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
+    return ss.str();
 }
 
 #endif

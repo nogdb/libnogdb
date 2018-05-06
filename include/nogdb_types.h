@@ -32,6 +32,44 @@
 #include <memory>
 #include <ostream>
 
+//******************************************************************
+//*  Forward declarations of NogDB and boost internal classes.     *
+//******************************************************************
+
+namespace boost {
+    class shared_mutex;
+}
+
+namespace nogdb {
+    struct Datastore;
+    struct Graph;
+    struct Validate;
+    struct Algorithm;
+    struct Compare;
+    struct TxnStat;
+    struct Generic;
+    struct Parser;
+    struct Schema;
+    struct Class;
+    struct Property;
+    struct Db;
+    struct Vertex;
+    struct Edge;
+    struct Traverse;
+
+    class EnvHandlerPtr;
+
+    class BaseTxn;
+
+    class Condition;
+
+    class MultiCondition;
+
+    class PathFilter;
+
+    class RWSpinLock;
+}
+
 //*************************************************************
 //*  NogDB type definitions.                                  *
 //*************************************************************
@@ -159,7 +197,9 @@ namespace nogdb {
 
         template<typename T>
         Record &set(const std::string &propName, T value) {
-            properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+            if (!propName.empty() && propName.at(0) != '@') {
+                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+            }
             return *this;
         }
 
@@ -199,12 +239,32 @@ namespace nogdb {
 
         void unset(const std::string &className);
 
+        size_t size() const;
+
         bool empty() const;
 
         void clear();
 
     private:
+        friend struct Parser;
+        friend struct Generic;
+        friend struct Algorithm;
+
         std::map<std::string, Bytes> properties{};
+
+        template<typename T>
+        Record &setBasicInfo(const std::string &propName, T value) {
+            if (!propName.empty() && propName.at(0) == '@') {
+                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+            }
+            return *this;
+        };
+
+        Record &setBasicInfo(const std::string &propName, const unsigned char *value);
+
+        Record &setBasicInfo(const std::string &propName, const char *value);
+
+        Record &setBasicInfo(const std::string &propName, const std::string &value);
     };
 
     struct RecordDescriptor {
@@ -219,6 +279,11 @@ namespace nogdb {
         ~RecordDescriptor() noexcept = default;
 
         RecordId rid{0, 0};
+
+    private:
+        friend struct Generic;
+        friend struct Algorithm;
+        unsigned int depth{0};
     };
 
     typedef std::map<IndexId, std::pair<ClassId, bool>> IndexInfo;
@@ -420,7 +485,6 @@ inline bool operator!=(const nogdb::RecordId &lhs, const nogdb::RecordId &rhs) {
 inline bool operator<(const nogdb::RecordDescriptor &lhs, const nogdb::RecordDescriptor &rhs) {
     return lhs.rid < rhs.rid;
 }
-
 
 inline bool operator==(const nogdb::RecordDescriptor &lhs, const nogdb::RecordDescriptor &rhs) {
     return lhs.rid == rhs.rid;

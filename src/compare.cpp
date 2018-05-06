@@ -371,27 +371,26 @@ namespace nogdb {
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
-                        auto record = Parser::parseRawData(keyValue, classInfo.propertyInfo);
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, classInfo.name)
-                                .set(RECORD_ID_PROPERTY, rid2str(RecordId{classInfo.id, *key}));
+                        auto rid = RecordId{classInfo.id, *key};
+                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
                         if (condition.comp != Condition::Comparator::IS_NULL &&
                             condition.comp != Condition::Comparator::NOT_NULL) {
-                            if (tmpRecord.get(condition.propName).empty()) {
+                            if (record.get(condition.propName).empty()) {
                                 keyValue = Datastore::getNextCursor(cursorHandler.get());
                                 continue;
                             }
-                            if (compareBytesValue(tmpRecord.get(condition.propName), type, condition)) {
+                            if (compareBytesValue(record.get(condition.propName), type, condition)) {
                                 result.push_back(Result{RecordDescriptor{classInfo.id, *key}, record});
                             }
                         } else {
                             switch (condition.comp) {
                                 case Condition::Comparator::IS_NULL:
-                                    if (tmpRecord.get(condition.propName).empty()) {
+                                    if (record.get(condition.propName).empty()) {
                                         result.push_back(Result{RecordDescriptor{classInfo.id, *key}, record});
                                     }
                                     break;
                                 case Condition::Comparator::NOT_NULL:
-                                    if (!tmpRecord.get(condition.propName).empty()) {
+                                    if (!record.get(condition.propName).empty()) {
                                         result.push_back(Result{RecordDescriptor{classInfo.id, *key}, record});
                                     }
                                     break;
@@ -422,10 +421,9 @@ namespace nogdb {
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
-                        auto record = Parser::parseRawData(keyValue, classInfo.propertyInfo);
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, classInfo.name)
-                                .set(RECORD_ID_PROPERTY, rid2str(RecordId{classInfo.id, *key}));
-                        if (conditions.execute(tmpRecord, types)) {
+                        auto rid = RecordId{classInfo.id, *key};
+                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
+                        if (conditions.execute(record, types)) {
                             result.push_back(Result{RecordDescriptor{classInfo.id, *key}, record});
                         }
                     }
@@ -456,6 +454,7 @@ namespace nogdb {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
                     auto classDBHandler = Datastore::DBHandler{};
+                    auto className = std::string{};
                     auto filter = [&condition, &type](const Record &record) {
                         if (condition.comp != Condition::Comparator::IS_NULL &&
                             condition.comp != Condition::Comparator::NOT_NULL) {
@@ -489,12 +488,11 @@ namespace nogdb {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                             classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        auto record = Parser::parseRawData(keyValue, classPropertyInfo);
-                        auto name = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, name).set(RECORD_ID_PROPERTY, rid2str(edge));
-                        if (filter(tmpRecord)) {
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        if (filter(record)) {
                             result.push_back(Result{RecordDescriptor{edge}, record});
                         }
                     };
@@ -540,17 +538,17 @@ namespace nogdb {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
                     auto classDBHandler = Datastore::DBHandler{};
+                    auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                             classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        auto record = Parser::parseRawData(keyValue, classPropertyInfo);
-                        auto name = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, name).set(RECORD_ID_PROPERTY, rid2str(edge));
-                        if (conditions.execute(tmpRecord, types)) {
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        if (conditions.execute(record, types)) {
                             result.push_back(Result{RecordDescriptor{edge}, record});
                         }
                     };
@@ -604,7 +602,7 @@ namespace nogdb {
         auto &classId = (*classDescriptors.cbegin())->id;
         auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
         if (foundIndex.second) {
-            return Generic::getMultipleRecordFromRedesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, condition));
+            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, condition));
         }
         // if indexing is not found, then
         if (searchIndexOnly) {
@@ -653,7 +651,7 @@ namespace nogdb {
         auto &classId = (*classDescriptors.cbegin())->id;
         auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
         if (foundIndex.second) {
-            return Generic::getMultipleRecordFromRedesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, conditions));
+            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, conditions));
         }
         if (searchIndexOnly) {
             return ResultSet{};
@@ -786,10 +784,9 @@ namespace nogdb {
                 while (!keyValue.empty()) {
                     auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                     if (*key != EM_MAXRECNUM) {
-                        auto record = Parser::parseRawData(keyValue, classInfo.propertyInfo);
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, classInfo.name)
-                                .set(RECORD_ID_PROPERTY, rid2str(RecordId{classInfo.id, *key}));
-                        if ((*condition)(tmpRecord)) {
+                        auto rid = RecordId{classInfo.id, *key};
+                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
+                        if ((*condition)(record)) {
                             result.push_back(Result{RecordDescriptor{classInfo.id, *key}, record});
                         }
                     }
@@ -828,17 +825,17 @@ namespace nogdb {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
                     auto classDBHandler = Datastore::DBHandler{};
+                    auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                             classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        auto record = Parser::parseRawData(keyValue, classPropertyInfo);
-                        auto name = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto tmpRecord = record.set(CLASS_NAME_PROPERTY, name).set(RECORD_ID_PROPERTY, rid2str(edge));
-                        if ((*condition)(tmpRecord)) {
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        if ((*condition)(record)) {
                             result.push_back(Result{RecordDescriptor{edge}, record});
                         }
                     };

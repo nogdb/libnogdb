@@ -207,7 +207,7 @@ void test_get_vertex_v2() {
                 .set("text", "hello world")
                 .set("blob", obj);
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-        nogdb::Vertex::create(txn, "test", r);
+        auto rdesc = nogdb::Vertex::create(txn, "test", r);
 
         auto res = nogdb::Vertex::get(txn, "test");
         assert(res[0].record.get("integer").toInt() == INT_MIN);
@@ -221,6 +221,11 @@ void test_get_vertex_v2() {
         assert(obj_tmp.x == 42);
         assert(obj_tmp.y == 42.42);
         assert(obj_tmp.z == 424242);
+        assert(res[0].record.getText("@recordId") == rid2str(rdesc.rid));
+        assert(res[0].record.getText("@className") == "test");
+        assert(res[0].record.getBigIntU("@version") == 1UL);
+        assert(res[0].record.getIntU("@depth") == 0U);
+
         txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

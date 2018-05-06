@@ -75,6 +75,7 @@ extern void test_alter_invalid_property();
 extern void test_bytes_only();
 extern void test_record_with_bytes();
 extern void test_invalid_record_with_bytes();
+extern void test_invalid_record_property_name();
 extern void test_create_vertex();
 extern void test_create_vertices();
 extern void test_create_invalid_vertex();

@@ -28,8 +28,8 @@
 #include <set>
 #include <utility>
 
-#include "nogdb_compare.h"
 #include "nogdb_errors.h"
+#include "nogdb_compare.h"
 #include "nogdb_types.h"
 #include "nogdb_context.h"
 #include "nogdb_txn.h"

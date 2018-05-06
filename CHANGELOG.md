@@ -4,9 +4,11 @@
   * All `nogdb::Vertex::find*(...)` and `nogdb::Edge::find*(...)` functions are obsoleted and have been renamed to `nogdb::Vertex::get*(...)` and `nogdb::Edge::get*(...)` respectively.
   * `nogdb::Class::create(...)` and `nogdb::Class::createExtend(...)` with `PropertyMapType` functions are deprecated.
   * The maximum size of property value has been increased and now it can be up to 2,147,483,648 bytes (from 65,536 bytes previously).
+  * Remove dash (-) from a set of valid characters for class name and property name. A valid name for class and property must be A-Z, a-z, 0-9, and underscore (_) but cannot begin with numbers (0-9).
 * New features:
   * A member function `getProperties(...)` in `nogdb::Record` which returns a set of property names in a record is available.
   * Support SQL for graph manipulation, retrieval, and traversal via `nogdb::SQL::execute(...)`.
+  * Each record now contains some basic information such as `@className`, `@recordId`, `@depth`, and `@version` by default. These values are read-only and unable to be overwritten. 
 * Implemented enhancements:
   * Adding some class and property name restrictions.
   * Improving the way to internally handle a cursor pointer of `MDB_cursor` in order to prevent memory leak problems by applying RAII principle for `Datastore::CursorHandlerWrapper`.

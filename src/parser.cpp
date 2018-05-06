@@ -76,26 +76,28 @@ namespace nogdb {
         classInfo = Generic::getClassMapProperty(txn, classDescriptor);
         // calculate a raw data size of properties in a record
         for (const auto &property: record.getAll()) {
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
-            }
-            // check if having any index
-            for (const auto &indexIter: foundProperty->second.indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace(
-                            property.first,
-                            std::make_tuple(
-                                    foundProperty->second.type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                    break;
+            if (property.first.at(0) != '@' || property.first == VERSION_PROPERTY) {
+                auto foundProperty = classInfo.nameToDesc.find(property.first);
+                if (foundProperty == classInfo.nameToDesc.cend()) {
+                    throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
                 }
+                // check if having any index
+                for (const auto &indexIter: foundProperty->second.indexInfo) {
+                    if (indexIter.second.first == classDescriptor->id) {
+                        indexInfos.emplace(
+                                property.first,
+                                std::make_tuple(
+                                        foundProperty->second.type,
+                                        indexIter.first,
+                                        indexIter.second.second
+                                )
+                        );
+                        break;
+                    }
+                }
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
             }
-            dataSize += getRawDataSize(property.second.size());
-            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
         return parseRecord(txn, dataSize, properties, record);
     }
@@ -152,5 +154,16 @@ namespace nogdb {
             }
         }
         return result;
+    }
+
+    Record Parser::parseRawDataWithBasicInfo(const std::string className,
+                                             const RecordId& rid,
+                                             const KeyValue &keyValue,
+                                             const ClassPropertyInfo &classPropertyInfo) {
+        return parseRawData(keyValue, classPropertyInfo)
+                .setBasicInfo(CLASS_NAME_PROPERTY, className)
+                .setBasicInfo(RECORD_ID_PROPERTY, rid2str(rid))
+                .setBasicInfo(VERSION_PROPERTY, 1UL) //TODO: remove this when record version is implemented
+                .setBasicInfo(DEPTH_PROPERTY, 0U);
     }
 }

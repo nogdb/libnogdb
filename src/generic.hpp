@@ -67,7 +67,7 @@ namespace nogdb {
         static ResultSet getRecordFromRdesc(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
         static ResultSet
-        getMultipleRecordFromRedesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors);
+        getMultipleRecordFromRdesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors);
 
         static ResultSet getRecordFromClassInfo(const Txn &txn, const ClassInfo &classInfo);
 

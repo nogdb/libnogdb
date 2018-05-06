@@ -112,18 +112,17 @@ namespace nogdb {
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                 classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(rid.first), true);
             }
+            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
             auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawData(keyValue, classPropertyInfo);
-            auto name = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto tmpRecord = record.set(CLASS_NAME_PROPERTY, name).set(RECORD_ID_PROPERTY, rid2str(rid));
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
-                if ((*pathFilter.vertexFilter)(tmpRecord)) {
+                if ((*pathFilter.vertexFilter)(record)) {
                     return Result{RecordDescriptor{rid}, record};
                 } else {
                     return Result{};
                 }
             } else if (pathFilter.isSetEdge() && type == ClassType::EDGE) {
-                if ((*pathFilter.edgeFilter)(tmpRecord)) {
+                if ((*pathFilter.edgeFilter)(record)) {
                     return Result{RecordDescriptor{rid}, record};
                 } else {
                     return Result{};
@@ -146,18 +145,17 @@ namespace nogdb {
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                 classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(rid.first), true);
             }
+            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
             auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawData(keyValue, classPropertyInfo);
-            auto name = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto tmpRecord = record.set(CLASS_NAME_PROPERTY, name).set(RECORD_ID_PROPERTY, rid2str(rid));
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
-                if ((*pathFilter.vertexFilter)(tmpRecord)) {
+                if ((*pathFilter.vertexFilter)(record)) {
                     return RecordDescriptor{rid};
                 } else {
                     return RecordDescriptor{};
                 }
             } else if (pathFilter.isSetEdge() && type == ClassType::EDGE) {
-                if ((*pathFilter.edgeFilter)(tmpRecord)) {
+                if ((*pathFilter.edgeFilter)(record)) {
                     return RecordDescriptor{rid};
                 } else {
                     return RecordDescriptor{};

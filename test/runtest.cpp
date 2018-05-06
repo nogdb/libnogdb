@@ -92,6 +92,7 @@ int main() {
     exec(test_bytes_only, "converting primitive types to bytes");
     exec(test_record_with_bytes, "getting/setting bytes from/to record");
     exec(test_invalid_record_with_bytes, "getting values from record with invalid properties");
+    exec(test_invalid_record_property_name, "setting values into record with invalid property names");
 #endif
     // vertex
 #ifdef TEST_RECORD_OPERATIONS
