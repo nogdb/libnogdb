@@ -25,7 +25,6 @@
 #include <utility>
 #include <set>
 #include <queue>
-#include <cassert>
 
 #include "blob.hpp"
 #include "keyval.hpp"
@@ -35,6 +34,7 @@
 #include "parser.hpp"
 #include "generic.hpp"
 #include "schema.hpp"
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
 
@@ -264,7 +264,7 @@ namespace nogdb {
                 const Schema::ClassDescriptorPtr &classDescriptor) -> void {
             for (const auto &subClassDescriptor: BaseTxn::getCurrentVersion(txn, classDescriptor->sub).first) {
                 auto subClassDescriptorPtr = subClassDescriptor.lock();
-                assert(subClassDescriptorPtr != nullptr);
+                require(subClassDescriptorPtr != nullptr);
                 subClasses.insert(subClassDescriptorPtr);
                 resolveSubclass(subClassDescriptorPtr);
             }

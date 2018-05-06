@@ -23,11 +23,11 @@
 #include <bitset> // for debugging
 #include <vector>
 #include <cmath>
-#include <cassert>
 
 #include "datastore.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
 
@@ -48,8 +48,8 @@ namespace nogdb {
             for (const auto &property: properties) {
                 auto propertyId = static_cast<PropertyId>(property.second.id);
                 auto rawData = record.get(property.first);
-                assert(property.second.id < std::pow(2, UINT16_BITS_COUNT));
-                assert(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
+                require(property.second.id < std::pow(2, UINT16_BITS_COUNT));
+                require(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
                 if (rawData.size() < std::pow(2, UINT8_BITS_COUNT - 1)) {
                     auto size = static_cast<uint8_t>(rawData.size()) << 1;
                     value.append(&propertyId, sizeof(PropertyId));

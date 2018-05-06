@@ -19,12 +19,11 @@
  *
  */
 
-#include <cassert>
-
 #include "constant.hpp"
 #include "sql.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -673,7 +672,7 @@ Context::selectProjectionItem(const Result &input, const Projection &proj, const
             return resA;
         }
         default:
-            assert(false);
+            require(false);
             abort();
     }
 }

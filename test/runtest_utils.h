@@ -68,6 +68,12 @@ inline void show_schema(const nogdb::Txn &txn) {
     }
 }
 
+inline std::string rid2str(const nogdb::RecordId &rid) {
+    std::stringstream ss{};
+    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
+    return ss.str();
+}
+
 #define REQUIRE(_err, _exp, _msg) \
         require(_err, _exp, _msg, __FUNCTION__, __LINE__, __FILE__)
 
@@ -182,6 +188,7 @@ inline void cursorTester(nogdb::ResultSetCursor &rsCursor,
             } else {
                 assert(false);
             }
+            assert(rsCursor->record.getText("@recordId") == rid2str(rsCursor->descriptor.rid));
             ++count;
         }
         rsCursor.first();
@@ -209,6 +216,7 @@ inline void cursorTester(nogdb::ResultSetCursor &rsCursor,
             } else {
                 assert(false);
             }
+            assert(rsCursor->record.getText("@recordId") == rid2str(rsCursor->descriptor.rid));
         }
     }
 }
@@ -232,6 +240,7 @@ inline void cursorTester(nogdb::ResultSetCursor &rsCursor,
             } else {
                 assert(false);
             }
+            assert(rsCursor->record.getText("@recordId") == rid2str(rsCursor->descriptor.rid));
             ++count;
         }
         rsCursor.first();
@@ -259,14 +268,9 @@ inline void cursorTester(nogdb::ResultSetCursor &rsCursor,
             } else {
                 assert(false);
             }
+            assert(rsCursor->record.getText("@recordId") == rid2str(rsCursor->descriptor.rid));
         }
     }
-}
-
-inline std::string rid2str(const nogdb::RecordId &rid) {
-    std::stringstream ss{};
-    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
-    return ss.str();
 }
 
 #endif

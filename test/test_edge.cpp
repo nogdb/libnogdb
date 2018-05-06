@@ -676,6 +676,8 @@ void test_update_edge() {
         nogdb::Edge::update(txn, e1, r3);
         auto res = nogdb::Edge::get(txn, "authors");
         assert(res[0].record.get("time_used").toIntU() == 400U);
+        assert(res[0].record.getText("@className") == "authors");
+        assert(res[0].record.getText("@recordId") == rid2str(e1.rid));
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

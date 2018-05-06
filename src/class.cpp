@@ -21,7 +21,6 @@
 
 #include <iostream> // for debugging
 #include <memory>
-#include <cassert>
 
 #include "shared_lock.hpp"
 #include "schema.hpp"
@@ -31,6 +30,7 @@
 #include "datastore.hpp"
 #include "generic.hpp"
 #include "validate.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -127,7 +127,7 @@ namespace nogdb {
 
             // update in-memory schema and info
             auto superClassDescriptorPtr = txn.txnCtx.dbSchema->find(*txn.txnBase, superClassDescriptor->id);
-            assert(superClassDescriptorPtr != nullptr);
+            require(superClassDescriptorPtr != nullptr);
             classDescriptor->super.addLatestVersion(superClassDescriptorPtr);
             auto subClasses = superClassDescriptorPtr->sub.getLatestVersion().first;
             txn.txnCtx.dbSchema->insert(*txn.txnBase, classDescriptor);
@@ -222,9 +222,9 @@ namespace nogdb {
             }
             for (const auto &subClassDescriptor: subClassDescriptors) {
                 auto subClassDescriptorPtr = subClassDescriptor.lock();
-                assert(subClassDescriptorPtr != nullptr);
+                require(subClassDescriptorPtr != nullptr);
                 auto name = subClassDescriptorPtr->name.getLatestVersion().first;
-                assert(!name.empty());
+                require(!name.empty());
                 auto totalLength = sizeof(subClassDescriptorPtr->type) + sizeof(ClassId) + strlen(name.c_str());
                 auto value = Blob(totalLength);
                 value.append(&subClassDescriptorPtr->type, sizeof(subClassDescriptorPtr->type));
@@ -257,7 +257,7 @@ namespace nogdb {
                 for (const auto &subClassDescriptor: subClassDescriptors) {
                     subClassesOfSuperClassDescriptor.push_back(subClassDescriptor);
                     auto subClassDescriptorPtr = subClassDescriptor.lock();
-                    assert(subClassDescriptorPtr != nullptr);
+                    require(subClassDescriptorPtr != nullptr);
                     subClassDescriptorPtr->super.addLatestVersion(superClassDescriptor);
                     txn.txnBase->addUncommittedSchema(subClassDescriptorPtr);
                 }
@@ -266,7 +266,7 @@ namespace nogdb {
             } else {
                 for (const auto &subClassDescriptor: subClassDescriptors) {
                     auto subClassDescriptorPtr = subClassDescriptor.lock();
-                    assert(subClassDescriptorPtr != nullptr);
+                    require(subClassDescriptorPtr != nullptr);
                     subClassDescriptorPtr->super.addLatestVersion(std::weak_ptr<Schema::ClassDescriptor>{});
                     txn.txnBase->addUncommittedSchema(subClassDescriptorPtr);
                 }

@@ -22,10 +22,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
-#include <cassert>
 #include <algorithm>
 
 #include "blob.hpp"
+#include "utils.hpp"
 
 namespace nogdb {
 
@@ -82,14 +82,14 @@ namespace nogdb {
     }
 
     Blob &Blob::append(const void *data, size_t size) {
-        assert(size_ + size <= capacity_);
+        require(size_ + size <= capacity_);
         memcpy(static_cast<void *>(value_ + size_), data, size);
         size_ += size;
         return *this;
     }
 
     size_t Blob::retrieve(void *data, size_t offset, size_t size) {
-        assert(offset + size <= capacity_);
+        require(offset + size <= capacity_);
         memcpy(data, static_cast<const void *>(value_ + offset), size);
         return offset + size;
     }

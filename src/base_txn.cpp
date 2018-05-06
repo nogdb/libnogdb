@@ -247,7 +247,7 @@ namespace nogdb {
             if (txnType == TxnType::READ_WRITE) {
                 for (const auto &vertex: ucVertices) {
                     auto vertexPtr = vertex.second;
-                    assert(vertexPtr != nullptr);
+                    require(vertexPtr != nullptr);
                     auto state = vertexPtr->getState();
                     auto status = state.second;
                     if (status == TxnObject::StatusFlag::UNCOMMITTED_DELETE) {
@@ -256,7 +256,7 @@ namespace nogdb {
                 }
                 for (const auto &edge: ucEdges) {
                     auto edgePtr = edge.second;
-                    assert(edgePtr != nullptr);
+                    require(edgePtr != nullptr);
                     auto state = edgePtr->getState();
                     auto status = state.second;
                     if (status == TxnObject::StatusFlag::UNCOMMITTED_DELETE) {
@@ -296,7 +296,7 @@ namespace nogdb {
                 }
                 for (const auto &classDescriptor: ucSchema) {
                     auto classDescriptorPtr = classDescriptor.second;
-                    assert(classDescriptorPtr != nullptr);
+                    require(classDescriptorPtr != nullptr);
                     auto state = classDescriptorPtr->getState();
                     auto status = state.second;
                     if (status == TxnObject::StatusFlag::UNCOMMITTED_DELETE) {

@@ -19,7 +19,6 @@
  *
  */
 
-#include <cassert>
 #include <vector>
 #include <algorithm>
 #include <regex>
@@ -621,11 +620,11 @@ namespace nogdb {
         auto conditionPropertyTypes = PropertyMapType{};
         for (const auto &conditionNode: conditions.conditions) {
             auto conditionNodePtr = conditionNode.lock();
-            assert(conditionNodePtr != nullptr);
+            require(conditionNodePtr != nullptr);
             auto &condition = conditionNodePtr->getCondition();
             conditionPropertyTypes.emplace(condition.propName, PropertyType::UNDEFINED);
         }
-        assert(!conditionPropertyTypes.empty());
+        require(!conditionPropertyTypes.empty());
 
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
         auto classInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, classDescriptors);
@@ -721,11 +720,11 @@ namespace nogdb {
         auto conditionPropertyTypes = PropertyMapType{};
         for (const auto &conditionNode: conditions.conditions) {
             auto conditionNodePtr = conditionNode.lock();
-            assert(conditionNodePtr != nullptr);
+            require(conditionNodePtr != nullptr);
             auto &condition = conditionNodePtr->getCondition();
             conditionPropertyTypes.emplace(condition.propName, PropertyType::UNDEFINED);
         }
-        assert(!conditionPropertyTypes.empty());
+        require(!conditionPropertyTypes.empty());
 
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = std::vector<ClassId> {};

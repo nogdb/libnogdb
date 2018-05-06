@@ -23,7 +23,6 @@
 #define __ALGORITHM_HPP_INCLUDED_
 
 #include <functional>
-#include <cassert>
 
 #include "constant.hpp"
 #include "datastore.hpp"

@@ -19,11 +19,11 @@
  *
  */
 
-#include <cassert>
 #include <memory>
 
 #include "schema.hpp"
 #include "base_txn.hpp"
+#include "utils.hpp"
 
 namespace nogdb {
 
@@ -130,7 +130,7 @@ namespace nogdb {
     void Schema::deleteProperty(BaseTxn &txn, const ClassId &classId, const std::string &propertyName) {
         if (auto classDescriptorPtr = find(txn, classId)) {
             auto properties = classDescriptorPtr->properties.getLatestVersion();
-            assert(properties.second);
+            require(properties.second);
             auto newProperties = properties.first;
             newProperties.erase(propertyName);
             classDescriptorPtr->properties.addLatestVersion(newProperties);
@@ -144,10 +144,10 @@ namespace nogdb {
                                 const std::string &newPropertyName) {
         if (auto classDescriptorPtr = find(txn, classId)) {
             auto properties = classDescriptorPtr->properties.getLatestVersion();
-            assert(properties.second);
+            require(properties.second);
             auto newProperties = properties.first;
             auto iter = newProperties.find(oldPropertyName);
-            assert(iter != newProperties.cend());
+            require(iter != newProperties.cend());
             auto propertyDescriptor = iter->second;
             newProperties.erase(iter);
             newProperties.emplace(newPropertyName, propertyDescriptor);
@@ -162,7 +162,7 @@ namespace nogdb {
                                 const PropertyDescriptor &propertyDescriptor) {
         if (auto classDescriptorPtr = find(txn, classId)) {
             auto properties = classDescriptorPtr->properties.getLatestVersion();
-            assert(properties.second);
+            require(properties.second);
             auto newProperties = properties.first;
             newProperties.erase(propertyName);
             newProperties.emplace(propertyName, propertyDescriptor);
@@ -177,9 +177,9 @@ namespace nogdb {
             auto superClassId = inheritance.second;
             if (superClassId > 0) {
                 auto subClassDescriptorPtr = find(txn, subClassId);
-                assert(subClassDescriptorPtr != nullptr);
+                require(subClassDescriptorPtr != nullptr);
                 auto superClassDescriptorPtr = find(txn, superClassId);
-                assert(superClassDescriptorPtr != nullptr);
+                require(superClassDescriptorPtr != nullptr);
                 subClassDescriptorPtr->super.addLatestVersion(superClassDescriptorPtr);
                 txn.addUncommittedSchema(subClassDescriptorPtr);
                 auto subClasses = superClassDescriptorPtr->sub.getLatestVersion().first;

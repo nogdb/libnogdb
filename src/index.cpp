@@ -25,6 +25,7 @@
 #include "index.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
+#include "utils.hpp"
 
 #include "nogdb_txn.h"
 
@@ -374,7 +375,7 @@ namespace nogdb {
                     auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode.get();
                     auto &condition = conditionNodePtr->getCondition();
                     auto indexPropertyTypeMap = indexPropertyTypes.find(condition.propName);
-                    assert(indexPropertyTypeMap != indexPropertyTypes.cend());
+                    require(indexPropertyTypeMap != indexPropertyTypes.cend());
                     return getIndexRecord(txn, classId, indexPropertyTypeMap->second, condition, isNegative);
                 }
             };

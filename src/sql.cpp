@@ -19,13 +19,14 @@
  *
  */
 
-#include <cassert>
 #include <cstring>
+#include <cassert>
 
 #include "constant.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
 #include "sql.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -88,7 +89,7 @@ Bytes Token::toBytes() const {
             return Bytes(blob.get(), n / 2, nogdb::PropertyType::BLOB);
         }
         default:
-            assert(false);
+            require(false);
             return Bytes();
     }
 }
@@ -118,7 +119,7 @@ string &Token::dequote(string &z) const {
             quote = ']';
         }
         for (i = 1, j = 0;; i++) {
-            assert(z[i]);
+            require(z[i]);
             if (z[i] == quote) {
                 if (z[i + 1] == quote) {
                     z[j++] = quote;
@@ -306,8 +307,8 @@ Function::Function(const string &name_, vector<Projection> &&args_)
 }
 
 Bytes Function::execute(Txn &txn, const Result &input) const {
-    assert(this->isGroupResult() == false);
-    assert(this->isExpand() == false);
+    require(this->isGroupResult() == false);
+    require(this->isExpand() == false);
 
     function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
     switch (this->id) {
@@ -509,7 +510,7 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
             if (func.isWalkResult()) {
                 for (const Result &in: input) {
                     Bytes out = func.execute(txn, in);
-                    assert(out.type() == PropertyTypeExt::RESULT_SET);
+                    require(out.type() == PropertyTypeExt::RESULT_SET);
                     results.insert(results.end(), make_move_iterator(out.results().begin()),
                                    make_move_iterator(out.results().end()));
                 }
