@@ -19,8 +19,12 @@
  *
  */
 
+#include <cstdlib>
+
 #include "constant.hpp"
 #include "validate.hpp"
+
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
@@ -187,6 +191,34 @@ namespace nogdb {
         } else {
             return bytes.toText();
         }
+    }
+
+    std::string Record::getClassName() const {
+        return getText(CLASS_NAME_PROPERTY);
+    }
+
+    RecordId Record::getRecordId() const {
+        auto ridAsString = getText(RECORD_ID_PROPERTY);
+        auto sp = split(ridAsString, ':');
+        if (sp.size() != 2) {
+            try {
+                auto classId = strtoul(sp[0].c_str(), nullptr, 0);
+                auto positionId = strtoul(sp[1].c_str(), nullptr, 0);;
+                return RecordId{classId, positionId};
+            } catch(...) {
+                throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
+            }
+        } else {
+            return RecordId{};
+        }
+    }
+
+    uint32_t Record::getDepth() const {
+        return getIntU(DEPTH_PROPERTY);
+    }
+
+    uint64_t Record::getVersion() const {
+        return getBigIntU(VERSION_PROPERTY);
     }
 
     void Record::unset(const std::string &propName) {

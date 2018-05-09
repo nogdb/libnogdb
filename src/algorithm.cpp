@@ -71,8 +71,8 @@ namespace nogdb {
                                                       classDBHandler, vertex, pathFilter, ClassType::VERTEX);
                             if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) &&
                                 (!tmpResult.record.empty())) {
-                                tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel);
-                                tmpResult.descriptor.depth = currentLevel;
+                                tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel + 1);
+                                tmpResult.descriptor.depth = currentLevel + 1;
                                 result.push_back(tmpResult);
                             }
                             visited.insert(vertex);
@@ -395,7 +395,7 @@ namespace nogdb {
                                             RecordDescriptor{vertex};
                             if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) &&
                                 (tmpRdesc != RecordDescriptor{})) {
-                                tmpRdesc.depth = currentLevel;
+                                tmpRdesc.depth = currentLevel + 1;
                                 result.emplace_back(tmpRdesc);
                             }
                             visited.insert(vertex);

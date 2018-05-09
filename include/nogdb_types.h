@@ -237,6 +237,14 @@ namespace nogdb {
 
         std::string getText(const std::string &propName) const;
 
+        std::string getClassName() const;
+
+        RecordId getRecordId() const;
+
+        uint32_t getDepth() const;
+
+        uint64_t getVersion() const;
+
         void unset(const std::string &className);
 
         size_t size() const;

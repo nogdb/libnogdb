@@ -467,6 +467,19 @@ std::string val = r.getText(const std::string& propName);
 * Exceptions:
 ** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
 
+==== GET BASIC INFO
+[source,cpp]
+------------
+std::string val = r.getClassName(); // identical to r.getText("@className");
+RecordId val = r.getRecordId();
+uint32_t val = r.getDepth();    // identical to r.getIntU("@depth");
+uint64_t val = r.getVersion();  // identical to r.getBigIntU("@version");
+------------
+* Description:
+** To retrieve a value from basic information associated with the current record.
+* Return:
+** A value depending on a member function.
+
 ==== SET
 [source,cpp]
 ------------
