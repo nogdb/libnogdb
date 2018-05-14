@@ -66,6 +66,10 @@ static unsigned char *HexToBlob(const char *z, int n) {
     return blob;
 }
 
+string nogdb::sql_parser::to_string(const RecordDescriptor &r) {
+    return "#" + to_string(r.rid.first) + ":" + to_string(r.rid.second);
+}
+
 
 #pragma mark - Token
 
@@ -138,19 +142,6 @@ string &Token::dequote(string &z) const {
 }
 
 
-#pragma mark - PropertyType
-
-bool PropertyType::operator==(const PropertyType &other) const {
-    return (this->t == other.t
-            && ((t == BASE && this->base == other.base)
-                || (t == EXTEND && this->ext == other.ext)));
-}
-
-bool PropertyType::operator!=(const PropertyType &other) const {
-    return !this->operator==(other);
-}
-
-
 #pragma mark - Bytes
 
 Bytes::Bytes() : Bytes(nogdb::PropertyType::UNDEFINED) {
@@ -165,9 +156,7 @@ Bytes::Bytes(nogdb::Bytes &&bytes_, PropertyType type_) : nogdb::Bytes(move(byte
 Bytes::Bytes(PropertyType type_) : nogdb::Bytes(), t(type_) {
 }
 
-Bytes::Bytes(ResultSet &&res)
-        : nogdb::Bytes(res.descriptorsToString()), t(PropertyTypeExt::RESULT_SET),
-          r(make_shared<ResultSet>(move(res))) {
+Bytes::Bytes(ResultSet &&res) : nogdb::Bytes(res.descriptorsToString()), r(make_shared<ResultSet>(move(res))) {
 }
 
 bool Bytes::operator<(const Bytes &other) const {
@@ -228,7 +217,7 @@ nogdb::Record Record::toBaseRecord() const {
     nogdb::Record base{};
     for (auto p: this->properties) {
         const string &name = p.first;
-        base.set(p.first, static_cast<const nogdb::Bytes &>(p.second));
+        base.properties[name] = p.second;
     }
     return base;
 }
@@ -269,7 +258,7 @@ string ResultSet::descriptorsToString() const {
     stringstream buff;
     buff << this->size();
     for (const Result &r: *this) {
-        buff << "," << r.descriptor.toString();
+        buff << "," << to_string(r.descriptor);
     }
     return buff.str();
 }
@@ -510,7 +499,7 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
             if (func.isWalkResult()) {
                 for (const Result &in: input) {
                     Bytes out = func.execute(txn, in);
-                    require(out.type() == PropertyTypeExt::RESULT_SET);
+                    require(out.isResults());
                     results.insert(results.end(), make_move_iterator(out.results().begin()),
                                    make_move_iterator(out.results().end()));
                 }

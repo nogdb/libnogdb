@@ -68,6 +68,10 @@ namespace nogdb {
     class PathFilter;
 
     class RWSpinLock;
+
+    namespace sql_parser {
+        class Record;
+    }
 }
 
 //*************************************************************
@@ -257,6 +261,7 @@ namespace nogdb {
         friend struct Parser;
         friend struct Generic;
         friend struct Algorithm;
+        friend class sql_parser::Record;
 
         std::map<std::string, Bytes> properties{};
 
