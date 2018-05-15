@@ -537,27 +537,27 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
         return move(input);
     }
 
-    bool grouped = false;
+    bool aggregated = false;
     Record tmpRec{};
     for (const Projection &proj: projs) {
         if (proj.type == ProjectionType::FUNCTION) {
             const Function &func = proj.get<Function>();
-            if (func.isGroupResult()) {
-                tmpRec.set(func.toString(), func.executeGroupResult(input));
-                grouped = true;
+            if (func.isAggregateResult()) {
+                tmpRec.set(func.toString(), func.executeAggregateResult(input));
+                aggregated = true;
             } else if (func.isExpand()) {
                 throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
             }
         }
     }
 
-    if (grouped) {
+    if (aggregated) {
         // if input is not empty, use last record for other projection.
         if (!input.empty()) {
             const Result &last = input.back();
             PropertyMapType mapProps = Context::getPropertyMapTypeFromClassDescriptor(this->txn, last.descriptor.rid.first);
             for (const Projection &proj: projs) {
-                if (proj.type != ProjectionType::FUNCTION || proj.get<Function>().isGroupResult() == false) {
+                if (proj.type != ProjectionType::FUNCTION || proj.get<Function>().isAggregateResult() == false) {
                     tmpRec.set(to_string(proj), Context::getProjectionItem(this->txn, last, proj, mapProps));
                 }
             }
@@ -642,7 +642,7 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
             return Context::getProjectionItemProperty(txn, input, proj.get<string>(), map);
         case ProjectionType::FUNCTION: {
             Function func = proj.get<Function>();
-            if (func.isGroupResult() || func.isExpand()) {
+            if (func.isAggregateResult() || func.isExpand()) {
                 throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
             }
             return func.execute(txn, input);

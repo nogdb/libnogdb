@@ -344,7 +344,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
 }
 
 Bytes Function::execute(Txn &txn, const Result &input) const {
-    assert(this->isGroupResult() == false);
+    assert(this->isAggregateResult() == false);
     assert(this->isExpand() == false);
 
     function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
@@ -379,7 +379,7 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
     return func(txn, input, this->args);
 }
 
-Bytes Function::executeGroupResult(const ResultSet &input) const {
+Bytes Function::executeAggregateResult(const ResultSet &input) const {
     function<Bytes(const ResultSet &, const vector<Projection> &)> func;
     switch (this->id) {
         case Id::COUNT:
@@ -399,7 +399,7 @@ Bytes Function::executeExpand(Txn &txn, ResultSet &input) const {
     return expand(txn, input, args);
 }
 
-bool Function::isGroupResult() const {
+bool Function::isAggregateResult() const {
     switch (this->id) {
         case Id::COUNT:
         case Id::MIN:

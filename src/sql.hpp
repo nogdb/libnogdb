@@ -308,11 +308,11 @@ namespace nogdb {
 
             Bytes execute(Txn &txn, const Result &input) const;
 
-            Bytes executeGroupResult(const ResultSet &input) const;
+            Bytes executeAggregateResult(const ResultSet &input) const;
 
             Bytes executeExpand(Txn &txn, ResultSet &input) const;
 
-            bool isGroupResult() const;
+            bool isAggregateResult() const;
 
             bool isWalkResult() const;
 
