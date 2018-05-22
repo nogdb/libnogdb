@@ -24,7 +24,7 @@
 #include <list>
 
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 
 void test_bfs_traverse_in() {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};

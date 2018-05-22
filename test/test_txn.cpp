@@ -19,7 +19,7 @@
  *
  */
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 
 void test_txn_commit_nothing() {
     init_vertex_island();

@@ -23,7 +23,7 @@
 #include <mutex>
 #include <unistd.h>
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 
 std::mutex wlock;
 

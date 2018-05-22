@@ -16,6 +16,7 @@
 * Fixed bugs:
   * Fixing issue [#11](https://github.com/nogdb/nogdb/issues/11). A SQL syntax error found when using `TRAVERSE` clause inside `SELECT`.
   * Fixing issue [#12](https://github.com/nogdb/nogdb/issues/12). An exception `SQL_INVALID_PROJECTION` thrown after getting out-of-bound index in SQL syntax.
+  * Fixing several bugs in data indexing retrieval operations.
   
 ## v0.10.0-beta [2018-03-24]
 * General changes:

@@ -44,6 +44,9 @@ namespace nogdb {
             Condition::Comparator::GREATER
     };
 
+    auto cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+        return lhs.rid < rhs.rid;
+    };
 
     void Index::addIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
                          PropertyType type, bool isUnique) {
@@ -267,87 +270,122 @@ namespace nogdb {
                                                         IndexPropertyType indexPropertyType,
                                                         const Condition &condition,
                                                         bool isNegative) {
+        auto sortByRdesc = [](std::vector<RecordDescriptor>& recordDescriptors) {
+            std::sort(recordDescriptors.begin(), recordDescriptors.end(), cmpRecordDescriptor);
+        };
+
         auto isApplyNegative = condition.isNegative ^isNegative;
         switch (condition.comp) {
             case Condition::Comparator::EQUAL: {
                 if (!isApplyNegative) {
-                    return getEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 } else {
                     auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueBytes);
                     auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
                     lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                    sortByRdesc(lessResult);
                     return lessResult;
                 }
             }
             case Condition::Comparator::LESS_EQUAL: {
                 if (!isApplyNegative) {
-                    return getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 } else {
-                    return getGreater(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 }
             }
             case Condition::Comparator::LESS: {
                 if (!isApplyNegative) {
-                    return getLess(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getLess(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 } else {
-                    return getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 }
             }
             case Condition::Comparator::GREATER_EQUAL: {
                 if (!isApplyNegative) {
-                    return getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 } else {
-                    return getLess(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getLess(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 }
             }
             case Condition::Comparator::GREATER: {
                 if (!isApplyNegative) {
-                    return getGreater(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 } else {
-                    return getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    auto result = getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
+                    sortByRdesc(result);
+                    return result;
                 }
             }
             case Condition::Comparator::BETWEEN_NO_BOUND: {
                 if (!isApplyNegative) {
-                    return getBetween(txn, classId, indexPropertyType, condition.valueSet[0], condition.valueSet[1],
-                                      {false, false});
+                    auto result = getBetween(txn, classId, indexPropertyType,
+                                             condition.valueSet[0], condition.valueSet[1], {false, false});
+                    sortByRdesc(result);
+                    return result;
                 } else {
                     auto lessResult = getLessEqual(txn, classId, indexPropertyType, condition.valueSet[0]);
                     auto greaterResult = getGreaterEqual(txn, classId, indexPropertyType, condition.valueSet[1]);
                     lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                    sortByRdesc(lessResult);
                     return lessResult;
                 }
             }
             case Condition::Comparator::BETWEEN: {
                 if (!isApplyNegative) {
-                    return getBetween(txn, classId, indexPropertyType, condition.valueSet[0], condition.valueSet[1],
-                                      {true, true});
+                    auto result = getBetween(txn, classId, indexPropertyType,
+                                             condition.valueSet[0], condition.valueSet[1], {true, true});
+                    sortByRdesc(result);
+                    return result;
                 } else {
                     auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueSet[0]);
                     auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueSet[1]);
                     lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                    sortByRdesc(lessResult);
                     return lessResult;
                 }
             }
             case Condition::Comparator::BETWEEN_NO_UPPER: {
                 if (!isApplyNegative) {
-                    return getBetween(txn, classId, indexPropertyType, condition.valueSet[0], condition.valueSet[1],
-                                      {true, false});
+                    auto result = getBetween(txn, classId, indexPropertyType,
+                                             condition.valueSet[0], condition.valueSet[1], {true, false});
+                    sortByRdesc(result);
+                    return result;
                 } else {
                     auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueSet[0]);
                     auto greaterResult = getGreaterEqual(txn, classId, indexPropertyType, condition.valueSet[1]);
                     lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                    sortByRdesc(lessResult);
                     return lessResult;
                 }
             }
             case Condition::Comparator::BETWEEN_NO_LOWER: {
                 if (!isApplyNegative) {
-                    return getBetween(txn, classId, indexPropertyType, condition.valueSet[0], condition.valueSet[1],
-                                      {false, true});
+                    auto result = getBetween(txn, classId, indexPropertyType,
+                                             condition.valueSet[0], condition.valueSet[1], {false, true});
+                    sortByRdesc(result);
+                    return result;
                 } else {
                     auto lessResult = getLessEqual(txn, classId, indexPropertyType, condition.valueSet[0]);
                     auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueSet[1]);
                     lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                    sortByRdesc(lessResult);
                     return lessResult;
                 }
             }
@@ -361,9 +399,6 @@ namespace nogdb {
                                                         ClassId classId,
                                                         const std::map<std::string, IndexPropertyType> &indexPropertyTypes,
                                                         const MultiCondition &conditions) {
-        auto cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
-            return lhs.rid < rhs.rid;
-        };
         std::function<std::vector<RecordDescriptor>(const MultiCondition::CompositeNode *, bool)>
                 getRecordFromIndex = [&](const MultiCondition::CompositeNode *compositeNode, bool isParentNegative) {
             auto getResult = [&](const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
@@ -386,8 +421,6 @@ namespace nogdb {
             auto result = std::vector<RecordDescriptor>{};
             auto rightNodeResult = getResult(rightNode, isApplyNegative);
             auto leftNodeResult = getResult(leftNode, isApplyNegative);
-            std::sort(rightNodeResult.begin(), rightNodeResult.end(), cmpRecordDescriptor);
-            std::sort(leftNodeResult.begin(), leftNodeResult.end(), cmpRecordDescriptor);
             if ((opt == MultiCondition::Operator::AND && !isApplyNegative) ||
                 (opt == MultiCondition::Operator::OR && isApplyNegative)) {
                 // AND action
@@ -423,13 +456,13 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
+                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
+                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
+                    return backwardSearchIndex(cursorHandler, classId, value.toIntU(), true, true);
                 } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
+                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
                 }
             }
             case PropertyType::TINYINT:
@@ -447,7 +480,7 @@ namespace nogdb {
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler, classId, value.toText(), true);
+                return backwardSearchIndex(cursorHandler, classId, value.toText(), true, true);
             }
             default:
                 break;
@@ -471,13 +504,13 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU());
+                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU());
+                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toIntU());
+                    return backwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
                 } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU());
+                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
                 }
             }
             case PropertyType::TINYINT:
@@ -495,7 +528,7 @@ namespace nogdb {
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler, classId, value.toText());
+                return backwardSearchIndex(cursorHandler, classId, value.toText(), true);
             }
             default:
                 break;
@@ -568,13 +601,13 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
+                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
+                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
+                    return forwardSearchIndex(cursorHandler, classId, value.toIntU(), true, true);
                 } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
+                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
                 }
             }
             case PropertyType::TINYINT:
@@ -616,13 +649,13 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU());
+                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU());
+                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toIntU());
+                    return forwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
                 } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU());
+                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
                 }
             }
             case PropertyType::TINYINT:
@@ -669,16 +702,16 @@ namespace nogdb {
                 auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return betweenSearchIndex(cursorHandler, classId, lowerBound.toTinyIntU(), upperBound.toTinyIntU(),
-                                              isIncludeBound);
+                                              true, isIncludeBound);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return betweenSearchIndex(cursorHandler, classId, lowerBound.toSmallIntU(),
-                                              upperBound.toSmallIntU(), isIncludeBound);
+                                              upperBound.toSmallIntU(), true, isIncludeBound);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
                     return betweenSearchIndex(cursorHandler, classId, lowerBound.toIntU(), upperBound.toIntU(),
-                                              isIncludeBound);
+                                              true, isIncludeBound);
                 } else {
                     return betweenSearchIndex(cursorHandler, classId, lowerBound.toBigIntU(), upperBound.toBigIntU(),
-                                              isIncludeBound);
+                                              true, isIncludeBound);
                 }
             }
             case PropertyType::TINYINT:

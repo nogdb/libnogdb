@@ -22,8 +22,10 @@
 #ifndef __INDEX_HPP_INCLUDED_
 #define __INDEX_HPP_INCLUDED_
 
+#include <iostream> // for debugging
 #include <vector>
 #include <tuple>
+#include <type_traits>
 
 #include "schema.hpp"
 #include "datastore.hpp"
@@ -132,7 +134,7 @@ namespace nogdb {
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
                 auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                return backwardSearchIndex(cursorHandlerNegative, classId, value, includeEqual);
+                return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
             } else {
                 auto dataIndexDBHandlerPositive =
                         Datastore::openDbi(dsTxnHandler,
@@ -144,8 +146,8 @@ namespace nogdb {
                                            true, isUnique);
                 auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
                 auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, includeEqual);
-                auto negativeResult = backwardSearchIndex(cursorHandlerNegative, classId, value, includeEqual);
+                auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
+                auto negativeResult = backwardSearchIndex(cursorHandlerNegative, classId, value, true, includeEqual, true);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             }
@@ -188,8 +190,8 @@ namespace nogdb {
                                            true, isUnique);
                 auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
                 auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = forwardSearchIndex(cursorHandlerPositive, classId, value, includeEqual);
-                auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, includeEqual);
+                auto positiveResult = forwardSearchIndex(cursorHandlerPositive, classId, value, false, includeEqual, true);
+                auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
@@ -198,7 +200,7 @@ namespace nogdb {
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
                                            true, isUnique);
                 auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                return forwardSearchIndex(cursorHandlerPositive, classId, value, includeEqual);
+                return forwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
             }
         };
 
@@ -217,7 +219,7 @@ namespace nogdb {
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
                 auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, isIncludeBound);
+                return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);
             } else if (lowerBound < 0 && upperBound >= 0) {
                 auto dataIndexDBHandlerPositive =
                         Datastore::openDbi(dsTxnHandler,
@@ -229,10 +231,12 @@ namespace nogdb {
                                            true, isUnique);
                 auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
                 auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound,
-                                                         isIncludeBound);
-                auto negativeResult = betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound,
-                                                         isIncludeBound);
+                auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId,
+                                                         static_cast<T>(0), upperBound,
+                                                         true, {true, isIncludeBound.second});
+                auto negativeResult = betweenSearchIndex(cursorHandlerNegative, classId,
+                                                         lowerBound, static_cast<T>(0),
+                                                         false, {isIncludeBound.first, true});
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
@@ -241,7 +245,7 @@ namespace nogdb {
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
                                            true, isUnique);
                 auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, isIncludeBound);
+                return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, true, isIncludeBound);
             }
         };
 
@@ -249,7 +253,7 @@ namespace nogdb {
         static std::vector<RecordDescriptor>
         exactMatchIndex(Datastore::CursorHandler *cursorHandler, ClassId classId, const T &value) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
+            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, static_cast<T>(value));
                  !keyValue.empty();
                  keyValue = Datastore::getNextCursor(cursorHandler)) {
                 auto key = Datastore::getKeyAsNumeric<T>(keyValue);
@@ -282,20 +286,43 @@ namespace nogdb {
 
         template<typename T>
         static std::vector<RecordDescriptor> backwardSearchIndex(Datastore::CursorHandler *cursorHandler,
-                                                                 ClassId classId, const T &value,
-                                                                 bool isInclude = true) {
+                                                                 ClassId classId, const T &value, bool positive,
+                                                                 bool isInclude = false, bool isGetAll = false) {
             auto result = std::vector<RecordDescriptor>{};
-            if (isInclude) {
-                auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-            }
-            auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
-            if (!keyValue.empty()) {
-                for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+            if (isGetAll) {
+                for (auto keyValue = Datastore::getNextCursor(cursorHandler);
                      !keyValue.empty();
-                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
+                     keyValue = Datastore::getNextCursor(cursorHandler)) {
                     auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
+                }
+            } else {
+                if (!std::is_same<T, double>::value || positive) {
+                    if (isInclude) {
+                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
+                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                    }
+                    auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(value));
+                    if (!keyValue.empty()) {
+                        for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                             !keyValue.empty();
+                             keyValue = Datastore::getPrevCursor(cursorHandler)) {
+                            auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                            result.emplace_back(RecordDescriptor{classId, *positionId});
+                        }
+                    }
+                } else {
+                    for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(value));
+                         !keyValue.empty();
+                         keyValue = Datastore::getNextCursor(cursorHandler)) {
+                        if (!isInclude) {
+                            auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                            if (*key == value) continue;
+                            else isInclude = true;
+                        }
+                        auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                        result.emplace_back(RecordDescriptor{classId, *positionId});
+                    }
                 }
             }
             return result;
@@ -303,26 +330,51 @@ namespace nogdb {
 
         template<typename T>
         static std::vector<RecordDescriptor> forwardSearchIndex(Datastore::CursorHandler *cursorHandler,
-                                                                ClassId classId, const T &value,
-                                                                bool isInclude = true) {
+                                                                ClassId classId, const T &value, bool positive,
+                                                                bool isInclude = false, bool isGetAll = false) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
-                 !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                if (!isInclude) {
-                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                    if (*key == value) continue;
-                    else isInclude = true;
+            if (isGetAll) {
+                for (auto keyValue = Datastore::getNextCursor(cursorHandler);
+                     !keyValue.empty();
+                     keyValue = Datastore::getNextCursor(cursorHandler)) {
+                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
-                auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
-                result.emplace_back(RecordDescriptor{classId, *positionId});
+            } else {
+                if (!std::is_same<T, double>::value || positive) {
+                    for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(value));
+                         !keyValue.empty();
+                         keyValue = Datastore::getNextCursor(cursorHandler)) {
+                        if (!isInclude) {
+                            auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                            if (*key == value) continue;
+                            else isInclude = true;
+                        }
+                        auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                        result.emplace_back(RecordDescriptor{classId, *positionId});
+                    }
+                } else {
+                    if (isInclude) {
+                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
+                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                    }
+                    auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(value));
+                    if (!keyValue.empty()) {
+                        for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                             !keyValue.empty();
+                             keyValue = Datastore::getPrevCursor(cursorHandler)) {
+                            auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                            result.emplace_back(RecordDescriptor{classId, *positionId});
+                        }
+                    }
+                }
             }
             return result;
         };
 
         inline static std::vector<RecordDescriptor> forwardSearchIndex(Datastore::CursorHandler *cursorHandler,
                                                                        ClassId classId, const std::string &value,
-                                                                       bool isInclude = true) {
+                                                                       bool isInclude = false) {
             auto result = std::vector<RecordDescriptor>{};
             for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
                  !keyValue.empty();
@@ -343,16 +395,33 @@ namespace nogdb {
                                                                 ClassId classId,
                                                                 const T &lower,
                                                                 const T &upper,
+                                                                bool isLowerPositive,
                                                                 const std::pair<bool, bool> &isIncludeBound) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, lower);
-                 !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                if (!isIncludeBound.first && (*key == lower)) continue;
-                if ((!isIncludeBound.second && (*key == upper)) || (*key > upper)) break;
-                auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
-                result.emplace_back(RecordDescriptor{classId, *positionId});
+            if (!std::is_same<T, double>::value || isLowerPositive) {
+                for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(lower));
+                     !keyValue.empty();
+                     keyValue = Datastore::getNextCursor(cursorHandler)) {
+                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                    if (!isIncludeBound.first && *key == static_cast<T>(lower)) continue;
+                    else if ((!isIncludeBound.second && *key == static_cast<T>(upper)) || *key > static_cast<T>(upper)) break;
+                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    result.emplace_back(RecordDescriptor{classId, *positionId});
+                }
+            } else {
+                if (isIncludeBound.first) {
+                    auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
+                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                }
+                for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, static_cast<T>(lower));
+                     !keyValue.empty();
+                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
+                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                    if (*key == static_cast<T>(lower)) continue;
+                    else if ((!isIncludeBound.second && *key == static_cast<T>(upper)) || *key > static_cast<T>(upper)) break;
+                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    result.emplace_back(RecordDescriptor{classId, *positionId});
+                }
             }
             return result;
         };

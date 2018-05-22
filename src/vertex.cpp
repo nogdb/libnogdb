@@ -684,14 +684,14 @@ namespace nogdb {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
     }
 
-    ResultSetCursor Vertex::getCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Vertex::getIndexCursor(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

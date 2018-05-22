@@ -295,6 +295,18 @@ extern void test_create_index_extended_class_with_records();
 extern void test_drop_index_extended_class_with_records();
 extern void test_create_invalid_index_with_records();
 extern void test_drop_invalid_index_with_records();
+extern void test_search_by_index_unique_condition();
+extern void test_search_by_index_non_unique_condition();
+extern void test_search_by_index_unique_multicondition();
+extern void test_search_by_index_non_unique_multicondition();
+extern void test_search_by_index_unique_cursor_condition();
+extern void test_search_by_index_non_unique_cursor_condition();
+extern void test_search_by_index_unique_cursor_multicondition();
+extern void test_search_by_index_non_unique_cursor_multicondition();
+extern void test_search_by_index_extended_class_condition();
+extern void test_search_by_index_extended_class_cursor_condition();
+extern void test_search_by_index_extended_class_multicondition();
+extern void test_search_by_index_extended_class_cursor_multicondition();
 #endif
 
 // schema transaction testing

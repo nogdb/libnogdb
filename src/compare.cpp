@@ -19,6 +19,7 @@
  *
  */
 
+#include <iostream> // for debugging
 #include <vector>
 #include <algorithm>
 #include <regex>
@@ -598,7 +599,11 @@ namespace nogdb {
         if (propertyType == PropertyType::UNDEFINED) {
             throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         }
-        auto &classId = (*classDescriptors.cbegin())->id;
+        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+        });
+        auto &classId = (*foundClassId)->id;
         auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
         if (foundIndex.second) {
             return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, condition));
@@ -647,7 +652,11 @@ namespace nogdb {
         if (numOfUndefPropertyType != 0) {
             throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         }
-        auto &classId = (*classDescriptors.cbegin())->id;
+        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+        });
+        auto &classId = (*foundClassId)->id;
         auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
         if (foundIndex.second) {
             return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, conditions));

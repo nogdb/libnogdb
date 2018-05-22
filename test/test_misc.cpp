@@ -20,7 +20,7 @@
  */
 
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 
 void test_get_set_empty_value() {
     init_vertex_person();

@@ -24,7 +24,7 @@
 #include "nogdb.h"
 #include "runtest.h"
 #include "runtest_utils.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 
 using namespace std;
 using namespace nogdb;
