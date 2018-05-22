@@ -156,15 +156,15 @@ namespace nogdb {
                     auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                                  TB_INDEXING_PREFIX + std::to_string(indexId),
                                                                  true, isUnique);
-                    auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                     if (type == PropertyType::UNSIGNED_TINYINT) {
-                        deleteIndexCursor(cursorHandler, positionId, bytesValue.toTinyIntU());
+                        deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toTinyIntU());
                     } else if (type == PropertyType::UNSIGNED_SMALLINT) {
-                        deleteIndexCursor(cursorHandler, positionId, bytesValue.toSmallIntU());
+                        deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toSmallIntU());
                     } else if (type == PropertyType::UNSIGNED_INTEGER) {
-                        deleteIndexCursor(cursorHandler, positionId, bytesValue.toIntU());
+                        deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toIntU());
                     } else if (type == PropertyType::UNSIGNED_BIGINT) {
-                        deleteIndexCursor(cursorHandler, positionId, bytesValue.toBigIntU());
+                        deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toBigIntU());
                     }
                     break;
                 }
@@ -179,28 +179,28 @@ namespace nogdb {
                     auto dataIndexDBHandlerNegative =
                             Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                                true, isUnique);
-                    auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                    auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
+                    auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                    auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                     if (type == PropertyType::TINYINT) {
                         auto value = bytesValue.toTinyInt();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
+                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
+                                    : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     } else if (type == PropertyType::SMALLINT) {
                         auto value = bytesValue.toSmallInt();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
+                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
+                                    : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     } else if (type == PropertyType::INTEGER) {
                         auto value = bytesValue.toInt();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
+                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
+                                    : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     } else if (type == PropertyType::BIGINT) {
                         auto value = bytesValue.toBigInt();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
+                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
+                                    : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     } else if (type == PropertyType::REAL) {
                         auto value = bytesValue.toReal();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
+                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
+                                    : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     }
                     break;
                 }
@@ -208,10 +208,10 @@ namespace nogdb {
                     auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                                  TB_INDEXING_PREFIX + std::to_string(indexId),
                                                                  false, isUnique);
-                    auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                     auto value = bytesValue.toText();
                     if (!value.empty()) {
-                        deleteIndexCursor(cursorHandler, positionId, value);
+                        deleteIndexCursor(cursorHandler.get(), positionId, value);
                     }
                     break;
                 }
@@ -454,15 +454,15 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true, true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true, true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toIntU(), true, true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toIntU(), true, true);
                 } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toBigIntU(), true, true);
                 }
             }
             case PropertyType::TINYINT:
@@ -479,8 +479,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler, classId, value.toText(), true, true);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true, true);
             }
             default:
                 break;
@@ -502,15 +502,15 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toIntU(), true);
                 } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, value.toBigIntU(), true);
                 }
             }
             case PropertyType::TINYINT:
@@ -527,8 +527,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler, classId, value.toText(), true);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
             }
             default:
                 break;
@@ -550,15 +550,15 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return exactMatchIndex(cursorHandler, classId, value.toTinyIntU());
+                    return exactMatchIndex(cursorHandler.get(), classId, value.toTinyIntU());
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return exactMatchIndex(cursorHandler, classId, value.toSmallIntU());
+                    return exactMatchIndex(cursorHandler.get(), classId, value.toSmallIntU());
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return exactMatchIndex(cursorHandler, classId, value.toIntU());
+                    return exactMatchIndex(cursorHandler.get(), classId, value.toIntU());
                 } else {
-                    return exactMatchIndex(cursorHandler, classId, value.toBigIntU());
+                    return exactMatchIndex(cursorHandler.get(), classId, value.toBigIntU());
                 }
             }
             case PropertyType::TINYINT:
@@ -575,8 +575,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return exactMatchIndex(cursorHandler, classId, value.toText());
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return exactMatchIndex(cursorHandler.get(), classId, value.toText());
             }
             default:
                 break;
@@ -599,15 +599,15 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true, true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true, true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toIntU(), true, true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toIntU(), true, true);
                 } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toBigIntU(), true, true);
                 }
             }
             case PropertyType::TINYINT:
@@ -624,8 +624,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return forwardSearchIndex(cursorHandler, classId, value.toText(), true);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return forwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
             }
             default:
                 break;
@@ -647,15 +647,15 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toTinyIntU(), true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toSmallIntU(), true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, value.toIntU(), true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toIntU(), true);
                 } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, value.toBigIntU(), true);
                 }
             }
             case PropertyType::TINYINT:
@@ -672,8 +672,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return forwardSearchIndex(cursorHandler, classId, value.toText());
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return forwardSearchIndex(cursorHandler.get(), classId, value.toText());
             }
             default:
                 break;
@@ -699,18 +699,18 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              true, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return betweenSearchIndex(cursorHandler, classId, lowerBound.toTinyIntU(), upperBound.toTinyIntU(),
+                    return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toTinyIntU(), upperBound.toTinyIntU(),
                                               true, isIncludeBound);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return betweenSearchIndex(cursorHandler, classId, lowerBound.toSmallIntU(),
+                    return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toSmallIntU(),
                                               upperBound.toSmallIntU(), true, isIncludeBound);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return betweenSearchIndex(cursorHandler, classId, lowerBound.toIntU(), upperBound.toIntU(),
+                    return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toIntU(), upperBound.toIntU(),
                                               true, isIncludeBound);
                 } else {
-                    return betweenSearchIndex(cursorHandler, classId, lowerBound.toBigIntU(), upperBound.toBigIntU(),
+                    return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toBigIntU(), upperBound.toBigIntU(),
                                               true, isIncludeBound);
                 }
             }
@@ -733,8 +733,8 @@ namespace nogdb {
                 auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
-                auto cursorHandler = Datastore::openCursor(dsTxnHandler, dataIndexDBHandler);
-                return betweenSearchIndex(cursorHandler, classId, lowerBound.toText(), upperBound.toText(),
+                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toText(), upperBound.toText(),
                                           isIncludeBound);
             }
             default:

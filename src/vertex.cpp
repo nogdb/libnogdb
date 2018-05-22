@@ -264,9 +264,9 @@ namespace nogdb {
         // remove all records in a database
         try {
             auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto cursorHandler = Datastore::openCursor(dsTxnHandler, classDBHandler);
+            auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
             auto relationDBHandler = Datastore::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto keyValue = Datastore::getNextCursor(cursorHandler);
+            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
             while (!keyValue.empty()) {
                 auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                 if (*key != EM_MAXRECNUM) {
@@ -291,7 +291,7 @@ namespace nogdb {
                     // delete a record in a datastore
                     //Datastore::deleteCursor(cursorHandler);
                 }
-                keyValue = Datastore::getNextCursor(cursorHandler);
+                keyValue = Datastore::getNextCursor(cursorHandler.get());
             }
             // empty a database
             Datastore::emptyDbi(dsTxnHandler, classDBHandler);

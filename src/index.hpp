@@ -133,8 +133,8 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                return backwardSearchIndex(cursorHandlerNegative.get(), classId, value, false, includeEqual);
             } else {
                 auto dataIndexDBHandlerPositive =
                         Datastore::openDbi(dsTxnHandler,
@@ -144,10 +144,10 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
-                auto negativeResult = backwardSearchIndex(cursorHandlerNegative, classId, value, true, includeEqual, true);
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto positiveResult = backwardSearchIndex(cursorHandlerPositive.get(), classId, value, true, includeEqual);
+                auto negativeResult = backwardSearchIndex(cursorHandlerNegative.get(), classId, value, true, includeEqual, true);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             }
@@ -162,15 +162,15 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                return exactMatchIndex(cursorHandlerNegative, classId, value);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                return exactMatchIndex(cursorHandlerNegative.get(), classId, value);
             } else {
                 auto dataIndexDBHandlerPositive =
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                return exactMatchIndex(cursorHandlerPositive, classId, value);
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                return exactMatchIndex(cursorHandlerPositive.get(), classId, value);
             }
         };
 
@@ -188,10 +188,10 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = forwardSearchIndex(cursorHandlerPositive, classId, value, false, includeEqual, true);
-                auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto positiveResult = forwardSearchIndex(cursorHandlerPositive.get(), classId, value, false, includeEqual, true);
+                auto negativeResult = forwardSearchIndex(cursorHandlerNegative.get(), classId, value, false, includeEqual);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
@@ -199,8 +199,8 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                return forwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                return forwardSearchIndex(cursorHandlerPositive.get(), classId, value, true, includeEqual);
             }
         };
 
@@ -218,8 +218,8 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                return betweenSearchIndex(cursorHandlerNegative.get(), classId, lowerBound, upperBound, false, isIncludeBound);
             } else if (lowerBound < 0 && upperBound >= 0) {
                 auto dataIndexDBHandlerPositive =
                         Datastore::openDbi(dsTxnHandler,
@@ -229,12 +229,12 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerNegative);
-                auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId,
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto positiveResult = betweenSearchIndex(cursorHandlerPositive.get(), classId,
                                                          static_cast<T>(0), upperBound,
                                                          true, {true, isIncludeBound.second});
-                auto negativeResult = betweenSearchIndex(cursorHandlerNegative, classId,
+                auto negativeResult = betweenSearchIndex(cursorHandlerNegative.get(), classId,
                                                          lowerBound, static_cast<T>(0),
                                                          false, {isIncludeBound.first, true});
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
@@ -244,8 +244,8 @@ namespace nogdb {
                         Datastore::openDbi(dsTxnHandler,
                                            TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
                                            true, isUnique);
-                auto cursorHandlerPositive = Datastore::openCursor(dsTxnHandler, dataIndexDBHandlerPositive);
-                return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, true, isIncludeBound);
+                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                return betweenSearchIndex(cursorHandlerPositive.get(), classId, lowerBound, upperBound, true, isIncludeBound);
             }
         };
 
