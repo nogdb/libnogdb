@@ -69,7 +69,7 @@ void do_job(unsigned int type) {
             auto resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh A"));
             nogdb::Edge::updateDst(txn, resE[0].descriptor, resV[0].descriptor);
             auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
-            assert(res.size() == 2);
+            assertSize(res, 2);
             txn.commit();
         } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
@@ -116,7 +116,7 @@ void do_job(unsigned int type) {
             auto resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh A"));
             nogdb::Edge::updateDst(txn, resE[0].descriptor, resV[0].descriptor);
             auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
-            assert(res.size() == 2);
+            assertSize(res, 2);
             txn.rollback();
         } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
@@ -136,10 +136,10 @@ void do_job(unsigned int type) {
 
             auto resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh A"));
             auto res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh B"));
             res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);
@@ -158,13 +158,13 @@ void do_job(unsigned int type) {
 
             auto resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh A"));
             auto res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
-            assert(res.size() == 2);
+            assertSize(res, 2);
             resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh B"));
             res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
-            assert(res.size() == 2);
+            assertSize(res, 2);
             resV = nogdb::Vertex::get(txn, "islands", nogdb::Condition("name").eq("Koh C"));
             res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         } catch (const nogdb::Error &ex) {
             std::cout << "Error: " << ex.what() << std::endl;
             assert(false);

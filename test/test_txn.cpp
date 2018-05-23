@@ -555,7 +555,7 @@ void test_txn_get_vertex_edge() {
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                    assert(res.size() == 2);
+                    assertSize(res, 2);
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
@@ -644,7 +644,7 @@ void test_txn_alter_vertex_edge_commit() {
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                    assert(res.size() == 2);
+                    assertSize(res, 2);
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
@@ -675,7 +675,7 @@ void test_txn_alter_vertex_edge_commit() {
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getInEdge(txn, v2);
-                    assert(res.size() == 2);
+                    assertSize(res, 2);
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v3);
@@ -772,7 +772,7 @@ void test_txn_alter_vertex_edge_rollback() {
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1);
-                    assert(res.size() == 2);
+                    assertSize(res, 2);
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v1, nogdb::ClassFilter{"bridge"});
@@ -803,7 +803,7 @@ void test_txn_alter_vertex_edge_rollback() {
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getInEdge(txn, v2);
-                    assert(res.size() == 2);
+                    assertSize(res, 2);
                 },
                 [&](const nogdb::Txn &txn) {
                     auto res = nogdb::Vertex::getOutEdge(txn, v3);
@@ -1154,7 +1154,7 @@ void test_txn_create_edges_multiversion_commit() {
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].record.get("name").toText() == "bridge 21");
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
@@ -1165,17 +1165,17 @@ void test_txn_create_edges_multiversion_commit() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].record.get("name").toText() == "bridge 23");
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].record.get("name").toText() == "bridge 12");
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -1192,15 +1192,15 @@ void test_txn_create_edges_multiversion_commit() {
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
 
         runTestCases(txnRo0, testCasesV0, true);
@@ -1261,17 +1261,17 @@ void test_txn_create_edges_multiversion_rollback() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].record.get("name").toText() == "bridge 23");
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].record.get("name").toText() == "bridge 12");
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
 
         runTestCases(txnRo1, testCasesV1, true);
@@ -1336,15 +1336,15 @@ void test_txn_delete_edges_multiversion_commit() {
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -1356,20 +1356,20 @@ void test_txn_delete_edges_multiversion_commit() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].descriptor == e4);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::get(txn, "bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -1383,15 +1383,15 @@ void test_txn_delete_edges_multiversion_commit() {
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].descriptor == e2);
         });
 
@@ -1457,20 +1457,20 @@ void test_txn_delete_edges_multiversion_rollback() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
             assert(res[0].descriptor == e4);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 2);
+            assertSize(res, 2);
         });
 
         runTestCases(txnRo1, testCasesV1, true);
@@ -1529,19 +1529,19 @@ void test_txn_modify_edges_multiversion_commit() {
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV0.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
@@ -1551,19 +1551,19 @@ void test_txn_modify_edges_multiversion_commit() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Edge::getSrc(txn, e1);
@@ -1573,19 +1573,19 @@ void test_txn_modify_edges_multiversion_commit() {
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV2.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
 
         runTestCases(txnRo0, testCasesV0, true);
@@ -1644,19 +1644,19 @@ void test_txn_modify_edges_multiversion_rollback() {
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v1);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getOutEdge(txn, v2);
-            assert(res.size() == 0);
+            assertSize(res, 0);
         });
         testCasesV1.push_back([&](nogdb::Txn &txn) {
             auto res = nogdb::Vertex::getInEdge(txn, v3);
-            assert(res.size() == 1);
+            assertSize(res, 1);
         });
 
         runTestCases(txnRo1, testCasesV1, true);

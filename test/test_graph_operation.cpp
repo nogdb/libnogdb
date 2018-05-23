@@ -121,7 +121,7 @@ void test_bfs_traverse_in() {
 
     try {
         auto res = nogdb::Traverse::inEdgeBfs(txn, H, 1, 10, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "C");
@@ -130,7 +130,7 @@ void test_bfs_traverse_in() {
         assert(res[2].record.getDepth() == 3);
 
         res = nogdb::Traverse::inEdgeBfs(txn, f, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "G");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "E");
@@ -141,10 +141,10 @@ void test_bfs_traverse_in() {
         assert(res[3].record.getDepth() == 4);
 
         res = nogdb::Traverse::inEdgeBfs(txn, f, 0, 4);
-        assert(res.size() == 6);
+        assertSize(res, 6);
 
         res = nogdb::Traverse::inEdgeBfs(txn, f, 0, 100);
-        assert(res.size() == 6);
+        assertSize(res, 6);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -153,15 +153,15 @@ void test_bfs_traverse_in() {
     try {
         auto classNames = std::set<std::string>{"link", "symbolic"};
         auto res = nogdb::Traverse::inEdgeBfs(txn, b, 0, 1, nogdb::ClassFilter{classNames.cbegin(), classNames.cend()});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::inEdgeBfs(txn, b, 1, 2);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::inEdgeBfs(txn, e, 1, 1);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::inEdgeBfs(txn, e, 0, 2);
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = nogdb::Traverse::inEdgeBfs(txn, e, 0, 3);
-        assert(res.size() == 8);
+        assertSize(res, 8);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -170,9 +170,9 @@ void test_bfs_traverse_in() {
 
     try {
         auto res = nogdb::Traverse::inEdgeBfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::inEdgeBfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -247,17 +247,17 @@ void test_bfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeBfs(txn, C, 1, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         for (const auto &r: res) {
             auto name = r.record.get("name").toText();
             assert(name == "c" || name == "F");
         }
         res = nogdb::Traverse::outEdgeBfs(txn, C, 0, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = nogdb::Traverse::outEdgeBfs(txn, C, 0, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = nogdb::Traverse::outEdgeBfs(txn, C, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -265,17 +265,17 @@ void test_bfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeBfs(txn, A, 1, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeBfs(txn, A, 1, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 8);
+        assertSize(res, 8);
         res = nogdb::Traverse::outEdgeBfs(txn, A, 1, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 12);
+        assertSize(res, 12);
         res = nogdb::Traverse::outEdgeBfs(txn, A, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
         res = nogdb::Traverse::outEdgeBfs(txn, A, 1, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -285,12 +285,12 @@ void test_bfs_traverse_out() {
         auto classNames = std::vector<std::string>{"link", "symbolic"};
         auto res = nogdb::Traverse::outEdgeBfs(txn, B, 1, 1,
                                                nogdb::ClassFilter{classNames.cbegin(), classNames.cend()});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeBfs(txn, C, 0, 1);
-        assert(res.size() == 4);
+        assertSize(res, 4);
 
         res = nogdb::Traverse::outEdgeBfs(txn, a, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -299,9 +299,9 @@ void test_bfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeBfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeBfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -417,11 +417,11 @@ void test_bfs_traverse_all() {
         assert(count == 8);
 
         auto res = nogdb::Traverse::allEdgeBfs(txn, F, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeBfs(txn, F, 0, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 14);
+        assertSize(res, 14);
         res = nogdb::Traverse::allEdgeBfs(txn, F, 2, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 0);
+        assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -445,13 +445,13 @@ void test_bfs_traverse_all() {
         assert(count == 1);
 
         auto res = nogdb::Traverse::allEdgeBfs(txn, H, 1, 3, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         res = nogdb::Traverse::allEdgeBfs(txn, H, 0, 0, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
         res = nogdb::Traverse::allEdgeBfs(txn, H, 0, 100, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -470,7 +470,7 @@ void test_bfs_traverse_all() {
         assert(count == 4);
 
         auto res = nogdb::Traverse::allEdgeBfs(txn, A, 1, 2);
-        assert(res.size() == 11);
+        assertSize(res, 11);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -478,11 +478,11 @@ void test_bfs_traverse_all() {
 
     try {
         auto res = nogdb::Traverse::allEdgeBfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeBfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeBfs(txn, Z, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -944,7 +944,7 @@ void test_dfs_traverse_in() {
             else assert(res.record.getDepth() == 2);
         }
         auto res = nogdb::Traverse::inEdgeDfs(txn, D, 3, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 0);
+        assertSize(res, 0);
         for (const auto &res: nogdb::Traverse::inEdgeDfs(txn, D, 0, 0, nogdb::ClassFilter{"link"})) {
             auto name = res.record.get("name").toText();
             assert(name == "D");
@@ -957,7 +957,7 @@ void test_dfs_traverse_in() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfs(txn, H, 1, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "C");
@@ -966,7 +966,7 @@ void test_dfs_traverse_in() {
         assert(res[2].record.getDepth() == 3);
 
         res = nogdb::Traverse::inEdgeDfs(txn, f, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "G");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "E");
@@ -977,10 +977,10 @@ void test_dfs_traverse_in() {
         assert(res[3].record.getDepth() == 4);
 
         res = nogdb::Traverse::inEdgeDfs(txn, f, 0, 4);
-        assert(res.size() == 6);
+        assertSize(res, 6);
 
         res = nogdb::Traverse::inEdgeDfs(txn, f, 0, 100);
-        assert(res.size() == 6);
+        assertSize(res, 6);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -988,17 +988,17 @@ void test_dfs_traverse_in() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfs(txn, b, 1, 1, nogdb::ClassFilter{"link", "symbolic"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::inEdgeDfs(txn, b, 1, 2);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::inEdgeDfs(txn, e, 1, 1);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "C");
         assert(res[1].record.getDepth() == 1);
         res = nogdb::Traverse::inEdgeDfs(txn, e, 1, 2);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "C");
@@ -1006,7 +1006,7 @@ void test_dfs_traverse_in() {
         assert(res[2].record.get("name").toText() == "E");
         assert(res[2].record.getDepth() == 2);
         res = nogdb::Traverse::inEdgeDfs(txn, e, 0, 3);
-        assert(res.size() == 7);
+        assertSize(res, 7);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1014,9 +1014,9 @@ void test_dfs_traverse_in() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::inEdgeDfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1091,18 +1091,18 @@ void test_dfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfs(txn, C, 0, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         for (const auto &r: res) {
             auto name = r.record.get("name").toText();
             assert(name == "c" || name == "F" || name == "C");
         }
         res = nogdb::Traverse::outEdgeDfs(txn, C, 1, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 5);
+        assertSize(res, 5);
         assert(compareText(res, "name", std::vector<std::string>{"c", "F", "d", "H", "e"}));
         res = nogdb::Traverse::outEdgeDfs(txn, C, 0, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = nogdb::Traverse::outEdgeDfs(txn, C, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1110,18 +1110,18 @@ void test_dfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeDfs(txn, A, 1, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeDfs(txn, A, 1, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 8);
+        assertSize(res, 8);
         assert(compareText(res, "name", std::vector<std::string>{"B", "D", "E", "b", "a", "C", "c", "F"}));
         res = nogdb::Traverse::outEdgeDfs(txn, A, 1, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 12);
+        assertSize(res, 12);
         res = nogdb::Traverse::outEdgeDfs(txn, A, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
         res = nogdb::Traverse::outEdgeDfs(txn, A, 1, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1129,12 +1129,12 @@ void test_dfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfs(txn, B, 1, 1, nogdb::ClassFilter{"link", "symbolic"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeDfs(txn, C, 1, 1);
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::outEdgeDfs(txn, a, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1143,9 +1143,9 @@ void test_dfs_traverse_out() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeDfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1245,10 +1245,10 @@ void test_dfs_traverse_all() {
         assert(count == 8);
 
         auto res = nogdb::Traverse::allEdgeDfs(txn, F, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
         res = nogdb::Traverse::allEdgeDfs(txn, F, 4, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 5);
+        assertSize(res, 5);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1272,10 +1272,10 @@ void test_dfs_traverse_all() {
         assert(count == 2);
 
         auto res = nogdb::Traverse::allEdgeDfs(txn, H, 1, 3, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         res = nogdb::Traverse::allEdgeDfs(txn, H, 0, 0, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1292,7 +1292,7 @@ void test_dfs_traverse_all() {
         assert(count == 4);
 
         auto res = nogdb::Traverse::allEdgeDfs(txn, A, 1, 2);
-        assert(res.size() == 10);
+        assertSize(res, 10);
         assert(res[0].record.get("name").toText() == "B");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "D");
@@ -1320,11 +1320,11 @@ void test_dfs_traverse_all() {
 
     try {
         auto res = nogdb::Traverse::allEdgeDfs(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfs(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfs(txn, Z, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfs(txn, Z, 10, 0);
         assert(res.empty());
     } catch (const nogdb::Error &ex) {
@@ -1833,17 +1833,17 @@ void test_shortest_path() {
 
     try {
         auto res = nogdb::Traverse::shortestPath(txn, a, a);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "a");
         assert(res[0].record.getDepth() == 0);
 
         res = nogdb::Traverse::shortestPath(txn, f, f);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "f");
         assert(res[0].record.getDepth() == 0);
 
         res = nogdb::Traverse::shortestPath(txn, B, B);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "B");
         assert(res[0].record.getDepth() == 0);
 
@@ -1860,7 +1860,7 @@ void test_shortest_path() {
         assert(res.empty());
 
         res = nogdb::Traverse::shortestPath(txn, A, b);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "B");
@@ -1874,17 +1874,17 @@ void test_shortest_path() {
 
     try {
         auto res = nogdb::Traverse::shortestPath(txn, C, e, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::shortestPath(txn, B, d);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res = nogdb::Traverse::shortestPath(txn, B, d, nogdb::ClassFilter{"link"});
-        assert(res.size() == 0);
+        assertSize(res, 0);
 
         res = nogdb::Traverse::shortestPath(txn, H, C, nogdb::ClassFilter{"link"});
-        assert(res.size() == 0);
+        assertSize(res, 0);
         res = nogdb::Traverse::shortestPath(txn, H, C, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -2053,14 +2053,14 @@ void test_bfs_traverse_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeBfs(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "B");
         assert(res[1].record.getDepth() == 1);
 
         res = nogdb::Traverse::inEdgeBfs(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "Z");
@@ -2071,7 +2071,7 @@ void test_bfs_traverse_with_condition() {
         };
         pathFilter.setVertex(vertexCondition);
         res = nogdb::Traverse::outEdgeBfs(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "A");
 
     } catch (const nogdb::Error &ex) {
@@ -2085,7 +2085,7 @@ void test_bfs_traverse_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeBfs(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "C");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "D");
@@ -2094,7 +2094,7 @@ void test_bfs_traverse_with_condition() {
         assert(res[2].record.getDepth() == 2);
 
         res = nogdb::Traverse::allEdgeBfs(txn, a, 2, 4, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 2);
 
@@ -2103,7 +2103,7 @@ void test_bfs_traverse_with_condition() {
         };
         pathFilter.setVertex(vertexCondition);
         res = nogdb::Traverse::allEdgeBfs(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "C");
@@ -2159,7 +2159,7 @@ void test_dfs_traverse_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeDfs(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "B");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "C");
@@ -2173,7 +2173,7 @@ void test_dfs_traverse_with_condition() {
             return (record.get("distance").toIntU() >= 300U);
         });
         res = nogdb::Traverse::outEdgeDfs(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "C");
@@ -2183,7 +2183,7 @@ void test_dfs_traverse_with_condition() {
             return (record.get("population").toBigIntU() < 1500ULL);
         });
         res = nogdb::Traverse::outEdgeDfs(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "A");
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -2196,7 +2196,7 @@ void test_dfs_traverse_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeDfs(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "Z");
         assert(res[0].record.getDepth() == 1);
         assert(res[1].record.get("name").toText() == "B");
@@ -2207,7 +2207,7 @@ void test_dfs_traverse_with_condition() {
         assert(res[3].record.getDepth() == 3);
 
         res = nogdb::Traverse::allEdgeDfs(txn, a, 2, 4, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "C");
         assert(res[0].record.getDepth() == 2);
         assert(res[1].record.get("name").toText() == "D");
@@ -2219,7 +2219,7 @@ void test_dfs_traverse_with_condition() {
             return (record.get("distance").toIntU() >= 100U);
         });
         res = nogdb::Traverse::allEdgeDfs(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "C");
@@ -2278,7 +2278,7 @@ void test_shortest_path_with_condition() {
             return (record.get("distance").toIntU() <= 120U);
         });
         auto res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
-        assert(res.size() == 5);
+        assertSize(res, 5);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "B");
@@ -2296,7 +2296,7 @@ void test_shortest_path_with_condition() {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "B");
@@ -2310,7 +2310,7 @@ void test_shortest_path_with_condition() {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "B");
@@ -2324,7 +2324,7 @@ void test_shortest_path_with_condition() {
             return record.get("distance").toIntU() >= 100U && record.get("distance").toIntU() != 150U;
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "A");
         assert(res[0].record.getDepth() == 0);
         assert(res[1].record.get("name").toText() == "C");
@@ -3276,18 +3276,18 @@ void test_dfs_traverse_in_cursor() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfsCursor(txn, H, 1, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"F", "C", "A"}, "name");
 
         res = nogdb::Traverse::inEdgeDfsCursor(txn, f, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"G", "E", "B", "A"}, "name");
 
         res = nogdb::Traverse::inEdgeDfsCursor(txn, f, 0, 4);
-        assert(res.size() == 6);
+        assertSize(res, 6);
 
         res = nogdb::Traverse::inEdgeDfsCursor(txn, f, 0, 100);
-        assert(res.size() == 6);
+        assertSize(res, 6);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3295,17 +3295,17 @@ void test_dfs_traverse_in_cursor() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfsCursor(txn, b, 1, 1, nogdb::ClassFilter{"link", "symbolic"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::inEdgeDfsCursor(txn, b, 1, 2);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::inEdgeDfsCursor(txn, e, 1, 1);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"F", "C"}, "name");
         res = nogdb::Traverse::inEdgeDfsCursor(txn, e, 1, 2);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"F", "C", "E"}, "name");
         res = nogdb::Traverse::inEdgeDfsCursor(txn, e, 0, 3);
-        assert(res.size() == 7);
+        assertSize(res, 7);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3313,9 +3313,9 @@ void test_dfs_traverse_in_cursor() {
 
     try {
         auto res = nogdb::Traverse::inEdgeDfsCursor(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::inEdgeDfsCursor(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3392,18 +3392,18 @@ void test_dfs_traverse_out_cursor() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, C, 0, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         while (res.next()) {
             auto name = res->record.get("name").toText();
             assert(name == "c" || name == "F" || name == "C");
         }
         res = nogdb::Traverse::outEdgeDfsCursor(txn, C, 1, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 5);
+        assertSize(res, 5);
         cursorContains(res, std::set<std::string>{"c", "F", "d", "H", "e"}, "name");
         res = nogdb::Traverse::outEdgeDfsCursor(txn, C, 0, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, C, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3411,18 +3411,18 @@ void test_dfs_traverse_out_cursor() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 1, 1, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 1, 2, nogdb::ClassFilter{"link"});
-        assert(res.size() == 8);
+        assertSize(res, 8);
         cursorContains(res, std::set<std::string>{"B", "D", "E", "b", "a", "C", "c", "F"}, "name");
         res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 1, 3, nogdb::ClassFilter{"link"});
-        assert(res.size() == 12);
+        assertSize(res, 12);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 1, 4, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, A, 1, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 13);
+        assertSize(res, 13);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3430,11 +3430,11 @@ void test_dfs_traverse_out_cursor() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, B, 1, 1, nogdb::ClassFilter{"link", "symbolic"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, C, 1, 1);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, a, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -3443,9 +3443,9 @@ void test_dfs_traverse_out_cursor() {
 
     try {
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::outEdgeDfsCursor(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3544,10 +3544,10 @@ void test_dfs_traverse_all_cursor() {
         assert(res.count() == 8);
 
         res = nogdb::Traverse::allEdgeDfsCursor(txn, F, 0, 0, nogdb::ClassFilter{"link"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
 
         res = nogdb::Traverse::allEdgeDfsCursor(txn, F, 4, 100, nogdb::ClassFilter{"link"});
-        assert(res.size() == 5);
+        assertSize(res, 5);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3569,9 +3569,9 @@ void test_dfs_traverse_all_cursor() {
         assert(res.count() == 2);
 
         res = nogdb::Traverse::allEdgeDfsCursor(txn, H, 1, 3, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::allEdgeDfsCursor(txn, H, 0, 0, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -3586,7 +3586,7 @@ void test_dfs_traverse_all_cursor() {
         assert(res.count() == 4);
 
         res = nogdb::Traverse::allEdgeDfsCursor(txn, A, 1, 2);
-        assert(res.size() == 10);
+        assertSize(res, 10);
         cursorContains(res, std::set<std::string>{"B", "D", "E", "b", "a", "C", "c", "F", "e", "H"}, "name");
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -3595,11 +3595,11 @@ void test_dfs_traverse_all_cursor() {
 
     try {
         auto res = nogdb::Traverse::allEdgeDfsCursor(txn, Z, 0, 1);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfsCursor(txn, Z, 0, 100);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfsCursor(txn, Z, 0, 0);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res = nogdb::Traverse::allEdgeDfsCursor(txn, Z, 10, 0);
         assert(res.empty());
     } catch (const nogdb::Error &ex) {
@@ -4058,7 +4058,7 @@ void test_shortest_path_cursor() {
     try {
         auto res = nogdb::Traverse::shortestPathCursor(txn, A, f);
         cursorContains(res, std::set<std::string>{"A", "B", "D", "f"}, "name");
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res.first();
         assert(res->record.getDepth() == 0); res.next();
         assert(res->record.getDepth() == 1); res.next();
@@ -4067,27 +4067,27 @@ void test_shortest_path_cursor() {
 
         res = nogdb::Traverse::shortestPathCursor(txn, A, e);
         cursorContains(res, std::set<std::string>{"A", "C", "e"}, "name");
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::shortestPathCursor(txn, D, f);
         cursorContains(res, std::set<std::string>{"D", "f"}, "name");
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         res = nogdb::Traverse::shortestPathCursor(txn, B, A);
         cursorContains(res, std::set<std::string>{"B", "D", "A"}, "name");
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::shortestPathCursor(txn, A, e, nogdb::ClassFilter{"link", "symbolic"});
         cursorContains(res, std::set<std::string>{"A", "C", "e"}, "name");
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::shortestPathCursor(txn, D, f, nogdb::ClassFilter{"link", "symbolic"});
         cursorContains(res, std::set<std::string>{"D", "f"}, "name");
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         res = nogdb::Traverse::shortestPathCursor(txn, B, A, nogdb::ClassFilter{"link", "symbolic"});
         cursorContains(res, std::set<std::string>{"B", "D", "A"}, "name");
-        assert(res.size() == 3);
+        assertSize(res, 3);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -4095,18 +4095,18 @@ void test_shortest_path_cursor() {
 
     try {
         auto res = nogdb::Traverse::shortestPathCursor(txn, a, a);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.next();
         assert(res->record.get("name").toText() == "a");
         assert(res->record.getDepth() == 0);
 
         res = nogdb::Traverse::shortestPathCursor(txn, f, f);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.next();
         assert(res->record.get("name").toText() == "f");
 
         res = nogdb::Traverse::shortestPathCursor(txn, B, B);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.next();
         assert(res->record.get("name").toText() == "B");
 
@@ -4124,7 +4124,7 @@ void test_shortest_path_cursor() {
 
         res = nogdb::Traverse::shortestPathCursor(txn, A, b);
         cursorContains(res, std::set<std::string>{"A", "B", "b"}, "name");
-        assert(res.size() == 3);
+        assertSize(res, 3);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -4132,17 +4132,17 @@ void test_shortest_path_cursor() {
 
     try {
         auto res = nogdb::Traverse::shortestPathCursor(txn, C, e, nogdb::ClassFilter{"link"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
 
         res = nogdb::Traverse::shortestPathCursor(txn, B, d);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res = nogdb::Traverse::shortestPathCursor(txn, B, d, nogdb::ClassFilter{"link"});
         assert(res.count() == 0);
 
         res = nogdb::Traverse::shortestPathCursor(txn, H, C, nogdb::ClassFilter{"link"});
         assert(res.count() == 0);
         res = nogdb::Traverse::shortestPathCursor(txn, H, C, nogdb::ClassFilter{"symbolic"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -4314,11 +4314,11 @@ void test_bfs_traverse_cursor_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeBfsCursor(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"A", "B"}, "name");
 
         res = nogdb::Traverse::inEdgeBfsCursor(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"A", "Z"}, "name");
 
         auto vertexCondition = [](const nogdb::Record &record) {
@@ -4326,7 +4326,7 @@ void test_bfs_traverse_cursor_with_condition() {
         };
         pathFilter.setVertex(vertexCondition);
         res = nogdb::Traverse::outEdgeBfsCursor(txn, a, 0, 1, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.next();
         assert(res->record.get("name").toText() == "A");
 
@@ -4341,11 +4341,11 @@ void test_bfs_traverse_cursor_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeBfsCursor(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"C", "D", "F"}, "name");
 
         res = nogdb::Traverse::allEdgeBfsCursor(txn, a, 2, 4, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.first();
         assert(res->record.get("name").toText() == "F");
 
@@ -4354,7 +4354,7 @@ void test_bfs_traverse_cursor_with_condition() {
         };
         pathFilter.setVertex(vertexCondition);
         res = nogdb::Traverse::allEdgeBfsCursor(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"A", "C", "F"}, "name");
 
     } catch (const nogdb::Error &ex) {
@@ -4406,7 +4406,7 @@ void test_dfs_traverse_cursor_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"B", "C", "D"}, "name");
 
         pathFilter.setVertex([](const nogdb::Record &record) {
@@ -4415,14 +4415,14 @@ void test_dfs_traverse_cursor_with_condition() {
             return (record.get("distance").toIntU() >= 300U);
         });
         res = nogdb::Traverse::outEdgeDfsCursor(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"A", "C"}, "name");
 
         pathFilter.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() < 1500ULL);
         });
         res = nogdb::Traverse::outEdgeDfsCursor(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 1);
+        assertSize(res, 1);
         res.next();
         assert(res->record.get("name").toText() == "A");
     } catch (const nogdb::Error &ex) {
@@ -4436,11 +4436,11 @@ void test_dfs_traverse_cursor_with_condition() {
         };
         auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeDfsCursor(txn, a, 1, 3, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"Z", "B", "C", "D"}, "name");
 
         res = nogdb::Traverse::allEdgeDfsCursor(txn, a, 2, 4, pathFilter);
-        assert(res.size() == 2);
+        assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"C", "D"}, "name");
 
         pathFilter.setVertex([](const nogdb::Record &record) {
@@ -4449,7 +4449,7 @@ void test_dfs_traverse_cursor_with_condition() {
             return (record.get("distance").toIntU() >= 100U);
         });
         res = nogdb::Traverse::allEdgeDfsCursor(txn, a, 0, 4, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "C", "D", "F"}, "name");
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -4501,7 +4501,7 @@ void test_shortest_path_cursor_with_condition() {
             return (record.get("distance").toIntU() <= 120U);
         });
         auto res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
-        assert(res.size() == 5);
+        assertSize(res, 5);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "D", "F"}, "name");
         pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() < 5000ULL);
@@ -4509,21 +4509,21 @@ void test_shortest_path_cursor_with_condition() {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "F"}, "name");
 
         pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "F"}, "name");
 
         pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
             return record.get("distance").toIntU() >= 100U && record.get("distance").toIntU() != 150U;
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "C", "D", "F"}, "name");
 
         pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
