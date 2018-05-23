@@ -298,6 +298,19 @@ inline bool rdescCompare(const nogdb::ResultSet& res, const std::vector<nogdb::R
     auto compareRes = true;
     if (res.size() != expectedResult.size()) {
         compareRes = false;
+        std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedResult.size() << "\n"
+                  << "        Actual:\t" << res.size()
+                  << ".\x1B[0m\n";
+        std::cout << "\x1B[31m" << "\n[error] Expect:\t [ ";
+        for(const auto& r: expectedResult) {
+            std::cout << r.rid << " ";
+        }
+        std::cout << "]\n";
+        std::cout << "        Actual:\t [ ";
+        for(const auto& r: res) {
+            std::cout << r.descriptor.rid << " ";
+        }
+        std::cout << "]\x1B[0m\n";
     } else {
         auto index = 0;
         auto expectedResultSorted = expectedResult;
@@ -323,6 +336,19 @@ inline bool rdescCursorCompare(nogdb::ResultSetCursor& res, const std::vector<no
     auto compareRes = true;
     if (res.size() != expectedResult.size()) {
         compareRes = false;
+        std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedResult.size() << "\n"
+                  << "        Actual:\t" << res.size()
+                  << ".\x1B[0m\n";
+        std::cout << "\x1B[31m" << "\n[error] Expect:\t [ ";
+        for(const auto& r: expectedResult) {
+            std::cout << r.rid << " ";
+        }
+        std::cout << "]\n";
+        std::cout << "        Actual:\t [ ";
+        for(res.next(); res.hasNext(); res.next()) {
+            std::cout << res->descriptor.rid << " ";
+        }
+        std::cout << "]\x1B[0m\n";
     } else {
         auto index = 0;
         auto expectedResultSorted = expectedResult;
@@ -354,20 +380,16 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(min));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMin);
+        assert(rdescCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(firstMid));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescFirstMid);
+        assert(rdescCompare(res, {rdescFirstMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(secondMid));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescSecondMid);
+        assert(rdescCompare(res, {rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(max));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMax);
+        assert(rdescCompare(res, {rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -379,15 +401,12 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
         assertSize(res, 0);
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(firstMid));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMin);
+        assert(rdescCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(secondMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(max));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -397,19 +416,15 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(min));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMin);
+        assert(rdescCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(firstMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(secondMid));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(max));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid, rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -419,20 +434,16 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(min));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(firstMid));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(secondMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMax, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(max));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMax);
+        assert(rdescCompare(res, {rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -441,16 +452,13 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(min));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(firstMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMax, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(secondMid));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMax);
+        assert(rdescCompare(res, {rdescMax}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(max));
         assertSize(res, 0);
@@ -462,19 +470,15 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin, rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {false, true}));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {true, false}));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {false, false}));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescFirstMid, rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -484,15 +488,12 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, true}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescFirstMid);
+        assert(rdescCompare(res, {rdescFirstMid}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {true, false}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMin);
+        assert(rdescCompare(res, {rdescMin}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -503,20 +504,16 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, true}));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {true, false}));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, false}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescFirstMid);
+        assert(rdescCompare(res, {rdescFirstMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -525,15 +522,12 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, true}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescSecondMid);
+        assert(rdescCompare(res, {rdescSecondMid}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {true, false}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescFirstMid);
+        assert(rdescCompare(res, {rdescFirstMid}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -544,20 +538,16 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max));
-        assertSize(res, 3);
         assert(rdescCompare(res, {rdescFirstMid, rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, true}));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {true, false}));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, false}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescSecondMid);
+        assert(rdescCompare(res, {rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -566,15 +556,12 @@ void indexConditionTester(nogdb::Context *ctx, const std::string& className, con
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max));
-        assertSize(res, 2);
         assert(rdescCompare(res, {rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, true}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescMax);
+        assert(rdescCompare(res, {rdescMax}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {true, false}));
-        assertSize(res, 1);
-        assert(res[0].descriptor.rid == rdescSecondMid);
+        assert(rdescCompare(res, {rdescSecondMid}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -794,20 +781,16 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(min));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMin);
+        assert(rdescCursorCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(firstMid));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid);
+        assert(rdescCursorCompare(res, {rdescFirstMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(secondMid));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid);
+        assert(rdescCursorCompare(res, {rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(max));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMax);
+        assert(rdescCursorCompare(res, {rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -819,15 +802,12 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
         assertSize(res, 0);
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(firstMid));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMin);
+        assert(rdescCursorCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(secondMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(max));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -837,19 +817,15 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(min));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMin);
+        assert(rdescCursorCompare(res, {rdescMin}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(firstMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(secondMid));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(max));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid, rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -859,20 +835,16 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(min));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(firstMid));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(secondMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMax, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(max));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMax);
+        assert(rdescCursorCompare(res, {rdescMax}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -881,16 +853,13 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(min));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(firstMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMax, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(secondMid));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMax);
+        assert(rdescCursorCompare(res, {rdescMax}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(max));
         assertSize(res, 0);
@@ -902,19 +871,15 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin, rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {false, true}));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMax, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {true, false}));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {false, false}));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescFirstMid, rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -924,15 +889,12 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, true}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid);
+        assert(rdescCursorCompare(res, {rdescFirstMid}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {true, false}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMin);
+        assert(rdescCursorCompare(res, {rdescMin}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -943,20 +905,16 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, true}));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {true, false}));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescMin, rdescFirstMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, false}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid);
+        assert(rdescCursorCompare(res, {rdescFirstMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -965,15 +923,12 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, true}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid);
+        assert(rdescCursorCompare(res, {rdescSecondMid}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {true, false}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid);
+        assert(rdescCursorCompare(res, {rdescFirstMid}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -984,20 +939,16 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max));
-        assertSize(res, 3);
         assert(rdescCursorCompare(res, {rdescFirstMid, rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, true}));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {true, false}));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescFirstMid, rdescSecondMid}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, false}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid);
+        assert(rdescCursorCompare(res, {rdescSecondMid}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1006,15 +957,12 @@ void indexCursorConditionTester(nogdb::Context *ctx, const std::string& classNam
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max));
-        assertSize(res, 2);
         assert(rdescCursorCompare(res, {rdescSecondMid, rdescMax}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, true}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescMax);
+        assert(rdescCursorCompare(res, {rdescMax}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {true, false}));
-        assertSize(res, 1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid);
+        assert(rdescCursorCompare(res, {rdescSecondMid}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1034,24 +982,16 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(min));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMin1);
-        assert(res[1].descriptor.rid == rdescMin2);
+        assert(rdescCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(firstMid));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescFirstMid1);
-        assert(res[1].descriptor.rid == rdescFirstMid2);
+        assert(rdescCompare(res, {rdescFirstMid1, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(secondMid));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescSecondMid1);
-        assert(res[1].descriptor.rid == rdescSecondMid2);
+        assert(rdescCompare(res, {rdescSecondMid1, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).eq(max));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMax1);
-        assert(res[1].descriptor.rid == rdescMax2);
+        assert(rdescCompare(res, {rdescMax1, rdescMax2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1063,16 +1003,12 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
         assertSize(res, 0);
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(firstMid));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMin1);
-        assert(res[1].descriptor.rid == rdescMin2);
+        assert(rdescCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(secondMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(max));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
     } catch (const nogdb::Error &ex) {
@@ -1083,20 +1019,15 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(min));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMin1);
-        assert(res[1].descriptor.rid == rdescMin2);
+        assert(rdescCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(firstMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(secondMid));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(max));
-        assertSize(res, 8);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescMin2, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
 
     } catch (const nogdb::Error &ex) {
@@ -1107,21 +1038,16 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(min));
-        assertSize(res, 8);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescMin2, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(firstMid));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(secondMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMax1, rdescSecondMid1, rdescMax2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(max));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMax1);
-        assert(res[1].descriptor.rid == rdescMax2);
+        assert(rdescCompare(res, {rdescMax1, rdescMax2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1130,17 +1056,13 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(min));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(firstMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMax1, rdescSecondMid1, rdescMax2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(secondMid));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMax1);
-        assert(res[1].descriptor.rid == rdescMax2);
+        assert(rdescCompare(res, {rdescMax1, rdescMax2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(max));
         assertSize(res, 0);
@@ -1152,19 +1074,15 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max));
-        assertSize(res, 8);
         assert(rdescCompare(res, {rdescMin1, rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {false, true}));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {true, false}));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, max, {false, false}));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
     } catch (const nogdb::Error &ex) {
@@ -1175,17 +1093,12 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, true}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescFirstMid1);
-        assert(res[1].descriptor.rid == rdescFirstMid2);
+        assert(rdescCompare(res, {rdescFirstMid1, rdescFirstMid2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {true, false}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMin1);
-        assert(res[1].descriptor.rid == rdescMin2);
+        assert(rdescCompare(res, {rdescMin1, rdescMin2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1196,21 +1109,16 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, true}));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {true, false}));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, false}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescFirstMid1);
-        assert(res[1].descriptor.rid == rdescFirstMid2);
+        assert(rdescCompare(res, {rdescFirstMid1, rdescFirstMid2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1219,17 +1127,12 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, true}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescSecondMid1);
-        assert(res[1].descriptor.rid == rdescSecondMid2);
+        assert(rdescCompare(res, {rdescSecondMid1, rdescSecondMid2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {true, false}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescFirstMid1);
-        assert(res[1].descriptor.rid == rdescFirstMid2);
+        assert(rdescCompare(res, {rdescFirstMid1, rdescFirstMid2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1240,21 +1143,16 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max));
-        assertSize(res, 6);
         assert(rdescCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, true}));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescSecondMid1, rdescMax1, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {true, false}));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, false}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescSecondMid1);
-        assert(res[1].descriptor.rid == rdescSecondMid2);
+        assert(rdescCompare(res, {rdescSecondMid1, rdescSecondMid2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1263,17 +1161,12 @@ void nonUniqueIndexConditionTester(nogdb::Context *ctx, const std::string& class
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max));
-        assertSize(res, 4);
         assert(rdescCompare(res, {rdescSecondMid1, rdescMax1, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, true}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescMax1);
-        assert(res[1].descriptor.rid == rdescMax2);
+        assert(rdescCompare(res, {rdescMax1, rdescMax2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {true, false}));
-        assertSize(res, 2);
-        assert(res[0].descriptor.rid == rdescSecondMid1);
-        assert(res[1].descriptor.rid == rdescSecondMid2);
+        assert(rdescCompare(res, {rdescSecondMid1, rdescSecondMid2}));
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1293,24 +1186,16 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(min));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMin1); res.next();
-        assert(res->descriptor.rid == rdescMin2);
+        assert(rdescCursorCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(firstMid));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescFirstMid1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid2);
+        assert(rdescCursorCompare(res, {rdescFirstMid1, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(secondMid));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescSecondMid1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid2);
+        assert(rdescCursorCompare(res, {rdescSecondMid1, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).eq(max));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMax1); res.next();
-        assert(res->descriptor.rid == rdescMax2);
+        assert(rdescCursorCompare(res, {rdescMax1, rdescMax2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1322,16 +1207,12 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
         assertSize(res, 0);
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(firstMid));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMin1); res.next();
-        assert(res->descriptor.rid == rdescMin2);
+        assert(rdescCursorCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(secondMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).lt(max));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
     } catch (const nogdb::Error &ex) {
@@ -1342,22 +1223,16 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(min));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMin1); res.next();
-        assert(res->descriptor.rid == rdescMin2);
+        assert(rdescCursorCompare(res, {rdescMin1, rdescMin2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(firstMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(secondMid));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).le(max));
-        assertSize(res, 8);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescMin2, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
-
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1366,21 +1241,16 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(min));
-        assertSize(res, 8);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescMin2, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(firstMid));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(secondMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMax1, rdescSecondMid1, rdescMax2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).ge(max));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMax1); res.next();
-        assert(res->descriptor.rid == rdescMax2);
+        assert(rdescCursorCompare(res, {rdescMax1, rdescMax2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1389,17 +1259,13 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(min));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(firstMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMax1, rdescSecondMid1, rdescMax2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(secondMid));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMax1); res.next();
-        assert(res->descriptor.rid == rdescMax2);
+        assert(rdescCursorCompare(res, {rdescMax1, rdescMax2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).gt(max));
         assertSize(res, 0);
@@ -1411,19 +1277,15 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max));
-        assertSize(res, 8);
         assert(rdescCursorCompare(res, {rdescMin1, rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {false, true}));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMax1, rdescFirstMid1, rdescSecondMid1, rdescMax2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {true, false}));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, max, {false, false}));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
     } catch (const nogdb::Error &ex) {
@@ -1434,17 +1296,12 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, true}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescFirstMid1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid2);
+        assert(rdescCursorCompare(res, {rdescFirstMid1, rdescFirstMid2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {true, false}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMin1); res.next();
-        assert(res->descriptor.rid == rdescMin2);
+        assert(rdescCursorCompare(res, {rdescMin1, rdescMin2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, firstMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1455,21 +1312,16 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescSecondMid1, rdescMin2, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, true}));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {true, false}));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(min, secondMid, {false, false}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescFirstMid1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid2);
+        assert(rdescCursorCompare(res, {rdescFirstMid1, rdescFirstMid2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1478,17 +1330,12 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, true}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescSecondMid1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid2);
+        assert(rdescCursorCompare(res, {rdescSecondMid1, rdescSecondMid2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {true, false}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescFirstMid1); res.next();
-        assert(res->descriptor.rid == rdescFirstMid2);
+        assert(rdescCursorCompare(res, {rdescFirstMid1, rdescFirstMid2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, secondMid, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
@@ -1499,21 +1346,16 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max));
-        assertSize(res, 6);
         assert(rdescCursorCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescMax1, rdescFirstMid2, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, true}));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescSecondMid1, rdescMax1, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {true, false}));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescFirstMid1, rdescSecondMid1, rdescFirstMid2, rdescSecondMid2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(firstMid, max, {false, false}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescSecondMid1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid2);
+        assert(rdescCursorCompare(res, {rdescSecondMid1, rdescSecondMid2}));
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1522,17 +1364,12 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max));
-        assertSize(res, 4);
         assert(rdescCursorCompare(res, {rdescSecondMid1, rdescMax1, rdescSecondMid2, rdescMax2}));
 
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, true}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescMax1); res.next();
-        assert(res->descriptor.rid == rdescMax2);
+        assert(rdescCursorCompare(res, {rdescMax1, rdescMax2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {true, false}));
-        assertSize(res, 2); res.next();
-        assert(res->descriptor.rid == rdescSecondMid1); res.next();
-        assert(res->descriptor.rid == rdescSecondMid2);
+        assert(rdescCursorCompare(res, {rdescSecondMid1, rdescSecondMid2}));
         res = nogdb::Vertex::getIndexCursor(txn, className, nogdb::Condition(propertyName).between(secondMid, max, {false, false}));
         assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
