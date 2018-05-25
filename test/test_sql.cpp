@@ -1185,7 +1185,6 @@ void test_sql_update_vertex_with_rid() {
         SQL::execute(txn, "UPDATE " + to_string(rdesc1) + " SET price=50.0, pages=400, words=90000");
         auto res = Vertex::get(txn, "books");
         assert(res[0].record.get("title").toText() == "Lion King");
-        auto t = res[0].record.get("price").toReal();
         assert(res[0].record.get("price").toReal() == 50);
         assert(res[0].record.get("pages").toInt() == 400);
         assert(res[0].record.get("words").toBigIntU() == 90000ULL);
@@ -1429,7 +1428,8 @@ void test_sql_validate_property_type() {
         uint32_t uinteger = UINT32_MAX;
         int64_t bigint = INT64_MIN;
         uint64_t ubigint = UINT64_MAX;
-        string text = "hello world!";
+        string baseText = "hello\" world'!\t";
+        string text = "hello\" world\\'!\t";
         double real = 0.42;
         Coordinates blob(0.421, 0.842);
 
@@ -1441,7 +1441,7 @@ void test_sql_validate_property_type() {
         props.set("uinteger", uinteger);
         props.set("bigint", bigint);
         props.set("ubigint", ubigint);
-        props.set("text", text);
+        props.set("text", baseText);
         props.set("real", real);
         props.set("blob", blob);
         Vertex::create(txn, "sql_valid_type", props);
@@ -1472,7 +1472,7 @@ void test_sql_validate_property_type() {
                                 && Condition("uinteger").eq(uinteger)
                                 && Condition("bigint").eq(bigint)
                                 && Condition("ubigint").eq(ubigint)
-                                && Condition("text").eq(text)
+                                && Condition("text").eq(baseText)
                                 && Condition("real").eq(real)
                                 && Condition("blob").eq(blob));
         assert(res.size() == 2);

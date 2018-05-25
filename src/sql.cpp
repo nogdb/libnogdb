@@ -148,9 +148,8 @@ string &Token::dequote(string &z) const {
         for (i = 1, j = 0;; i++) {
             assert(z[i]);
             if (z[i] == quote) {
-                if (z[i + 1] == quote) {
-                    z[j++] = quote;
-                    i++;
+                if (z[i - 1] == '\\') {
+                    z[j - 1] = quote;
                 } else {
                     break;
                 }
@@ -774,7 +773,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
             int delim = z[0];
             for (i = 1; z[i] != '\0'; i++) {
                 if (z[i] == delim) {
-                    if (z[i + 1] == delim) {
+                    if (z[i - 1] == '\\') {
                         i++;
                     } else {
                         break;
