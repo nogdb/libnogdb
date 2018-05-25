@@ -26,7 +26,7 @@ set(COMPILE_OPTIONS
     -Wno-unused-variable
     -Wno-unknown-pragmas
     -fPIC
-	-march=native
+    -march=native
 )
 
 ## TARGET lmdb
