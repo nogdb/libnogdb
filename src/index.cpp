@@ -64,7 +64,9 @@ namespace nogdb {
                                                                      TB_INDEXING_PREFIX + std::to_string(indexId),
                                                                      true, isUnique);
                         if (type == PropertyType::UNSIGNED_TINYINT) {
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toTinyIntU(), indexRecord,
+                            //NOTE: convert uint8_t to uint32_t for being compatible with all compilers
+                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                                                 static_cast<uint32_t>(bytesValue.toTinyIntU()), indexRecord,
                                                  false, !isUnique);
                         } else if (type == PropertyType::UNSIGNED_SMALLINT) {
                             Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toSmallIntU(), indexRecord,
@@ -92,7 +94,8 @@ namespace nogdb {
                                                    TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
                                                    true, isUnique);
                         if (type == PropertyType::TINYINT) {
-                            auto value = bytesValue.toTinyInt();
+                            //NOTE: convert int8_t to int32_t for being compatible with all compilers
+                            auto value = static_cast<int32_t>(bytesValue.toTinyInt());
                             Datastore::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  value, indexRecord, false, !isUnique);
@@ -158,7 +161,7 @@ namespace nogdb {
                                                                  true, isUnique);
                     auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                     if (type == PropertyType::UNSIGNED_TINYINT) {
-                        deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toTinyIntU());
+                        deleteIndexCursor(cursorHandler.get(), positionId, static_cast<uint32_t>(bytesValue.toTinyIntU()));
                     } else if (type == PropertyType::UNSIGNED_SMALLINT) {
                         deleteIndexCursor(cursorHandler.get(), positionId, bytesValue.toSmallIntU());
                     } else if (type == PropertyType::UNSIGNED_INTEGER) {
@@ -182,7 +185,7 @@ namespace nogdb {
                     auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
                     auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                     if (type == PropertyType::TINYINT) {
-                        auto value = bytesValue.toTinyInt();
+                        auto value = static_cast<int32_t>(bytesValue.toTinyInt());
                         (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
                                     : deleteIndexCursor(cursorHandlerPositive.get(), positionId, value);
                     } else if (type == PropertyType::SMALLINT) {
@@ -456,7 +459,7 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true, true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, static_cast<uint32_t>(value.toTinyIntU()), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return backwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
@@ -466,7 +469,7 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getLess(txn, classId, indexId, isUnique, value.toTinyInt(), true);
+                return getLess(txn, classId, indexId, isUnique, static_cast<int32_t>(value.toTinyInt()), true);
             case PropertyType::SMALLINT:
                 return getLess(txn, classId, indexId, isUnique, value.toSmallInt(), true);
             case PropertyType::INTEGER:
@@ -480,7 +483,7 @@ namespace nogdb {
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true, true);
+                return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
             }
             default:
                 break;
@@ -504,7 +507,7 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true);
+                    return backwardSearchIndex(cursorHandler.get(), classId, static_cast<uint32_t>(value.toTinyIntU()), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return backwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
@@ -514,7 +517,7 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getLess(txn, classId, indexId, isUnique, value.toTinyInt());
+                return getLess(txn, classId, indexId, isUnique, static_cast<int32_t>(value.toTinyInt()));
             case PropertyType::SMALLINT:
                 return getLess(txn, classId, indexId, isUnique, value.toSmallInt());
             case PropertyType::INTEGER:
@@ -528,7 +531,7 @@ namespace nogdb {
                                                              TB_INDEXING_PREFIX + std::to_string(indexId),
                                                              false, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
-                return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
+                return backwardSearchIndex(cursorHandler.get(), classId, value.toText());
             }
             default:
                 break;
@@ -552,7 +555,7 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return exactMatchIndex(cursorHandler.get(), classId, value.toTinyIntU());
+                    return exactMatchIndex(cursorHandler.get(), classId, static_cast<uint32_t>(value.toTinyIntU()));
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return exactMatchIndex(cursorHandler.get(), classId, value.toSmallIntU());
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
@@ -562,7 +565,7 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getEqual(txn, classId, indexId, isUnique, value.toTinyInt());
+                return getEqual(txn, classId, indexId, isUnique, static_cast<int32_t>(value.toTinyInt()));
             case PropertyType::SMALLINT:
                 return getEqual(txn, classId, indexId, isUnique, value.toSmallInt());
             case PropertyType::INTEGER:
@@ -601,7 +604,7 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true, true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, static_cast<uint32_t>(value.toTinyIntU()), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return forwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
@@ -611,7 +614,7 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getGreater(txn, classId, indexId, isUnique, value.toTinyInt(), true);
+                return getGreater(txn, classId, indexId, isUnique, static_cast<int32_t>(value.toTinyInt()), true);
             case PropertyType::SMALLINT:
                 return getGreater(txn, classId, indexId, isUnique, value.toSmallInt(), true);
             case PropertyType::INTEGER:
@@ -649,7 +652,7 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler.get(), classId, value.toTinyIntU(), true);
+                    return forwardSearchIndex(cursorHandler.get(), classId, static_cast<uint32_t>(value.toTinyIntU()), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return forwardSearchIndex(cursorHandler.get(), classId, value.toSmallIntU(), true);
                 } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
@@ -659,7 +662,7 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getGreater(txn, classId, indexId, isUnique, value.toTinyInt());
+                return getGreater(txn, classId, indexId, isUnique, static_cast<int32_t>(value.toTinyInt()));
             case PropertyType::SMALLINT:
                 return getGreater(txn, classId, indexId, isUnique, value.toSmallInt());
             case PropertyType::INTEGER:
@@ -701,7 +704,9 @@ namespace nogdb {
                                                              true, isUnique);
                 auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toTinyIntU(), upperBound.toTinyIntU(),
+                    return betweenSearchIndex(cursorHandler.get(), classId,
+                                              static_cast<uint32_t>(lowerBound.toTinyIntU()),
+                                              static_cast<uint32_t>(upperBound.toTinyIntU()),
                                               true, isIncludeBound);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
                     return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toSmallIntU(),
@@ -715,7 +720,9 @@ namespace nogdb {
                 }
             }
             case PropertyType::TINYINT:
-                return getBetween(txn, classId, indexId, isUnique, lowerBound.toTinyInt(), upperBound.toTinyInt(),
+                return getBetween(txn, classId, indexId, isUnique,
+                                  static_cast<int32_t>(lowerBound.toTinyInt()),
+                                  static_cast<int32_t>(upperBound.toTinyInt()),
                                   isIncludeBound);
             case PropertyType::SMALLINT:
                 return getBetween(txn, classId, indexId, isUnique, lowerBound.toSmallInt(), upperBound.toSmallInt(),

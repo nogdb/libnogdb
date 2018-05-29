@@ -50,12 +50,12 @@ namespace nogdb {
                                 PropertyType type, bool isUnique);
 
         template<typename T>
-        static void deleteIndexCursor(Datastore::CursorHandler *cursorHandler, PositionId positionId, T value) {
+        static void deleteIndexCursor(Datastore::CursorHandler *cursorHandler, PositionId positionId, const T& value) {
             for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
                  !keyValue.empty();
                  keyValue = Datastore::getNextCursor(cursorHandler)) {
                 auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                if (value == *key) {
+                if (*key == static_cast<T>(value)) {
                     auto valueAsPositionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
                     if (positionId == *valueAsPositionId) {
                         Datastore::deleteCursor(cursorHandler);
@@ -257,7 +257,7 @@ namespace nogdb {
                  !keyValue.empty();
                  keyValue = Datastore::getNextCursor(cursorHandler)) {
                 auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                if (*key == value) {
+                if (*key == static_cast<T>(value)) {
                     auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 } else {
@@ -317,12 +317,32 @@ namespace nogdb {
                          keyValue = Datastore::getNextCursor(cursorHandler)) {
                         if (!isInclude) {
                             auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                            if (*key == value) continue;
+                            if (*key == static_cast<T>(value)) continue;
                             else isInclude = true;
                         }
                         auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
                         result.emplace_back(RecordDescriptor{classId, *positionId});
                     }
+                }
+            }
+            return result;
+        };
+
+        inline static std::vector<RecordDescriptor> backwardSearchIndex(Datastore::CursorHandler *cursorHandler,
+                                                                        ClassId classId, const std::string &value,
+                                                                        bool isInclude = false) {
+            auto result = std::vector<RecordDescriptor>{};
+            if (isInclude) {
+                auto partialResult = exactMatchIndex(cursorHandler, classId, value);
+                result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+            }
+            auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
+            if (!keyValue.empty()) {
+                for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                     !keyValue.empty();
+                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
+                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             }
             return result;
@@ -347,7 +367,7 @@ namespace nogdb {
                          keyValue = Datastore::getNextCursor(cursorHandler)) {
                         if (!isInclude) {
                             auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                            if (*key == value) continue;
+                            if (*key == static_cast<T>(value)) continue;
                             else isInclude = true;
                         }
                         auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
