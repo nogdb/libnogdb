@@ -148,11 +148,20 @@ string &Token::dequote(string &z) const {
         for (i = 1, j = 0;; i++) {
             assert(z[i]);
             if (z[i] == quote) {
-                if (z[i - 1] == '\\') {
-                    z[j - 1] = quote;
+                break;
+            } else if (z[i] == '\\') {
+                if (z[i + 1] == quote) {
+                    // if backslash quote (escape quote), remove backslash.
+                    z[j++] = quote;
+                } else if (z[i + 1] == '\\') {
+                    // if (backslash backslash (escape backslash, remove one backslash.
+                    z[j++] = '\\';
                 } else {
-                    break;
+                    // else don't remove anything.
+                    z[j++] = z[i];
+                    z[j++] = z[i + 1];
                 }
+                i++;
             } else {
                 z[j++] = z[i];
             }
@@ -772,12 +781,10 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
         case CC_QUOTE: {
             int delim = z[0];
             for (i = 1; z[i] != '\0'; i++) {
-                if (z[i] == delim) {
-                    if (z[i - 1] == '\\') {
-                        i++;
-                    } else {
-                        break;
-                    }
+                if (z[i] == '\\') {
+                    i++;
+                } else if (z[i] == delim) {
+                    break;
                 }
             }
             if (z[i] == '\'' || z[i] == '"') {

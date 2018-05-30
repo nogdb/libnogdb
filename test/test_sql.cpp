@@ -1428,8 +1428,8 @@ void test_sql_validate_property_type() {
         uint32_t uinteger = UINT32_MAX;
         int64_t bigint = INT64_MIN;
         uint64_t ubigint = UINT64_MAX;
-        string baseText = "hello\" world'!\t";
-        string text = "hello\" world\\'!\t";
+        string baseText = "\"hello\" world'!\t\\";
+        string text = "\"hello\" world\\'!\t\\\\";
         double real = 0.42;
         Coordinates blob(0.421, 0.842);
 
