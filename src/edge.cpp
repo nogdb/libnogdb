@@ -95,6 +95,9 @@ namespace nogdb {
             // update in-memory relations
             txn.txnCtx.dbRelation->createEdge(*txn.txnBase, key, srcVertexRecordDescriptor.rid,
                                               dstVertexRecordDescriptor.rid);
+
+            record.commit();
+
         } catch (const Error &err) {
             throw err;
         } catch (Datastore::ErrorType &err) {
@@ -158,6 +161,9 @@ namespace nogdb {
             }
 
             Datastore::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
+
+            record.commit();
+
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }

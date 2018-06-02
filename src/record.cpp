@@ -19,7 +19,9 @@
  *
  */
 
+#include <algorithm>
 #include <cstdlib>
+#include <iostream>
 
 #include "constant.hpp"
 #include "validate.hpp"
@@ -34,6 +36,7 @@ namespace nogdb {
     Record &Record::set(const std::string &propName, const unsigned char *value) {
         if (!propName.empty() && propName.at(0) != '@') {
             properties[propName] = Bytes{value, strlen((char *) value)};
+            updateVersion();
         }
         return *this;
     }
@@ -41,6 +44,7 @@ namespace nogdb {
     Record &Record::set(const std::string &propName, const char *value) {
         if (!propName.empty() && propName.at(0) != '@') {
             properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
+            updateVersion();
         }
         return *this;
     }
@@ -48,7 +52,8 @@ namespace nogdb {
     Record &Record::set(const std::string &propName, const std::string &value) {
         if (!propName.empty() && propName.at(0) != '@') {
             properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         strlen(value.c_str())};
+                                         value.length()};
+            updateVersion();
         }
         return *this;
     }
@@ -56,6 +61,7 @@ namespace nogdb {
     Record &Record::set(const std::string &propName, const nogdb::Bytes &b) {
         if (!propName.empty() && propName.at(0) != '@') {
             properties[propName] = b;
+            updateVersion();
         }
         return *this;
     }
@@ -77,7 +83,14 @@ namespace nogdb {
     Record &Record::setBasicInfo(const std::string &propName, const std::string &value) {
         if (!propName.empty() && propName.at(0) == '@') {
             properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         strlen(value.c_str())};
+                                         value.length()};
+        }
+        return *this;
+    }
+
+    Record &Record::setBasicInfo(const std::string &propName, const nogdb::Bytes &b) {
+        if (!propName.empty() && propName.at(0) == '@') {
+            properties[propName] = b;
         }
         return *this;
     }
@@ -227,16 +240,29 @@ namespace nogdb {
         }
     }
 
-    size_t Record::size() const {
-        auto size = size_t{0};
-        for(auto iter = properties.upper_bound(VERSION_PROPERTY); iter != properties.cend(); ++iter) {
-            ++size;
+    void Record::commit() const {
+        isUpdated = false;
+        std::cout << std::boolalpha << isUpdated << std::endl;
+    }
+
+    void Record::updateVersion() {
+        if (!isUpdated) {
+            if (properties.find(VERSION_PROPERTY) == properties.end()) {
+                setBasicInfo(VERSION_PROPERTY, 1ULL);
+            } else {
+                const Bytes& bytes = properties[VERSION_PROPERTY];
+                setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
+            }
+            isUpdated = true;
         }
-        return size;
+    }
+
+    size_t Record::size() const {
+        return (size_t) std::distance(properties.upper_bound(VERSION_PROPERTY), properties.end());
     }
 
     bool Record::empty() const {
-        return size() < 1;
+        return properties.upper_bound(VERSION_PROPERTY) == properties.end();
     }
 
     void Record::clear() {

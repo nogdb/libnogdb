@@ -62,6 +62,9 @@ namespace nogdb {
                 auto const isUnique = std::get<2>(indexInfo.second);
                 Index::addIndex(*txn.txnBase, indexId, maxRecordNumValue, bytesValue, propertyType, isUnique);
             }
+
+            record.commit();
+
         } catch (const Error &err) {
             throw err;
         } catch (Datastore::ErrorType &err) {
@@ -121,6 +124,9 @@ namespace nogdb {
             }
 
             Datastore::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
+
+            record.commit();
+
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }

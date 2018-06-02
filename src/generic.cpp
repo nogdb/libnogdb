@@ -282,7 +282,7 @@ namespace nogdb {
         classPropertyInfo.insert(CLASS_NAME_PROPERTY_ID, CLASS_NAME_PROPERTY, PropertyType::TEXT);
         classPropertyInfo.insert(RECORD_ID_PROPERTY_ID, RECORD_ID_PROPERTY, PropertyType::TEXT);
         classPropertyInfo.insert(DEPTH_PROPERTY_ID, DEPTH_PROPERTY, PropertyType::UNSIGNED_INTEGER);
-        //classPropertyInfo.insert(VERSION_PROPERTY_ID, VERSION_PROPERTY, PropertyType::UNSIGNED_BIGINT); //NOTE: inserted by default
+        classPropertyInfo.insert(VERSION_PROPERTY_ID, VERSION_PROPERTY, PropertyType::UNSIGNED_BIGINT); //NOTE: inserted by default
         for (const auto &property: BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first) {
             classPropertyInfo.insert(property.first, property.second);
         }

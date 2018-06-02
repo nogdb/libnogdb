@@ -31,6 +31,8 @@
 
 #include "nogdb_errors.h"
 
+#include <iostream>
+
 namespace nogdb {
 
     auto emptyString = std::string{"\n"};
@@ -144,9 +146,17 @@ namespace nogdb {
                     if (propertySize > 0) {
                         Blob::Byte byteData[propertySize];
                         offset = rawData.retrieve(byteData, offset, propertySize);
-                        result.set(foundInfo->second, Bytes{byteData, propertySize});
+                        if (foundInfo->second.at(0) == '@') {
+                            result.setBasicInfo(foundInfo->second, Bytes{byteData, propertySize});
+                        } else {
+                            result.set(foundInfo->second, Bytes{byteData, propertySize});
+                        }
                     } else {
-                        result.set(foundInfo->second, Bytes{});
+                        if (foundInfo->second.at(0) == '@') {
+                            result.setBasicInfo(foundInfo->second, Bytes{});
+                        } else {
+                            result.set(foundInfo->second, Bytes{});
+                        }
                     }
                 } else {
                     offset += propertySize;
@@ -163,7 +173,6 @@ namespace nogdb {
         return parseRawData(keyValue, classPropertyInfo)
                 .setBasicInfo(CLASS_NAME_PROPERTY, className)
                 .setBasicInfo(RECORD_ID_PROPERTY, rid2str(rid))
-                .setBasicInfo(VERSION_PROPERTY, 1UL) //TODO: remove this when record version is implemented
                 .setBasicInfo(DEPTH_PROPERTY, 0U);
     }
 }

@@ -189,6 +189,7 @@ namespace nogdb {
 
         template<typename T>
         T convert() const {
+            // assert(sizeof(T) <= size_);
             T result = 0;
             memcpy(static_cast<void *>(&result), static_cast<const void *>(value_), sizeof(T));
             return result;
@@ -250,6 +251,9 @@ namespace nogdb {
         uint64_t getVersion() const;
 
         void unset(const std::string &className);
+        void commit() const;
+
+        void updateVersion();
 
         size_t size() const;
 
@@ -263,10 +267,11 @@ namespace nogdb {
         friend struct Algorithm;
         friend class sql_parser::Record;
 
+        mutable bool isUpdated{false};
         std::map<std::string, Bytes> properties{};
 
         template<typename T>
-        Record &setBasicInfo(const std::string &propName, T value) {
+        Record &setBasicInfo(const std::string &propName, const T &value) {
             if (!propName.empty() && propName.at(0) == '@') {
                 properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
             }
@@ -278,6 +283,8 @@ namespace nogdb {
         Record &setBasicInfo(const std::string &propName, const char *value);
 
         Record &setBasicInfo(const std::string &propName, const std::string &value);
+
+        Record &setBasicInfo(const std::string &propName, const Bytes& b);
     };
 
     struct RecordDescriptor {
