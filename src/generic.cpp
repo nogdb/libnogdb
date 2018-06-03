@@ -19,13 +19,13 @@
  *
  */
 
+#include <iostream> // for debugging
 #include <map>
 #include <unordered_map>
 #include <vector>
 #include <utility>
 #include <set>
 #include <queue>
-#include <cassert>
 
 #include "blob.hpp"
 #include "keyval.hpp"
@@ -35,6 +35,7 @@
 #include "parser.hpp"
 #include "generic.hpp"
 #include "schema.hpp"
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
 
@@ -42,12 +43,16 @@ namespace nogdb {
     Result Generic::getRecordResult(Txn &txn,
                                     const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {
+        auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         try {
             auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
                                                      std::to_string(recordDescriptor.rid.first), true);
             auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
                                                  recordDescriptor.rid.second);
-            return Result{recordDescriptor, Parser::parseRawData(keyValue, classPropertyInfo)};
+            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
+            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+            return Result{recordDescriptor, record};
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
@@ -63,7 +68,10 @@ namespace nogdb {
                                                      std::to_string(recordDescriptor.rid.first), true);
             auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
                                                  recordDescriptor.rid.second);
-            result.emplace_back(Result{recordDescriptor, Parser::parseRawData(keyValue, classPropertyInfo)});
+            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
+            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+            result.emplace_back(Result{recordDescriptor, record});
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
@@ -71,18 +79,20 @@ namespace nogdb {
     }
 
     ResultSet
-    Generic::getMultipleRecordFromRedesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors) {
+    Generic::getMultipleRecordFromRdesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors) {
         auto result = ResultSet{};
         if (!recordDescriptors.empty()) {
             auto classId = recordDescriptors.cbegin()->rid.first;
             auto classDescriptor = getClassDescriptor(txn, classId, ClassType::UNDEFINED);
             auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
+            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
             try {
                 auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classId), true);
                 for (const auto &recordDescriptor: recordDescriptors) {
                     auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
                                                          recordDescriptor.rid.second);
-                    result.emplace_back(Result{recordDescriptor, Parser::parseRawData(keyValue, classPropertyInfo)});
+                    auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
+                    result.emplace_back(Result{recordDescriptor, record});
                 }
             } catch (Datastore::ErrorType &err) {
                 throw Error(err, Error::Type::DATASTORE);
@@ -100,8 +110,9 @@ namespace nogdb {
             while (!keyValue.empty()) {
                 auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                 if (*key != EM_MAXRECNUM) {
-                    result.push_back(Result{RecordDescriptor{classInfo.id, *key},
-                                            Parser::parseRawData(keyValue, classInfo.propertyInfo)});
+                    auto rid = RecordId{classInfo.id, *key};
+                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
+                    result.push_back(Result{RecordDescriptor{rid}, record});
                 }
                 keyValue = Datastore::getNextCursor(cursorHandler.get());
             }
@@ -155,15 +166,17 @@ namespace nogdb {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
                     auto classDBHandler = Datastore::DBHandler{};
+                    auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
                             classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        result.push_back(
-                                Result{RecordDescriptor{edge}, Parser::parseRawData(keyValue, classPropertyInfo)});
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        result.push_back(Result{RecordDescriptor{edge}, record});
                     };
                     if (edgeClassIds.empty()) {
                         for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
@@ -252,7 +265,7 @@ namespace nogdb {
                 const Schema::ClassDescriptorPtr &classDescriptor) -> void {
             for (const auto &subClassDescriptor: BaseTxn::getCurrentVersion(txn, classDescriptor->sub).first) {
                 auto subClassDescriptorPtr = subClassDescriptor.lock();
-                assert(subClassDescriptorPtr != nullptr);
+                require(subClassDescriptorPtr != nullptr);
                 subClasses.insert(subClassDescriptorPtr);
                 resolveSubclass(subClassDescriptorPtr);
             }
@@ -268,6 +281,8 @@ namespace nogdb {
         auto classPropertyInfo = ClassPropertyInfo{};
         classPropertyInfo.insert(CLASS_NAME_PROPERTY_ID, CLASS_NAME_PROPERTY, PropertyType::TEXT);
         classPropertyInfo.insert(RECORD_ID_PROPERTY_ID, RECORD_ID_PROPERTY, PropertyType::TEXT);
+        classPropertyInfo.insert(DEPTH_PROPERTY_ID, DEPTH_PROPERTY, PropertyType::UNSIGNED_INTEGER);
+        classPropertyInfo.insert(VERSION_PROPERTY_ID, VERSION_PROPERTY, PropertyType::UNSIGNED_BIGINT); //NOTE: inserted by default
         for (const auto &property: BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first) {
             classPropertyInfo.insert(property.first, property.second);
         }

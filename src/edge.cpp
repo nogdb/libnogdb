@@ -43,6 +43,9 @@ namespace nogdb {
                                         const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::EDGE);
         auto srcVertexDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto dstVertexDescriptor = Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
@@ -109,6 +112,9 @@ namespace nogdb {
     void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -263,11 +269,11 @@ namespace nogdb {
                     case PropertyType::REAL: {
                         auto dataIndexDBHandlerPositive =
                                 Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
+                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_POSITIVE_SUFFIX,
                                                    true, isUnique);
                         auto dataIndexDBHandlerNegative =
                                 Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
+                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_NEGATIVE_SUFFIX,
                                                    true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);
@@ -290,9 +296,9 @@ namespace nogdb {
         // remove all records in database
         try {
             auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto cursorHandler = Datastore::openCursor(dsTxnHandler, classDBHandler);
+            auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
             auto relationDBHandler = Datastore::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto keyValue = Datastore::getNextCursor(cursorHandler);
+            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
             while (!keyValue.empty()) {
                 auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
                 if (*key != EM_MAXRECNUM) {
@@ -303,7 +309,7 @@ namespace nogdb {
                     // delete a record in a datastore
                     //Datastore::deleteCursor(cursorHandler);
                 }
-                keyValue = Datastore::getNextCursor(cursorHandler);
+                keyValue = Datastore::getNextCursor(cursorHandler.get());
             }
             // empty a database
             Datastore::emptyDbi(dsTxnHandler, classDBHandler);
@@ -507,14 +513,14 @@ namespace nogdb {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition, true);
     }
 
-    ResultSetCursor Edge::getCursorIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getIndexCursor(Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

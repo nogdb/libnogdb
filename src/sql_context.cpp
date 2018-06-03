@@ -19,12 +19,11 @@
  *
  */
 
-#include <cassert>
-
 #include "constant.hpp"
 #include "sql.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -531,7 +530,7 @@ ResultSet Context::selectWhere(ResultSet &input, const Where &where) {
                 map[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
                 map[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
                 for (const auto &prop: in->record.getAll()) {
-                    map[prop.first] = prop.second.type().toBase();
+                    map[prop.first] = prop.second.type();
                 }
             } else if (classID != previousClassID) {
                 map.clear();
@@ -636,7 +635,7 @@ Context::selectProjectionItem(const Result &input, const Projection &proj, const
         case ProjectionType::METHOD: {
             pair<Projection, Projection> mProj = proj.get<pair<Projection, Projection>>();
             pair<string, Bytes> resA = this->selectProjectionItem(input, mProj.first, map);
-            if (resA.second.type() == PropertyTypeExt::RESULT_SET) {
+            if (resA.second.isResults()) {
                 ResultSet &inputB = resA.second.results();
                 if (inputB.size() == 1) {
                     const Result &in = inputB.front();
@@ -653,7 +652,7 @@ Context::selectProjectionItem(const Result &input, const Projection &proj, const
         case ProjectionType::ARRAY_SELECTOR: {
             pair<Projection, unsigned long> arrSelProj = proj.get<pair<Projection, unsigned long>>();
             pair<string, Bytes> resA = this->selectProjectionItem(input, arrSelProj.first, map);
-            if (resA.second.type() == PropertyTypeExt::RESULT_SET) {
+            if (resA.second.isResults()) {
                 ResultSet &inputB = resA.second.results();
                 string outName = resA.first + "[" + to_string(arrSelProj.second) + "]";
                 if (arrSelProj.second < inputB.size()) {
@@ -673,7 +672,7 @@ Context::selectProjectionItem(const Result &input, const Projection &proj, const
             return resA;
         }
         default:
-            assert(false);
+            require(false);
             abort();
     }
 }

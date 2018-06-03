@@ -23,13 +23,15 @@
 #include <bitset> // for debugging
 #include <vector>
 #include <cmath>
-#include <cassert>
 
 #include "datastore.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
+
+#include <iostream>
 
 namespace nogdb {
 
@@ -48,8 +50,8 @@ namespace nogdb {
             for (const auto &property: properties) {
                 auto propertyId = static_cast<PropertyId>(property.second.id);
                 auto rawData = record.get(property.first);
-                assert(property.second.id < std::pow(2, UINT16_BITS_COUNT));
-                assert(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
+                require(property.second.id < std::pow(2, UINT16_BITS_COUNT));
+                require(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
                 if (rawData.size() < std::pow(2, UINT8_BITS_COUNT - 1)) {
                     auto size = static_cast<uint8_t>(rawData.size()) << 1;
                     value.append(&propertyId, sizeof(PropertyId));
@@ -74,6 +76,7 @@ namespace nogdb {
         auto dataSize = size_t{0};
         auto properties = decltype(classInfo.nameToDesc) {};
         classInfo = Generic::getClassMapProperty(txn, classDescriptor);
+
         // calculate a raw data size of properties in a record
         for (const auto &property: record.getAll()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
@@ -97,16 +100,29 @@ namespace nogdb {
             dataSize += getRawDataSize(property.second.size());
             properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
+
+        // calculate a raw data from basic property info
+        for (const auto &property : record.getBasicInfo()) {
+            auto foundProperty = classInfo.nameToDesc.find(property.first);
+            if (foundProperty == classInfo.nameToDesc.cend()) {
+                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            }
+            if (property.first == VERSION_PROPERTY) {
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
+            }
+        }
+
         return parseRecord(txn, dataSize, properties, record);
     }
 
     Record Parser::parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo) {
-        auto result = Record{};
         if (keyValue.empty()) {
-            return result;
+            return Record{};
         }
         auto rawData = Datastore::getValueAsBlob(keyValue);
         auto offset = size_t{0};
+        Record::RecordPropertyType properties;
         if (rawData.capacity() == 0) {
             throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
@@ -142,15 +158,26 @@ namespace nogdb {
                     if (propertySize > 0) {
                         Blob::Byte byteData[propertySize];
                         offset = rawData.retrieve(byteData, offset, propertySize);
-                        result.set(foundInfo->second, Bytes{byteData, propertySize});
+                        properties[foundInfo->second] = Bytes{byteData, propertySize};
                     } else {
-                        result.set(foundInfo->second, Bytes{});
+                        properties[foundInfo->second] = Bytes{};
                     }
                 } else {
                     offset += propertySize;
                 }
             }
         }
-        return result;
+        return Record(properties);
+    }
+
+    Record Parser::parseRawDataWithBasicInfo(const std::string className,
+                                             const RecordId& rid,
+                                             const KeyValue &keyValue,
+                                             const ClassPropertyInfo &classPropertyInfo) {
+        return parseRawData(keyValue, classPropertyInfo)
+                .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
+                .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
+                .setBasicInfoIfNotExists(VERSION_PROPERTY, 1LL)
+                .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
     }
 }

@@ -135,6 +135,12 @@ namespace nogdb {
     };
 
     struct ClassPropertyInfo {
+        ClassPropertyInfo() {
+            auto propertyDescriptor = PropertyDescriptor{VERSION_PROPERTY_ID, PropertyType::UNSIGNED_BIGINT};
+            idToName.emplace(VERSION_PROPERTY_ID, VERSION_PROPERTY);
+            nameToDesc.emplace(VERSION_PROPERTY, propertyDescriptor);
+        }
+
         void insert(PropertyId propertyId, const std::string &propertyName, PropertyType type) {
             idToName.emplace(std::make_pair(propertyId, propertyName));
             nameToDesc.emplace(std::make_pair(propertyName, PropertyDescriptor{propertyId, type}));

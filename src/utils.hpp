@@ -57,6 +57,8 @@ namespace nogdb {
 
     void replaceAll(std::string &string, const std::string &from, const std::string &to);
 
+    void require(bool cmp);
+
 }
 
 #endif

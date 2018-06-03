@@ -31,43 +31,6 @@
 #include "nogdb_types.h"
 
 //******************************************************************
-//*  Forward declarations of NogDB and boost internal classes.     *
-//******************************************************************
-
-namespace boost {
-    class shared_mutex;
-}
-
-namespace nogdb {
-    struct Datastore;
-    struct Graph;
-    struct Validate;
-    struct Algorithm;
-    struct Compare;
-    struct TxnStat;
-    struct Generic;
-    struct Schema;
-    struct Class;
-    struct Property;
-    struct Db;
-    struct Vertex;
-    struct Edge;
-    struct Traverse;
-
-    class EnvHandlerPtr;
-
-    class BaseTxn;
-
-    class Condition;
-
-    class MultiCondition;
-
-    class PathFilter;
-
-    class RWSpinLock;
-}
-
-//******************************************************************
 //*  A declaration of NogDB database context.                      *
 //******************************************************************
 

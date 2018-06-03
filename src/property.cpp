@@ -235,11 +235,11 @@ namespace nogdb {
                 case PropertyType::REAL: {
                     auto dataIndexDBHandlerPositive =
                             Datastore::openDbi(dsTxnHandler,
-                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + "_positive",
+                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + INDEX_POSITIVE_SUFFIX,
                                                true, isUnique);
                     auto dataIndexDBHandlerNegative =
                             Datastore::openDbi(dsTxnHandler,
-                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + "_negative",
+                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + INDEX_NEGATIVE_SUFFIX,
                                                true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
@@ -382,10 +382,10 @@ namespace nogdb {
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
                     auto dataIndexDBHandlerPositive =
-                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
+                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_POSITIVE_SUFFIX,
                                                true, isUnique);
                     auto dataIndexDBHandlerNegative =
-                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
+                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_NEGATIVE_SUFFIX,
                                                true, isUnique);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandlerNegative);

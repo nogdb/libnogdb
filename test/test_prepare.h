@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef TEST_EXEC_H_
-#define TEST_EXEC_H_
+#ifndef TEST_PREPARE_H_
+#define TEST_PREPARE_H_
 
 #include "runtest.h"
 
