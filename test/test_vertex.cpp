@@ -382,6 +382,7 @@ void test_update_vertex() {
         assert(record.get("title").toText() == "Lion King");
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
+        assert(record.getVersion() == 1ULL);
         record.set("price", 50.0).set("pages", 400).set("words", 90000ULL);
         nogdb::Vertex::update(txn, rdesc1, record);
 
@@ -391,17 +392,23 @@ void test_update_vertex() {
         assert(res[0].record.get("pages").toInt() == 400);
         assert(res[0].record.get("words").toBigIntU() == 90000ULL);
         assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
+        assert(res[0].record.getBigIntU("@version") == 1ULL);
+        assert(res[0].record.getVersion() == 1ULL);
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
         assert(res[1].record.get("pages").toInt() == 360);
         assert(res[1].record.getText("@recordId") == rid2str(rdesc2.rid));
+        assert(res[1].record.getBigIntU("@version") == 2ULL);
+        assert(res[1].record.getVersion() == 2ULL);
+
 
         nogdb::Vertex::update(txn, rdesc1, nogdb::Record{});
         res = nogdb::Vertex::get(txn, "books");
         assert(res[0].record.empty() == true);
         assert(res[0].record.getText("@className") == "books");
         assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
+        assert(res[0].record.getVersion() == 1ULL);
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
