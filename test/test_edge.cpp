@@ -678,7 +678,18 @@ void test_update_edge() {
         assert(res[0].record.get("time_used").toIntU() == 400U);
         assert(res[0].record.getText("@className") == "authors");
         assert(res[0].record.getText("@recordId") == rid2str(e1.rid));
+        assert(res[0].record.getBigIntU("@version") == 2ULL);
+        assert(res[0].record.getVersion() == 2ULL);
 
+        // update 10 times
+        for (size_t i = 0; i < 10; ++i) {
+
+            res[0].record.set("time_used", 1000U);
+
+            assert(res[0].record.getVersion() == 2ULL + i);
+            nogdb::Edge::update(txn, res[0].descriptor, res[0].record);
+            assert(res[0].record.getVersion() == 3ULL + i);
+        }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

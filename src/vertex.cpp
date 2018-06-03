@@ -39,6 +39,10 @@ namespace nogdb {
     const RecordDescriptor Vertex::create(Txn &txn, const std::string &className, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        // set default version
+        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -73,6 +77,10 @@ namespace nogdb {
     void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        // upgrade version
+        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};

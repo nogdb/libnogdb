@@ -43,6 +43,9 @@ namespace nogdb {
                                         const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::EDGE);
         auto srcVertexDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto dstVertexDescriptor = Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
@@ -109,6 +112,9 @@ namespace nogdb {
     void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};

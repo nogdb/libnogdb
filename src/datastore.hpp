@@ -146,7 +146,7 @@ namespace nogdb {
             MDB_val recordValue;
             recordKey.mv_size = sizeof(K);
             recordKey.mv_data = const_cast<void *>(reinterpret_cast<const void *>(&key));
-            recordValue.mv_size = strlen(const_cast<char *>(value.c_str()));
+            recordValue.mv_size = value.length();
             recordValue.mv_data = const_cast<void *>(reinterpret_cast<const void *>(value.c_str()));
             auto flags = ((isAppend) ? MDB_APPEND : 0U) | ((isOverwrite) ? 0U : MDB_NOOVERWRITE);
             if (auto error = mdb_put(txnHandler, dbHandler, &recordKey, &recordValue, flags)) {
@@ -163,7 +163,7 @@ namespace nogdb {
             recordKey.mv_size = sizeof(K);
             recordKey.mv_data = const_cast<void *>(reinterpret_cast<const void *>(&key));
             recordValue.mv_size = value.size();
-            recordValue.mv_data = static_cast<void *>(value.bytes());
+            recordValue.mv_data = reinterpret_cast<void *>(value.bytes());
             auto flags = ((isAppend) ? MDB_APPEND : 0U) | ((isOverwrite) ? 0U : MDB_NOOVERWRITE);
             if (auto err = mdb_put(txnHandler, dbHandler, &recordKey, &recordValue, flags)) {
                 throw err;
