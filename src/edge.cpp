@@ -263,11 +263,11 @@ namespace nogdb {
                     case PropertyType::REAL: {
                         auto dataIndexDBHandlerPositive =
                                 Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
+                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_POSITIVE_SUFFIX,
                                                    true, isUnique);
                         auto dataIndexDBHandlerNegative =
                                 Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
+                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_NEGATIVE_SUFFIX,
                                                    true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);

@@ -53,6 +53,9 @@ namespace nogdb {
     const std::string STRING_EM_INIT = ".init";
     constexpr uint32_t EM_MAXRECNUM = 0;
 
+    const std::string INDEX_POSITIVE_SUFFIX = "_p";
+    const std::string INDEX_NEGATIVE_SUFFIX = "_n";
+
 }
 
 #endif
