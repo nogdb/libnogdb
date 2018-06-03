@@ -101,31 +101,16 @@ namespace nogdb {
             properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
 
-        // calculate a raw data in basic property info
+        // calculate a raw data from basic property info
         for (const auto &property : record.getBasicInfo()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
             if (foundProperty == classInfo.nameToDesc.cend()) {
                 throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
             }
-            // Basic info shouldn't have index
-            /*
-            // check if having any index
-            for (const auto &indexIter: foundProperty->second.indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace(
-                            property.first,
-                            std::make_tuple(
-                                    foundProperty->second.type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                    break;
-                }
+            if (property.first == VERSION_PROPERTY) {
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
             }
-            */
-            dataSize += getRawDataSize(property.second.size());
-            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
 
         return parseRecord(txn, dataSize, properties, record);
