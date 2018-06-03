@@ -130,6 +130,9 @@ namespace nogdb {
             nogdb::Record toBaseRecord() const;
 
         private:
+
+            friend nogdb::Record;
+
             map<string, Bytes> properties{};
         };
 
