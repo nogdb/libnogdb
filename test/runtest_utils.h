@@ -1380,28 +1380,20 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 1 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(min + 1));
         assert(rdescCompare(propertyName, res, {rdescMin1, rdescMin2}));
-        std::cout << "step 1.1 passed!!!" << propertyName << "\n";
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(firstMid + 1));
         assert(rdescCompare(propertyName, res, {rdescMin1, rdescMin2, rdescFirstMid1, rdescFirstMid2}));
-        std::cout << "step 1.2 passed!!!" << propertyName << "\n";
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(secondMid + 1));
         assert(rdescCompare(propertyName, res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2, rdescSecondMid1, rdescSecondMid2}));
-        std::cout << "step 1.3 passed!!!" << propertyName << "\n";
         res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).lt(max + 1));
         assert(rdescCompare(propertyName, res, {rdescMin1, rdescFirstMid1, rdescMin2, rdescFirstMid2, rdescSecondMid1, rdescSecondMid2, rdescMax1, rdescMax2}));
-        std::cout << "step 1.4 passed!!!" << propertyName << "\n";
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 2 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1418,8 +1410,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 3 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).le(min + 1));
@@ -1434,8 +1424,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 4 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1452,8 +1440,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 5 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).ge(min + 1));
@@ -1468,8 +1454,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 6 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1486,8 +1470,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 7 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).gt(min + 1));
@@ -1502,8 +1484,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 8 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1520,8 +1500,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 9 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min + 1, max - 1));
@@ -1536,8 +1514,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 10 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1554,8 +1530,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 11 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(min + 1, secondMid - 1));
@@ -1570,8 +1544,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 12 passed!!! " << propertyName << "\n";
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1588,8 +1560,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 13 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(firstMid + 1, max - 1));
@@ -1605,8 +1575,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         assert(false);
     }
 
-    std::cout << "step 14 passed!!! " << propertyName << "\n";
-
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
         auto res = nogdb::Vertex::getIndex(txn, className, nogdb::Condition(propertyName).between(secondMid + 1, max - 1));
@@ -1621,10 +1589,6 @@ void nonUniqueIndexAdjacentConditionTester(nogdb::Context *ctx, const std::strin
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    std::cout << "step 15 passed!!! " << propertyName << "\n";
-
-    std::cout << "Done!!! " << propertyName << "\n";
 
 }
 

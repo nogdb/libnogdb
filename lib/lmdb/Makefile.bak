@@ -1,6 +1,6 @@
 CC      ?= gcc
 AR      = ar
-FLAGS   = -ggdb -Ofast -fPIC -W -Wall -Wno-unused-parameter -pthread
+FLAGS   = -ggdb -Ofast -fPIC -W -Wall -Wno-unused-parameter -Wno-format-extra-args -Wno-missing-field-initializers -Wno-missing-field-initializers -pthread
 ANAME   = liblmdb.a
 SONAME  = liblmdb.so
 SOURCES = mdb.c midl.c
