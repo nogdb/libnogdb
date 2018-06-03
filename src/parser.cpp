@@ -105,12 +105,12 @@ namespace nogdb {
     }
 
     Record Parser::parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo) {
-        auto result = Record{};
         if (keyValue.empty()) {
-            return result;
+            return Record{};
         }
         auto rawData = Datastore::getValueAsBlob(keyValue);
         auto offset = size_t{0};
+        std::map<std::string, Bytes> properties;
         if (rawData.capacity() == 0) {
             throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
@@ -146,24 +146,16 @@ namespace nogdb {
                     if (propertySize > 0) {
                         Blob::Byte byteData[propertySize];
                         offset = rawData.retrieve(byteData, offset, propertySize);
-                        if (foundInfo->second.at(0) == '@') {
-                            result.setBasicInfo(foundInfo->second, Bytes{byteData, propertySize});
-                        } else {
-                            result.set(foundInfo->second, Bytes{byteData, propertySize});
-                        }
+                        properties[foundInfo->second] = Bytes{byteData, propertySize};
                     } else {
-                        if (foundInfo->second.at(0) == '@') {
-                            result.setBasicInfo(foundInfo->second, Bytes{});
-                        } else {
-                            result.set(foundInfo->second, Bytes{});
-                        }
+                        properties[foundInfo->second] = Bytes{};
                     }
                 } else {
                     offset += propertySize;
                 }
             }
         }
-        return result;
+        return Record{std::move(properties)};
     }
 
     Record Parser::parseRawDataWithBasicInfo(const std::string className,
@@ -171,8 +163,9 @@ namespace nogdb {
                                              const KeyValue &keyValue,
                                              const ClassPropertyInfo &classPropertyInfo) {
         return parseRawData(keyValue, classPropertyInfo)
-                .setBasicInfo(CLASS_NAME_PROPERTY, className)
-                .setBasicInfo(RECORD_ID_PROPERTY, rid2str(rid))
-                .setBasicInfo(DEPTH_PROPERTY, 0U);
+                .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
+                .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
+                .setBasicInfoIfNotExists(VERSION_PROPERTY, 1LL)
+                .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
     }
 }

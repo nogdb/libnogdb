@@ -23,6 +23,7 @@
 #ifndef __NOGDB_TYPES_H_INCLUDED_
 #define __NOGDB_TYPES_H_INCLUDED_
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <map>
@@ -189,7 +190,6 @@ namespace nogdb {
 
         template<typename T>
         T convert() const {
-            // assert(sizeof(T) <= size_);
             T result = 0;
             memcpy(static_cast<void *>(&result), static_cast<const void *>(value_), sizeof(T));
             return result;
@@ -200,10 +200,13 @@ namespace nogdb {
     public:
         Record() = default;
 
+        Record(std::map<std::string, Bytes> properties)
+                : properties(std::move(properties)) {}
+
         template<typename T>
-        Record &set(const std::string &propName, T value) {
+        Record &set(const std::string &propName, const T &value) {
             if (!propName.empty() && propName.at(0) != '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
         }
@@ -215,6 +218,14 @@ namespace nogdb {
         Record &set(const std::string &propName, const std::string &value);
 
         Record &set(const std::string &propName, const nogdb::Bytes &b);
+
+        template<typename T>
+        Record &setIfNotExists(const std::string &propName, const T &value) {
+            if (properties.find(propName) == properties.end()) {
+                set(propName, value);
+            }
+            return *this;
+        }
 
         const std::map<std::string, Bytes> &getAll() const;
 
@@ -273,7 +284,7 @@ namespace nogdb {
         template<typename T>
         Record &setBasicInfo(const std::string &propName, const T &value) {
             if (!propName.empty() && propName.at(0) == '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
         };
@@ -285,6 +296,15 @@ namespace nogdb {
         Record &setBasicInfo(const std::string &propName, const std::string &value);
 
         Record &setBasicInfo(const std::string &propName, const Bytes& b);
+
+        template<typename T>
+        Record &setBasicInfoIfNotExists(const std::string &propName, const T &value) {
+            if (properties.find(propName) == properties.end()) {
+                setBasicInfo(propName, value);
+            }
+            return *this;
+        };
+
     };
 
     struct RecordDescriptor {

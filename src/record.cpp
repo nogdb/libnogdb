@@ -231,7 +231,11 @@ namespace nogdb {
     }
 
     uint64_t Record::getVersion() const {
-        return getBigIntU(VERSION_PROPERTY);
+        try {
+            return getBigIntU(VERSION_PROPERTY);
+        } catch (const Error &e) {
+            return 0ULL;
+        }
     }
 
     void Record::unset(const std::string &propName) {
@@ -242,17 +246,11 @@ namespace nogdb {
 
     void Record::commit() const {
         isUpdated = false;
-        std::cout << std::boolalpha << isUpdated << std::endl;
     }
 
     void Record::updateVersion() {
         if (!isUpdated) {
-            if (properties.find(VERSION_PROPERTY) == properties.end()) {
-                setBasicInfo(VERSION_PROPERTY, 1ULL);
-            } else {
-                const Bytes& bytes = properties[VERSION_PROPERTY];
-                setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
-            }
+            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
             isUpdated = true;
         }
     }
