@@ -275,6 +275,7 @@ namespace nogdb {
 
         friend struct Parser;
         friend struct Generic;
+        friend struct Algorithm;
         friend class sql_parser::Record;
 
         friend struct Vertex;
