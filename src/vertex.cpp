@@ -39,6 +39,10 @@ namespace nogdb {
     const RecordDescriptor Vertex::create(Txn &txn, const std::string &className, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        // set default version
+        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -62,9 +66,6 @@ namespace nogdb {
                 auto const isUnique = std::get<2>(indexInfo.second);
                 Index::addIndex(*txn.txnBase, indexId, maxRecordNumValue, bytesValue, propertyType, isUnique);
             }
-
-            record.commit();
-
         } catch (const Error &err) {
             throw err;
         } catch (Datastore::ErrorType &err) {
@@ -76,6 +77,10 @@ namespace nogdb {
     void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        // upgrade version
+        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -124,9 +129,6 @@ namespace nogdb {
             }
 
             Datastore::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
-
-            record.commit();
-
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }

@@ -198,14 +198,14 @@ namespace nogdb {
 
     class Record {
     public:
-        Record() = default;
 
-        Record(std::map<std::string, Bytes> properties)
-                : properties(std::move(properties)) {}
+        using RecordPropertyType = std::map<std::string, Bytes>;
+
+        Record() = default;
 
         template<typename T>
         Record &set(const std::string &propName, const T &value) {
-            if (!propName.empty() && propName.at(0) != '@') {
+            if (!propName.empty() && !isBasicInfo(propName)) {
                 properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
@@ -221,13 +221,15 @@ namespace nogdb {
 
         template<typename T>
         Record &setIfNotExists(const std::string &propName, const T &value) {
-            if (properties.find(propName) == properties.end()) {
+            if (properties.find(propName) == properties.cend()) {
                 set(propName, value);
             }
             return *this;
         }
 
-        const std::map<std::string, Bytes> &getAll() const;
+        const RecordPropertyType &getAll() const;
+
+        const RecordPropertyType &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -262,9 +264,6 @@ namespace nogdb {
         uint64_t getVersion() const;
 
         void unset(const std::string &className);
-        void commit() const;
-
-        void updateVersion();
 
         size_t size() const;
 
@@ -273,33 +272,44 @@ namespace nogdb {
         void clear();
 
     private:
+
         friend struct Parser;
         friend struct Generic;
         friend struct Algorithm;
         friend class sql_parser::Record;
 
-        mutable bool isUpdated{false};
-        std::map<std::string, Bytes> properties{};
+        friend class Vertex;
+        friend class Edge;
+
+        Record(RecordPropertyType properties);
+
+        Record(RecordPropertyType properties, RecordPropertyType basicProperties)
+                : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
+
+        inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
+
+        RecordPropertyType properties{};
+        mutable RecordPropertyType basicProperties{};
 
         template<typename T>
-        Record &setBasicInfo(const std::string &propName, const T &value) {
-            if (!propName.empty() && propName.at(0) == '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
+        const Record &setBasicInfo(const std::string &propName, const T &value) const {
+            if (!propName.empty() && isBasicInfo(propName)) {
+                basicProperties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
         };
 
-        Record &setBasicInfo(const std::string &propName, const unsigned char *value);
+        const Record &setBasicInfo(const std::string &propName, const unsigned char *value) const;
 
-        Record &setBasicInfo(const std::string &propName, const char *value);
+        const Record &setBasicInfo(const std::string &propName, const char *value) const;
 
-        Record &setBasicInfo(const std::string &propName, const std::string &value);
+        const Record &setBasicInfo(const std::string &propName, const std::string &value) const;
 
-        Record &setBasicInfo(const std::string &propName, const Bytes& b);
+        const Record &setBasicInfo(const std::string &propName, const Bytes& b) const;
 
         template<typename T>
-        Record &setBasicInfoIfNotExists(const std::string &propName, const T &value) {
-            if (properties.find(propName) == properties.end()) {
+        const Record &setBasicInfoIfNotExists(const std::string &propName, const T &value) const {
+            if (basicProperties.find(propName) == basicProperties.cend()) {
                 setBasicInfo(propName, value);
             }
             return *this;

@@ -76,31 +76,58 @@ namespace nogdb {
         auto dataSize = size_t{0};
         auto properties = decltype(classInfo.nameToDesc) {};
         classInfo = Generic::getClassMapProperty(txn, classDescriptor);
+
         // calculate a raw data size of properties in a record
         for (const auto &property: record.getAll()) {
-            if (property.first.at(0) != '@' || property.first == VERSION_PROPERTY) {
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty == classInfo.nameToDesc.cend()) {
-                    throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
-                }
-                // check if having any index
-                for (const auto &indexIter: foundProperty->second.indexInfo) {
-                    if (indexIter.second.first == classDescriptor->id) {
-                        indexInfos.emplace(
-                                property.first,
-                                std::make_tuple(
-                                        foundProperty->second.type,
-                                        indexIter.first,
-                                        indexIter.second.second
-                                )
-                        );
-                        break;
-                    }
-                }
-                dataSize += getRawDataSize(property.second.size());
-                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
+            auto foundProperty = classInfo.nameToDesc.find(property.first);
+            if (foundProperty == classInfo.nameToDesc.cend()) {
+                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
             }
+            // check if having any index
+            for (const auto &indexIter: foundProperty->second.indexInfo) {
+                if (indexIter.second.first == classDescriptor->id) {
+                    indexInfos.emplace(
+                            property.first,
+                            std::make_tuple(
+                                    foundProperty->second.type,
+                                    indexIter.first,
+                                    indexIter.second.second
+                            )
+                    );
+                    break;
+                }
+            }
+            dataSize += getRawDataSize(property.second.size());
+            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
+
+        // calculate a raw data in basic property info
+        for (const auto &property : record.getBasicInfo()) {
+            auto foundProperty = classInfo.nameToDesc.find(property.first);
+            if (foundProperty == classInfo.nameToDesc.cend()) {
+                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            }
+            // Basic info shouldn't have index
+            /*
+            // check if having any index
+            for (const auto &indexIter: foundProperty->second.indexInfo) {
+                if (indexIter.second.first == classDescriptor->id) {
+                    indexInfos.emplace(
+                            property.first,
+                            std::make_tuple(
+                                    foundProperty->second.type,
+                                    indexIter.first,
+                                    indexIter.second.second
+                            )
+                    );
+                    break;
+                }
+            }
+            */
+            dataSize += getRawDataSize(property.second.size());
+            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
+        }
+
         return parseRecord(txn, dataSize, properties, record);
     }
 
@@ -110,7 +137,7 @@ namespace nogdb {
         }
         auto rawData = Datastore::getValueAsBlob(keyValue);
         auto offset = size_t{0};
-        std::map<std::string, Bytes> properties;
+        Record::RecordPropertyType properties;
         if (rawData.capacity() == 0) {
             throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
@@ -155,7 +182,7 @@ namespace nogdb {
                 }
             }
         }
-        return Record{std::move(properties)};
+        return Record(properties);
     }
 
     Record Parser::parseRawDataWithBasicInfo(const std::string className,

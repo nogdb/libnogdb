@@ -34,78 +34,46 @@
 namespace nogdb {
 
     Record &Record::set(const std::string &propName, const unsigned char *value) {
-        if (!propName.empty() && propName.at(0) != '@') {
+        if (!propName.empty() && !isBasicInfo(propName)) {
             properties[propName] = Bytes{value, strlen((char *) value)};
-            updateVersion();
         }
         return *this;
     }
 
     Record &Record::set(const std::string &propName, const char *value) {
-        if (!propName.empty() && propName.at(0) != '@') {
+        if (!propName.empty() && !isBasicInfo(propName)) {
             properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-            updateVersion();
         }
         return *this;
     }
 
     Record &Record::set(const std::string &propName, const std::string &value) {
-        if (!propName.empty() && propName.at(0) != '@') {
+        if (!propName.empty() && !isBasicInfo(propName)) {
             properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
                                          value.length()};
-            updateVersion();
         }
         return *this;
     }
 
     Record &Record::set(const std::string &propName, const nogdb::Bytes &b) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties[propName] = b;
-            updateVersion();
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const unsigned char *value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{value, strlen((char *) value)};
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const char *value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const std::string &value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         value.length()};
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const nogdb::Bytes &b) {
-        if (!propName.empty() && propName.at(0) == '@') {
+        if (!propName.empty() && !isBasicInfo(propName)) {
             properties[propName] = b;
         }
         return *this;
     }
 
-    const std::map<std::string, Bytes> &Record::getAll() const {
+    const Record::RecordPropertyType &Record::getAll() const {
         return properties;
     }
 
+    const Record::RecordPropertyType &Record::getBasicInfo() const {
+        return basicProperties;
+    }
+
     Bytes Record::get(const std::string &propName) const {
-        auto value = properties.find(propName);
-        if (value == properties.cend()) {
-            return Bytes{};
-        } else {
-            return value->second;
-        }
+        const RecordPropertyType& prop = (isBasicInfo(propName) ? basicProperties : properties);
+        const RecordPropertyType::const_iterator it = prop.find(propName);
+        return it == prop.cend() ? Bytes{} : it->second;
     }
 
     std::vector<std::string> Record::getProperties() const {
@@ -234,38 +202,64 @@ namespace nogdb {
         try {
             return getBigIntU(VERSION_PROPERTY);
         } catch (const Error &e) {
-            return 0ULL;
+            return 1ULL;
         }
     }
 
     void Record::unset(const std::string &propName) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties.erase(propName);
-        }
-    }
-
-    void Record::commit() const {
-        isUpdated = false;
-    }
-
-    void Record::updateVersion() {
-        if (!isUpdated) {
-            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
-            isUpdated = true;
-        }
+        (isBasicInfo(propName) ? basicProperties : properties).erase(propName);
     }
 
     size_t Record::size() const {
-        return (size_t) std::distance(properties.upper_bound(VERSION_PROPERTY), properties.end());
+        return properties.size();
     }
 
     bool Record::empty() const {
-        return properties.upper_bound(VERSION_PROPERTY) == properties.end();
+        return properties.empty();
     }
 
     void Record::clear() {
+        basicProperties.clear();
         properties.clear();
     }
 
+    Record::Record(RecordPropertyType properties) : properties(std::move(properties)) {
+        for (auto it = this->properties.begin(); it != this->properties.end();) {
+            if (isBasicInfo(it->first)) {
+                basicProperties.insert(*it);
+                this->properties.erase(it++);
+            } else {
+                ++it;
+            }
+        }
+    }
 
+    const Record &Record::setBasicInfo(const std::string &propName, const unsigned char *value) const {
+        if (!propName.empty() && isBasicInfo(propName)) {
+            basicProperties[propName] = Bytes{value, strlen((char *) value)};
+        }
+        return *this;
+    }
+
+    const Record &Record::setBasicInfo(const std::string &propName, const char *value) const {
+        if (!propName.empty() && isBasicInfo(propName)) {
+            basicProperties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
+        }
+        return *this;
+    }
+
+    const Record &Record::setBasicInfo(const std::string &propName, const std::string &value) const {
+        if (!propName.empty() && isBasicInfo(propName)) {
+            basicProperties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
+                                              value.length()};
+        }
+        return *this;
+    }
+
+    const Record &Record::setBasicInfo(const std::string &propName, const nogdb::Bytes &b) const {
+        if (!propName.empty() && isBasicInfo(propName)) {
+            basicProperties[propName] = b;
+        }
+        return *this;
+    }
 }
