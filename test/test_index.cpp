@@ -1258,6 +1258,7 @@ void test_search_by_index_non_unique_condition() {
                                                   rdesc41, rdesc42, std::numeric_limits<uint16_t>::max()/4,
                                                   rdesc31, rdesc32, std::numeric_limits<uint16_t>::max()/2,
                                                   rdesc11, rdesc12, std::numeric_limits<uint16_t>::max() - uint16_t{1});
+//TODO: fix index non unique range search problem
 //    nonUniqueIndexAdjacentConditionTester<int16_t>(ctx, "index_test", "index_smallint",
 //                                  rdesc21, rdesc22, std::numeric_limits<int16_t>::min() + int16_t{1},
 //                                  rdesc41, rdesc42, int16_t{-2},
@@ -1278,6 +1279,7 @@ void test_search_by_index_non_unique_condition() {
                                   rdesc41, rdesc42, std::numeric_limits<uint64_t>::max()/4,
                                   rdesc31, rdesc32, std::numeric_limits<uint64_t>::max()/2,
                                   rdesc11, rdesc12, std::numeric_limits<uint64_t>::max() - uint64_t{1});
+//TODO: fix index non unique range search problem
 //    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_bigint",
 //                                  rdesc21, rdesc22, std::numeric_limits<int64_t>::min() + int64_t{1},
 //                                  rdesc41, rdesc42, int64_t{-2},
