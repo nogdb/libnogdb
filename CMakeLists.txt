@@ -25,6 +25,7 @@ set(COMPILE_OPTIONS
     -Wno-unused-parameter
     -Wno-unused-variable
     -Wno-unknown-pragmas
+    -Wno-format-extra-args
     -fPIC
 )
 

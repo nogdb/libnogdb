@@ -17,6 +17,7 @@ target_compile_options(lmdb
         -W
         -Wall
         -Wno-unused-parameter
+        -Wno-format-extra-args
         -pthread
 )
 

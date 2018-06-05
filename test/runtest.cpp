@@ -337,7 +337,7 @@ int main() {
     exec(test_drop_index_extended_class_with_records, "dropping indexes for some properties which belong to super classes with existing records");
     exec(test_drop_invalid_index_with_records, "dropping invalid indexes with existing records");
     exec(test_search_by_index_unique_condition, "getting records from unique indexing with condition");
-//    exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
+    exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
 //    exec(test_search_by_index_unique_multicondition, "getting records from unique indexing with multi-condition");
 //    exec(test_search_by_index_non_unique_multicondition, "getting records from non-unique indexing with multi-condition");
     exec(test_search_by_index_unique_cursor_condition, "getting cursor from unique indexing with condition");
