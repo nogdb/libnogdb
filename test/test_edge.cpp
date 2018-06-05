@@ -20,7 +20,7 @@
  */
 
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 #include <climits>
 #include <vector>
 
@@ -175,22 +175,27 @@ void test_get_edge() {
         auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
 
         r3.set("time_used", 365U);
-        nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+        auto e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
         r3.set("time_used", 180U);
-        nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+        auto e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
         r3.set("time_used", 430U);
-        nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+        auto e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
 
         auto res = nogdb::Edge::get(txn, "authors");
         auto count = 0;
         for (const auto &it: res) {
             auto &record = it.record;
+            assert(record.getText("@className") == "authors");
+            assert(record.getBigIntU("@version") == 1UL);
             if (count == 0) {
                 assert(record.get("time_used").toIntU() == 365U);
+                assert(record.getText("@recordId") == rid2str(e1.rid));
             } else if (count == 1) {
                 assert(record.get("time_used").toIntU() == 180U);
+                assert(record.getText("@recordId") == rid2str(e2.rid));
             } else if (count == 2) {
                 assert(record.get("time_used").toIntU() == 430U);
+                assert(record.getText("@recordId") == rid2str(e3.rid));
             }
             count++;
         }
@@ -671,6 +676,8 @@ void test_update_edge() {
         nogdb::Edge::update(txn, e1, r3);
         auto res = nogdb::Edge::get(txn, "authors");
         assert(res[0].record.get("time_used").toIntU() == 400U);
+        assert(res[0].record.getText("@className") == "authors");
+        assert(res[0].record.getText("@recordId") == rid2str(e1.rid));
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1049,7 +1056,7 @@ void test_delete_edge() {
 
         nogdb::Edge::destroy(txn, e1);
         auto res = nogdb::Edge::get(txn, "authors");
-        assert(res.size() == 0);
+        assertSize(res, 0);
         nogdb::Edge::destroy(txn, e1);
 
     } catch (const nogdb::Error &ex) {
@@ -1139,19 +1146,19 @@ void test_delete_all_edges() {
 
     try {
         auto res = nogdb::Edge::get(txn, "authors");
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res = nogdb::Vertex::getOutEdge(txn, v1);
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res = nogdb::Vertex::getInEdge(txn, v2);
-        assert(res.size() == 4);
+        assertSize(res, 4);
 
         nogdb::Edge::destroy(txn, "authors");
         res = nogdb::Edge::get(txn, "authors");
-        assert(res.size() == 0);
+        assertSize(res, 0);
         res = nogdb::Vertex::getOutEdge(txn, v1);
-        assert(res.size() == 0);
+        assertSize(res, 0);
         res = nogdb::Vertex::getInEdge(txn, v2);
-        assert(res.size() == 0);
+        assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

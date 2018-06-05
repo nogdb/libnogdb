@@ -23,11 +23,11 @@
 #include <bitset> // for debugging
 #include <vector>
 #include <cmath>
-#include <cassert>
 
 #include "datastore.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
+#include "utils.hpp"
 
 #include "nogdb_errors.h"
 
@@ -48,8 +48,8 @@ namespace nogdb {
             for (const auto &property: properties) {
                 auto propertyId = static_cast<PropertyId>(property.second.id);
                 auto rawData = record.get(property.first);
-                assert(property.second.id < std::pow(2, UINT16_BITS_COUNT));
-                assert(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
+                require(property.second.id < std::pow(2, UINT16_BITS_COUNT));
+                require(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
                 if (rawData.size() < std::pow(2, UINT8_BITS_COUNT - 1)) {
                     auto size = static_cast<uint8_t>(rawData.size()) << 1;
                     value.append(&propertyId, sizeof(PropertyId));
@@ -76,26 +76,28 @@ namespace nogdb {
         classInfo = Generic::getClassMapProperty(txn, classDescriptor);
         // calculate a raw data size of properties in a record
         for (const auto &property: record.getAll()) {
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
-            }
-            // check if having any index
-            for (const auto &indexIter: foundProperty->second.indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace(
-                            property.first,
-                            std::make_tuple(
-                                    foundProperty->second.type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                    break;
+            if (property.first.at(0) != '@' || property.first == VERSION_PROPERTY) {
+                auto foundProperty = classInfo.nameToDesc.find(property.first);
+                if (foundProperty == classInfo.nameToDesc.cend()) {
+                    throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
                 }
+                // check if having any index
+                for (const auto &indexIter: foundProperty->second.indexInfo) {
+                    if (indexIter.second.first == classDescriptor->id) {
+                        indexInfos.emplace(
+                                property.first,
+                                std::make_tuple(
+                                        foundProperty->second.type,
+                                        indexIter.first,
+                                        indexIter.second.second
+                                )
+                        );
+                        break;
+                    }
+                }
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
             }
-            dataSize += getRawDataSize(property.second.size());
-            properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
         }
         return parseRecord(txn, dataSize, properties, record);
     }
@@ -152,5 +154,16 @@ namespace nogdb {
             }
         }
         return result;
+    }
+
+    Record Parser::parseRawDataWithBasicInfo(const std::string className,
+                                             const RecordId& rid,
+                                             const KeyValue &keyValue,
+                                             const ClassPropertyInfo &classPropertyInfo) {
+        return parseRawData(keyValue, classPropertyInfo)
+                .setBasicInfo(CLASS_NAME_PROPERTY, className)
+                .setBasicInfo(RECORD_ID_PROPERTY, rid2str(rid))
+                .setBasicInfo(VERSION_PROPERTY, 1UL) //TODO: remove this when record version is implemented
+                .setBasicInfo(DEPTH_PROPERTY, 0U);
     }
 }

@@ -19,13 +19,14 @@
  *
  */
 
-#include <cassert>
 #include <cstring>
+#include <cassert>
 
 #include "constant.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
 #include "sql.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -65,6 +66,10 @@ static unsigned char *HexToBlob(const char *z, int n) {
     return blob;
 }
 
+string nogdb::sql_parser::to_string(const RecordDescriptor &r) {
+    return "#" + to_string(r.rid.first) + ":" + to_string(r.rid.second);
+}
+
 
 #pragma mark - Token
 
@@ -88,7 +93,7 @@ Bytes Token::toBytes() const {
             return Bytes(blob.get(), n / 2, nogdb::PropertyType::BLOB);
         }
         default:
-            assert(false);
+            require(false);
             return Bytes();
     }
 }
@@ -118,7 +123,7 @@ string &Token::dequote(string &z) const {
             quote = ']';
         }
         for (i = 1, j = 0;; i++) {
-            assert(z[i]);
+            require(z[i]);
             if (z[i] == quote) {
                 if (z[i + 1] == quote) {
                     z[j++] = quote;
@@ -137,19 +142,6 @@ string &Token::dequote(string &z) const {
 }
 
 
-#pragma mark - PropertyType
-
-bool PropertyType::operator==(const PropertyType &other) const {
-    return (this->t == other.t
-            && ((t == BASE && this->base == other.base)
-                || (t == EXTEND && this->ext == other.ext)));
-}
-
-bool PropertyType::operator!=(const PropertyType &other) const {
-    return !this->operator==(other);
-}
-
-
 #pragma mark - Bytes
 
 Bytes::Bytes() : Bytes(nogdb::PropertyType::UNDEFINED) {
@@ -164,9 +156,7 @@ Bytes::Bytes(nogdb::Bytes &&bytes_, PropertyType type_) : nogdb::Bytes(move(byte
 Bytes::Bytes(PropertyType type_) : nogdb::Bytes(), t(type_) {
 }
 
-Bytes::Bytes(ResultSet &&res)
-        : nogdb::Bytes(res.descriptorsToString()), t(PropertyTypeExt::RESULT_SET),
-          r(make_shared<ResultSet>(move(res))) {
+Bytes::Bytes(ResultSet &&res) : nogdb::Bytes(res.descriptorsToString()), r(make_shared<ResultSet>(move(res))) {
 }
 
 bool Bytes::operator<(const Bytes &other) const {
@@ -227,7 +217,7 @@ nogdb::Record Record::toBaseRecord() const {
     nogdb::Record base{};
     for (auto p: this->properties) {
         const string &name = p.first;
-        base.set(p.first, static_cast<const nogdb::Bytes &>(p.second));
+        base.properties[name] = p.second;
     }
     return base;
 }
@@ -268,7 +258,7 @@ string ResultSet::descriptorsToString() const {
     stringstream buff;
     buff << this->size();
     for (const Result &r: *this) {
-        buff << "," << r.descriptor.toString();
+        buff << "," << to_string(r.descriptor);
     }
     return buff.str();
 }
@@ -306,8 +296,8 @@ Function::Function(const string &name_, vector<Projection> &&args_)
 }
 
 Bytes Function::execute(Txn &txn, const Result &input) const {
-    assert(this->isGroupResult() == false);
-    assert(this->isExpand() == false);
+    require(this->isGroupResult() == false);
+    require(this->isExpand() == false);
 
     function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
     switch (this->id) {
@@ -509,7 +499,7 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
             if (func.isWalkResult()) {
                 for (const Result &in: input) {
                     Bytes out = func.execute(txn, in);
-                    assert(out.type() == PropertyTypeExt::RESULT_SET);
+                    require(out.isResults());
                     results.insert(results.end(), make_move_iterator(out.results().begin()),
                                    make_move_iterator(out.results().end()));
                 }

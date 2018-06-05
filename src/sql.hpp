@@ -36,11 +36,7 @@ namespace nogdb {
         /* Forward declaration */
         class Token;
 
-        class PropertyType;
-
         class Bytes;
-
-        class RecordDescriptor;
 
         class Record;
 
@@ -50,9 +46,6 @@ namespace nogdb {
 
         typedef set<RecordDescriptor> RecordDescriptorSet;
 
-        class CreateEdgeArgs;
-
-        class SelectArgs;
 
         /*
          * Each token coming out of the lexer is an instance of
@@ -85,34 +78,6 @@ namespace nogdb {
             string &dequote(string &z) const;
         };
 
-        enum class PropertyTypeExt {
-            RESULT_SET
-        };
-
-        class PropertyType {
-        public:
-            PropertyType(const nogdb::PropertyType &t_) : t(BASE), base(t_) {}
-
-            PropertyType(const PropertyTypeExt &t_) : t(EXTEND), ext(t_) {}
-
-            bool operator==(const PropertyType &other) const;
-
-            bool operator!=(const PropertyType &other) const;
-
-            inline nogdb::PropertyType toBase() const {
-                return this->t == BASE ? this->base : nogdb::PropertyType::UNDEFINED;
-            }
-
-        private:
-            enum {
-                BASE, EXTEND
-            } t;
-            union {
-                nogdb::PropertyType base;
-                PropertyTypeExt ext;
-            };
-        };
-
         class Bytes : public nogdb::Bytes {
         public:
             Bytes();
@@ -122,7 +87,7 @@ namespace nogdb {
 
             Bytes(const unsigned char *data, size_t len, PropertyType type_);
 
-            Bytes(nogdb::Bytes &&bytes_, PropertyType type_ = nogdb::PropertyType::UNDEFINED);
+            Bytes(nogdb::Bytes &&bytes_, PropertyType type_ = PropertyType::UNDEFINED);
 
             Bytes(PropertyType type_);
 
@@ -132,39 +97,15 @@ namespace nogdb {
 
             inline PropertyType type() const { return this->t; }
 
+            inline bool isResults() const { return this->r.get() != nullptr; }
+
             inline ResultSet &results() const { return *this->r; }
 
             inline const nogdb::Bytes &getBase() const { return *this; }
 
         private:
-            PropertyType t;
+            PropertyType t{PropertyType::UNDEFINED};
             shared_ptr<ResultSet> r{nullptr};
-        };
-
-
-        /* An inherited class of Bytes for construct with Token and operand '<'*/
-        class RecordDescriptor : public nogdb::RecordDescriptor {
-        public:
-            using nogdb::RecordDescriptor::RecordDescriptor;
-
-            RecordDescriptor() : nogdb::RecordDescriptor() {}
-
-            RecordDescriptor(const Token &classID, const Token &positionID)
-                    : nogdb::RecordDescriptor(stoi(string(classID.z, classID.n)),
-                                              stoi(string(positionID.z, positionID.n))) {}
-
-            RecordDescriptor(const nogdb::RecordDescriptor &recD) : nogdb::RecordDescriptor(recD) {}
-
-            RecordDescriptor(nogdb::RecordDescriptor &&recD) : nogdb::RecordDescriptor(move(recD)) {}
-
-            bool operator<(const RecordDescriptor &other) const {
-                return this->rid < other.rid;
-            }
-
-            string toString() const {
-                // format: "#<classID>:<posID>"
-                return "#" + to_string(this->rid.first) + ":" + to_string(this->rid.second);
-            }
         };
 
 
@@ -344,13 +285,7 @@ namespace nogdb {
         };
 
         /* An arguments for create edge statement */
-        class CreateEdgeArgs {
-        public:
-            CreateEdgeArgs() = default;
-
-            CreateEdgeArgs(const Token &name_, Target &&src_, Target &&dest_, nogdb::Record &&prop_)
-                    : name(name_.toString()), src(move(src_)), dest(move(dest_)), prop(move(prop_)) {};
-
+        struct CreateEdgeArgs {
             string name;
             Target src;
             Target dest;
@@ -358,17 +293,7 @@ namespace nogdb {
         };
 
         /* An arguments for select statement */
-        class SelectArgs {
-        public:
-            SelectArgs() = default;
-
-            SelectArgs(vector<Projection> &&proj, Target &&from_, Where &&where_, const string &group_, void *order_,
-                       int skip_, int limit_)
-                    : projections(move(proj)), from(move(from_)), where(move(where_)), group(group_), order(order_),
-                      skip(skip_), limit(limit_) {}
-
-            ~SelectArgs() = default;
-
+        struct SelectArgs {
             vector<Projection> projections;
             Target from;
             Where where;
@@ -379,37 +304,20 @@ namespace nogdb {
         };
 
         /* An arguments for update statement */
-        class UpdateArgs {
-        public:
-            UpdateArgs() = default;
-
-            UpdateArgs(Target &&target_, nogdb::Record &&prop_, Where &&where_)
-                    : target(move(target_)), prop(move(prop_)), where(move(where_)) {}
-
+        struct UpdateArgs {
             Target target;
             nogdb::Record prop;
             Where where;
         };
 
         /* An arguments for delete vertex statement */
-        class DeleteVertexArgs {
-        public:
-            DeleteVertexArgs() = default;
-
-            DeleteVertexArgs(Target &&target_, Where &&where_) : target(move(target_)), where(move(where_)) {}
-
+        struct DeleteVertexArgs {
             Target target;
             Where where;
         };
 
         /* An arguments for delete edge statement */
-        class DeleteEdgeArgs {
-        public:
-            DeleteEdgeArgs() = default;
-
-            DeleteEdgeArgs(Target &&target_, Target &&from_, Target &&to_, Where &&where_)
-                    : target(move(target_)), from(move(from_)), to(move(to_)), where(move(where_)) {}
-
+        struct DeleteEdgeArgs {
             Target target;
             Target from;
             Target to;
@@ -417,10 +325,7 @@ namespace nogdb {
         };
 
         /* An arguments for tarverse statement */
-        class TraverseArgs {
-        public:
-            TraverseArgs() = default;
-
+        struct TraverseArgs {
             string direction;
             set<string> filter;
             RecordDescriptor root;
@@ -428,7 +333,13 @@ namespace nogdb {
             long long maxDepth;
             string strategy;
         };
-    };
+
+        using std::to_string;
+
+        string to_string(const RecordDescriptor &r);
+    }
+
+    using ::operator<;
 }
 
 #endif

@@ -20,7 +20,7 @@
  */
 
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 #include <set>
 
 void init_test_graph() {

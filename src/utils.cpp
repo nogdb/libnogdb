@@ -27,6 +27,8 @@
 
 #include "utils.hpp"
 
+#include "nogdb_errors.h"
+
 namespace nogdb {
 
     unsigned long long currentTimestamp() {
@@ -59,6 +61,12 @@ namespace nogdb {
                 string.replace(position, from.length(), to);
                 position = string.find(from, position + to.length());
             }
+        }
+    }
+
+    void require(bool cmp) {
+        if (!cmp) {
+            throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
         }
     }
 

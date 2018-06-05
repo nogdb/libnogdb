@@ -531,15 +531,15 @@ void test_get_class_extend() {
     }
     try {
         auto res = nogdb::Vertex::get(txn, "employees");
-        assert(res.size() == 6);
+        assertSize(res, 6);
         res = getVertexMultipleClass(txn, std::set<std::string>{"admins", "backends", "frontends"});
-        assert(res.size() == 5);
+        assertSize(res, 5);
         res = nogdb::Edge::get(txn, "action");
-        assert(res.size() == 12);
+        assertSize(res, 12);
         res = nogdb::Edge::get(txn, "manage");
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = getEdgeMultipleClass(txn, std::set<std::string>{"collaborate", "manage"});
-        assert(res.size() == 12);
+        assertSize(res, 12);
         res = nogdb::Edge::get(txn, "inter");
 
         res = nogdb::Vertex::get(txn, "backends");
@@ -566,37 +566,37 @@ void test_find_class_extend() {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
         auto res = nogdb::Vertex::get(txn, "systems", nogdb::Condition("age").le(30U));
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "Charon");
         res = nogdb::Vertex::get(txn, "employees", nogdb::Condition("age").le(30U));
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "Charon" || res[0].record.get("name").toText() == "Adam");
         assert(res[1].record.get("name").toText() == "Charon" || res[1].record.get("name").toText() == "Adam");
         res = nogdb::Vertex::get(txn, "backends", nogdb::Condition("cpp_skills").eq(8));
 
         res = nogdb::Edge::get(txn, "collaborate", nogdb::Condition("name").endWith("provider").ignoreCase());
-        assert(res.size() == 4);
+        assertSize(res, 4);
         res = nogdb::Edge::get(txn, "action", nogdb::Condition("priority"));
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         auto b = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Bill"));
         assert(b.size() == 1);
         res = nogdb::Vertex::getInEdge(txn, b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase());
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "ui provider" ||
                res[0].record.get("name").toText() == "system provider");
         assert(res[1].record.get("name").toText() == "ui provider" ||
                res[1].record.get("name").toText() == "system provider");
         res = nogdb::Vertex::getInEdge(txn, b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase(),
                                        nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "ui provider" ||
                res[0].record.get("name").toText() == "system provider");
         assert(res[1].record.get("name").toText() == "ui provider" ||
                res[1].record.get("name").toText() == "system provider");
         res = nogdb::Vertex::getInEdge(txn, b[0].descriptor, nogdb::Condition("type").null(),
                                        nogdb::ClassFilter{"inter", "manage"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "ui creator" ||
                res[0].record.get("name").toText() == "team leader");
         assert(res[1].record.get("name").toText() == "ui creator" ||
@@ -606,11 +606,11 @@ void test_find_class_extend() {
         assert(c.size() == 1);
         res = nogdb::Vertex::getOutEdge(txn, c[0].descriptor, nogdb::Condition("name").beginWith("team").ignoreCase(),
                                         nogdb::ClassFilter{"action"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "team leader");
         res = nogdb::Vertex::getAllEdge(txn, b[0].descriptor, nogdb::Condition("name").contain("team").ignoreCase(),
                                         nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("name").toText() == "team member");
 
     } catch (const nogdb::Error &ex) {
@@ -628,15 +628,15 @@ void test_traverse_class_extend() {
         auto c = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Charon"));
         auto f = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Falcao"));
         auto res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1, nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 1, nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 2);
+        assertSize(res, 2);
         res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 2, nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         res = nogdb::Traverse::allEdgeBfs(txn, c[0].descriptor, 0, 100, nogdb::ClassFilter{"collaborate", "manage"});
-        assert(res.size() == 4);
+        assertSize(res, 4);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -651,26 +651,26 @@ void test_shortest_path_class_extend() {
         auto c = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Charon"));
         auto d = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Don"));
         auto res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor);
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "Charon");
         assert(res[1].record.get("name").toText() == "Falcao");
         assert(res[2].record.get("name").toText() == "Don");
 
         res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor, nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "Charon");
         assert(res[1].record.get("name").toText() == "Falcao");
         assert(res[2].record.get("name").toText() == "Don");
 
         res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor, nogdb::ClassFilter{"collaborate"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "Bill");
         assert(res[1].record.get("name").toText() == "Falcao");
         assert(res[2].record.get("name").toText() == "Don");
 
         res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor,
                                             nogdb::ClassFilter{"inter", "manage"});
-        assert(res.size() == 0);
+        assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

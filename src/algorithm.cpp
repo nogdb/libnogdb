@@ -71,6 +71,8 @@ namespace nogdb {
                                                       classDBHandler, vertex, pathFilter, ClassType::VERTEX);
                             if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) &&
                                 (!tmpResult.record.empty())) {
+                                tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel + 1);
+                                tmpResult.descriptor.depth = currentLevel + 1;
                                 result.push_back(tmpResult);
                             }
                             visited.insert(vertex);
@@ -86,9 +88,10 @@ namespace nogdb {
                         classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
                         classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
                                                             std::to_string(recordDescriptor.rid.first), true);
+                        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
                                                              classDBHandler, recordDescriptor.rid.second);
-                        auto record = Parser::parseRawData(keyValue, classPropertyInfo);
+                        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
                         result.emplace_back(Result{recordDescriptor, record});
                     }
                     while (!queue.empty()) {
@@ -179,6 +182,8 @@ namespace nogdb {
                                                      vertexId, pathFilter, ClassType::VERTEX);
                             }
                             if ((currentLevel >= minDepth) && (!tmpResult.record.empty())) {
+                                tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel);
+                                tmpResult.descriptor.depth = currentLevel;
                                 result.push_back(tmpResult);
                             }
                             visited.insert(vertexId);
@@ -268,7 +273,8 @@ namespace nogdb {
                                                         std::to_string(srcVertexRecordDescriptor.rid.first), true);
                     auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
                                                          classDBHandler, srcVertexRecordDescriptor.rid.second);
-                    auto record = Parser::parseRawData(keyValue, classPropertyInfo);
+                    auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                    auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
                     result.emplace_back(Result{srcVertexRecordDescriptor, record});
                 } else {
                     bool found = false;
@@ -329,9 +335,16 @@ namespace nogdb {
                                                             std::to_string(srcVertexRecordDescriptor.rid.first), true);
                         auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
                                                              classDBHandler, srcVertexRecordDescriptor.rid.second);
-                        auto record = Parser::parseRawData(keyValue, classPropertyInfo);
+                        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                        auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
                         result.emplace_back(Result{srcVertexRecordDescriptor, record});
                         std::reverse(result.begin(), result.end());
+                        auto currentLevel = 0U;
+                        for(auto& res: result) {
+                            res.record.setBasicInfo(DEPTH_PROPERTY, currentLevel);
+                            res.descriptor.depth = currentLevel;
+                            ++currentLevel;
+                        }
                     }
                 }
             } catch (Graph::ErrorType &err) {
@@ -382,6 +395,7 @@ namespace nogdb {
                                             RecordDescriptor{vertex};
                             if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) &&
                                 (tmpRdesc != RecordDescriptor{})) {
+                                tmpRdesc.depth = currentLevel + 1;
                                 result.emplace_back(tmpRdesc);
                             }
                             visited.insert(vertex);
@@ -489,6 +503,7 @@ namespace nogdb {
                                            RecordDescriptor{vertexId};
                             }
                             if ((currentLevel >= minDepth) && (tmpRdesc != RecordDescriptor{})) {
+                                tmpRdesc.depth = currentLevel;
                                 result.push_back(tmpRdesc);
                             }
                             visited.insert(vertexId);
@@ -638,6 +653,11 @@ namespace nogdb {
                         }
                         result.emplace_back(srcVertexRecordDescriptor);
                         std::reverse(result.begin(), result.end());
+                        auto currentLevel = 0U;
+                        for(auto& res: result) {
+                            res.depth = currentLevel;
+                            ++currentLevel;
+                        }
                     }
                 }
             } catch (Graph::ErrorType &err) {
