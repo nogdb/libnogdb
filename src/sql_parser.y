@@ -393,6 +393,8 @@ multi_cond(A) ::= multi_cond(X) AND multi_cond(Y). { A = make_shared<MultiCondit
 multi_cond(A) ::= multi_cond(X) OR multi_cond(Y). { A = make_shared<MultiCondition>(*X || *Y); }
 multi_cond(A) ::= multi_cond(X) AND cond(Y). { A = make_shared<MultiCondition>(*X && Y); }
 multi_cond(A) ::= multi_cond(X) OR cond(Y). { A = make_shared<MultiCondition>(*X || Y); }
+multi_cond(A) ::= cond(X) AND multi_cond(Y). { A = make_shared<MultiCondition>(X && *Y); }
+multi_cond(A) ::= cond(X) OR multi_cond(Y). { A = make_shared<MultiCondition>(X || *Y); }
 multi_cond(A) ::= cond(X) AND cond(Y). { A = make_shared<MultiCondition>(X && Y); }
 multi_cond(A) ::= cond(X) OR cond(Y). { A = make_shared<MultiCondition>(X || Y); }
 multi_cond(A) ::= NOT multi_cond(X). { A = make_shared<MultiCondition>(!(*X)); }

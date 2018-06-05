@@ -445,7 +445,7 @@ int main() {
     exec(test_sql_select_method_property, "retrieving data with method property with sql command");
     exec(test_sql_select_alias_property, "retrieving data with alias property with sql command");
     exec(test_sql_select_vertex_condition, "finding records from a vertex class with a given condition with sql command");
-    exec(test_sql_select_vertex_with_expression, "finding records from a vertex class with a given expression with sql command");
+    exec(test_sql_select_vertex_with_multi_condition, "finding records from a vertex class with a given multi-condition with sql command");
     exec(test_sql_select_nested_condition, "finding records from vertex class by nested condition with sql command");
     exec(test_sql_select_skip_limit, "retrieving data with specific length with sql command");
     exec(test_sql_select_group_by, "retrieving data with 'group by' sql command");

@@ -28,35 +28,29 @@
 using namespace std;
 using namespace nogdb;
 
-static string to_string(const RecordDescriptor& recD) {
-    return "#" + to_string(recD.rid.first) + ":" + to_string(recD.rid.second);
-}
+namespace nogdb {
 
-static inline bool equalBytes(const Bytes &a, const Bytes &b) {
-    return a.size() == b.size() && memcmp(a.getRaw(), b.getRaw(), a.size()) == 0;
-}
-
-static inline bool equalRecord(const Record &a, const Record &b) {
-    return (a.getAll().size() == b.getAll().size()
-            && equal(a.getAll().begin(),
-                     a.getAll().end(),
-                     b.getAll().begin(),
-                     [](const pair<string, Bytes> &a, const pair<string, Bytes> &b) {
-                         return a.first == b.first && equalBytes(a.second, b.second);
-                     }));
-}
-
-static inline bool equalResult(const Result &a, const Result &b) {
-    if (a.descriptor.rid.first != (ClassId)(-2)) {
-        return a.descriptor == b.descriptor;
-    } else {
-        return equalRecord(a.record, b.record);
+    string to_string(const RecordDescriptor& recD) {
+        return "#" + ::to_string(recD.rid.first) + ":" + ::to_string(recD.rid.second);
     }
-}
 
-static inline bool equalResultSet(const ResultSet &a, const ResultSet &b) {
-    return (a.size() == b.size()
-            && equal(a.begin(), a.end(), b.begin(), equalResult));
+    inline bool operator==(const Bytes &lhs, const Bytes &rhs) {
+        return (lhs.size() == rhs.size()
+                && memcmp(lhs.getRaw(), rhs.getRaw(), lhs.size()) == 0);
+    }
+
+    inline bool operator==(const Record &lhs, const Record &rhs) {
+        return lhs.getAll() == rhs.getAll();
+    }
+
+    inline bool operator==(const Result &lhs, const Result &rhs) {
+        if (lhs.descriptor.rid.first != (ClassId)(-2)) {
+            using ::operator==;
+            return lhs.descriptor == rhs.descriptor;
+        } else {
+            return lhs.record == rhs.record;
+        }
+    }
 }
 
 
@@ -881,46 +875,31 @@ void test_sql_select_vertex_condition() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE text='A'");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq("A")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text='Z'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 0);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq("Z")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE int=18");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v5);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("int").eq(18)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE uint=11600");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v4);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("uint").eq(11600)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE bigint=280000");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("bigint").eq(280000LL)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE ubigint=900");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
-        assert(res[0].descriptor == v4);
-        assert(res[1].descriptor == v5);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").eq(900ULL)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE real=4.5");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
-        assert(res[0].descriptor == v1);
-        assert(res[1].descriptor == v3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").eq(4.5)));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -929,48 +908,39 @@ void test_sql_select_vertex_condition() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE text != 'A'");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 4);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").eq("A")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE int > 35");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("int").gt(35)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE real >= 4.5");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").ge(4.5)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE uint < 10300");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("uint").lt(10300)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE ubigint <= 900");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").le(900ULL)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE bigint IS NULL");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("bigint").null()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE int IS NOT NULL");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 4);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("int").null()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text = 100");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 0);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq(100)));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE ubigint = 2000");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").eq(2000ULL)));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -979,73 +949,58 @@ void test_sql_select_vertex_condition() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE text CONTAIN 'a'");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").contain("a").ignoreCase()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE NOT (text CONTAIN 'b')");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").contain("b").ignoreCase()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text BEGIN WITH 'a'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").beginWith("a").ignoreCase()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE NOT text BEGIN WITH CASE 'A'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 4);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").beginWith("A")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text END WITH 'x'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").endWith("x").ignoreCase()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE NOT text END WITH CASE 'Y'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").endWith("Y")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text > 'B2Y'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").gt("B2Y")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text >= 'B2Y'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").ge("B2Y")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text < 'B2Y'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").lt("B2Y")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text <= 'B2Y'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").le("B2Y")));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text IN ['B1Y', 'A']");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").in(vector<string>{"B1Y", "A"}).ignoreCase()));
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text LIKE '%1%'");
         assert(result.type() == result.RESULT_SET);
-        res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").like("%1%").ignoreCase()));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 }
 
-void test_sql_select_vertex_with_expression() {
+void test_sql_select_vertex_with_multi_condition() {
     auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
     Class::create(txn, "v", ClassType::VERTEX);
     Property::add(txn, "v", "prop1", PropertyType::TEXT);
@@ -1056,8 +1011,7 @@ void test_sql_select_vertex_with_expression() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE prop1 END WITH 'X' OR prop2 >= 2");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 3);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("prop1").endWith("X").ignoreCase() or Condition("prop2").ge(2)));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1066,8 +1020,16 @@ void test_sql_select_vertex_with_expression() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'C' AND prop2 = 3) OR prop1 = 'AX'");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", (Condition("prop1").eq("C") and Condition("prop2").eq(3)) or Condition("prop1").eq("AX")));
+    } catch (const Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'AX') OR (prop1 = 'C' AND prop2 = 3)");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("prop1").eq("AX") or (Condition("prop1").eq("C") and Condition("prop2").eq(3))));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1076,9 +1038,7 @@ void test_sql_select_vertex_with_expression() {
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE (@className='v' AND prop2<2) OR (@className='x' AND prop2>0)");
         assert(result.type() == result.RESULT_SET);
-        auto res = result.get<ResultSet>();
-        assert(res.size() == 1);
-        assert(res[0].descriptor == v1);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", (Condition("@className").eq("v") and Condition("prop2").lt(2)) or (Condition("@className").eq("x") and Condition("prop2").gt(0))));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1132,13 +1092,13 @@ void test_sql_select_skip_limit() {
         ResultSet baseResult = Vertex::get(txn, "v");
         baseResult.erase(baseResult.begin(), baseResult.begin() + 1);
         baseResult.resize(2);
-        assert(equalResultSet(result.get<ResultSet>(), baseResult));
+        assert(result.get<ResultSet>() == baseResult);
 
         result = SQL::execute(txn, "SELECT * FROM (SELECT FROM v) WHERE prop2<3 SKIP 0 LIMIT 1");
         assert(result.type() == result.RESULT_SET);
         baseResult = Vertex::get(txn, "v", Condition("prop2").le(3));
         baseResult.resize(1);
-        assert(equalResultSet(result.get<ResultSet>(), baseResult));
+        assert(result.get<ResultSet>() == baseResult);
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1492,6 +1452,7 @@ void test_sql_validate_property_type() {
         auto result = SQL::execute(txn, sqlSelect);
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>().size() == 2);
+        assert(res == result.get<ResultSet>());
     } catch (const Error &e) {
         cout << "\nError: " << e.what() << endl;
         assert(false);
@@ -1523,27 +1484,27 @@ void test_sql_traverse() {
 
         SQL::Result result = SQL::execute(txn, "TRAVERSE all() FROM " + to_string(v21));
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::allEdgeDfs(txn, v21, 0, UINT_MAX)));
+        assert(result.get<ResultSet>() == Traverse::allEdgeDfs(txn, v21, 0, UINT_MAX));
 
         result = SQL::execute(txn, "TRAVERSE out() FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX)));
+        assert(result.get<ResultSet>() == Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX));
 
         result = SQL::execute(txn, "TRAVERSE in() FROM " + to_string(v32));
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::inEdgeDfs(txn, v32, 0, UINT_MAX)));
+        assert(result.get<ResultSet>() == Traverse::inEdgeDfs(txn, v32, 0, UINT_MAX));
 
         result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX, {"EL"})));
+        assert(result.get<ResultSet>() == Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX, {"EL"}));
 
         result = SQL::execute(txn, "TRAVERSE in('ER') FROM " + to_string(v33) + " MINDEPTH 2");
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::inEdgeDfs(txn, v33, 2, UINT_MAX, {"ER"})));
+        assert(result.get<ResultSet>() == Traverse::inEdgeDfs(txn, v33, 2, UINT_MAX, {"ER"}));
 
         result = SQL::execute(txn, "TRAVERSE all('EL') FROM " + to_string(v21) + " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
         assert(result.type() == result.RESULT_SET);
-        assert(equalResultSet(result.get<ResultSet>(), Traverse::allEdgeBfs(txn, v21, 1, 1, {"EL"})));
+        assert(result.get<ResultSet>() == Traverse::allEdgeBfs(txn, v21, 1, 1, {"EL"}));
 
         result = SQL::execute(txn, "SELECT p FROM (TRAVERSE out() FROM " + to_string(v1) + ") WHERE p = 'v22'");
         assert(result.type() == result.RESULT_SET);
