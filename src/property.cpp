@@ -61,11 +61,11 @@ namespace nogdb {
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             auto propDBHandler = Datastore::openDbi(dsTxnHandler, TB_PROPERTIES, true);
-            auto totalLength = sizeof(type) + sizeof(ClassId) + strlen(propertyName.c_str());
+            auto totalLength = sizeof(type) + sizeof(ClassId) + propertyName.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&foundClass->id, sizeof(ClassId));
-            value.append(propertyName.c_str(), strlen(propertyName.c_str()));
+            value.append(propertyName.c_str(), propertyName.length());
             Datastore::putRecord(dsTxnHandler, propDBHandler, dbInfo.maxPropertyId, value);
 
             // update in-memory schema and info
@@ -101,11 +101,11 @@ namespace nogdb {
         try {
             auto propDBHandler = Datastore::openDbi(dsTxnHandler, TB_PROPERTIES, true);
             auto type = foundOldProperty.type;
-            auto totalLength = sizeof(type) + sizeof(ClassId) + strlen(newPropertyName.c_str());
+            auto totalLength = sizeof(type) + sizeof(ClassId) + newPropertyName.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(decltype(type)));
             value.append(&foundClass->id, sizeof(ClassId));
-            value.append(newPropertyName.c_str(), strlen(newPropertyName.c_str()));
+            value.append(newPropertyName.c_str(), newPropertyName.length());
             Datastore::putRecord(dsTxnHandler, propDBHandler, foundOldProperty.id, value);
 
             // update in-memory schema

@@ -64,11 +64,11 @@ namespace nogdb {
             // create interface for .classes
             auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
             auto superClassId = ClassId{0};
-            auto totalLength = sizeof(type) + sizeof(ClassId) + strlen(className.c_str());
+            auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
-            value.append(className.c_str(), strlen(className.c_str()));
+            value.append(className.c_str(), className.length());
             Datastore::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
             // create interface for itself
             auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
@@ -115,11 +115,11 @@ namespace nogdb {
             // create interface for .classes
             auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
             auto superClassId = static_cast<ClassId>(superClassDescriptor->id);
-            auto totalLength = sizeof(type) + sizeof(ClassId) + strlen(className.c_str());
+            auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
-            value.append(className.c_str(), strlen(className.c_str()));
+            value.append(className.c_str(), className.length());
             Datastore::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
             // create interface for itself
             auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
@@ -225,11 +225,11 @@ namespace nogdb {
                 assert(subClassDescriptorPtr != nullptr);
                 auto name = subClassDescriptorPtr->name.getLatestVersion().first;
                 assert(!name.empty());
-                auto totalLength = sizeof(subClassDescriptorPtr->type) + sizeof(ClassId) + strlen(name.c_str());
+                auto totalLength = sizeof(subClassDescriptorPtr->type) + sizeof(ClassId) + name.length();
                 auto value = Blob(totalLength);
                 value.append(&subClassDescriptorPtr->type, sizeof(subClassDescriptorPtr->type));
                 value.append(&superClassId, sizeof(ClassId));
-                value.append(name.c_str(), strlen(name.c_str()));
+                value.append(name.c_str(), name.length());
                 Datastore::putRecord(dsTxnHandler, classDBHandler, subClassDescriptorPtr->id, value);
             }
 
@@ -304,11 +304,11 @@ namespace nogdb {
             if (auto superClassDescriptor = foundClass->super.getLatestVersion().first.lock()) {
                 superClassId = superClassDescriptor->id;
             }
-            auto totalLength = sizeof(foundClass->type) + sizeof(ClassId) + strlen(newClassName.c_str());
+            auto totalLength = sizeof(foundClass->type) + sizeof(ClassId) + newClassName.length();
             auto value = Blob(totalLength);
             value.append(&foundClass->type, sizeof(foundClass->type));
             value.append(&superClassId, sizeof(ClassId));
-            value.append(newClassName.c_str(), strlen(newClassName.c_str()));
+            value.append(newClassName.c_str(), newClassName.length());
             Datastore::putRecord(dsTxnHandler, classDBHandler, foundClass->id, value);
 
             // update in-memory schema
