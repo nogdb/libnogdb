@@ -75,6 +75,7 @@ extern void test_alter_invalid_property();
 extern void test_bytes_only();
 extern void test_record_with_bytes();
 extern void test_invalid_record_with_bytes();
+extern void test_invalid_record_property_name();
 extern void test_create_vertex();
 extern void test_create_vertices();
 extern void test_create_invalid_vertex();
@@ -294,6 +295,18 @@ extern void test_create_index_extended_class_with_records();
 extern void test_drop_index_extended_class_with_records();
 extern void test_create_invalid_index_with_records();
 extern void test_drop_invalid_index_with_records();
+extern void test_search_by_index_unique_condition();
+extern void test_search_by_index_non_unique_condition();
+extern void test_search_by_index_unique_multicondition();
+extern void test_search_by_index_non_unique_multicondition();
+extern void test_search_by_index_unique_cursor_condition();
+extern void test_search_by_index_non_unique_cursor_condition();
+extern void test_search_by_index_unique_cursor_multicondition();
+extern void test_search_by_index_non_unique_cursor_multicondition();
+extern void test_search_by_index_extended_class_condition();
+extern void test_search_by_index_extended_class_cursor_condition();
+extern void test_search_by_index_extended_class_multicondition();
+extern void test_search_by_index_extended_class_cursor_multicondition();
 #endif
 
 // schema transaction testing

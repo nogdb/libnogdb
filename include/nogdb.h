@@ -28,8 +28,8 @@
 #include <set>
 #include <utility>
 
-#include "nogdb_compare.h"
 #include "nogdb_errors.h"
+#include "nogdb_compare.h"
 #include "nogdb_types.h"
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
@@ -134,9 +134,9 @@ namespace nogdb {
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
         static ResultSet
         getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
@@ -262,9 +262,9 @@ namespace nogdb {
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getCursorIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
     };
 
     //*************************************************************

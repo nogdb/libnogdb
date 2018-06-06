@@ -34,6 +34,7 @@ namespace nogdb {
     Record Db::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
         auto keyValue = KeyValue{};
         try {
             auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classDescriptor->id), true);
@@ -41,7 +42,7 @@ namespace nogdb {
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
-        return Parser::parseRawData(keyValue, classPropertyInfo);
+        return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
     }
 
     const std::vector<ClassDescriptor> Db::getSchema(const Txn &txn) {

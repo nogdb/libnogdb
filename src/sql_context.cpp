@@ -19,12 +19,11 @@
  *
  */
 
-#include <cassert>
-
 #include "constant.hpp"
 #include "sql.hpp"
 #include "sql_parser.h"
 #include "sql_context.hpp"
+#include "utils.hpp"
 
 #include "nogdb.h"
 
@@ -665,7 +664,7 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
         case ProjectionType::ALIAS:
             return Context::getProjectionItem(txn, input, proj.get<pair<Projection, string>>().first, map);
         default:
-            assert(false);
+            require(false);
             abort();
     }
 }
@@ -688,7 +687,7 @@ Bytes Context::getProjectionItemProperty(Txn &txn, const Result &input, const st
 
 Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Projection &firstProj, const Projection &secondProj, const PropertyMapType &map) {
     Bytes resA = Context::getProjectionItem(txn, input, firstProj, map);
-    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+    if (resA.isResults()) {
         ResultSet &inputB = resA.results();
         if (inputB.size() == 1) {
             const Result &in = inputB.front();
@@ -703,7 +702,7 @@ Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Proj
                     mapProps = Context::getPropertyMapTypeFromClassDescriptor(txn, in.descriptor.rid.first);
                 }
                 Bytes resB = Context::getProjectionItem(txn, in, secondProj, mapProps);
-                if (resB.type() != PropertyTypeExt::RESULT_SET) {
+                if (!resB.isResults()) {
                     throw Error(SQL_INVALID_PROJECTION_METHOD, Error::Type::SQL);
                 }
                 results.insert(results.end(), make_move_iterator(resB.results().begin()), make_move_iterator(resB.results().end()));
@@ -717,7 +716,7 @@ Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Proj
 
 Bytes Context::getProjectionItemArraySelector(Txn &txn, const Result &input, const Projection &proj, unsigned long index, const PropertyMapType &map) {
     Bytes resA = Context::getProjectionItem(txn, input, proj, map);
-    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+    if (resA.isResults()) {
         ResultSet &inputB = resA.results();
         if (index < inputB.size()) {
             return Bytes(ResultSet({inputB[index]}));
@@ -736,12 +735,7 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
     }
 
     Bytes resA = func.execute(txn, input);
-    if (resA.type() != PropertyTypeExt::RESULT_SET) {
-        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
-    }
-
-
-    if (resA.type() == PropertyTypeExt::RESULT_SET) {
+    if (resA.isResults()) {
         static MultiCondition alwaysTrue = Condition(RECORD_ID_PROPERTY) || !Condition(RECORD_ID_PROPERTY);
         ResultSet result = Context::executeCondition(txn, resA.results(), cond && alwaysTrue);
         return Bytes(move(result));
@@ -779,7 +773,7 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
             mapProp[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
             mapProp[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
             for (const auto &prop: in->record.getAll()) {
-                mapProp[prop.first] = prop.second.type().toBase();
+                mapProp[prop.first] = prop.second.type();
             }
         } else if (classID != previousClassID) {
             mapProp.clear();

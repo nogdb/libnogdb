@@ -1,15 +1,23 @@
 # Change Log
-## v0.11.0-beta
+## v0.11.0-beta [2018-06-??]
 * General changes:
   * All `nogdb::Vertex::find*(...)` and `nogdb::Edge::find*(...)` functions are obsoleted and have been renamed to `nogdb::Vertex::get*(...)` and `nogdb::Edge::get*(...)` respectively.
   * `nogdb::Class::create(...)` and `nogdb::Class::createExtend(...)` with `PropertyMapType` functions are deprecated.
   * The maximum size of property value has been increased and now it can be up to 2,147,483,648 bytes (from 65,536 bytes previously).
+  * Removing dash (-) from a set of valid characters for class name and property name. A valid name for class and property must be A-Z, a-z, 0-9, and underscore (_) but cannot begin with numbers (0-9).
 * New features:
   * A member function `getProperties(...)` in `nogdb::Record` which returns a set of property names in a record is available.
-  * Support SQL for graph manipulation, retrieval, and traversal via `nogdb::SQL::execute(...)`.
+  * Supporting SQL for graph manipulation, retrieval, and traversal via `nogdb::SQL::execute(...)`.
+  * Each record now contains some basic information such as `@className`, `@recordId`, `@depth`, and `@version` by default. These values are read-only and unable to be overwritten. 
 * Implemented enhancements:
   * Adding some class and property name restrictions.
   * Improving the way to internally handle a cursor pointer of `MDB_cursor` in order to prevent memory leak problems by applying RAII principle for `Datastore::CursorHandlerWrapper`.
+  * Removing all C assertion in the library to prevent terminating the program unexpectedly when there are some internal errors occurring. Therefore, the library will throw an exception `CTX_INTERNAL_ERR` for any internal errors instead.
+  * Storing `uint8_t` and `int8_t` as `uint32_t` and `int32_t` respectively in database indexing for all compilers and systems compatibility.
+* Fixed bugs:
+  * Fixing issue [#11](https://github.com/nogdb/nogdb/issues/11). A SQL syntax error found when using `TRAVERSE` clause inside `SELECT`.
+  * Fixing issue [#12](https://github.com/nogdb/nogdb/issues/12). An exception `SQL_INVALID_PROJECTION` thrown after getting out-of-bound index in SQL syntax.
+  * Fixing several bugs in database indexing retrieval operations. Some issues are able to be found and still unresolved. Better to avoid using database indexing feature in this version.
   
 ## v0.10.0-beta [2018-03-24]
 * General changes:
@@ -26,7 +34,7 @@
   * The underlying representation of graph and transaction has been revised and improved in order to have better performance and support cleaning all obsoleted objects in memory without a separated graph cleaner thread.
   * The transaction for schema operations is now supported to allow CRUD for a database schema in the same transaction with CRUD for vertex and edge records.
 * Fixed bugs:
-  * Do not throw an exception `CTX_NOEXST_PROPERTY` when calling `getText(...)` with invalid properties or with an empty string as a result.
+  * Not throwing an exception `CTX_NOEXST_PROPERTY` when calling `getText(...)` with invalid properties or with an empty string as a result.
   * Removing an incorrect lock object in a locking mechanism of a transaction commit for edges.
   * Several bugs associated with database schema have been fixed during an implementation of schema with transaction.
 

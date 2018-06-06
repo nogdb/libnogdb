@@ -24,7 +24,6 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include <cassert>
 #include <sys/file.h>
 #include <sys/stat.h>
 
@@ -170,7 +169,7 @@ namespace nogdb {
                 auto superClassId = ClassId{0};
                 offset = data.retrieve(&superClassId, offset, sizeof(superClassId));
                 auto nameLength = data.size() - offset;
-                assert(nameLength > 0);
+                require(nameLength > 0);
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto className = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
@@ -207,13 +206,13 @@ namespace nogdb {
                 auto offset = data.retrieve(&propType, 0, sizeof(PropertyDescriptor::type));
                 offset = data.retrieve(&propClassId, offset, sizeof(propClassId));
                 auto nameLength = data.size() - offset;
-                assert(nameLength > 0);
+                require(nameLength > 0);
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto propertyName = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
                 auto propertyDescriptor = Schema::PropertyDescriptor{PropertyId{*key}, propType};
                 auto ptrClassDescriptor = dbSchema->find(baseTxn, propClassId);
-                assert(ptrClassDescriptor != nullptr);
+                require(ptrClassDescriptor != nullptr);
                 // get indexes associated with property
                 auto isCompositeNumeric = uint8_t{0};
                 auto isUniqueNumeric = uint8_t{1};
@@ -279,11 +278,11 @@ namespace nogdb {
                 data.retrieve(&positionId, offset, sizeof(PositionId));
                 auto dstRid = RecordId{classId, positionId};
                 auto ptrEdgeClassDescriptor = dbSchema->find(baseTxn, edgeId.first);
-                assert(ptrEdgeClassDescriptor != nullptr);
+                require(ptrEdgeClassDescriptor != nullptr);
                 auto ptrSrcVertexClassDescriptor = dbSchema->find(baseTxn, srcRid.first);
-                assert(ptrSrcVertexClassDescriptor != nullptr);
+                require(ptrSrcVertexClassDescriptor != nullptr);
                 auto ptrDstVertexClassDescriptor = dbSchema->find(baseTxn, dstRid.first);
-                assert(ptrDstVertexClassDescriptor != nullptr);
+                require(ptrDstVertexClassDescriptor != nullptr);
                 // update the relation in the graph structure
                 dbRelation->createEdge(baseTxn, edgeId, srcRid, dstRid);
             }

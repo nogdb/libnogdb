@@ -20,7 +20,7 @@
  */
 
 #include "runtest.h"
-#include "test_exec.h"
+#include "test_prepare.h"
 #include <climits>
 #include <set>
 #include <vector>
@@ -142,7 +142,7 @@ void test_get_vertex() {
     }
     try {
         auto res = nogdb::Vertex::get(txn, "books");
-        assert(res.size() == 2);
+        assertSize(res, 2);
 
         assert(res[0].record.get("title").toText() == "Percy Jackson");
         assert(res[0].record.get("pages").toInt() == 456);
@@ -160,7 +160,7 @@ void test_get_vertex() {
     }
     try {
         auto res = getVertexMultipleClass(txn, std::set<std::string>{"books", "persons"});
-        assert(res.size() == 3);
+        assertSize(res, 3);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -207,7 +207,7 @@ void test_get_vertex_v2() {
                 .set("text", "hello world")
                 .set("blob", obj);
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-        nogdb::Vertex::create(txn, "test", r);
+        auto rdesc = nogdb::Vertex::create(txn, "test", r);
 
         auto res = nogdb::Vertex::get(txn, "test");
         assert(res[0].record.get("integer").toInt() == INT_MIN);
@@ -221,6 +221,11 @@ void test_get_vertex_v2() {
         assert(obj_tmp.x == 42);
         assert(obj_tmp.y == 42.42);
         assert(obj_tmp.z == 424242);
+        assert(res[0].record.getText("@recordId") == rid2str(rdesc.rid));
+        assert(res[0].record.getText("@className") == "test");
+        assert(res[0].record.getBigIntU("@version") == 1UL);
+        assert(res[0].record.getIntU("@depth") == 0U);
+
         txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -385,14 +390,18 @@ void test_update_vertex() {
         assert(res[0].record.get("price").toReal() == 50);
         assert(res[0].record.get("pages").toInt() == 400);
         assert(res[0].record.get("words").toBigIntU() == 90000ULL);
+        assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
         assert(res[1].record.get("pages").toInt() == 360);
+        assert(res[1].record.getText("@recordId") == rid2str(rdesc2.rid));
 
         nogdb::Vertex::update(txn, rdesc1, nogdb::Record{});
         res = nogdb::Vertex::get(txn, "books");
         assert(res[0].record.empty() == true);
+        assert(res[0].record.getText("@className") == "books");
+        assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
@@ -488,7 +497,7 @@ void test_delete_vertex_only() {
         nogdb::Vertex::destroy(txn, rdesc1);
 
         auto res = nogdb::Vertex::get(txn, "books");
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].record.get("title").toText() == "Tarzan");
         assert(res[0].record.get("price").toReal() == 60);
         assert(res[0].record.get("pages").toInt() == 360);
@@ -565,10 +574,10 @@ void test_delete_all_vertices() {
             nogdb::Vertex::create(txn, "books", record);
         }
         auto res = nogdb::Vertex::get(txn, "books");
-        assert(res.size() == 3);
+        assertSize(res, 3);
         nogdb::Vertex::destroy(txn, "books");
         res = nogdb::Vertex::get(txn, "books");
-        assert(res.size() == 0);
+        assertSize(res, 0);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

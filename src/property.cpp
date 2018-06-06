@@ -28,6 +28,7 @@
 #include "datastore.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
+#include "index.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
 
@@ -193,9 +194,7 @@ namespace nogdb {
                 case PropertyType::UNSIGNED_SMALLINT:
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                 TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId),
-                                                                 true, isUnique);
+                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId), true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
                     auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
@@ -210,15 +209,18 @@ namespace nogdb {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
                                 if (foundProperty.type == PropertyType::UNSIGNED_TINYINT) {
-                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toTinyIntU(),
+                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                                                         static_cast<uint64_t>(bytesValue.toTinyIntU()),
                                                          indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::UNSIGNED_SMALLINT) {
-                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toSmallIntU(),
+                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                                                         static_cast<uint64_t>(bytesValue.toSmallIntU()),
                                                          indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::UNSIGNED_INTEGER) {
-                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toIntU(),
+                                    Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                                                         static_cast<uint64_t>(bytesValue.toIntU()),
                                                          indexRecord, false, !isUnique);
-                                } else if (foundProperty.type == PropertyType::UNSIGNED_BIGINT) {
+                                } else {
                                     Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toBigIntU(),
                                                          indexRecord, false, !isUnique);
                                 }
@@ -233,14 +235,8 @@ namespace nogdb {
                 case PropertyType::INTEGER:
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive =
-                            Datastore::openDbi(dsTxnHandler,
-                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + "_positive",
-                                               true, isUnique);
-                    auto dataIndexDBHandlerNegative =
-                            Datastore::openDbi(dsTxnHandler,
-                                               TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId) + "_negative",
-                                               true, isUnique);
+                    auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId, false), true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
                     auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
@@ -255,27 +251,27 @@ namespace nogdb {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
                                 if (foundProperty.type == PropertyType::TINYINT) {
-                                    auto value = bytesValue.toTinyInt();
+                                    auto value = static_cast<int64_t>(bytesValue.toTinyInt());
                                     Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
                                                                                     : dataIndexDBHandlerNegative,
                                                          value, indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::SMALLINT) {
-                                    auto value = bytesValue.toSmallInt();
+                                    auto value = static_cast<int64_t>(bytesValue.toSmallInt());
                                     Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
                                                                                     : dataIndexDBHandlerNegative,
                                                          value, indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::INTEGER) {
-                                    auto value = bytesValue.toInt();
-                                    Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
-                                } else if (foundProperty.type == PropertyType::BIGINT) {
-                                    auto value = bytesValue.toBigInt();
+                                    auto value = static_cast<int64_t>(bytesValue.toInt());
                                     Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
                                                                                     : dataIndexDBHandlerNegative,
                                                          value, indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::REAL) {
                                     auto value = bytesValue.toReal();
+                                    Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
+                                                                                    : dataIndexDBHandlerNegative,
+                                                         value, indexRecord, false, !isUnique);
+                                } else {
+                                    auto value = bytesValue.toBigInt();
                                     Datastore::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
                                                                                     : dataIndexDBHandlerNegative,
                                                          value, indexRecord, false, !isUnique);
@@ -287,9 +283,7 @@ namespace nogdb {
                     break;
                 }
                 case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                 TB_INDEXING_PREFIX + std::to_string(dbInfo.maxIndexId),
-                                                                 false, isUnique);
+                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId), false, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
                     auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
                     auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
@@ -303,8 +297,7 @@ namespace nogdb {
                             if (!value.empty()) {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
-                                Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, value, indexRecord,
-                                                     false, !isUnique);
+                                Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, value, indexRecord, false, !isUnique);
                             }
                         }
                         keyValue = Datastore::getNextCursor(cursorHandler.get());
@@ -370,9 +363,7 @@ namespace nogdb {
                 case PropertyType::UNSIGNED_SMALLINT:
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                 TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                 true, isUnique);
+                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandler);
                     break;
                 }
@@ -381,20 +372,14 @@ namespace nogdb {
                 case PropertyType::INTEGER:
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive =
-                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
-                                               true, isUnique);
-                    auto dataIndexDBHandlerNegative =
-                            Datastore::openDbi(dsTxnHandler, TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
-                                               true, isUnique);
+                    auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandlerNegative);
                     break;
                 }
                 case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                 TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                 false, isUnique);
+                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
                     Datastore::dropDbi(dsTxnHandler, dataIndexDBHandler);
                     break;
                 }
