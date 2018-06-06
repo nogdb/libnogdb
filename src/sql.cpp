@@ -311,7 +311,11 @@ string ResultSet::descriptorsToString() const {
 
 ResultSet& ResultSet::limit(int skip, int limit) {
     if (skip > 0) {
-        erase(this->begin(), this->begin() + skip);
+        if ((unsigned long)skip < this->size()) {
+            this->erase(this->begin(), this->begin() + skip);
+        } else {
+            this->clear();
+        }
     }
     if (limit >= 0 && (unsigned) limit < this->size()) {
         this->resize(limit);

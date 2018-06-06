@@ -1099,6 +1099,10 @@ void test_sql_select_skip_limit() {
         baseResult = Vertex::get(txn, "v", Condition("prop2").le(3));
         baseResult.resize(1);
         assert(result.get<ResultSet>() == baseResult);
+
+        result = SQL::execute(txn, "SELECT * FROM (SELECT FROM v) SKIP 100");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>().size() == 0);
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
