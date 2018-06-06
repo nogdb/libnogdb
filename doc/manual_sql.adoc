@@ -1,0 +1,603 @@
+# NogDB SQL Documentation
+<<<
+:toc:
+:toc-placement: preamble
+:at-class-name: @className
+:at-record-id: @recordId
+:at-version: @version
+
+When it comes to query languages, SQL is the mostly widely recognized standard. The majority of developers have experience and are comfortable with SQL. For this reason NogDB uses SQL as it's query language and adds some extensions to enable graph functionality.
+
+Many SQL commands share the <<Condition, WHERE Condition>>. Keywords in NogDB SQL are case insensitive. Field names, class names and values are case sensitive. In the following examples keywords are in uppercase but this is not strictly required.
+
+For example, if you have a class `MyClass` with a property named `id`, then the following SQL statements are equivalent:
+
+```sql
+SELECT FROM MyClass WHERE id = 1
+select from MyClass where id = 1
+```
+
+The following is NOT equivalent.  Notice that the property name 'ID' is not the same as 'id'.
+
+```sql
+SELECT FROM MyClass WHERE ID = 1
+```
+
+## Schema Operations
+
+### Create Class
+
+Creates a new class in the schema.
+
+*Syntax*
+
+ CREATE CLASS <class-name> [IF NOT EXISTS] [EXTENDS VERTEX|EDGE|<super-class>]
+
+- `<class-name>` Defines the name of the class you want to create.  You must use a letter or underscore for the first character, for all other characters you can use alphanumeric characters and underscores.
+- `IF NOT EXISTS` Creates the class only if it does not exist yet.
+- `<super-class>` Defines the super-class you want to extend with this class.
+
+*Examples*
+
+- Create the vertex class `Person`
+
+ CREATE CLASS Person EXTENDS VERTEX
+
+- Create the edge class `Child`
+
+ CREATE CLASS Child EXTENDS EDGE
+
+- Create the vertex class `Boy` to extend `Person`
+
+ CREATE CLASS Boy EXTENDS Person
+
+### Alter Class
+
+Updates attributes on an existing class in the schema.
+
+*Syntax*
+
+ ALTER CLASS <class-name> <attribute-name> <attribute-value>
+
+- `<class-name>` Defines the class you want to change.
+- `<attribute-name>` Defines the attribute you want to change. For a list of supported attributes, see the table below.
+- `<attribute-value>` Defines the value you want to set.
+
+*Supported Attributes*
+
+.Alter Class Supported Attributes
+|===
+|Attribute|Value Type|Description
+
+|NAME |String |Changes the class name.
+|===
+
+*Examples*
+
+- Update the class name from `Boy` to `Men`
+
+ ALTER CLASS Boy NAME "Men"
+
+### Drop Class
+
+Removes a class from the schema.
+
+*Syntax*
+
+ DROP CLASS <class-name> [IF EXISTS]
+
+- `<class-name>` Defines the class you want to remove.
+- `IF EXITES` Drops the class only if it exists (does nothing if it doesn't).
+
+*Examples*
+
+- Remove the class `Men`
+
+ DROP CLASS Men
+
+### Create Property
+
+Creates a new property in the schema. It requires that the class for the property already exist on the database.
+
+*Syntax*
+
+ CREATE PROPERTY <class-name>.<property-name> [IF NOT EXISTS] <type>
+
+- `<class-name>` Defines the class for the new property.
+- `<property-name>` Defines the logical name for the property.
+- `IF NOT EXISTS` Creates the property only if it does not exist. If it does, the statement just does nothing.
+- `<type>` Defines the property data type. For supported types, see the table below.
+
+*Supported Types*
+
+NogDB supports the following data types for standard properties:
+
+- TINYINT
+- UNSIGNED_TINYINT
+- SMALLINT
+- UNSIGNED_SMALLINT
+- INTEGER
+- UNSIGNED_INTEGER
+- BIGINT
+- UNSIGNED_BIGINT
+- TEXT
+- REAL
+- BLOB
+
+*Examples*
+
+- Create the property `name` of the string type in the class `Person`
+
+ CREATE PROPERTY Persion.name STRING
+
+### Alter Property
+
+Updates attributes on the existing property and class in the schema.
+
+*Syntax*
+
+ ALTER PROPERTY <class-name>.<property-name> <attribute-name> <attribute-value>
+
+- `<class-name>` Defines the class to which the property belongs.
+- `<property-name>` Defines the property you want to update.
+- `<attribute-name>` Defines the attribute you want to change.
+- `<attribute-value>` Defines the value you want to set on the attribute.
+
+*Supported Attributes*
+
+.Alter Property Supported Attributes
+|===
+|Attribute|Value Type|Description
+
+|NAME |String |Changes the property name.
+|===
+
+*Examples*
+
+- Change the name of the property `name` in the class Person to `nickname`
+
+ ALTER PROPERTY Person.name NAME "nickname"
+
+### Drop Property
+
+Removes a property from the schema. Does not remove the property values in the records, it just changes the schema information. Records continue to have the property values, if any.
+
+*Syntax*
+
+ DROP PROPERTY <class-name>.<property-name> [IF EXISTS]
+
+- `<class-name>` Defines the class where the property exists.
+- `<property-name>` Defines the property you want to remove.
+- `IF EXISTS` Drops the property only if it exists. If it doesn't, the statement does nothing.
+
+*Examples*
+
+- Remove the `nickname` property from the class `Person`
+
+ DROP PROPERTY Person.nickname
+
+## CRUD Operations
+
+### Create Vertex
+
+Creates a new vertex in the database.
+
+The Vertex and Edge are the main components of a Graph database. NogDB supports polymorphism on vertices.
+
+*Syntax*
+
+ CREATE VERTEX <class-name> [SET <property> = <expression> [, <property> = <expression>]*]
+
+- `<class-name>` Defines the class to which the vertex belongs.
+- `<property>` Defines the property you want to set.
+- `<expression>` Defines the express to set for the property.
+
+*Examples*
+
+- Create a new vertex of the class `Person`, defining its properties
+
+ CREATE VERTEX Person SET name = "John", age = 18
+
+### Create Edge
+
+Creates a new edge in the database.
+
+Edges and Vertices form the main components of a Graph database. NogDB supports polymorphism on edges.
+
+*Syntax*
+
+ CREATE EDGE <class-name>
+ FROM <rid> | ( <query> ) | ( <rid> [, <rid>]* )
+ TO <rid> | ( <query> ) | ( <rid> [, <rid>]* )
+ [ SET <property> = <expression> [, <property> = <expression>]* ]
+
+- `<class-name>` Defines the class name for the edge.
+- `<rid>` Defines the record id for the source or destination of the edge
+- `<query>` Defines the get statement (select or traverse) for the source or destination of the edge
+- `<property>` Defines the property you want to set.
+- `<expression>` Defines the express to set for the property.
+
+
+*Examples*
+
+- Create an edge of the class `E1` between two vertices
+
+ CREATE EDGE E1 FROM #4:1 TO #4:2
+
+- Create an edge of the class `E1` between multiple vertices
+
+ CREATE EDGE E1 FROM (#4:3, #4:4) TO (#4:5, #4:6)
+
+- Create an edge `E1` and define its properties
+
+ CREATE EDGE FROM #4:1 TO #4:2 SET relate = 'wow'
+
+- Create edges of the type `Watched` between all action movies in the database and the user Luca, using sub-queries
+
+ CREATE EDGE Watched FROM (SELECT FROM account WHERE name = 'Luca') TO (SELECT FROM movies WHERE type = 'action')
+
+### Select
+
+NogDB supports the SQL language to execute queries against the database engine. For more information, see <<Operators>> and <<Functions>>.
+
+*Syntax*
+
+ SELECT [ <Projection> ] [ FROM <Target> ] [ WHERE <Condition> ] [ GROUP BY <property> ] [ SKIP <skip-records> ] [ LIMIT <max-records> ]
+
+- `<<<Projection>>>` Indicates the data you want to extract from the query as the result-set. Note: In OrientDB, this variable is optional. In the projections you can define aliases for single fields, using the AS keyword; in current release aliases cannot be used in the WHERE condition, GROUP BY and ORDER BY (they will be evaluated to null)
+- `<Target>` Designates the object to query. This can be a class, single Record ID or set of Record ID's.
+** When querying a class, for `<Target>` use the class name.
+** When querying <<Record ID>>'s, you can specific one or a small set of records to query. This is useful when you need to specify a starting point in navigating graphs.
+- `<<<Condition>>>` Designates conditions to filter the result-set.
+- `GROUP BY` Designates property on which to group the result-set. You can only group on one property.
+- `SKIP` Defines the number of records you want to skip from the start of the result-set. You may find this useful in Pagination, when using it in conjunction with `LIMIT`.
+- `LIMIT` Defines the maximum number of records in the result-set. You may find this useful in pagination, when using it in conjunction with `SKIP`.
+
+#### Projection
+
+In the standard implementations of SQL, projections are mandatory. In NogDB, the omission of projects translates to its returning the entire record. That is, it reads no projection as the equivalent of the `*` wildcard.
+
+ SELECT FROM Person
+
+For all projections except the wildcard `*`, it creates a new temporary record, which does not include the `{at-record-id}` and @version fields of the original record.
+
+ SELECT name, age FROM Person
+
+The naming convention for the returned document fields are
+
+- Field name for plain fields, like `name` becoming `name`.
+- First field name for chained fields and functions, like `out().out().name` become `out().out().name`
+- To override the display for the field names, use the `AS`
+
+ SELECT MAX(income) AS max_income FROM PERSON
+
+#### Functions
+
+|===
+|<<count>>
+|<<expand>>
+|<<in>>
+|<<out>>
+|<<both>>
+|<<inE>>
+|<<outE>>
+|<<bothE>>
+|<<inV>>
+|<<outV>>
+|<<bothV>>
+|===
+
+##### count()
+
+Counts the records that match the query condition. If `*` is not used as a property, then the record will be counted only if the property content is not null.
+
+Syntax: `count(<property>)`
+
+Example:
+
+ SELECT COUNT(*) FROM Person
+
+##### expand()
+
+Extracts the collection in the field and use it as result.
+
+Syntax: `expand(<collection>)`
+
+Example:
+
+ SELECT expand(OUT('address')) FROM Person
+
+##### in()
+
+Get the adjacent incoming vertices starting from the current record as Vertex.
+
+Syntax: `in(<class-filter>*)`
+
+Example:
+
+- Get all the incoming vertices from all the Vehicle vertices
+
+ SELECT expand(in()) FROM Person
+
+- Get all the incoming vertices connected with edges with class "Friend" and "Brother"
+
+ SELECT expand(in('Friend', Brother')) FROM Person
+
+
+##### out()
+
+Get the adjacent outgoing vertices starting from the current record as Vertex.
+
+Syntax: `out(<class-filter>*)`
+
+Example:
+
+- Get all the outgoing vertices from all the Vehicle vertices
+
+ SELECT expand(out()) FROM Person
+
+- Get all the incoming vertices connected with edges with class "Eats" and "Favorited" from all the Restaurant vertices in Rome
+
+ SELECT expand(out('Eats','Favorited')) FROM Restaurant WHERE city = 'Rome'
+
+##### both()
+
+Get the adjacent outgoing and incoming vertices starting from the current record as Vertex.
+
+Syntax: `both(<class-filter>*)`
+
+Example:
+
+- Get all the incoming and outgoing vertices from vertex with rid #4:1
+
+ SELECT expand(both()) FROM #4:1
+
+- Get all the incoming and outgoing vertices connected with edges with class "Friend" and "Brother"
+
+ SELECT expand(both('Friend','Brother')) FROM Person
+
+##### inE()
+
+Get the adjacent incoming edges starting from the current record as Vertex.
+
+Syntax: `inE(<class-filter>*)`
+
+Example:
+
+- Get all the incoming edges from all the vertices:
+
+ SELECT expand(inE()) FROM Person
+
+- Get all the incoming edges of type "Eats" from the Restaurant 'Bella Napoli'
+
+ SELECT expand(inE('Eats')) FROM Restaurant WHERE name = 'Bella Napoli'
+
+##### outE()
+
+Get the adjacent outgoing edges starting from the current record as Vertex.
+
+Syntax: `outE(<class-filter>*)`
+
+Example:
+
+- Get all the outgoing edges from all the vertices:
+
+ SELECT expand(outE()) FROM Person
+
+- Get all the outgoing edges of type "Eats" from all the SocialNetworkProfile vertices
+
+ SELECT expand(outE('Eats')) FROM SocialNetworkProfile
+
+##### bothE()
+
+Get the adjacent outgoing and incoming edges starting from the current record as Vertex.
+
+Syntax: `bothE(<class-filter>*)`
+
+Example:
+
+- Get both incoming and outgoing edges from all the vertices:
+
+ SELECT expand(bothE()) FROM Person
+
+- Get all the incoming and outgoing edges of type "Friend" from the Profile with nick 'Jay'
+
+ SELECT expand(bothE('Friend')) FROM Profile WHERE nick = 'Jay'
+
+##### inV()
+
+Get incoming vertices starting from the current record as Edge.
+
+Syntax: `inV()`
+
+Example:
+
+ SELECT expand(inV()) FROM Relation
+
+##### outV()
+
+Get outgoing vertices starting from the current record as Edge.
+
+Syntax: `outV()`
+
+Example:
+
+ SELECT expand(outV()) FROM Relation
+
+##### bothV()
+
+Get outgoing and incoming vertices starting from the current record as Edge.
+
+Syntax: `bothV()`
+
+Example:
+
+ SELECT expand(bothV()) FROM Relation
+
+#### Condition
+
+The Where condition is shared among many SQL commands.
+
+*Syntax*
+
+ [<property>] <operator> <value>
+
+#### Operators
+
+NogDB opeartors in select command match with <<manual.adoc#condition, Condition>> and <<manual.adoc#multicondition, MultiCondition>> in base API.
+
+.Condition Operators
+[cols=".^, .^, .^, .^"]
+|===
+|Operator |Apply To |Description |Example
+
+|=  .3+|Any .3+|Equals to |name = 'John'
+|==                       |name == 'Sam'
+|IS                       |name IS 'Alice'
+|!= .3+|Any .3+|Not equals to |gender != 'male'
+|<>                           |gender <> 'male'
+|IS NOT                       |gender IS NOT 'male'
+|>  |Numeric, String |Greater than |age > 20
+|>= |Numeric, String |Greater than or equal to |age >= 20
+|<  |Numeric, String |Less than |age < 20
+|\<=|Numeric, String |Less than or equal to |age \<= 20
+|CONTAIN |String |True if the string contain the value |name CONTAIN '3rd'
+|CONTAIN CASE |String |Like `Contain` but case sensitive |name CONTAIN CASE 'jack'
+|BEGIN WITH |String |True if the string begin with the value |name BEGIN WITH 'sa'
+|BEGIN WITH CASE |String |Like `BEGIN WITH` but case sensitive |
+|END WITH |String |True if the string end with the value |name END WITH 'am'
+|END WITH CASE |String |Like `END WITH` but case sensitive |
+|LIKE |String |Similar to equals, but allow the wildcard `%` and `_` | name LIKE '%am'
+|LIKE CASE |String |Like `LIKE` but case sensitive |
+|REGEX |STRING |Matches the string using a regular expression |location REGEX '[A-Z0-9.%+-]+@[A-Z0-9.-]+.[A-Z]{2,4}'
+|REGEX CASE |STRING |Like `REGEX` but case sensitive |
+|BETWEEN |Numeric, String |The value is between a range. It's equivalent to `<property>` >= `<from-value>` AND `<property>` \<= `<to-value>`| price BETWEEN 10 AND 100
+|IN |Numeric, String |Contains any of the elements listed |name IN ['Sam', 'John', 'Jack']
+|===
+
+.Logical Operators
+|===
+|Operator |Description| Example
+
+|AND |True if both the conditions are true |name = 'Luke' AND surname LIKE 'Sky%'
+|OR |True if at least one of the condition is true |name = 'Luke' OR surname LIKE 'Sky%'
+|NOT |True if the condition is false |NOT (name = 'Luke')
+|===
+
+#### Record ID
+
+See <<manual.doc#record-id, Record Id>>
+
+When NogDB generates a record, it auto-assigns a unique unit identifier, called a Record ID, or RID. The syntax for the Record ID is the pound sign with the class identifier and the position. The format is like this:
+
+`#<classID>:<positionID>`
+
+> *NOTE*: The prefix character `#` is mandatory to recognize a Record ID.
+
+Records never lose their identifiers unless they are deleted. When deleted, NogDB never recycles identifiers. Additionally, you can access records directly through their Record ID's. For this reason, you don't need to create a field to serve as the primary key, as you do in Relational databases.
+
+### Update
+
+Update one or more records in the current database.
+
+*Syntax*
+
+ UPDATE <class-name> | <recordIDs> | <query>
+ [ SET <property> = <expression> [, <property> = <expression>]* ]
+ [ WHERE <condition> ]
+
+- `SET` Defines the property to update.
+- `<<Condition, WHERE>>` Defines the filtering conditions.
+
+*Examples*
+
+- Update to change the value of a property
+
+ UPDATE Person SET name = 'Luca' WHERE name = 'Nick'
+
+### Delete Vertex
+
+Removes vertices from the database. This command remove all cross-references to the deleted vertex in all edges involved.
+
+*Syntax*
+
+ DELETE VERTEX <class-name>|<recordIDs>|<query> [WHERE <condition>]
+
+*Examples*
+
+- Remove the vertex and disconnect all vertices that point towards it
+
+ DELETE VERTEX #4:2
+
+- Remove all vertices from the class EmailMessages marked with the property isSpam:
+
+ DELETE VERTEX EMailMessage WHERE isSpam = 1
+
+- Remove Sam's account
+
+ DELETE VERTEX (SELECT expand(out('Account')) Person WHERE name = 'Sam')
+
+### Delete Edge
+
+Removes edges from the database. This command remove all cross-references to the edge from both the `in` and `out` vertex properties.
+
+*Syntax*
+
+ DELETE EDGE <recordIDs> | (<class-name> [FROM <recordIDs>|<query>] [TO <recordIDs>|<query>] [WHERE <condition>])
+
+- `FROM` Defines the starting point vertex of the edge to delete.
+- `TO` Defines the ending point vertex of the edge to delete.
+- `<<Condition, WHERE>>` Defines the filtering conditions.
+
+*Examples*
+
+- Delete an edge by its recordID
+
+ DELETE EDGE #5:1
+
+- Delete edges where the data is a property that might exist in one or more edges between two vertices:
+
+ DELETE EDGE FROM #4:1 TO #4:2 WHERE date >= "2012-01-15"
+
+- Delete edge filtering by the edge class and date
+
+ DELETE EDGE Owns WHERE date < "2011-11"
+
+### Traverse
+
+Retrieves connected records crossing relationships. In many cases, you may find it more efficient to use <<Select>>, which can result in shorter and faster queries. see <<Traverse vs Select>> below
+
+*Syntax*
+
+ TRAVERSE IN|OUT|ALL \( [<class-filter>] \) FROM <recordID> [MINDEPTH <number>] [MAXDEPTH <number>] [STRATEGY <strategy>]
+
+- `FROM` Defines the target you want to traverse. This can be only single recordID.
+- `MINDEPTH` Defines the minimum depth of the traversal.
+- `MAXDEPTH` Defines the maximum depth of the traversal.
+- `STRATEGY` Defines strategy for traversing the graph. This can be `DEPTH_FIRST` or `BREADTH_FIRST`.
+
+*Examples*
+
+- Traverse all fields in the root record
+
+ TRAVERSE all() FROM #4:1
+
+- Specify fields and depth up to the third level, using the BREADTH_FIRST strategy
+
+ TRAVERSE out('Friend') FROM #4:1 MAXDEPTH 3 STRATEGY BREADTH_FIRST
+
+- Combine traversal with SELECT command to filter the result-set.
+
+ SELECT FROM (TRAVERSE out("Friend") FROM #4:1 MAXDEPTH 3) WHERE city = 'Rome'
+
+#### Traverse vs Select
+
+When you already know traversal information, such as relationship names and depth-level, consider using SELECT instead of TRAVERSE as it is faster in some cases.
+
+For example, this query traverses the follow relationship on Twitter accounts, getting the second level of friendship:
+
+ TRAVERSE out('follow') FROM TwitterAccounts MINDEPTH 2 MAXDEPTH 2
+
+But, you could also express this same query using SELECT operation, in a way that is also shorter and faster:
+
+ SELECT out('follow').out('follow') FROM TwitterAccounts

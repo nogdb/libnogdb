@@ -34,6 +34,8 @@ namespace nogdb {
          */
         class Context : public lemon_base<Token> {
         public:
+            friend class Function;
+
             Context(Txn &txn_) : txn(txn_) {}
 
             Txn &txn;
@@ -116,16 +118,25 @@ namespace nogdb {
 
             ResultSet selectProjection(ResultSet &input, const vector <Projection> projs);
 
-            pair <string, Bytes>
-            selectProjectionItem(const Result &input, const Projection &proj, const PropertyMapType &map);
-
             ResultSet selectGroupBy(ResultSet &input, const string &group);
 
             ResultSet traversePrivate(const TraverseArgs &stmt);
 
-            ClassType findClassType(const string &className);
+            static Bytes getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map);
 
-            PropertyMapType getPropertyMapTypeFromClassDescriptor(ClassId classID);
+            static Bytes getProjectionItemProperty(Txn &txn, const Result &input, const string &propName, const PropertyMapType &map);
+
+            static Bytes getProjectionItemMethod(Txn &txn, const Result &input, const Projection &firstProj, const Projection &secondProj, const PropertyMapType &map);
+
+            static Bytes getProjectionItemArraySelector(Txn &txn, const Result &input, const Projection &proj, unsigned long index, const PropertyMapType &map);
+
+            static Bytes getProjectionItemCondition(Txn &txn, const Result &input, const Function &func, const Condition &cond);
+
+            static ClassType findClassType(Txn &txn, const string &className);
+
+            static PropertyMapType getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID);
+
+            static ResultSet executeCondition(Txn &txn, const ResultSet &input, const MultiCondition &conds);
 
             /* LEMONXX base */
         public:
