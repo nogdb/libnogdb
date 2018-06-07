@@ -644,15 +644,15 @@ void test_sql_select_count() {
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toIntU() == 3);
+        assert(res[0].record.get("count()").toBigIntU() == 3);
 
         result = SQL::execute(txn, "SELECT count('name'), count(age) FROM persons");
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count(name)").toIntU() == 2);
-        assert(res[0].record.get("count(age)").toIntU() == 1);
+        assert(res[0].record.get("count(name)").toBigIntU() == 2);
+        assert(res[0].record.get("count(age)").toBigIntU() == 1);
 
         // count empty result.
         result = SQL::execute(txn, "SELECT count(*) FROM persons WHERE name='Sam'");
@@ -660,7 +660,7 @@ void test_sql_select_count() {
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toIntU() == 0);
+        assert(res[0].record.get("count()").toBigIntU() == 0);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

@@ -446,16 +446,16 @@ string Function::toString() const {
 
 Bytes Function::count(const ResultSet &input, const vector<Projection> &args) {
     if (args.empty()) {
-        return Bytes(PositionId(input.size()), PropertyType(nogdb::PropertyType::UNSIGNED_INTEGER));
+        return Bytes(input.size(), PropertyType(nogdb::PropertyType::UNSIGNED_BIGINT));
     } else if (args.size() == 1 && args[0].type == ProjectionType::PROPERTY) {
         string propName = args[0].get<string>();
-        PositionId result = 0;
+        size_t result = 0;
         for (const auto &row: input) {
             if (!row.record.get(propName).empty()) {
                 result++;
             }
         }
-        return Bytes(result, PropertyType(nogdb::PropertyType::UNSIGNED_INTEGER));
+        return Bytes(result, PropertyType(nogdb::PropertyType::UNSIGNED_BIGINT));
     } else {
         throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
     }
