@@ -123,6 +123,8 @@ namespace nogdb {
         IndexId numIndex{0};           // a number of indexes in the database.
     };
 
+    class Txn;
+
     class Bytes {
     public:
         friend class Record;
@@ -260,6 +262,8 @@ namespace nogdb {
         RecordId getRecordId() const;
 
         uint32_t getDepth() const;
+
+        const Record &updateVersion(const Txn &txn) const;
 
         uint64_t getVersion() const;
 

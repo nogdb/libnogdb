@@ -111,6 +111,10 @@ namespace nogdb {
                 dataSize += getRawDataSize(property.second.size());
                 properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
             }
+            if (property.first == TXN_VERSION) {
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
+            }
         }
 
         return parseRecord(txn, dataSize, properties, record);
@@ -170,7 +174,7 @@ namespace nogdb {
         return Record(properties);
     }
 
-    Record Parser::parseRawDataWithBasicInfo(const std::string className,
+    Record Parser::parseRawDataWithBasicInfo(const std::string &className,
                                              const RecordId& rid,
                                              const KeyValue &keyValue,
                                              const ClassPropertyInfo &classPropertyInfo) {

@@ -85,6 +85,7 @@ extern void test_get_invalid_vertices();
 extern void test_get_vertex_cursor();
 extern void test_get_invalid_vertex_cursor();
 extern void test_update_vertex();
+extern void test_update_vertex_version();
 extern void test_update_invalid_vertex();
 extern void test_delete_vertex_only();
 extern void test_delete_invalid_vertex();

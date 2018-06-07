@@ -41,6 +41,7 @@ namespace nogdb {
         Validate::isTransactionValid(txn);
 
         // set default version
+        record.setBasicInfo(TXN_VERSION, txn.getVersionId());
         record.setBasicInfo(VERSION_PROPERTY, 1ULL);
 
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
@@ -78,8 +79,18 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
 
-        // upgrade version
-        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+        // update version
+        // set correct version
+        /*
+        try {
+            const uint64_t correctVersion = Db::getRecord(txn, recordDescriptor).getVersion();
+            record.setBasicInfo(VERSION_PROPERTY, correctVersion);
+            record.setBasicInfo(TXN_VERSION, txn.getVersionId());
+        } catch (const Error& err) {
+            // do nothing
+        }
+        */
+        record.updateVersion(txn);
 
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
