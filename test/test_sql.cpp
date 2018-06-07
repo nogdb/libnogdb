@@ -557,16 +557,53 @@ void test_sql_select_property() {
 
     // select properties.
     try {
-        SQL::Result result = SQL::execute(txn, "SELECT @recordId, name, age FROM " + to_string(rdesc));
+        SQL::Result result = SQL::execute(txn, "SELECT name, age FROM " + to_string(rdesc));
         assert(result.type() == result.RESULT_SET);
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.get("name").toText() == "Jim Beans");
         assert(res[0].record.get("age").toIntU() == 40U);
-        res[0].record.get("@recordId").convertTo(rdResult);
-        assert(rdResult == rdesc);
     } catch(const Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @recordId.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @recordId FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@recordId").toText() == rid2str(rdesc.rid));
+    } catch (const Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @className.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @className FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@className").toText() == "persons");
+    } catch (const Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @version.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @version FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@version").empty() == false);
+    } catch (const Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -899,6 +936,24 @@ void test_sql_select_vertex_condition() {
         result = SQL::execute(txn, "SELECT FROM v WHERE real=4.5");
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").eq(4.5)));
+    } catch (const Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // Condition special properties.
+    try {
+        auto result = SQL::execute(txn, "SELECT FROM v WHERE @recordId = '" + rid2str(v1.rid) + "'");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@recordId").eq(rid2str(v1.rid))));
+
+        result = SQL::execute(txn, "SELECT FROM v WHERE @className = 'v'");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@className").eq("v")));
+
+        result = SQL::execute(txn, "SELECT FROM v WHERE @version > 0");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@version").gt(0ULL)));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

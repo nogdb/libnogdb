@@ -670,18 +670,11 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
 }
 
 Bytes Context::getProjectionItemProperty(Txn &txn, const Result &input, const string &propName, const PropertyMapType &map) {
-    if (propName == CLASS_NAME_PROPERTY) {
-        string className = Db::getSchema(txn, input.descriptor.rid.first).name;
-        return Bytes(className, nogdb::PropertyType::TEXT);
-    } else if (propName == RECORD_ID_PROPERTY) {
-        return Bytes(input.descriptor, nogdb::PropertyType::BLOB);
+    Bytes b = input.record.get(propName);
+    if (b.empty() || b.type() != nogdb::PropertyType::UNDEFINED) {
+        return b;
     } else {
-        Bytes b = input.record.get(propName);
-        if (b.empty() || b.type() != nogdb::PropertyType::UNDEFINED) {
-            return b;
-        } else {
-            return Bytes(b.getRaw(), b.size(), map.at(propName));
-        }
+        return Bytes(b.getRaw(), b.size(), map.at(propName));
     }
 }
 
@@ -752,7 +745,11 @@ nogdb::ClassType Context::findClassType(Txn &txn, const string &className) {
 nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID) {
     if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
         const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
-        PropertyMapType map{};
+        PropertyMapType map{
+            { CLASS_NAME_PROPERTY, PropertyType::TEXT },
+            { RECORD_ID_PROPERTY, PropertyType::TEXT },
+            { VERSION_PROPERTY, PropertyType::UNSIGNED_BIGINT }
+        };
         for (const auto &p: classProp) {
             map[p.first] = p.second.type;
         }
@@ -770,15 +767,17 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
         ClassId classID = in->descriptor.rid.first;
         if (classID == (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
             mapProp.clear();
-            mapProp[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
-            mapProp[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
+            mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
+            mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
+            mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
             for (const auto &prop: in->record.getAll()) {
                 mapProp[prop.first] = prop.second.type();
             }
         } else if (classID != previousClassID) {
             mapProp.clear();
-            mapProp[RECORD_ID_PROPERTY] = nogdb::PropertyType::TEXT;
-            mapProp[CLASS_NAME_PROPERTY] = nogdb::PropertyType::TEXT;
+            mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
+            mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
+            mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
             const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
             for (const auto &p: classProp) {
                 mapProp[p.first] = p.second.type;
