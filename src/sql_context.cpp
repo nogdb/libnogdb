@@ -702,6 +702,8 @@ Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Proj
             }
             return Bytes(move(results));
         }
+    } else if (resA.empty()) {
+        return Bytes();
     } else {
         throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
     }
@@ -714,8 +716,7 @@ Bytes Context::getProjectionItemArraySelector(Txn &txn, const Result &input, con
         if (index < inputB.size()) {
             return Bytes(ResultSet({inputB[index]}));
         } else {
-            Result emptyResult{RecordDescriptor(CLASS_DESCDRIPTOR_TEMPORARY, 0), Record()};
-            return Bytes(ResultSet{emptyResult});
+            return Bytes();
         }
     } else {
         throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
@@ -731,7 +732,11 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
     if (resA.isResults()) {
         static MultiCondition alwaysTrue = Condition(RECORD_ID_PROPERTY) || !Condition(RECORD_ID_PROPERTY);
         ResultSet result = Context::executeCondition(txn, resA.results(), cond && alwaysTrue);
-        return Bytes(move(result));
+        if (!result.empty()) {
+            return Bytes(move(result));
+        } else {
+            return Bytes();
+        }
     } else {
         throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
     }

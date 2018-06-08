@@ -765,14 +765,14 @@ void test_sql_select_walk() {
         result = SQL::execute(txn, "SELECT expand(in('eA').out('eB')) FROM " + to_string(v3));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].descriptor == v4);
         assert(res[1].descriptor == v4);
 
         result = SQL::execute(txn, "SELECT expand(outE()[p='e13'].inV()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].descriptor == v3);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -803,6 +803,7 @@ void test_sql_select_method_property() {
         auto eB14 = Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
         auto eB24 = Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
 
+        // normal method
         auto result = SQL::execute(txn, "SELECT inV().propV FROM " + to_string(eA13));
         assert(result.type() == result.RESULT_SET);
         auto res = result.get<ResultSet>();
@@ -810,12 +811,14 @@ void test_sql_select_method_property() {
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.getText("inV().propV") == "v3");
 
+        // normal method with array selector
         result = SQL::execute(txn, "SELECT out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.getText("out()[0].propV") == "v4");
 
+        // normal method with array selector and normal property
         result = SQL::execute(txn, "SELECT propV, out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
@@ -823,17 +826,26 @@ void test_sql_select_method_property() {
         assert(res[0].record.getText("propV") == "v1");
         assert(res[0].record.getText("out()[0].propV") == "v4");
 
+        // normal method with out of range array selector
         result = SQL::execute(txn, "SELECT out()[2].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 0);
 
-        result = SQL::execute(txn, "SELECT propV, out()[2].propV FROM " + to_string(v1));
+        // method with condition
+//        result = SQL::execute(txn, "SELECT out()[propV='v3'].propV FROM " + to_string(v1));
+//        assert(result.type() == result.RESULT_SET);
+//        res = result.get<ResultSet>();
+//        assertSize(res, 1);
+
+        // normal property, out of range array select and method with empty result from walk
+        result = SQL::execute(txn, "SELECT propV, out('e')[2].propV, outE()[propE='e1->5'].inV().propV as out_propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.getText("propV") == "v1");
-        assert(res[0].record.get("out()[0].propV").empty());
+        assert(res[0].record.get("out()[2].propV").empty());
+        assert(res[0].record.get("out_propV").empty());
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
