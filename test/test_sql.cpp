@@ -457,18 +457,6 @@ void test_sql_select_vertex() {
         SQL::Result result = SQL::execute(txn, "SELECT * FROM books");
         assert(result.type() == SQL::Result::Type::RESULT_SET);
         ResultSet res = result.get<ResultSet>();
-        assert(res[0].record.get("title").toText() == "Percy Jackson");
-        assert(res[0].record.get("pages").toInt() == 456);
-        assert(res[0].record.get("price").toReal() == 24.5);
-        assert(res[0].record.get("words").empty());
-        assert(res[1].record.get("title").toText() == "Batman VS Superman");
-        assert(res[1].record.get("words").toBigIntU() == 9999999);
-        assert(res[1].record.get("price").toReal() == 36.0);
-        assert(res[1].record.get("pages").empty());
-
-        result = SQL::execute(txn, "SELECT * FROM books");
-        assert(result.type() == SQL::Result::Type::RESULT_SET);
-        res = result.get<ResultSet>();
         assertSize(res, 2);
         assert(res[0].record.get("title").toText() == "Percy Jackson");
         assert(res[0].record.get("pages").toInt() == 456);
@@ -644,15 +632,15 @@ void test_sql_select_count() {
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toBigIntU() == 3);
+        assert(res[0].record.get("count").toBigIntU() == 3);
 
         result = SQL::execute(txn, "SELECT count('name'), count(age) FROM persons");
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count(name)").toBigIntU() == 2);
-        assert(res[0].record.get("count(age)").toBigIntU() == 1);
+        assert(res[0].record.get("count").toBigIntU() == 2);
+        assert(res[0].record.get("count2").toBigIntU() == 1);
 
         // count empty result.
         result = SQL::execute(txn, "SELECT count(*) FROM persons WHERE name='Sam'");
@@ -660,7 +648,7 @@ void test_sql_select_count() {
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toBigIntU() == 0);
+        assert(res[0].record.get("count").toBigIntU() == 0);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -821,22 +809,22 @@ void test_sql_select_method_property() {
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("inV().propV") == "v3");
+        assert(res[0].record.get("inV").toText() == "v3");
 
         // normal method with array selector
         result = SQL::execute(txn, "SELECT out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("out()[0].propV") == "v4");
+        assert(res[0].record.get("out").toText() == "v4");
 
         // normal method with array selector and normal property
         result = SQL::execute(txn, "SELECT propV, out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("propV") == "v1");
-        assert(res[0].record.getText("out()[0].propV") == "v4");
+        assert(res[0].record.get("propV").toText() == "v1");
+        assert(res[0].record.get("out").toText() == "v4");
 
         // normal method with out of range array selector
         result = SQL::execute(txn, "SELECT out()[2].propV FROM " + to_string(v1));
@@ -845,18 +833,19 @@ void test_sql_select_method_property() {
         assertSize(res, 0);
 
         // method with condition
-//        result = SQL::execute(txn, "SELECT out()[propV='v3'].propV FROM " + to_string(v1));
-//        assert(result.type() == result.RESULT_SET);
-//        res = result.get<ResultSet>();
-//        assertSize(res, 1);
+        result = SQL::execute(txn, "SELECT out()[propV='v3'].propV FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].record.get("out").toText() == "v3");
 
         // normal property, out of range array select and method with empty result from walk
         result = SQL::execute(txn, "SELECT propV, out('e')[2].propV, outE()[propE='e1->5'].inV().propV as out_propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("propV") == "v1");
-        assert(res[0].record.get("out()[2].propV").empty());
+        assert(res[0].record.get("propV").toText() == "v1");
+        assert(res[0].record.get("out").empty());
         assert(res[0].record.get("out_propV").empty());
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

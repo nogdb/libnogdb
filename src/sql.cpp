@@ -77,15 +77,13 @@ string nogdb::sql_parser::to_string(const Projection &proj) {
         case ProjectionType::PROPERTY:
             return proj.get<string>();
         case ProjectionType::FUNCTION:
-            return proj.get<Function>().toString();
-        case ProjectionType::METHOD: {
-            const auto &method = proj.get<pair<Projection, Projection>>();
-            return to_string(method.first) + "." + to_string(method.second);
-        }
-        case ProjectionType::ARRAY_SELECTOR: {
-            const auto &arrSel = proj.get<pair<Projection, unsigned long>>();
-            return to_string(arrSel.first) + "[" + ::to_string(arrSel.second) + "]";
-        }
+            return proj.get<Function>().name;
+        case ProjectionType::METHOD:
+            return to_string(proj.get<pair<Projection, Projection>>().first);
+        case ProjectionType::ARRAY_SELECTOR:
+            return to_string(proj.get<pair<Projection, unsigned long>>().first);
+        case ProjectionType::CONDITION:
+            return to_string(proj.get<pair<Projection, Condition>>().first);
         case ProjectionType::ALIAS:
             return proj.get<pair<Projection, string>>().second;
         default:
@@ -213,12 +211,16 @@ Record &Record::set(const string &propName, const Bytes &value) {
 }
 
 Record &Record::set(const string &propName, Bytes &&value) {
-    properties[propName] = move(value);
-    return *this;
-}
-
-Record &Record::set(pair<string, Bytes> &&prop) {
-    properties.insert(prop);
+    if (properties.find(propName) == properties.end()) {
+        properties[propName] = move(value);
+    } else {
+        int num = 2;
+        string name = propName + ::to_string(num);
+        while (properties.find(name) != properties.end()) {
+            name = propName + ::to_string(++num);
+        }
+        properties[name] = move(value);
+    }
     return *this;
 }
 
@@ -432,19 +434,6 @@ bool Function::isExpand() const {
     return this->id == Id::EXPAND;
 }
 
-string Function::toString() const {
-    return (this->name + "(" +
-            (this->args.size() == 0
-             ? ""
-             : accumulate(this->args.cbegin() + 1,
-                          this->args.cend(),
-                          to_string(this->args.front()),
-                          [](const string &acc, const Projection &proj) {
-                              return acc + ", " + to_string(proj);
-                          })
-             ) +
-            ")");
-}
 
 #pragma mark -- private
 

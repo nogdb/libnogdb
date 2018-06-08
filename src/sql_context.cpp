@@ -542,7 +542,7 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
         if (proj.type == ProjectionType::FUNCTION) {
             const Function &func = proj.get<Function>();
             if (func.isAggregateResult()) {
-                tmpRec.set(func.toString(), func.executeAggregateResult(input));
+                tmpRec.set(func.name, func.executeAggregateResult(input));
                 aggregated = true;
             } else if (func.isExpand()) {
                 throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);

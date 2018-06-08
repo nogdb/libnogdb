@@ -119,8 +119,6 @@ namespace nogdb {
 
             Record &set(const string &propName, Bytes &&value);
 
-            Record &set(pair<string, Bytes> &&prop);
-
             const map<string, Bytes> &getAll() const;
 
             Bytes get(const string &propName) const;
@@ -258,8 +256,6 @@ namespace nogdb {
             bool isWalkResult() const;
 
             bool isExpand() const;
-
-            string toString() const;
 
         private:
             static Bytes count(const ResultSet &input, const vector<Projection> &args);
