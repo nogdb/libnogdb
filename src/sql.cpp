@@ -550,10 +550,13 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
     const Projection &arg = args[0];
     for (const Result &in: input) {
         Bytes out = Context::getProjectionItem(txn, in, arg, {});
-        if (!out.isResults()) {
+        if (out.isResults()) {
+            results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
+        } else if (out.empty()) {
+            // no-op.
+        } else {
             throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
         }
-        results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
     }
 
     input = move(results);

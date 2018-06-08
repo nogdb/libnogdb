@@ -781,6 +781,11 @@ void test_sql_select_walk() {
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == v3);
+
+        // expand empty result from condition projection.
+        result = SQL::execute(txn, "SELECT expand(outE()[p='e99']) FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        assertSize(result.get<ResultSet>(), 0);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
