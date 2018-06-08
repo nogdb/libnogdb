@@ -727,6 +727,13 @@ void test_sql_select_walk() {
         assertSize(res, 1);
         assert(res[0].descriptor == v3);
 
+        result = SQL::execute(txn, "SELECT expand(bothV()) FROM " + to_string(eA13));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assertSize(res, 2);
+        assert(res[0].descriptor == v1);
+        assert(res[1].descriptor == v3);
+
         result = SQL::execute(txn, "SELECT expand(out()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();

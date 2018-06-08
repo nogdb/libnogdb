@@ -235,7 +235,7 @@ namespace nogdb {
                 MIN, MAX,
                 IN, IN_E, IN_V,
                 OUT, OUT_E, OUT_V,
-                BOTH, BOTH_E,
+                BOTH, BOTH_E, BOTH_V,
                 EXPAND,
             };
 
@@ -281,6 +281,8 @@ namespace nogdb {
             static Bytes walkBoth(Txn &txn, const Result &input, const vector<Projection> &args);
 
             static Bytes walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+
+            static Bytes walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args);
 
             static Bytes expand(Txn &txn, ResultSet &input, const vector<Projection> &args);
 

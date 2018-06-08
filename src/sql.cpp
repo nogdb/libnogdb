@@ -328,6 +328,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
                             {"OUTV",   Id::OUT_V},
                             {"BOTH",   Id::BOTH},
                             {"BOTHE",  Id::BOTH_E},
+                            {"BOTHV",  Id::BOTH_V},
                             {"EXPAND", Id::EXPAND},
                     },
                     stringcasecmp
@@ -370,6 +371,9 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
             break;
         case Id::BOTH_E:
             func = walkBothEdge;
+            break;
+        case Id::BOTH_V:
+            func = walkBothVertex;
             break;
         default:
             throw Error(SQL_INVALID_FUNCTION_NAME, Error::Type::SQL);
@@ -527,6 +531,14 @@ Bytes Function::walkBoth(Txn &txn, const Result &input, const vector<Projection>
 Bytes Function::walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
     ClassFilter filter = argsToClassFilter(args);
     return Bytes(Vertex::getAllEdge(txn, input.descriptor, filter));
+}
+
+Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
+    if (args.size() == 0) {
+        return Bytes(Edge::getSrcDst(txn, input.descriptor));
+    } else {
+        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+    }
 }
 
 Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &args) {
