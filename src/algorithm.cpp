@@ -39,7 +39,7 @@
 
 namespace nogdb {
 
-    ResultSet Algorithm::breathFirstSearch(const Txn &txn,
+    ResultSet Algorithm::breadthFirstSearch(const Txn &txn,
                                            const RecordDescriptor &recordDescriptor,
                                            const unsigned int minDepth,
                                            const unsigned int maxDepth,
@@ -361,7 +361,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    Algorithm::breathFirstSearchRdesc(const Txn &txn,
+    Algorithm::breadthFirstSearchRdesc(const Txn &txn,
                                       const RecordDescriptor &recordDescriptor,
                                       const unsigned int minDepth,
                                       const unsigned int maxDepth,
