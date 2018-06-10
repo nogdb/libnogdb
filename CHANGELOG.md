@@ -18,6 +18,9 @@
   * Fixing issue [#11](https://github.com/nogdb/nogdb/issues/11). A SQL syntax error found when using `TRAVERSE` clause inside `SELECT`.
   * Fixing issue [#12](https://github.com/nogdb/nogdb/issues/12). An exception `SQL_INVALID_PROJECTION` thrown after getting out-of-bound index in SQL syntax.
   * Fixing several bugs in database indexing retrieval operations. Some issues are able to be found and still unresolved. Better to avoid using database indexing feature in this version.
+  * Fixing issue [#18](https://github.com/nogdb/nogdb/issues/18). SQL parser can't parse escape quote (\' or \").
+  * Fixing issue [#20](https://github.com/nogdb/nogdb/issues/20). An exception `SQL_SYNTAX_ERROR` thrown after getting `<condition> <operator> <multi-condition>` on SQL clause.
+  * Fixing issue [#22](https://github.com/nogdb/nogdb/issues/22). Using `SKIP` with nested query may cause segmentation fault.
   
 ## v0.10.0-beta [2018-03-24]
 * General changes:

@@ -162,6 +162,8 @@ namespace nogdb {
             ResultSet(nogdb::ResultSetCursor &res, int skip, int limit);
 
             string descriptorsToString() const;
+
+            ResultSet& limit(int skip, int limit);
         };
 
         class Condition : public nogdb::Condition {
@@ -218,6 +220,7 @@ namespace nogdb {
             FUNCTION,   // sql_parser::Function
             METHOD,     // std::pair<sql_parser::Projection, sql_parser::Projection>
             ARRAY_SELECTOR, // std::pair<sql_parser::Projection, unsigned long>
+            CONDITION,  // std::pair<sql_parser::Projection, nogdb::Condition>
             ALIAS,      // std::pair<sql_parser::Projection, string>
         };
         typedef Holder<TargetType> Target;  /* A classname, set of rid or nested select statement */
@@ -246,11 +249,11 @@ namespace nogdb {
 
             Bytes execute(Txn &txn, const Result &input) const;
 
-            Bytes executeGroupResult(const ResultSet &input) const;
+            Bytes executeAggregateResult(const ResultSet &input) const;
 
             Bytes executeExpand(Txn &txn, ResultSet &input) const;
 
-            bool isGroupResult() const;
+            bool isAggregateResult() const;
 
             bool isWalkResult() const;
 
@@ -334,9 +337,7 @@ namespace nogdb {
             string strategy;
         };
 
-        using std::to_string;
-
-        string to_string(const RecordDescriptor &r);
+        string to_string(const Projection &proj);
     }
 
     using ::operator<;
