@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <vector>
 #include <queue>
+#include <stack>
 
 #include "blob.hpp"
 #include "keyval.hpp"
@@ -61,11 +62,16 @@ namespace nogdb {
                 auto classPropertyInfo = ClassPropertyInfo{};
                 auto classDBHandler = Datastore::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
-                auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
-                queue.push(std::make_pair(0u, recordDescriptor.rid));
+                auto queue = std::queue<RecordId> {};
+
+                unsigned int currentLevel = 0u;
+                RecordId lastRecordId{};
+
+                queue.push(recordDescriptor.rid);
+
                 try {
-                    auto addUniqueVertex = [&](const RecordId &vertex, unsigned int currentLevel,
-                                               const PathFilter &pathFilter) {
+                    auto addUniqueVertex = [&](const RecordId &vertex, const PathFilter &pathFilter) {
+
                         if (visited.find(vertex) != visited.cend()) return;
 
                         auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
@@ -78,33 +84,42 @@ namespace nogdb {
                             result.push_back(tmpResult);
                         }
 
+                        if (lastRecordId == RecordId{}) {
+                            lastRecordId = vertex;
+                        }
+
                         visited.insert(vertex);
 
                         if ((currentLevel + 1 < maxDepth) && (!tmpResult.record.empty())) {
-                            queue.push(std::make_pair(currentLevel + 1, vertex));
+                            queue.push(vertex);
                         }
                     };
 
                     if (minDepth == 0) {
                         auto record = retrieveRecord(txn, recordDescriptor);
+                        visited.insert(recordDescriptor.rid);
                         result.emplace_back(Result{recordDescriptor, record});
                     }
 
                     while (!queue.empty()) {
-                        auto element = queue.front();
+                        auto vertexId = queue.front();
                         queue.pop();
-                        auto currentLevel = element.first;
-                        auto vertexId = element.second;
+
+                        if (vertexId == lastRecordId) {
+                            ++currentLevel;
+                            lastRecordId = RecordId{};
+                        }
+
                         const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor, classPropertyInfo,
-                                                                            classDBHandler, edgeFunc, vertexId, pathFilter, edgeClassIds);
+                                                                            classDBHandler, edgeFunc, vertexId,
+                                                                            pathFilter, edgeClassIds);
+
                         for (const auto &edge: edgeRecordDescriptors) {
                             if (vertexFunc != nullptr) {
-                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid),
-                                                currentLevel, pathFilter);
+                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid), pathFilter);
                             } else {
                                 auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
-                                addUniqueVertex(vertices.first, currentLevel, pathFilter);
-                                addUniqueVertex(vertices.second, currentLevel, pathFilter);
+                                addUniqueVertex(vertices.first != vertexId ? vertices.first : vertices.second, pathFilter);
                             }
                         }
                     }
@@ -142,54 +157,63 @@ namespace nogdb {
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
                 auto classDBHandler = Datastore::DBHandler{};
-                auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
-                auto usedEdges = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 try {
-                    std::function<void(const RecordId &, unsigned int, const PathFilter &)>
-                            addUniqueVertex = [&](const RecordId &vertexId, unsigned int currentLevel,
-                                                  const PathFilter &pathFilter) -> void {
 
-                        if (visited.find(vertexId) != visited.cend()) return;
+                    auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
+                    std::vector<std::vector<RecordId>> stk {{recordDescriptor.rid}};
 
-                        auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo, classDBHandler,
-                                vertexId, currentLevel ? pathFilter : PathFilter(), ClassType::VERTEX);
+                    while (!stk.empty()) {
 
-                        if ((currentLevel >= minDepth) && (!tmpResult.record.empty())) {
-                            tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel);
-                            tmpResult.descriptor.depth = currentLevel;
-                            result.push_back(tmpResult);
-                        }
+                        const RecordId vertex = stk.back().back();
+                        stk.back().pop_back();
 
-                        visited.insert(vertexId);
+                        if (visited.find(vertex) == visited.cend()) {
+                            visited.insert(vertex);
 
-                        if (currentLevel >= maxDepth || tmpResult.record.empty()) return;
+                            const unsigned int currentLevel = stk.size() - 1u;
+                            auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo, classDBHandler,
+                                                      vertex, currentLevel ? pathFilter : PathFilter(),
+                                                      ClassType::VERTEX);
 
-                        const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor, classPropertyInfo,
-                                                                            classDBHandler, edgeFunc, vertexId, pathFilter, edgeClassIds);
+                            if ((currentLevel >= minDepth) && (!tmpResult.record.empty())) {
+                                tmpResult.record.setBasicInfo(DEPTH_PROPERTY, currentLevel);
+                                tmpResult.descriptor.depth = currentLevel;
+                                result.push_back(tmpResult);
+                            }
 
-                        for (const auto &edge: edgeRecordDescriptors) {
-                            if (usedEdges.find(edge.rid) != usedEdges.cend()) continue;
+                            if (currentLevel < maxDepth) {
+                                stk.emplace_back(decltype(stk)::value_type());
 
-                            usedEdges.insert(edge.rid);
+                                const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor,
+                                                                                    classPropertyInfo,
+                                                                                    classDBHandler, edgeFunc, vertex,
+                                                                                    pathFilter,
+                                                                                    edgeClassIds);
 
-                            if (vertexFunc != nullptr) {
-                                auto nextVertex = ((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid);
-                                if (nextVertex != vertexId) {
-                                    addUniqueVertex(nextVertex, currentLevel + 1, pathFilter);
-                                }
-                            } else {
-                                auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
-                                if (vertices.first != vertexId) {
-                                    addUniqueVertex(vertices.first, currentLevel + 1, pathFilter);
-                                }
-                                if (vertices.second != vertexId) {
-                                    addUniqueVertex(vertices.second, currentLevel + 1, pathFilter);
+                                for (auto it = edgeRecordDescriptors.rbegin();
+                                     it != edgeRecordDescriptors.rend(); ++it) {
+                                    const RecordDescriptor &edge = *it;
+
+                                    RecordId nextVertex;
+                                    if (vertexFunc != nullptr) {
+                                        nextVertex = ((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid);
+                                    } else {
+                                        auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase),
+                                                                                               edge.rid);
+                                        nextVertex = (vertices.first != vertex ? vertices.first : vertices.second);
+                                    }
+
+                                    if (visited.find(nextVertex) != visited.cend()) continue;
+
+                                    stk.back().emplace_back(std::move(nextVertex));
                                 }
                             }
                         }
-                    };
 
-                    addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
+                        while (!stk.empty() && stk.back().empty()) {
+                            stk.pop_back();
+                        }
+                    }
                 } catch (Graph::ErrorType &err) {
                     if (err == GRAPH_NOEXST_VERTEX) {
                         throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
