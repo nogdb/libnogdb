@@ -4538,3 +4538,75 @@ void test_shortest_path_cursor_with_condition() {
 
     txn.commit();
 }
+
+void test_shortest_path_dijkstra() {
+
+    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::RecordDescriptor a, b, c, d, e, f, z;
+    try {
+        auto res = nogdb::Vertex::getCursor(txn, "country");
+        while (res.next()) {
+            switch (res->record.get("name").toText().at(0)) {
+                case 'A':
+                    a = res->descriptor;
+                    break;
+                case 'B':
+                    b = res->descriptor;
+                    break;
+                case 'C':
+                    c = res->descriptor;
+                    break;
+                case 'D':
+                    d = res->descriptor;
+                    break;
+                case 'E':
+                    e = res->descriptor;
+                    break;
+                case 'F':
+                    f = res->descriptor;
+                    break;
+                case 'Z':
+                    z = res->descriptor;
+                    break;
+            }
+        }
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+            return (record.get("population").toBigIntU() >= 1000ULL);
+        }).setEdge([](const nogdb::Record &record) {
+            return (record.get("distance").toIntU() <= 120U);
+        });
+
+        // normal traversal
+        auto costFunction = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
+            return 1;
+        };
+
+        auto res = nogdb::Traverse::shortestPath(txn, a, f, costFunction, pathFilter);
+
+        assert(res.first == 4);
+        assertSize(res.second, 4);
+
+        // traverse by distance
+        auto costFunctionDistance = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) -> int {
+            const nogdb::Record &record = nogdb::Db::getRecord(txn, descriptor);
+            return record.getIntU("distance");
+        };
+
+        auto res2 = nogdb::Traverse::shortestPath(txn, a, f, costFunctionDistance, pathFilter);
+
+        assert(res2.first == 350);
+        assertSize(res2.second, 4);
+
+        txn.commit();
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+}

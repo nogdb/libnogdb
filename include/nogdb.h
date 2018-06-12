@@ -34,6 +34,7 @@
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
 #include "nogdb_sql.h"
+#include "../src/algorithm.hpp"
 
 namespace nogdb {
 
@@ -342,6 +343,21 @@ namespace nogdb {
                                       const RecordDescriptor &dstVertexRecordDescriptor, const PathFilter &pathFilter,
                                       const ClassFilter &classFilter = ClassFilter{});
 
+        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        static std::pair<T, ResultSet> shortestPath(const Txn &txn,
+                                         const RecordDescriptor &srcVertexRecordDescriptor,
+                                         const RecordDescriptor &dstVertexRecordDescriptor,
+                                         const CostFuncType &costFunction,
+                                         const PathFilter &pathFilter,
+                                         const ClassFilter &classFilter = ClassFilter{}) {
+            Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+            return Algorithm::dijkstraShortestPath<CostFuncType, T, CompareT>(
+                    txn, srcVertexRecordDescriptor,
+                    dstVertexRecordDescriptor, costFunction, edgeClassIds, pathFilter);
+        }
+
         static ResultSetCursor
         inEdgeBfsCursor(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                         unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
@@ -405,6 +421,24 @@ namespace nogdb {
                                                   const PathFilter &pathFilter,
                                                   const ClassFilter &classFilter = ClassFilter{});
 
+        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        static std::pair<T, ResultSetCursor> shortestPathCursor(Txn &txn,
+                                                                const RecordDescriptor &srcVertexRecordDescriptor,
+                                                                const RecordDescriptor &dstVertexRecordDescriptor,
+                                                                const CostFuncType &costFunction,
+                                                                const PathFilter &pathFilter,
+                                                                const ClassFilter &classFilter = ClassFilter{}) {
+            Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+            auto result = ResultSetCursor{txn};
+            auto metadata = Algorithm::dijkstraShortestPathRdesc<CostFuncType, T, CompareT>(
+                    txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
+                    costFunction, edgeClassIds, pathFilter);
+
+            result.metadata.insert(result.metadata.end(), metadata.second.cbegin(), metadata.second.cend());
+            return {metadata.first, result};
+        }
     };
 
 }

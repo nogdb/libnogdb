@@ -1537,7 +1537,7 @@ void test_sql_traverse() {
             transform(traverseResult.cbegin(),
                       traverseResult.cend(),
                       traverseRid.begin(),
-                      [](const Result &r) { return rid2str(r.descriptor.rid); });
+                      [](const Result &r) { return nogdb::rid2str(r.descriptor.rid); });
             auto selectResult = Vertex::get(txn, "V", Condition("@recordId").in(traverseRid) && Condition("p").eq("v22"));
             assert(result.get<ResultSet>() == selectResult);
         }
