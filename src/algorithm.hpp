@@ -70,7 +70,9 @@ namespace nogdb {
                                          const std::vector<ClassId> &edgeClassIds,
                                          const PathFilter &pathFilter);
 
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        template<typename CostFuncType,
+                typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type,
+                typename CompareT = std::greater<T>>
         static std::pair<T, ResultSet> dijkstraShortestPath(const Txn &txn,
                                               const RecordDescriptor &srcVertexRecordDescriptor,
                                               const RecordDescriptor &dstVertexRecordDescriptor,
@@ -83,7 +85,7 @@ namespace nogdb {
                                                                                edgeClassIds, pathFilter);
             const auto &descriptors = result.second;
             ResultSet resultSet (descriptors.size());
-            std::transform(descriptors.begin(), descriptors.end(), resultSet.begin(), [&](const RecordDescriptor &descriptor) {
+            std::transform(descriptors.begin(), descriptors.end(), resultSet.begin(), [&txn](const RecordDescriptor &descriptor) {
                 return Result(descriptor, retrieveRecord(txn, descriptor.rid));
             });
 
@@ -119,7 +121,9 @@ namespace nogdb {
                              const std::vector<ClassId> &edgeClassIds,
                              const PathFilter &pathFilter);
 
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        template<typename CostFuncType,
+                typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type,
+                typename CompareT = std::greater<T>>
         static std::pair<T, std::vector<RecordDescriptor>>
         dijkstraShortestPathRdesc(const Txn &txn,
                                   const RecordDescriptor &srcVertexRecordDescriptor,

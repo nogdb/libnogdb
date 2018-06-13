@@ -65,7 +65,7 @@ namespace nogdb {
                 auto queue = std::queue<RecordId> {};
 
                 unsigned int currentLevel = 0u;
-                RecordId lastRecordId{};
+                RecordId firstRecordId{recordDescriptor.rid};
 
                 queue.push(recordDescriptor.rid);
 
@@ -84,8 +84,8 @@ namespace nogdb {
                             result.push_back(tmpResult);
                         }
 
-                        if (lastRecordId == RecordId{}) {
-                            lastRecordId = vertex;
+                        if (firstRecordId == RecordId{}) {
+                            firstRecordId = vertex;
                         }
 
                         visited.insert(vertex);
@@ -105,9 +105,9 @@ namespace nogdb {
                         auto vertexId = queue.front();
                         queue.pop();
 
-                        if (vertexId == lastRecordId) {
-                            ++currentLevel;
-                            lastRecordId = RecordId{};
+                        if (vertexId == firstRecordId) {
+                            currentLevel += (vertexId != recordDescriptor.rid);
+                            firstRecordId = RecordId{};
                         }
 
                         const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor, classPropertyInfo,
@@ -331,11 +331,15 @@ namespace nogdb {
                 auto classPropertyInfo = ClassPropertyInfo{};
                 auto classDBHandler = Datastore::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
-                auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
-                queue.push(std::make_pair(0u, recordDescriptor.rid));
+                auto queue = std::queue<RecordId> {};
+
+                unsigned int currentLevel = 0u;
+                RecordId firstRecordId{recordDescriptor.rid};
+
+                queue.push(recordDescriptor.rid);
+
                 try {
-                    auto addUniqueVertex = [&](const RecordId &vertex, unsigned int currentLevel,
-                                               const PathFilter &pathFilter) {
+                    auto addUniqueVertex = [&](const RecordId &vertex, const PathFilter &pathFilter) {
                         if (visited.find(vertex) != visited.cend()) return;
                         auto tmpRdesc = pathFilter.isEnable() ?
                                         retrieveRdesc(txn, classDescriptor, classPropertyInfo,
@@ -346,30 +350,39 @@ namespace nogdb {
                             tmpRdesc.depth = currentLevel + 1;
                             result.emplace_back(tmpRdesc);
                         }
+
                         visited.insert(vertex);
+
+                        if (firstRecordId == RecordId{}) {
+                            firstRecordId = vertex;
+                        }
+
                         if ((currentLevel + 1 < maxDepth) && (tmpRdesc != RecordDescriptor{})) {
-                            queue.push(std::make_pair(currentLevel + 1, vertex));
+                            queue.push(vertex);
                         }
                     };
 
                     if (minDepth == 0) {
                         result.emplace_back(recordDescriptor);
                     }
+
                     while (!queue.empty()) {
-                        auto element = queue.front();
+                        auto vertexId = queue.front();
                         queue.pop();
-                        auto currentLevel = element.first;
-                        auto vertexId = element.second;
+
+                        if (vertexId == firstRecordId) {
+                            currentLevel += (vertexId != recordDescriptor.rid);
+                            firstRecordId = RecordId{};
+                        }
+
                         const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor, classPropertyInfo,
                                                                             classDBHandler, edgeFunc, vertexId, pathFilter, edgeClassIds);
                         for (const auto &edge: edgeRecordDescriptors) {
                             if (vertexFunc != nullptr) {
-                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid),
-                                                currentLevel, pathFilter);
+                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid), pathFilter);
                             } else {
                                 auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
-                                addUniqueVertex(vertices.first, currentLevel, pathFilter);
-                                addUniqueVertex(vertices.second, currentLevel, pathFilter);
+                                addUniqueVertex(vertices.first != vertexId ? vertices.first : vertices.second, pathFilter);
                             }
                         }
                     }
