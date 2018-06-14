@@ -4609,10 +4609,11 @@ void test_shortest_path_dijkstra() {
         };
 
         auto res3 = nogdb::Traverse::shortestPath(txn, a, c, costFunctionDistanceOffset, nogdb::PathFilter());
-
-        std::cerr << res3.first << std::endl;
         assert(res3.first == 170);
         assertSize(res3.second, 3);
+
+        auto res4 = nogdb::Traverse::shortestPath(txn, a, z, costFunction, nogdb::PathFilter());
+        assertSize(res4.second, 0);
 
         txn.commit();
     } catch (const nogdb::Error &ex) {

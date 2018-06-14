@@ -204,6 +204,10 @@ namespace nogdb {
                     }
                 }
 
+                if (distance.find(dstId) == distance.cend()) {
+                    return {T(), {}};
+                }
+
                 std::vector<RecordDescriptor> result {dstId};
                 for (RecordId vertex = dstId; vertex != srcId;) {
                     vertex = txn.txnCtx.dbRelation->getVertexSrc(*(txn.txnBase), parent.at(vertex).rid);
