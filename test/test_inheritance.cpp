@@ -222,21 +222,21 @@ void test_create_invalid_class_extend() {
         nogdb::Class::createExtend(txn, "senior", "backend");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Class::createExtend(txn, "", "backends");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_CLASSNAME, "CTX_INVALID_CLASSNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
     }
 
     try {
         nogdb::Class::createExtend(txn, "designers", "backends");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_CLASS, "CTX_DUPLICATE_CLASS");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
     }
 
     try {
@@ -244,7 +244,7 @@ void test_create_invalid_class_extend() {
         nogdb::Property::add(txn, "something1", "", nogdb::PropertyType::INTEGER);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPERTYNAME, "CTX_INVALID_PROPERTYNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
     }
 
     try {
@@ -252,7 +252,7 @@ void test_create_invalid_class_extend() {
         nogdb::Property::add(txn, "something2", "prop1", nogdb::PropertyType::UNDEFINED);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPTYPE, "CTX_INVALID_PROPTYPE");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE, "NOGDB_CTX_INVALID_PROPTYPE");
     }
 
     try {
@@ -262,7 +262,7 @@ void test_create_invalid_class_extend() {
         nogdb::Property::add(txn, "something3", "prop3", nogdb::PropertyType::TEXT);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_PROPERTY, "CTX_DUPLICATE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
     }
 }
 
@@ -352,14 +352,14 @@ void test_add_invalid_property_extend() {
         nogdb::Property::add(txn, "designers", "name", nogdb::PropertyType::TEXT);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_PROPERTY, "CTX_DUPLICATE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
     }
 
     try {
         nogdb::Property::add(txn, "employees", "IT_skills", nogdb::PropertyType::TEXT);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_OVERRIDE_PROPERTY, "CTX_OVERRIDE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_OVERRIDE_PROPERTY, "NOGDB_CTX_OVERRIDE_PROPERTY");
     }
 }
 
@@ -393,14 +393,14 @@ void test_delete_invalid_property_extend() {
         nogdb::Property::remove(txn, "systems", "name");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::remove(txn, "employees", "devops_skills");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 }
 
@@ -436,14 +436,14 @@ void test_alter_invalid_property_extend() {
         nogdb::Property::alter(txn, "backends", "cpp_skills", "IT_skills");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_OVERRIDE_PROPERTY, "CTX_OVERRIDE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_OVERRIDE_PROPERTY, "NOGDB_CTX_OVERRIDE_PROPERTY");
     }
 
     try {
         nogdb::Property::alter(txn, "backends", "cpp_skills", "age");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_PROPERTY, "CTX_DUPLICATE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
     }
 }
 
@@ -468,7 +468,7 @@ void test_create_invalid_vertex_edge_extend() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -477,7 +477,7 @@ void test_create_invalid_vertex_edge_extend() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 }
 

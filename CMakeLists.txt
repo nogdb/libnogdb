@@ -61,6 +61,7 @@ add_library(nogdb
     ${nogdb_PUBLIC}
     $<TARGET_OBJECTS:lmdb_OBJ>
     ${sql_parser_CPP}
+    src/lmdb_interface.cpp
 )
 add_dependencies(nogdb lmdb_OBJ sql_parser.cpp)
 target_include_directories(nogdb

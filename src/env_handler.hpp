@@ -22,7 +22,7 @@
 #ifndef __ENV_HANDLER_HPP_INCLUDED_
 #define __ENV_HANDLER_HPP_INCLUDED_
 
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 
 namespace nogdb {
 
@@ -37,8 +37,8 @@ namespace nogdb {
                 unsigned int maxdb,
                 unsigned long maxdbSize,
                 unsigned int maxdbReaders,
-                Datastore::DSFlag flag,
-                Datastore::Permission perm
+                LMDBInterface::LMDBFlag flag,
+                LMDBInterface::LMDBMode perm
         );
 
     private:
@@ -49,11 +49,11 @@ namespace nogdb {
                 unsigned int maxdb,
                 unsigned long maxdbSize,
                 unsigned int maxdbReaders,
-                Datastore::DSFlag flag,
-                Datastore::Permission perm
+                LMDBInterface::LMDBFlag flag,
+                LMDBInterface::LMDBMode perm
         );
 
-        Datastore::EnvHandler *env;
+        LMDBInterface::EnvHandler *env;
         unsigned int refCount;
         int lockFileDescriptor;
     };
@@ -84,7 +84,7 @@ namespace nogdb {
 
         EnvHandlerPtr &operator=(const EnvHandlerPtr &p);
 
-        Datastore::EnvHandler *get() const {
+        LMDBInterface::EnvHandler *get() const {
             return pointer_->env;
         }
 

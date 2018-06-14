@@ -90,7 +90,7 @@ void test_expression() {
         (tmp && c10).execute(r, propTypes);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_UNKNOWN_ERR, "CTX_UNKOWN_ERR");
+        REQUIRE(ex, NOGDB_CTX_UNKNOWN_ERR, "NOGDB_CTX_UNKNOWN_ERR");
     }
 
     try {
@@ -98,7 +98,7 @@ void test_expression() {
         (tmp && c10).execute(r, propTypes);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_COMPARATOR, "CTX_INVALID_COMPARATOR");
+        REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
     }
 }
 

@@ -128,35 +128,35 @@ void test_alter_invalid_class() {
         nogdb::Class::alter(txn, "files", "");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_CLASSNAME, "CTX_INVALID_CLASSNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
     }
 
     try {
         nogdb::Class::alter(txn, "", "file");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Class::alter(txn, "file", "filess");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Class::alter(txn, "files", "files");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_CLASS, "CTX_DUPLICATE_CLASS");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
     }
 
     try {
         nogdb::Class::alter(txn, "files", "folders");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_CLASS, "CTX_DUPLICATE_CLASS");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
     }
     txn.commit();
 
@@ -186,19 +186,19 @@ void test_create_invalid_class() {
         nogdb::Class::create(txn, "", nogdb::ClassType::VERTEX);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_CLASSNAME, "CTX_INVALID_CLASSNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
     }
     try {
         nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_CLASS, "CTX_DUPLICATE_CLASS");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
     }
     try {
         nogdb::Class::create(txn, "files", nogdb::ClassType::UNDEFINED);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_CLASSTYPE, "CTX_INVALID_CLASSTYPE");
+        REQUIRE(ex, NOGDB_CTX_INVALID_CLASSTYPE, "NOGDB_CTX_INVALID_CLASSTYPE");
     }
     txn.commit();
 
@@ -221,7 +221,7 @@ void test_create_invalid_class_with_properties() {
         nogdb::Property::add(txn, "files2", "prop3", nogdb::PropertyType::UNDEFINED);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPTYPE, "CTX_INVALID_PROPTYPE");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE, "NOGDB_CTX_INVALID_PROPTYPE");
     }
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -230,7 +230,7 @@ void test_create_invalid_class_with_properties() {
         nogdb::Property::add(txn, "files2", "", nogdb::PropertyType::INTEGER);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPERTYNAME, "CTX_INVALID_PROPERTYNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
     }
 }
 
@@ -240,26 +240,26 @@ void test_drop_invalid_class() {
         nogdb::Class::drop(txn, "");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Class::drop(txn, "file");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
-        assert(ex.code() == CTX_NOEXST_CLASS);
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+        assert(ex.code() == NOGDB_CTX_NOEXST_CLASS);
     }
     try {
         nogdb::Class::drop(txn, "files");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Class::drop(txn, "files2");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 }
 
@@ -329,31 +329,31 @@ void test_add_invalid_property() {
         nogdb::Property::add(txn, "files", "", nogdb::PropertyType::INTEGER);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPERTYNAME, "CTX_INVALID_PROPERTYNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
     }
     try {
         nogdb::Property::add(txn, "", "extension", nogdb::PropertyType::INTEGER);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Property::add(txn, "file", "extension", nogdb::PropertyType::TEXT);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Property::add(txn, "links", "type", nogdb::PropertyType::UNDEFINED);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPTYPE, "CTX_INVALID_PROPTYPE");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE, "NOGDB_CTX_INVALID_PROPTYPE");
     }
     try {
         nogdb::Property::add(txn, "files", "filename", nogdb::PropertyType::TEXT);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_PROPERTY, "CTX_DUPLICATE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
     }
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -378,20 +378,20 @@ void test_delete_invalid_property() {
         nogdb::Property::remove(txn, "files", "ctimes");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
-        assert(ex.code() == CTX_NOEXST_PROPERTY);
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+        assert(ex.code() == NOGDB_CTX_NOEXST_PROPERTY);
     }
     try {
         nogdb::Property::remove(txn, "files", "");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         nogdb::Property::remove(txn, "file", "ctime");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Property::remove(txn, "files", "ctime");
@@ -403,7 +403,7 @@ void test_delete_invalid_property() {
         nogdb::Property::remove(txn, "files", "ctime");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     txn.commit();
 
@@ -479,36 +479,36 @@ void test_alter_invalid_property() {
         nogdb::Property::alter(txn, "link", "type", "");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPERTYNAME, "CTX_INVALID_PROPERTYNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
     }
     try {
         nogdb::Property::alter(txn, "", "type", "types");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Property::alter(txn, "links", "", "types");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         nogdb::Property::alter(txn, "link", "type", "comments");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         nogdb::Property::alter(txn, "links", "types", "comments");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         nogdb::Property::alter(txn, "links", "type", "expire");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_PROPERTY, "CTX_DUPLICATE_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
     }
     txn.commit();
 

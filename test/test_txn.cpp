@@ -1844,7 +1844,7 @@ void test_txn_invalid_operations() {
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, TXN_COMPLETED, "TXN_COMPLETED");
+        REQUIRE(ex, NOGDB_TXN_COMPLETED, "NOGDB_TXN_COMPLETED");
     }
 
     try {
@@ -1854,7 +1854,7 @@ void test_txn_invalid_operations() {
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, TXN_COMPLETED, "TXN_COMPLETED");
+        REQUIRE(ex, NOGDB_TXN_COMPLETED, "NOGDB_TXN_COMPLETED");
     }
 
     try {
@@ -1882,7 +1882,7 @@ void test_txn_invalid_operations() {
         nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh Samui"));
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, TXN_INVALID_MODE, "TXN_INVALID_MODE");
+        REQUIRE(ex, NOGDB_TXN_INVALID_MODE, "NOGDB_TXN_INVALID_MODE");
     }
 
     destroy_edge_bridge();

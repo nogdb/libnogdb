@@ -60,24 +60,24 @@ namespace nogdb {
                     case PropertyType::UNSIGNED_SMALLINT:
                     case PropertyType::UNSIGNED_INTEGER:
                     case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
+                        auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler,
                                                                      getIndexingName(indexId),
                                                                      true, isUnique);
                         if (type == PropertyType::UNSIGNED_TINYINT) {
                             //NOTE: convert uint8_t to uint64_t for being compatible with all compilers
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                            LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
                                                  static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord,
                                                  false, !isUnique);
                         } else if (type == PropertyType::UNSIGNED_SMALLINT) {
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                            LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
                                                  static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord,
                                                  false, !isUnique);
                         } else if (type == PropertyType::UNSIGNED_INTEGER) {
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler,
+                            LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
                                                  static_cast<uint64_t>(bytesValue.toIntU()), indexRecord,
                                                  false, !isUnique);
                         } else {
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toBigIntU(), indexRecord,
+                            LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toBigIntU(), indexRecord,
                                                  false, !isUnique);
                         }
                         break;
@@ -88,56 +88,56 @@ namespace nogdb {
                     case PropertyType::BIGINT:
                     case PropertyType::REAL: {
                         auto dataIndexDBHandlerPositive =
-                                Datastore::openDbi(dsTxnHandler,
+                                LMDBInterface::openDbi(dsTxnHandler,
                                                    getIndexingName(indexId, true),
                                                    true, isUnique);
                         auto dataIndexDBHandlerNegative =
-                                Datastore::openDbi(dsTxnHandler,
+                                LMDBInterface::openDbi(dsTxnHandler,
                                                    getIndexingName(indexId, false),
                                                    true, isUnique);
                         if (type == PropertyType::TINYINT) {
                             //NOTE: convert int8_t to int64_t for being compatible with all compilers
                             auto value = bytesValue.toTinyInt();
-                            Datastore::putRecord(dsTxnHandler,
+                            LMDBInterface::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  static_cast<int64_t>(value), indexRecord, false, !isUnique);
                         } else if (type == PropertyType::SMALLINT) {
                             auto value = bytesValue.toSmallInt();
-                            Datastore::putRecord(dsTxnHandler,
+                            LMDBInterface::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  static_cast<int64_t>(value), indexRecord, false, !isUnique);
                         } else if (type == PropertyType::INTEGER) {
                             auto value = bytesValue.toInt();
-                            Datastore::putRecord(dsTxnHandler,
+                            LMDBInterface::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  static_cast<int64_t>(value), indexRecord, false, !isUnique);
                         } else if (type == PropertyType::REAL) {
                             auto value = bytesValue.toReal();
-                            Datastore::putRecord(dsTxnHandler,
+                            LMDBInterface::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  value, indexRecord, false, !isUnique);
                         } else {
                             auto value = bytesValue.toBigInt();
-                            Datastore::putRecord(dsTxnHandler,
+                            LMDBInterface::putRecord(dsTxnHandler,
                                                  (value >= 0) ? dataIndexDBHandlerPositive : dataIndexDBHandlerNegative,
                                                  value, indexRecord, false, !isUnique);
                         }
                         break;
                     }
                     case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                        auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
                         auto value = bytesValue.toText();
                         if (!value.empty()) {
-                            Datastore::putRecord(dsTxnHandler, dataIndexDBHandler, value, indexRecord, false, !isUnique);
+                            LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler, value, indexRecord, false, !isUnique);
                         }
                         break;
                     }
                     default:
                         break;
                 }
-            } catch (Datastore::ErrorType &err) {
+            } catch (LMDBInterface::ErrorType &err) {
                 if (err == MDB_KEYEXIST) {
-                    throw Error(CTX_UNIQUE_CONSTRAINT, Error::Type::CONTEXT);
+                    throw Error(NOGDB_CTX_UNIQUE_CONSTRAINT, Error::Type::CONTEXT);
                 } else {
                     throw Error(err, Error::Type::DATASTORE);
                 }
@@ -154,8 +154,8 @@ namespace nogdb {
                 case PropertyType::UNSIGNED_SMALLINT:
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                    auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                     if (type == PropertyType::UNSIGNED_TINYINT) {
                         deleteIndexCursor(cursorHandler.get(), positionId, static_cast<uint64_t>(bytesValue.toTinyIntU()));
                     } else if (type == PropertyType::UNSIGNED_SMALLINT) {
@@ -172,10 +172,10 @@ namespace nogdb {
                 case PropertyType::INTEGER:
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                    auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
-                    auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                    auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                    auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                    auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                     if (type == PropertyType::TINYINT) {
                         auto value = static_cast<int64_t>(bytesValue.toTinyInt());
                         (value < 0) ? deleteIndexCursor(cursorHandlerNegative.get(), positionId, value)
@@ -200,8 +200,8 @@ namespace nogdb {
                     break;
                 }
                 case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                    auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                    auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                     auto value = bytesValue.toText();
                     if (!value.empty()) {
                         deleteIndexCursor(cursorHandler.get(), positionId, value);
@@ -444,8 +444,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return backwardSearchIndex(cursorHandler.get(), classId, static_cast<uint64_t>(value.toTinyIntU()), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
@@ -467,8 +467,8 @@ namespace nogdb {
             case PropertyType::REAL:
                 return getLess(txn, classId, indexId, isUnique, value.toReal(), true);
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true, true);
             }
             default:
@@ -488,8 +488,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return backwardSearchIndex(cursorHandler.get(), classId, static_cast<uint64_t>(value.toTinyIntU()), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
@@ -511,8 +511,8 @@ namespace nogdb {
             case PropertyType::REAL:
                 return getLess(txn, classId, indexId, isUnique, value.toReal());
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return backwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
             }
             default:
@@ -532,8 +532,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return exactMatchIndex(cursorHandler.get(), classId, static_cast<uint64_t>(value.toTinyIntU()));
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
@@ -555,8 +555,8 @@ namespace nogdb {
             case PropertyType::REAL:
                 return getEqual(txn, classId, indexId, isUnique, value.toReal());
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return exactMatchIndex(cursorHandler.get(), classId, value.toText());
             }
             default:
@@ -577,8 +577,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return forwardSearchIndex(cursorHandler.get(), classId, static_cast<uint64_t>(value.toTinyIntU()), true, true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
@@ -600,8 +600,8 @@ namespace nogdb {
             case PropertyType::REAL:
                 return getGreater(txn, classId, indexId, isUnique, value.toReal(), true);
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return forwardSearchIndex(cursorHandler.get(), classId, value.toText(), true);
             }
             default:
@@ -621,8 +621,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return forwardSearchIndex(cursorHandler.get(), classId, static_cast<uint64_t>(value.toTinyIntU()), true);
                 } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
@@ -644,8 +644,8 @@ namespace nogdb {
             case PropertyType::REAL:
                 return getGreater(txn, classId, indexId, isUnique, value.toReal());
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return forwardSearchIndex(cursorHandler.get(), classId, value.toText());
             }
             default:
@@ -669,8 +669,8 @@ namespace nogdb {
             case PropertyType::UNSIGNED_SMALLINT:
             case PropertyType::UNSIGNED_INTEGER:
             case PropertyType::UNSIGNED_BIGINT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), true, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 if (propertyType == PropertyType::UNSIGNED_TINYINT) {
                     return betweenSearchIndex(cursorHandler.get(), classId,
                                               static_cast<uint64_t>(lowerBound.toTinyIntU()),
@@ -715,8 +715,8 @@ namespace nogdb {
                 return getBetween(txn, classId, indexId, isUnique, lowerBound.toReal(), upperBound.toReal(),
                                   isIncludeBound);
             case PropertyType::TEXT: {
-                auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
+                auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId), false, isUnique);
+                auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandler);
                 return betweenSearchIndex(cursorHandler.get(), classId, lowerBound.toText(), upperBound.toText(),
                                           isIncludeBound);
             }

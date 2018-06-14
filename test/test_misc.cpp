@@ -76,7 +76,7 @@ void test_get_invalid_record() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 }
 
@@ -322,7 +322,7 @@ void test_add_delete_prop_with_records() {
         nogdb::Vertex::update(txn, res[0].descriptor, rec);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -332,7 +332,7 @@ void test_add_delete_prop_with_records() {
         nogdb::Vertex::update(txn, res[0].descriptor, rec);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -511,7 +511,7 @@ void test_drop_class_with_relations() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 }
 
@@ -599,7 +599,7 @@ void test_drop_and_find_extended_class() {
             assert(false);
         } catch (const nogdb::Error &ex) {
             txn.rollback();
-            REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
         txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -608,7 +608,7 @@ void test_drop_and_find_extended_class() {
             assert(false);
         } catch (const nogdb::Error &ex) {
             txn.rollback();
-            REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
         txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -617,7 +617,7 @@ void test_drop_and_find_extended_class() {
             assert(false);
         } catch (const nogdb::Error &ex) {
             txn.rollback();
-            REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -652,7 +652,7 @@ void test_drop_and_find_extended_class() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -672,7 +672,7 @@ void test_drop_and_find_extended_class() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
@@ -712,7 +712,7 @@ void test_conflict_property() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_CONFLICT_PROPTYPE, "CTX_CONFLICT_PROPTYPE");
+        REQUIRE(ex, NOGDB_CTX_CONFLICT_PROPTYPE, "NOGDB_CTX_CONFLICT_PROPTYPE");
     }
 
     try {

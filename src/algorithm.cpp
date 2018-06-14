@@ -51,7 +51,7 @@ namespace nogdb {
                                            const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        Generic::getRecordFromRdesc(txn, recordDescriptor) : ResultSet{};
@@ -59,7 +59,7 @@ namespace nogdb {
                 auto result = ResultSet{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = LMDBInterface::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
                 auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
                 queue.push(std::make_pair(0, recordDescriptor.rid));
@@ -86,10 +86,10 @@ namespace nogdb {
                         classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first,
                                                                       ClassType::UNDEFINED);
                         classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                        classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
+                        classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
                                                             std::to_string(recordDescriptor.rid.first), true);
                         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
+                        auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
                                                              classDBHandler, recordDescriptor.rid.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
                         result.emplace_back(Result{recordDescriptor, record});
@@ -133,12 +133,12 @@ namespace nogdb {
                         }
                     }
                 } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                     } else {
                         throw Error(err, Error::Type::GRAPH);
                     }
-                } catch (Datastore::ErrorType &err) {
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
@@ -157,7 +157,7 @@ namespace nogdb {
                                           const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        Generic::getRecordFromRdesc(txn, recordDescriptor) : ResultSet{};
@@ -165,7 +165,7 @@ namespace nogdb {
                 auto result = ResultSet{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = LMDBInterface::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 auto usedEdges = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 try {
@@ -234,12 +234,12 @@ namespace nogdb {
 
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
                 } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                     } else {
                         throw Error(err, Error::Type::GRAPH);
                     }
-                } catch (Datastore::ErrorType &err) {
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
@@ -254,24 +254,24 @@ namespace nogdb {
         auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
         auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
         if (srcStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+            throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
         } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_DST, Error::Type::GRAPH);
+            throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
         } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
             return ResultSet{};
         } else {
             auto result = ResultSet{};
             auto classDescriptor = Schema::ClassDescriptorPtr{};
             auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = Datastore::DBHandler{};
+            auto classDBHandler = LMDBInterface::DBHandler{};
             try {
                 if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                     classDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first,
                                                                   ClassType::UNDEFINED);
                     classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                    classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
+                    classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
                                                         std::to_string(srcVertexRecordDescriptor.rid.first), true);
-                    auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
+                    auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
                                                          classDBHandler, srcVertexRecordDescriptor.rid.second);
                     auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                     auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
@@ -331,9 +331,9 @@ namespace nogdb {
                         classDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first,
                                                                       ClassType::UNDEFINED);
                         classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                        classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
+                        classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
                                                             std::to_string(srcVertexRecordDescriptor.rid.first), true);
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
+                        auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
                                                              classDBHandler, srcVertexRecordDescriptor.rid.second);
                         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
@@ -348,12 +348,12 @@ namespace nogdb {
                     }
                 }
             } catch (Graph::ErrorType &err) {
-                if (err == GRAPH_NOEXST_VERTEX) {
-                    throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                    throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                 } else {
                     throw Error(err, Error::Type::GRAPH);
                 }
-            } catch (Datastore::ErrorType &err) {
+            } catch (LMDBInterface::ErrorType &err) {
                 throw Error(err, Error::Type::DATASTORE);
             }
             return result;
@@ -373,7 +373,7 @@ namespace nogdb {
                                       const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -381,7 +381,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = LMDBInterface::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
                 auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
                 queue.push(std::make_pair(0, recordDescriptor.rid));
@@ -449,12 +449,12 @@ namespace nogdb {
                         }
                     }
                 } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                     } else {
                         throw Error(err, Error::Type::GRAPH);
                     }
-                } catch (Datastore::ErrorType &err) {
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
@@ -474,7 +474,7 @@ namespace nogdb {
                                      const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -482,7 +482,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = LMDBInterface::DBHandler{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 auto usedEdges = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 try {
@@ -559,12 +559,12 @@ namespace nogdb {
 
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
                 } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                     } else {
                         throw Error(err, Error::Type::GRAPH);
                     }
-                } catch (Datastore::ErrorType &err) {
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
@@ -580,16 +580,16 @@ namespace nogdb {
         auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
         auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
         if (srcStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+            throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
         } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_DST, Error::Type::GRAPH);
+            throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
         } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
             return std::vector<RecordDescriptor>{};
         } else {
             auto result = std::vector<RecordDescriptor>{};
             auto classDescriptor = Schema::ClassDescriptorPtr{};
             auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = Datastore::DBHandler{};
+            auto classDBHandler = LMDBInterface::DBHandler{};
             try {
                 if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                     result.emplace_back(srcVertexRecordDescriptor);
@@ -661,12 +661,12 @@ namespace nogdb {
                     }
                 }
             } catch (Graph::ErrorType &err) {
-                if (err == GRAPH_NOEXST_VERTEX) {
-                    throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                    throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
                 } else {
                     throw Error(err, Error::Type::GRAPH);
                 }
-            } catch (Datastore::ErrorType &err) {
+            } catch (LMDBInterface::ErrorType &err) {
                 throw Error(err, Error::Type::DATASTORE);
             }
             return result;

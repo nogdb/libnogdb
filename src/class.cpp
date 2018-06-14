@@ -27,7 +27,7 @@
 #include "constant.hpp"
 #include "base_txn.hpp"
 #include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "generic.hpp"
 #include "validate.hpp"
 #include "utils.hpp"
@@ -49,7 +49,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
-            throw Error(CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
         } else {
             ++dbInfo.maxClassId;
         }
@@ -62,22 +62,22 @@ namespace nogdb {
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             // create interface for .classes
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
             auto superClassId = ClassId{0};
             auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(className.c_str(), className.length());
-            Datastore::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
+            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
             // create interface for itself
-            auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
-            Datastore::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
+            auto newClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
+            LMDBInterface::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
 
             // update in-memory schema and info
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
@@ -98,7 +98,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
-            throw Error(CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
         } else {
             ++dbInfo.maxClassId;
         }
@@ -113,17 +113,17 @@ namespace nogdb {
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             // create interface for .classes
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
             auto superClassId = static_cast<ClassId>(superClassDescriptor->id);
             auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(className.c_str(), className.length());
-            Datastore::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
+            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
             // create interface for itself
-            auto newClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
-            Datastore::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
+            auto newClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
+            LMDBInterface::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
 
             // update in-memory schema and info
             auto superClassDescriptorPtr = txn.txnCtx.dbSchema->find(*txn.txnBase, superClassDescriptor->id);
@@ -137,7 +137,7 @@ namespace nogdb {
 
             txn.txnCtx.dbSchema->insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
@@ -153,14 +153,14 @@ namespace nogdb {
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
         if (foundClass->type != ClassType::VERTEX && foundClass->type != ClassType::EDGE) {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         }
         // retrieve relevant properties information
         auto propertyIds = std::vector<PropertyId>{};
         for (const auto &property: foundClass->properties.getLatestVersion().first) {
             // check if all index tables associated with the column have been removed beforehand
             if (!property.second.indexInfo.empty()) {
-                throw Error(CTX_IN_USED_PROPERTY, Error::Type::CONTEXT);
+                throw Error(NOGDB_CTX_IN_USED_PROPERTY, Error::Type::CONTEXT);
             }
             propertyIds.push_back(property.second.id);
         }
@@ -170,46 +170,46 @@ namespace nogdb {
         // update data store
         try {
             // delete class schema from .classes
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
-            Datastore::deleteRecord(dsTxnHandler, classDBHandler, foundClass->id);
+            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
+            LMDBInterface::deleteRecord(dsTxnHandler, classDBHandler, foundClass->id);
 
             // delete property schema from .properties
-            auto propi = Datastore::openDbi(dsTxnHandler, TB_PROPERTIES, true);
+            auto propi = LMDBInterface::openDbi(dsTxnHandler, TB_PROPERTIES, true);
             for (const auto &id : propertyIds) {
-                Datastore::deleteRecord(dsTxnHandler, propi, id);
+                LMDBInterface::deleteRecord(dsTxnHandler, propi, id);
                 //TODO: implement existing index deletion if needed
             }
             // delete all associated relations
-            auto relationDBHandler = Datastore::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto dbHandler = Datastore::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-            auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, dbHandler);
-            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
+            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
+            auto dbHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
+            auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dbHandler);
+            auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
             while (!keyValue.empty()) {
-                auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
+                auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
                 if (*key != EM_MAXRECNUM) {
                     auto recordId = RecordId{foundClass->id, *key};
                     if (foundClass->type == ClassType::EDGE) {
-                        Datastore::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordId));
+                        LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordId));
                     } else {
                         try {
                             for (const auto &edgeId : txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordId)) {
-                                auto edgeClassDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(edgeId.first), true);
-                                Datastore::deleteRecord(dsTxnHandler, edgeClassDBHandler, edgeId.second);
-                                Datastore::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(edgeId));
+                                auto edgeClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(edgeId.first), true);
+                                LMDBInterface::deleteRecord(dsTxnHandler, edgeClassDBHandler, edgeId.second);
+                                LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(edgeId));
                             }
                         } catch (Graph::ErrorType &err) {
-                            if (err != GRAPH_NOEXST_VERTEX) {
+                            if (err != NOGDB_GRAPH_NOEXST_VERTEX) {
                                 throw Error(err, Error::Type::GRAPH);
                             }
                         }
                     }
                     rids.push_back(recordId);
                 }
-                keyValue = Datastore::getNextCursor(cursorHandler.get());
+                keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
             }
 
             // drop the actual table
-            Datastore::dropDbi(dsTxnHandler, dbHandler);
+            LMDBInterface::dropDbi(dsTxnHandler, dbHandler);
 
             // prepare for class inheritance
             auto superClassDescriptor = foundClass->super.getLatestVersion().first.lock();
@@ -230,7 +230,7 @@ namespace nogdb {
                 value.append(&subClassDescriptorPtr->type, sizeof(subClassDescriptorPtr->type));
                 value.append(&superClassId, sizeof(ClassId));
                 value.append(name.c_str(), name.length());
-                Datastore::putRecord(dsTxnHandler, classDBHandler, subClassDescriptorPtr->id, value);
+                LMDBInterface::putRecord(dsTxnHandler, classDBHandler, subClassDescriptorPtr->id, value);
             }
 
             // update in-memory relations
@@ -277,7 +277,7 @@ namespace nogdb {
             auto &dbInfo = txn.txnBase->dbInfo;
             dbInfo.numProperty -= propertyIds.size();
             --dbInfo.numClass;
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         } catch (Graph::ErrorType &err) {
             throw Error(err, Error::Type::GRAPH);
@@ -299,7 +299,7 @@ namespace nogdb {
         Validate::isNotDuplicatedClass(txn, newClassName);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
             auto superClassId = ClassId{0};
             if (auto superClassDescriptor = foundClass->super.getLatestVersion().first.lock()) {
                 superClassId = superClassDescriptor->id;
@@ -309,11 +309,11 @@ namespace nogdb {
             value.append(&foundClass->type, sizeof(foundClass->type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(newClassName.c_str(), newClassName.length());
-            Datastore::putRecord(dsTxnHandler, classDBHandler, foundClass->id, value);
+            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, foundClass->id, value);
 
             // update in-memory schema
             txn.txnCtx.dbSchema->replace(*txn.txnBase, foundClass, newClassName);
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions

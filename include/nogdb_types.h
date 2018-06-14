@@ -41,7 +41,7 @@ namespace boost {
 }
 
 namespace nogdb {
-    struct Datastore;
+    struct LMDBInterface;
     struct Graph;
     struct Validate;
     struct Algorithm;

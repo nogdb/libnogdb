@@ -106,7 +106,7 @@ namespace nogdb {
     uint8_t Record::getTinyIntU(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toTinyIntU();
         }
@@ -115,7 +115,7 @@ namespace nogdb {
     int8_t Record::getTinyInt(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toTinyInt();
         }
@@ -124,7 +124,7 @@ namespace nogdb {
     uint16_t Record::getSmallIntU(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toSmallIntU();
         }
@@ -133,7 +133,7 @@ namespace nogdb {
     int16_t Record::getSmallInt(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toSmallInt();
         }
@@ -142,7 +142,7 @@ namespace nogdb {
     uint32_t Record::getIntU(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toIntU();
         }
@@ -151,7 +151,7 @@ namespace nogdb {
     int32_t Record::getInt(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toInt();
         }
@@ -160,7 +160,7 @@ namespace nogdb {
     uint64_t Record::getBigIntU(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toBigIntU();
         }
@@ -169,7 +169,7 @@ namespace nogdb {
     int64_t Record::getBigInt(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toBigInt();
         }
@@ -178,7 +178,7 @@ namespace nogdb {
     double Record::getReal(const std::string &propName) const {
         auto bytes = get(propName);
         if (bytes.empty()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
         } else {
             return bytes.toReal();
         }
@@ -206,7 +206,7 @@ namespace nogdb {
                 auto positionId = strtoul(sp[1].c_str(), nullptr, 0);;
                 return RecordId{classId, positionId};
             } catch(...) {
-                throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
+                throw Error(NOGDB_CTX_INTERNAL_ERR, Error::Type::CONTEXT);
             }
         } else {
             return RecordId{};

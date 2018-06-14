@@ -212,52 +212,52 @@ void test_invalid_record_with_bytes() {
     try {
         r.getInt("int");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getIntU("uint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getTinyInt("tinyint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getTinyIntU("utinyint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getSmallInt("smallint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getSmallIntU("usmallint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getBigInt("bigint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getBigIntU("ubigint");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getReal("real");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
     try {
         r.getText("text");
     } catch (const nogdb::Error &err) {
-        REQUIRE(err, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(err, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
 }

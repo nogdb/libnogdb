@@ -24,7 +24,7 @@
 
 #include <atomic>
 
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "txn_object.hpp"
 #include "graph.hpp"
 #include "schema.hpp"
@@ -49,7 +49,7 @@ namespace nogdb {
 
         ~BaseTxn() noexcept {
             if (isWithDataStore && !isCompleted) {
-                Datastore::abortTxn(dsTxnHandler);
+                LMDBInterface::abortTxn(dsTxnHandler);
             }
         }
 
@@ -57,7 +57,7 @@ namespace nogdb {
 
         BaseTxn &operator=(const BaseTxn &txn) = delete;
 
-        Datastore::TxnHandler *getDsTxnHandler() const { return dsTxnHandler; }
+        LMDBInterface::TxnHandler *getDsTxnHandler() const { return dsTxnHandler; }
 
         const TxnId &getVersionId() const { return versionId; }
 
@@ -115,7 +115,7 @@ namespace nogdb {
         DBInfo dbInfo{};
 
     private:
-        Datastore::TxnHandler *dsTxnHandler;
+        LMDBInterface::TxnHandler *dsTxnHandler;
         TxnId txnId;
         TxnId versionId;
         TxnType txnType;

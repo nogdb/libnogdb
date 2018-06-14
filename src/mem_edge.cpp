@@ -29,7 +29,7 @@ namespace nogdb {
     void Graph::createEdge(BaseTxn &txn, const RecordId &rid, const RecordId &srcRid, const RecordId &dstRid) {
         auto edge = lookupEdge(txn, rid);
         if (edge != nullptr) {
-            throw ErrorType{GRAPH_DUP_EDGE};
+            throw ErrorType{NOGDB_GRAPH_DUP_EDGE};
         }
         auto sourceVertex = lookupVertex(txn, srcRid);
         auto targetVertex = lookupVertex(txn, dstRid);
@@ -76,7 +76,7 @@ namespace nogdb {
     RecordId Graph::getVertexSrc(const BaseTxn &txn, const RecordId &rid) {
         auto edge = lookupEdge(txn, rid);
         if (edge == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_EDGE};
+            throw ErrorType{NOGDB_GRAPH_NOEXST_EDGE};
         }
         auto findSrcVertex = (txn.getType() == BaseTxn::TxnType::READ_ONLY) ?
                              edge->source.getStableVersion(txn.getVersionId()) : edge->source.getLatestVersion();
@@ -85,13 +85,13 @@ namespace nogdb {
                 return sourceVertex->rid;
             }
         }
-        throw ErrorType{GRAPH_UNKNOWN_ERR};
+        throw ErrorType{NOGDB_GRAPH_UNKNOWN_ERR};
     }
 
     RecordId Graph::getVertexDst(const BaseTxn &txn, const RecordId &rid) {
         auto edge = lookupEdge(txn, rid);
         if (edge == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_EDGE};
+            throw ErrorType{NOGDB_GRAPH_NOEXST_EDGE};
         }
         auto findTgtVertex = (txn.getType() == BaseTxn::TxnType::READ_ONLY) ?
                              edge->target.getStableVersion(txn.getVersionId()) : edge->target.getLatestVersion();
@@ -100,13 +100,13 @@ namespace nogdb {
                 return targetVertex->rid;
             }
         }
-        throw ErrorType{GRAPH_UNKNOWN_ERR};
+        throw ErrorType{NOGDB_GRAPH_UNKNOWN_ERR};
     }
 
     std::pair<RecordId, RecordId> Graph::getVertexSrcDst(const BaseTxn &txn, const RecordId &rid) {
         auto edge = lookupEdge(txn, rid);
         if (edge == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_EDGE};
+            throw ErrorType{NOGDB_GRAPH_NOEXST_EDGE};
         }
         auto findSrcVertex = (txn.getType() == BaseTxn::TxnType::READ_ONLY) ?
                              edge->source.getStableVersion(txn.getVersionId()) : edge->source.getLatestVersion();
@@ -119,13 +119,13 @@ namespace nogdb {
                 }
             }
         }
-        throw ErrorType{GRAPH_UNKNOWN_ERR};
+        throw ErrorType{NOGDB_GRAPH_UNKNOWN_ERR};
     }
 
     void Graph::alterVertexSrc(BaseTxn &txn, const RecordId &rid, const RecordId &srcRid) {
         auto edge = lookupEdge(txn, rid);
         if (edge == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_EDGE};
+            throw ErrorType{NOGDB_GRAPH_NOEXST_EDGE};
         }
         auto findOldSrcVertex = edge->source.getLatestVersion();
         if (findOldSrcVertex.second) {
@@ -145,13 +145,13 @@ namespace nogdb {
                 return;
             }
         }
-        throw ErrorType{GRAPH_UNKNOWN_ERR};
+        throw ErrorType{NOGDB_GRAPH_UNKNOWN_ERR};
     }
 
     void Graph::alterVertexDst(BaseTxn &txn, const RecordId &rid, const RecordId &dstRid) {
         auto edge = lookupEdge(txn, rid);
         if (edge == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_EDGE};
+            throw ErrorType{NOGDB_GRAPH_NOEXST_EDGE};
         }
         auto findOldDstVertex = edge->target.getLatestVersion();
         if (findOldDstVertex.second) {
@@ -171,7 +171,7 @@ namespace nogdb {
                 return;
             }
         }
-        throw ErrorType{GRAPH_UNKNOWN_ERR};
+        throw ErrorType{NOGDB_GRAPH_UNKNOWN_ERR};
     }
 
     std::shared_ptr<Graph::Edge> Graph::lookupEdge(const BaseTxn &txn, const RecordId &rid) {

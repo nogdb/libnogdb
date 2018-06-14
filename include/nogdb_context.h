@@ -37,7 +37,7 @@
 namespace nogdb {
     class Context {
     public:
-        friend struct Datastore;
+        friend struct LMDBInterface;
         friend struct Validate;
         friend struct Algorithm;
         friend struct Compare;

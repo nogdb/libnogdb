@@ -66,7 +66,7 @@ namespace nogdb {
 
     void require(bool cmp) {
         if (!cmp) {
-            throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_INTERNAL_ERR, Error::Type::CONTEXT);
         }
     }
 

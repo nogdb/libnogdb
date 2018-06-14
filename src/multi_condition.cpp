@@ -127,7 +127,7 @@ namespace nogdb {
                 }
             }
         } else {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         }
     }
 
@@ -154,7 +154,7 @@ namespace nogdb {
         auto value = r.get(cond.propName);
         auto type = propType.find(cond.propName);
         if (type == propType.cend()) {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         }
         if (cond.comp != Condition::Comparator::IS_NULL && cond.comp != Condition::Comparator::NOT_NULL) {
             if (!value.empty()) {
@@ -168,7 +168,7 @@ namespace nogdb {
                 case Condition::Comparator::NOT_NULL:
                     return !value.empty() ^ cond.isNegative;
                 default:
-                    throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                    throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
             }
         }
     }

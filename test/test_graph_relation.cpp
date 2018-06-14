@@ -613,7 +613,7 @@ void test_get_invalid_edge_in_more() {
         }
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -626,7 +626,7 @@ void test_get_invalid_edge_in_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -639,7 +639,7 @@ void test_get_invalid_edge_in_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_MISMATCH_CLASSTYPE, "CTX_MISMATCH_CLASSTYPE");
+        REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -653,7 +653,7 @@ void test_get_invalid_edge_in_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, GRAPH_NOEXST_VERTEX, "GRAPH_NOEXST_VERTEX");
+        REQUIRE(ex, NOGDB_GRAPH_NOEXST_VERTEX, "NOGDB_GRAPH_NOEXST_VERTEX");
     }
 
 }
@@ -668,7 +668,7 @@ void test_get_invalid_edge_out_more() {
         }
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -681,7 +681,7 @@ void test_get_invalid_edge_out_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -694,7 +694,7 @@ void test_get_invalid_edge_out_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_MISMATCH_CLASSTYPE, "CTX_MISMATCH_CLASSTYPE");
+        REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -708,7 +708,7 @@ void test_get_invalid_edge_out_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, GRAPH_NOEXST_VERTEX, "GRAPH_NOEXST_VERTEX");
+        REQUIRE(ex, NOGDB_GRAPH_NOEXST_VERTEX, "NOGDB_GRAPH_NOEXST_VERTEX");
     }
 
 }
@@ -723,7 +723,7 @@ void test_get_invalid_edge_all_more() {
         }
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -736,7 +736,7 @@ void test_get_invalid_edge_all_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -749,7 +749,7 @@ void test_get_invalid_edge_all_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, CTX_MISMATCH_CLASSTYPE, "CTX_MISMATCH_CLASSTYPE");
+        REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -763,6 +763,6 @@ void test_get_invalid_edge_all_more() {
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
-        REQUIRE(ex, GRAPH_NOEXST_VERTEX, "GRAPH_NOEXST_VERTEX");
+        REQUIRE(ex, NOGDB_GRAPH_NOEXST_VERTEX, "NOGDB_GRAPH_NOEXST_VERTEX");
     }
 }

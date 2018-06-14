@@ -60,7 +60,7 @@ void Context::createClass(const Token &tName, const Token &tExtend, char checkIf
         this->rc = SQL_OK;
         this->result = SQL::Result(new ClassDescriptor(move(result)));
     } catch (const Error &e) {
-        if (checkIfNotExists && e.code() == CTX_DUPLICATE_CLASS) {
+        if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_CLASS) {
             result = Db::getSchema(this->txn, name);
             this->rc = SQL_OK;
             this->result = SQL::Result(new ClassDescriptor(move(result)));
@@ -101,7 +101,7 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
 
             case UNDEFINED:
             default:
-                throw Error(SQL_INVALID_ALTER_ATTR, Error::Type::SQL);
+                throw Error(NOGDB_SQL_INVALID_ALTER_ATTR, Error::Type::SQL);
         }
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
@@ -115,7 +115,7 @@ void Context::dropClass(const Token &tName, char checkIfExists) {
         this->rc = SQL_OK;
         this->result = SQL::Result();
     } catch (const Error &e) {
-        if (checkIfExists && e.code() == CTX_NOEXST_CLASS) {
+        if (checkIfExists && e.code() == NOGDB_CTX_NOEXST_CLASS) {
             this->rc = SQL_OK;
             this->result = SQL::Result();
         } else {
@@ -158,7 +158,7 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
         this->rc = SQL_OK;
         this->result = SQL::Result(new PropertyDescriptor(move(result)));
     } catch (const Error &e) {
-        if (checkIfNotExists && e.code() == CTX_DUPLICATE_PROPERTY) {
+        if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_PROPERTY) {
             result = Db::getSchema(this->txn, tClassName.toString()).properties.at(tPropName.toString());
             this->rc = SQL_OK;
             this->result = SQL::Result(new PropertyDescriptor(move(result)));
@@ -199,7 +199,7 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
 
             case UNDEFINED:
             default:
-                throw Error(SQL_INVALID_ALTER_ATTR, Error::Type::SQL);
+                throw Error(NOGDB_SQL_INVALID_ALTER_ATTR, Error::Type::SQL);
         }
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
@@ -213,7 +213,7 @@ void Context::dropProperty(const Token &tClassName, const Token &tPropName, char
         this->rc = SQL_OK;
         this->result = SQL::Result();
     } catch (const Error &e) {
-        if (checkIfExists && e.code() == CTX_NOEXST_PROPERTY) {
+        if (checkIfExists && e.code() == NOGDB_CTX_NOEXST_PROPERTY) {
             this->rc = SQL_OK;
             this->result = SQL::Result();
         } else {
@@ -285,7 +285,7 @@ void Context::update(const UpdateArgs &args) {
                     Edge::update(this->txn, target.descriptor, r);
                     break;
                 case ClassType::UNDEFINED:
-                    throw Error(CTX_INVALID_CLASSTYPE, Error::Type::CONTEXT);
+                    throw Error(NOGDB_CTX_INVALID_CLASSTYPE, Error::Type::CONTEXT);
             }
         }
         this->rc = SQL_OK;
@@ -444,7 +444,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
                 ResultSetCursor res = this->selectEdge(className, where);
                 return ResultSet(res, skip, limit);
             } else {
-                throw Error(CTX_INVALID_CLASSTYPE, Error::Type::CONTEXT);
+                throw Error(NOGDB_CTX_INVALID_CLASSTYPE, Error::Type::CONTEXT);
             }
         }
 
@@ -545,7 +545,7 @@ ResultSet Context::selectProjection(ResultSet &input, const vector<Projection> p
                 tmpRec.set(func.toString(), func.executeAggregateResult(input));
                 aggregated = true;
             } else if (func.isExpand()) {
-                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+                throw Error(NOGDB_SQL_INVALID_PROJECTION, Error::Type::SQL);
             }
         }
     }
@@ -611,10 +611,10 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     );
 
     if (args.minDepth < 0 || args.minDepth > UINT_MAX) {
-        throw Error(SQL_INVALID_TRAVERSE_MIN_DEPTH, Error::Type::SQL);
+        throw Error(NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH, Error::Type::SQL);
     }
     if (args.maxDepth < 0 || args.maxDepth > UINT_MAX) {
-        throw Error(SQL_INVALID_TRAVERSE_MAX_DEPTH, Error::Type::SQL);
+        throw Error(NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH, Error::Type::SQL);
     }
 
     TraverseFunction func;
@@ -624,11 +624,11 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
         if (strcasecmp("IN", args.direction.c_str()) != 0
             && strcasecmp("OUT", args.direction.c_str()) != 0
             && strcasecmp("ALL", args.direction.c_str()) != 0) {
-            throw Error(SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
+            throw Error(NOGDB_SQL_INVALID_TRAVERSE_DIRECTION, Error::Type::SQL);
         } else /*if (strcasecmp("DEPTH_FIRST", strategy.c_str()) != 0
                 && strcasecmp("BREADTH_FIRST", strategy.c_str()) != 0) */
         {
-            throw Error(SQL_INVALID_TRAVERSE_STRATEGY, Error::Type::SQL);
+            throw Error(NOGDB_SQL_INVALID_TRAVERSE_STRATEGY, Error::Type::SQL);
         }
     }
 
@@ -642,7 +642,7 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
         case ProjectionType::FUNCTION: {
             Function func = proj.get<Function>();
             if (func.isAggregateResult() || func.isExpand()) {
-                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+                throw Error(NOGDB_SQL_INVALID_PROJECTION, Error::Type::SQL);
             }
             return func.execute(txn, input);
         }
@@ -657,7 +657,7 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
         case ProjectionType::CONDITION: {
             const auto &cond = proj.get<pair<Projection, Condition>>();
             if (cond.first.type != ProjectionType::FUNCTION) {
-                throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+                throw Error(NOGDB_SQL_INVALID_PROJECTION, Error::Type::SQL);
             }
             return Context::getProjectionItemCondition(txn, input, cond.first.get<Function>(), cond.second);
         }
@@ -703,14 +703,14 @@ Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Proj
                 }
                 Bytes resB = Context::getProjectionItem(txn, in, secondProj, mapProps);
                 if (!resB.isResults()) {
-                    throw Error(SQL_INVALID_PROJECTION_METHOD, Error::Type::SQL);
+                    throw Error(NOGDB_SQL_INVALID_PROJECTION_METHOD, Error::Type::SQL);
                 }
                 results.insert(results.end(), make_move_iterator(resB.results().begin()), make_move_iterator(resB.results().end()));
             }
             return Bytes(move(results));
         }
     } else {
-        throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
+        throw Error(NOGDB_SQL_NOT_IMPLEMENTED, Error::Type::SQL);
     }
 }
 
@@ -725,13 +725,13 @@ Bytes Context::getProjectionItemArraySelector(Txn &txn, const Result &input, con
             return Bytes(ResultSet{emptyResult});
         }
     } else {
-        throw Error(SQL_NOT_IMPLEMENTED, Error::Type::SQL);
+        throw Error(NOGDB_SQL_NOT_IMPLEMENTED, Error::Type::SQL);
     }
 }
 
 Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const Function &func, const Condition &cond) {
     if (!func.isWalkResult()) {
-        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+        throw Error(NOGDB_SQL_INVALID_PROJECTION, Error::Type::SQL);
     }
 
     Bytes resA = func.execute(txn, input);
@@ -740,7 +740,7 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
         ResultSet result = Context::executeCondition(txn, resA.results(), cond && alwaysTrue);
         return Bytes(move(result));
     } else {
-        throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
+        throw Error(NOGDB_SQL_INVALID_PROJECTION, Error::Type::SQL);
     }
 }
 

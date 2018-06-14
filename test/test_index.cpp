@@ -125,42 +125,42 @@ void test_create_invalid_index() {
         nogdb::Property::createIndex(txn, "index_test", "index_blob", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPTYPE_INDEX, "CTX_INVALID_PROPTYPE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE_INDEX, "NOGDB_CTX_INVALID_PROPTYPE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text_2", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text_x", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_3", "index_text", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_INDEX, "NOGDB_CTX_DUPLICATE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_INDEX, "NOGDB_CTX_DUPLICATE_INDEX");
     }
 
 }
@@ -276,54 +276,54 @@ void test_drop_invalid_index() {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
 
@@ -610,7 +610,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -618,7 +618,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -626,7 +626,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -634,7 +634,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -642,7 +642,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -650,7 +650,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -658,7 +658,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -666,7 +666,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -674,7 +674,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -682,7 +682,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
     txn.rollback();
 
@@ -808,54 +808,54 @@ void test_drop_invalid_index_with_records() {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
 

@@ -24,7 +24,7 @@
 #include <vector>
 #include <cmath>
 
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
 #include "utils.hpp"
@@ -79,7 +79,7 @@ namespace nogdb {
             if (property.first.at(0) != '@' || property.first == VERSION_PROPERTY) {
                 auto foundProperty = classInfo.nameToDesc.find(property.first);
                 if (foundProperty == classInfo.nameToDesc.cend()) {
-                    throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                    throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
                 }
                 // check if having any index
                 for (const auto &indexIter: foundProperty->second.indexInfo) {
@@ -107,10 +107,10 @@ namespace nogdb {
         if (keyValue.empty()) {
             return result;
         }
-        auto rawData = Datastore::getValueAsBlob(keyValue);
+        auto rawData = LMDBInterface::getValueAsBlob(keyValue);
         auto offset = size_t{0};
         if (rawData.capacity() == 0) {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
             //TODO: should be concerned about ENDIAN?
             // NOTE: each property block consists of property id, flag, size, and value

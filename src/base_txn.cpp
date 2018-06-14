@@ -39,8 +39,8 @@ namespace nogdb {
         if (!isReadWrite) {
             if (isWithDataStore) {
                 try {
-                    dsTxnHandler = Datastore::beginTxn(ctx.envHandler->get(), Datastore::TXN_RO);
-                } catch (Datastore::ErrorType &err) {
+                    dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RO);
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
             }
@@ -51,8 +51,8 @@ namespace nogdb {
         } else {
             if (isWithDataStore) {
                 try {
-                    dsTxnHandler = Datastore::beginTxn(ctx.envHandler->get(), Datastore::TXN_RW);
-                } catch (Datastore::ErrorType &err) {
+                    dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RW);
+                } catch (LMDBInterface::ErrorType &err) {
                     throw Error(err, Error::Type::DATASTORE);
                 }
                 // check if the previous writer committed all stuff in memory
@@ -72,9 +72,9 @@ namespace nogdb {
             versionId = ctx.dbTxnStat->maxVersionId + 1;
             if (versionId == std::numeric_limits<TxnId>::max()) {
                 if (isWithDataStore) {
-                    Datastore::abortTxn(dsTxnHandler);
+                    LMDBInterface::abortTxn(dsTxnHandler);
                 }
-                throw Error(TXN_VERSION_MAXREACH, Error::Type::GRAPH);
+                throw Error(NOGDB_TXN_VERSION_MAXREACH, Error::Type::GRAPH);
             }
         }
     }
@@ -117,9 +117,9 @@ namespace nogdb {
                 WriteLock<boost::shared_mutex> _(*(ctx.dbWriterMutex));
                 if (isWithDataStore) {
                     try {
-                        Datastore::commitTxn(dsTxnHandler);
+                        LMDBInterface::commitTxn(dsTxnHandler);
                         isCommitDatastore = true;
-                    } catch (Datastore::ErrorType &err) {
+                    } catch (LMDBInterface::ErrorType &err) {
                         throw Error(err, Error::Type::DATASTORE);
                     }
                 }
@@ -233,7 +233,7 @@ namespace nogdb {
                 }
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
                 if (isWithDataStore) {
-                    Datastore::abortTxn(dsTxnHandler);
+                    LMDBInterface::abortTxn(dsTxnHandler);
                 }
             }
             isCompleted = true;
@@ -315,7 +315,7 @@ namespace nogdb {
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
             }
             if (isWithDataStore && !isCommitDatastore) {
-                Datastore::abortTxn(dsTxnHandler);
+                LMDBInterface::abortTxn(dsTxnHandler);
             }
             isCompleted = true;
             return true;

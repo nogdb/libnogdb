@@ -23,7 +23,7 @@
 
 #include "shared_lock.hpp"
 #include "graph.hpp"
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "base_txn.hpp"
 
 #include "nogdb_txn.h"
@@ -35,7 +35,7 @@ namespace nogdb {
             txnBase = std::make_shared<BaseTxn>(txnCtx, txnMode == Mode::READ_WRITE);
         } catch (Graph::ErrorType &err) {
             throw Error(err, Error::Type::GRAPH);
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         } catch (...) {
             std::rethrow_exception(std::current_exception());
@@ -74,7 +74,7 @@ namespace nogdb {
         } catch (Graph::ErrorType &err) {
             rollback();
             throw Error(err, Error::Type::GRAPH);
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             rollback();
             throw Error(err, Error::Type::DATASTORE);
         } catch (const Error &err) {

@@ -24,7 +24,7 @@
 #include "shared_lock.hpp"
 #include "schema.hpp"
 #include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
 
@@ -37,9 +37,9 @@ namespace nogdb {
         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
         auto keyValue = KeyValue{};
         try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classDescriptor->id), true);
-            keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, recordDescriptor.rid.second);
-        } catch (Datastore::ErrorType &err) {
+            auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classDescriptor->id), true);
+            keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, recordDescriptor.rid.second);
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
         return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);

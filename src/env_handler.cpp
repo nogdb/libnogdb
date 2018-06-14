@@ -34,8 +34,8 @@ namespace nogdb {
                        unsigned int dbNum,
                        unsigned long dbSize,
                        unsigned int dbReaders,
-                       Datastore::DSFlag flag,
-                       Datastore::Permission perm) {
+                       LMDBInterface::LMDBFlag flag,
+                       LMDBInterface::LMDBMode perm) {
         return new(std::nothrow) EnvHandler(dbPath, dbNum, dbSize, dbReaders, flag, perm);
     }
 
@@ -43,8 +43,8 @@ namespace nogdb {
                            unsigned int maxdb,
                            unsigned long maxdbSize,
                            unsigned int maxdbReaders,
-                           Datastore::DSFlag flag,
-                           Datastore::Permission perm) : refCount{0} {
+                           LMDBInterface::LMDBFlag flag,
+                           LMDBInterface::LMDBMode perm) : refCount{0} {
         if (!fileExists(dbPath)) {
             mkdir(dbPath.c_str(), 0755);
         }
@@ -52,15 +52,15 @@ namespace nogdb {
         lockFileDescriptor = open(lockFile.c_str(), O_CREAT | O_RDONLY, 0644);
         if (flock(lockFileDescriptor, LOCK_EX | LOCK_NB) == -1) {
             if (errno == EWOULDBLOCK) {
-                throw Error(CTX_IS_LOCKED, Error::Type::CONTEXT);
+                throw Error(NOGDB_CTX_IS_LOCKED, Error::Type::CONTEXT);
             } else {
-                throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
             }
         }
 
         try {
-            env = Datastore::createEnv(dbPath, maxdb, maxdbSize, maxdbReaders, flag, perm);
-        } catch (Datastore::ErrorType &err) {
+            env = LMDBInterface::createEnv(dbPath, maxdb, maxdbSize, maxdbReaders, flag, perm);
+        } catch (LMDBInterface::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
     }
@@ -71,7 +71,7 @@ namespace nogdb {
             ++ptr.pointer_->refCount;
             if (--pointer_->refCount == 0) {
                 if (pointer_->env != nullptr) {
-                    Datastore::destroyEnv(pointer_->env);
+                    LMDBInterface::destroyEnv(pointer_->env);
                     flock(pointer_->lockFileDescriptor, LOCK_UN);
                 }
                 delete pointer_;
@@ -84,7 +84,7 @@ namespace nogdb {
     EnvHandlerPtr::~EnvHandlerPtr() {
         if (--pointer_->refCount == 0) {
             if (pointer_->env != nullptr) {
-                Datastore::destroyEnv(pointer_->env);
+                LMDBInterface::destroyEnv(pointer_->env);
                 flock(pointer_->lockFileDescriptor, LOCK_UN);
             }
             delete pointer_;

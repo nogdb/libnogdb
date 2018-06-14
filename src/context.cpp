@@ -33,7 +33,7 @@
 #include "spinlock.hpp"
 #include "base_txn.hpp"
 #include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "graph.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
@@ -66,8 +66,8 @@ namespace nogdb {
         dbInfo->numClass = ClassId{0};
         dbInfo->numProperty = PropertyId{0};
         envHandler = std::make_shared<EnvHandlerPtr>(
-                EnvHandler::create(dbInfo->dbPath, dbInfo->maxDB, dbInfo->maxDBSize, Datastore::MAX_READERS,
-                                   Datastore::FLAG, Datastore::PERMISSION));
+                EnvHandler::create(dbInfo->dbPath, dbInfo->maxDB, dbInfo->maxDBSize, LMDBInterface::MAX_READERS,
+                                   LMDBInterface::FLAG, LMDBInterface::PERMISSION));
         initDatabase();
     }
 
@@ -116,38 +116,38 @@ namespace nogdb {
 
     void Context::initDatabase() {
         auto currentTime = std::to_string(currentTimestamp());
-        Datastore::TxnHandler *txn = nullptr;
+        LMDBInterface::TxnHandler *txn = nullptr;
         // create read-write transaction
         try {
-            txn = Datastore::beginTxn(envHandler->get(), Datastore::TXN_RW);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
+            txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RW);
+        } catch (LMDBInterface::ErrorType &err) {
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
         // prepare schema for classes, properties, and relations
-        auto classDBHandler = Datastore::DBHandler{};
-        auto propDBHndler = Datastore::DBHandler{};
-        auto indexDBHandler = Datastore::DBHandler{};
-        auto relationDBHandler = Datastore::DBHandler{};
+        auto classDBHandler = LMDBInterface::DBHandler{};
+        auto propDBHndler = LMDBInterface::DBHandler{};
+        auto indexDBHandler = LMDBInterface::DBHandler{};
+        auto relationDBHandler = LMDBInterface::DBHandler{};
         try {
-            classDBHandler = Datastore::openDbi(txn, TB_CLASSES, true);
-            propDBHndler = Datastore::openDbi(txn, TB_PROPERTIES, true);
-            indexDBHandler = Datastore::openDbi(txn, TB_INDEXES, true, false);
-            relationDBHandler = Datastore::openDbi(txn, TB_RELATIONS);
-            Datastore::putRecord(txn, classDBHandler, ClassId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, propDBHndler, PropertyId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, indexDBHandler, PropertyId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, relationDBHandler, STRING_EM_INIT, currentTime);
-            Datastore::commitTxn(txn);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
+            classDBHandler = LMDBInterface::openDbi(txn, TB_CLASSES, true);
+            propDBHndler = LMDBInterface::openDbi(txn, TB_PROPERTIES, true);
+            indexDBHandler = LMDBInterface::openDbi(txn, TB_INDEXES, true, false);
+            relationDBHandler = LMDBInterface::openDbi(txn, TB_RELATIONS);
+            LMDBInterface::putRecord(txn, classDBHandler, ClassId{UINT16_EM_INIT}, currentTime);
+            LMDBInterface::putRecord(txn, propDBHndler, PropertyId{UINT16_EM_INIT}, currentTime);
+            LMDBInterface::putRecord(txn, indexDBHandler, PropertyId{UINT16_EM_INIT}, currentTime);
+            LMDBInterface::putRecord(txn, relationDBHandler, STRING_EM_INIT, currentTime);
+            LMDBInterface::commitTxn(txn);
+        } catch (LMDBInterface::ErrorType &err) {
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
         // create read-only transaction
         try {
-            txn = Datastore::beginTxn(envHandler->get(), Datastore::TXN_RO);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
+            txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RO);
+        } catch (LMDBInterface::ErrorType &err) {
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
         // create read-write in memory transaction
@@ -155,15 +155,15 @@ namespace nogdb {
         // retrieve classes information
         try {
             auto inheritanceInfo = Schema::InheritanceInfo{};
-            auto classCursor = Datastore::CursorHandlerWrapper(txn, classDBHandler);
-            for (auto classKeyValue = Datastore::getNextCursor(classCursor.get());
+            auto classCursor = LMDBInterface::CursorHandlerWrapper(txn, classDBHandler);
+            for (auto classKeyValue = LMDBInterface::getNextCursor(classCursor.get());
                  !classKeyValue.empty();
-                 classKeyValue = Datastore::getNextCursor(classCursor.get())) {
-                auto key = Datastore::getKeyAsNumeric<ClassId>(classKeyValue);
+                 classKeyValue = LMDBInterface::getNextCursor(classCursor.get())) {
+                auto key = LMDBInterface::getKeyAsNumeric<ClassId>(classKeyValue);
                 if (*key == ClassId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(classKeyValue);
+                auto data = LMDBInterface::getValueAsBlob(classKeyValue);
                 auto classType = ClassType::UNDEFINED;
                 auto offset = data.retrieve(&classType, 0, sizeof(ClassType));
                 auto superClassId = ClassId{0};
@@ -182,25 +182,25 @@ namespace nogdb {
                 ++baseTxn.dbInfo.numClass;
             }
             dbSchema->apply(baseTxn, inheritanceInfo);
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::abortTxn(txn);
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
 
         // retrieve properties and indexing information
         try {
-            auto propCursor = Datastore::CursorHandlerWrapper(txn, propDBHndler);
-            auto indexCursor = Datastore::CursorHandlerWrapper(txn, indexDBHandler);
-            for (auto propKeyValue = Datastore::getNextCursor(propCursor.get());
+            auto propCursor = LMDBInterface::CursorHandlerWrapper(txn, propDBHndler);
+            auto indexCursor = LMDBInterface::CursorHandlerWrapper(txn, indexDBHandler);
+            for (auto propKeyValue = LMDBInterface::getNextCursor(propCursor.get());
                  !propKeyValue.empty();
-                 propKeyValue = Datastore::getNextCursor(propCursor.get())) {
-                auto key = Datastore::getKeyAsNumeric<PropertyId>(propKeyValue);
+                 propKeyValue = LMDBInterface::getNextCursor(propCursor.get())) {
+                auto key = LMDBInterface::getKeyAsNumeric<PropertyId>(propKeyValue);
                 if (*key == PropertyId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(propKeyValue);
+                auto data = LMDBInterface::getValueAsBlob(propKeyValue);
                 auto propType = PropertyType::UNDEFINED;
                 auto propClassId = PropertyId{0};
                 auto offset = data.retrieve(&propType, 0, sizeof(PropertyDescriptor::type));
@@ -218,10 +218,10 @@ namespace nogdb {
                 auto isUniqueNumeric = uint8_t{1};
                 auto indexId = IndexId{0};
                 auto classId = ClassId{0};
-                for (auto indexKeyValue = Datastore::getSetKeyCursor(indexCursor.get(), propertyDescriptor.id);
+                for (auto indexKeyValue = LMDBInterface::getSetKeyCursor(indexCursor.get(), propertyDescriptor.id);
                      !indexKeyValue.empty();
-                     indexKeyValue = Datastore::getNextDupCursor(indexCursor.get())) {
-                    data = Datastore::getValueAsBlob(indexKeyValue);
+                     indexKeyValue = LMDBInterface::getNextDupCursor(indexCursor.get())) {
+                    data = LMDBInterface::getValueAsBlob(indexKeyValue);
                     offset = data.retrieve(&isCompositeNumeric, 0, sizeof(isCompositeNumeric));
                     offset = data.retrieve(&isUniqueNumeric, offset, sizeof(isUniqueNumeric));
                     offset = data.retrieve(&indexId, offset, sizeof(IndexId));
@@ -241,28 +241,28 @@ namespace nogdb {
                 }
                 ++baseTxn.dbInfo.numProperty;
             }
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::abortTxn(txn);
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
 
         // retrieve relations information
         try {
-            auto relationCursor = Datastore::CursorHandlerWrapper(txn, relationDBHandler);
-            for (auto relationKeyValue = Datastore::getNextCursor(relationCursor.get());
+            auto relationCursor = LMDBInterface::CursorHandlerWrapper(txn, relationDBHandler);
+            for (auto relationKeyValue = LMDBInterface::getNextCursor(relationCursor.get());
                  !relationKeyValue.empty();
-                 relationKeyValue = Datastore::getNextCursor(relationCursor.get())) {
-                auto key = Datastore::getKeyAsString(relationKeyValue);
+                 relationKeyValue = LMDBInterface::getNextCursor(relationCursor.get())) {
+                auto key = LMDBInterface::getKeyAsString(relationKeyValue);
                 if (key == STRING_EM_INIT) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(relationKeyValue);
+                auto data = LMDBInterface::getValueAsBlob(relationKeyValue);
                 // resolve a rid of an edge from a key
                 auto sp = split(key, ':');
                 if (sp.size() != 2) {
-                    throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                    throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
                 }
                 auto edgeId = RecordId{
                         static_cast<ClassId>(std::stoul(std::string{sp[0]}, nullptr, 0)),
@@ -291,23 +291,23 @@ namespace nogdb {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::abortTxn(txn);
+            LMDBInterface::abortTxn(txn);
             throw err;
         } catch (Graph::ErrorType &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::abortTxn(txn);
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::GRAPH);
-        } catch (Datastore::ErrorType &err) {
+        } catch (LMDBInterface::ErrorType &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::abortTxn(txn);
+            LMDBInterface::abortTxn(txn);
             throw Error(err, Error::Type::DATASTORE);
         }
         // end of transaction
-        Datastore::abortTxn(txn);
+        LMDBInterface::abortTxn(txn);
     }
 
 }

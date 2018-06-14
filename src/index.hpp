@@ -28,7 +28,7 @@
 #include <type_traits>
 
 #include "schema.hpp"
-#include "datastore.hpp"
+#include "lmdb_interface.hpp"
 #include "base_txn.hpp"
 
 #include "nogdb_types.h"
@@ -50,15 +50,15 @@ namespace nogdb {
                                 PropertyType type, bool isUnique);
 
         template<typename T>
-        static void deleteIndexCursor(Datastore::CursorHandler *cursorHandler, PositionId positionId, const T& value) {
-            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
+        static void deleteIndexCursor(LMDBInterface::CursorHandler *cursorHandler, PositionId positionId, const T& value) {
+            for (auto keyValue = LMDBInterface::getSetKeyCursor(cursorHandler, value);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                 if (*key == value) {
-                    auto valueAsPositionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto valueAsPositionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     if (positionId == *valueAsPositionId) {
-                        Datastore::deleteCursor(cursorHandler);
+                        LMDBInterface::deleteCursor(cursorHandler);
                         break;
                     }
                 } else {
@@ -68,15 +68,15 @@ namespace nogdb {
         }
 
         inline static void
-        deleteIndexCursor(Datastore::CursorHandler *cursorHandler, PositionId positionId, const std::string &value) {
-            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
+        deleteIndexCursor(LMDBInterface::CursorHandler *cursorHandler, PositionId positionId, const std::string &value) {
+            for (auto keyValue = LMDBInterface::getSetKeyCursor(cursorHandler, value);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsString(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto key = LMDBInterface::getKeyAsString(keyValue);
                 if (value == key) {
-                    auto valueAsPositionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto valueAsPositionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     if (positionId == *valueAsPositionId) {
-                        Datastore::deleteCursor(cursorHandler);
+                        LMDBInterface::deleteCursor(cursorHandler);
                         break;
                     }
                 } else {
@@ -137,14 +137,14 @@ namespace nogdb {
         getLess(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value, bool includeEqual = false) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 return backwardSearchIndex(cursorHandlerNegative.get(), classId, value, false, includeEqual);
             } else {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 auto positiveResult = backwardSearchIndex(cursorHandlerPositive.get(), classId, value, true, includeEqual);
                 auto negativeResult = fullScanIndex(cursorHandlerNegative.get(), classId);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
@@ -157,12 +157,12 @@ namespace nogdb {
         getEqual(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 return exactMatchIndex(cursorHandlerNegative.get(), classId, value);
             } else {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
                 return exactMatchIndex(cursorHandlerPositive.get(), classId, value);
             }
         };
@@ -173,17 +173,17 @@ namespace nogdb {
                    bool includeEqual = false) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 auto positiveResult = fullScanIndex(cursorHandlerPositive.get(), classId);
                 auto negativeResult = forwardSearchIndex(cursorHandlerNegative.get(), classId, value, false, includeEqual);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
                 return forwardSearchIndex(cursorHandlerPositive.get(), classId, value, true, includeEqual);
             }
         };
@@ -194,14 +194,14 @@ namespace nogdb {
                                                         const std::pair<bool, bool> &isIncludeBound) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (lowerBound < 0 && upperBound < 0) {
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 return betweenSearchIndex(cursorHandlerNegative.get(), classId, lowerBound, upperBound, false, isIncludeBound);
             } else if (lowerBound < 0 && upperBound >= 0) {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, false), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto cursorHandlerNegative = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerNegative);
                 auto positiveResult = betweenSearchIndex(cursorHandlerPositive.get(), classId,
                                                          static_cast<T>(0), upperBound,
                                                          true, {true, isIncludeBound.second});
@@ -211,22 +211,22 @@ namespace nogdb {
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = Datastore::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
+                auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerPositive = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dataIndexDBHandlerPositive);
                 return betweenSearchIndex(cursorHandlerPositive.get(), classId, lowerBound, upperBound, true, isIncludeBound);
             }
         };
 
         template<typename T>
         static std::vector<RecordDescriptor>
-        exactMatchIndex(Datastore::CursorHandler *cursorHandler, ClassId classId, const T &value) {
+        exactMatchIndex(LMDBInterface::CursorHandler *cursorHandler, ClassId classId, const T &value) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
+            for (auto keyValue = LMDBInterface::getSetKeyCursor(cursorHandler, value);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                 if (*key == value) {
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 } else {
                     break;
@@ -236,14 +236,14 @@ namespace nogdb {
         };
 
         inline static std::vector<RecordDescriptor>
-        exactMatchIndex(Datastore::CursorHandler *cursorHandler, ClassId classId, const std::string &value) {
+        exactMatchIndex(LMDBInterface::CursorHandler *cursorHandler, ClassId classId, const std::string &value) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetKeyCursor(cursorHandler, value);
+            for (auto keyValue = LMDBInterface::getSetKeyCursor(cursorHandler, value);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsString(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto key = LMDBInterface::getKeyAsString(keyValue);
                 if (key == value) {
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 } else {
                     break;
@@ -252,19 +252,19 @@ namespace nogdb {
             return result;
         };
 
-        inline static std::vector<RecordDescriptor> fullScanIndex(Datastore::CursorHandler *cursorHandler, ClassId classId) {
+        inline static std::vector<RecordDescriptor> fullScanIndex(LMDBInterface::CursorHandler *cursorHandler, ClassId classId) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getNextCursor(cursorHandler);
+            for (auto keyValue = LMDBInterface::getNextCursor(cursorHandler);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                 result.emplace_back(RecordDescriptor{classId, *positionId});
             }
             return result;
         };
 
         template<typename T>
-        static std::vector<RecordDescriptor> backwardSearchIndex(Datastore::CursorHandler *cursorHandler,
+        static std::vector<RecordDescriptor> backwardSearchIndex(LMDBInterface::CursorHandler *cursorHandler,
                                                                  ClassId classId, const T &value, bool positive,
                                                                  bool isInclude = false) {
             auto result = std::vector<RecordDescriptor>{};
@@ -273,24 +273,24 @@ namespace nogdb {
                     auto partialResult = exactMatchIndex(cursorHandler, classId, value);
                     result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
                 }
-                Datastore::getSetRangeCursor(cursorHandler, value);
-                for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                LMDBInterface::getSetRangeCursor(cursorHandler, value);
+                for (auto keyValue = LMDBInterface::getPrevCursor(cursorHandler);
                      !keyValue.empty();
-                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
-                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                     keyValue = LMDBInterface::getPrevCursor(cursorHandler)) {
+                    auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             } else {
-                for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
+                for (auto keyValue = LMDBInterface::getSetRangeCursor(cursorHandler, value);
                      !keyValue.empty();
-                     keyValue = Datastore::getNextCursor(cursorHandler)) {
+                     keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
                     if (!isInclude) {
-                        auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                        auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                         if (*key == value) continue;
                         else isInclude = true;
                     }
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             }
@@ -298,20 +298,20 @@ namespace nogdb {
         };
 
         template<typename T>
-        static std::vector<RecordDescriptor> forwardSearchIndex(Datastore::CursorHandler *cursorHandler,
+        static std::vector<RecordDescriptor> forwardSearchIndex(LMDBInterface::CursorHandler *cursorHandler,
                                                                 ClassId classId, const T &value, bool positive,
                                                                 bool isInclude = false) {
             auto result = std::vector<RecordDescriptor>{};
             if (!std::is_same<T, double>::value || positive) {
-                for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
+                for (auto keyValue = LMDBInterface::getSetRangeCursor(cursorHandler, value);
                      !keyValue.empty();
-                     keyValue = Datastore::getNextCursor(cursorHandler)) {
+                     keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
                     if (!isInclude) {
-                        auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                        auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                         if (*key == value) continue;
                         else isInclude = true;
                     }
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             } else {
@@ -319,37 +319,37 @@ namespace nogdb {
                     auto partialResult = exactMatchIndex(cursorHandler, classId, value);
                     result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
                 }
-                Datastore::getSetRangeCursor(cursorHandler, value);
-                for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                LMDBInterface::getSetRangeCursor(cursorHandler, value);
+                for (auto keyValue = LMDBInterface::getPrevCursor(cursorHandler);
                      !keyValue.empty();
-                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                     keyValue = LMDBInterface::getPrevCursor(cursorHandler)) {
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             }
             return result;
         };
 
-        inline static std::vector<RecordDescriptor> forwardSearchIndex(Datastore::CursorHandler *cursorHandler,
+        inline static std::vector<RecordDescriptor> forwardSearchIndex(LMDBInterface::CursorHandler *cursorHandler,
                                                                        ClassId classId, const std::string &value,
                                                                        bool isInclude = false) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, value);
+            for (auto keyValue = LMDBInterface::getSetRangeCursor(cursorHandler, value);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
                 if (!isInclude) {
-                    auto key = Datastore::getKeyAsString(keyValue);
+                    auto key = LMDBInterface::getKeyAsString(keyValue);
                     if (key == value) continue;
                     else isInclude = true;
                 }
-                auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                 result.emplace_back(RecordDescriptor{classId, *positionId});
             }
             return result;
         };
 
         template<typename T>
-        static std::vector<RecordDescriptor> betweenSearchIndex(Datastore::CursorHandler *cursorHandler,
+        static std::vector<RecordDescriptor> betweenSearchIndex(LMDBInterface::CursorHandler *cursorHandler,
                                                                 ClassId classId,
                                                                 const T &lower,
                                                                 const T &upper,
@@ -357,13 +357,13 @@ namespace nogdb {
                                                                 const std::pair<bool, bool> &isIncludeBound) {
             auto result = std::vector<RecordDescriptor>{};
             if (!std::is_same<T, double>::value || isLowerPositive) {
-                for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, lower);
+                for (auto keyValue = LMDBInterface::getSetRangeCursor(cursorHandler, lower);
                      !keyValue.empty();
-                     keyValue = Datastore::getNextCursor(cursorHandler)) {
-                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                     keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                    auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                     if (!isIncludeBound.first && *key == lower) continue;
                     else if ((!isIncludeBound.second && *key == upper) || *key > upper) break;
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             } else {
@@ -371,32 +371,32 @@ namespace nogdb {
                     auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
                     result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
                 }
-                Datastore::getSetRangeCursor(cursorHandler, lower);
-                for (auto keyValue = Datastore::getPrevCursor(cursorHandler);
+                LMDBInterface::getSetRangeCursor(cursorHandler, lower);
+                for (auto keyValue = LMDBInterface::getPrevCursor(cursorHandler);
                      !keyValue.empty();
-                     keyValue = Datastore::getPrevCursor(cursorHandler)) {
-                    auto key = Datastore::getKeyAsNumeric<T>(keyValue);
+                     keyValue = LMDBInterface::getPrevCursor(cursorHandler)) {
+                    auto key = LMDBInterface::getKeyAsNumeric<T>(keyValue);
                     if ((!isIncludeBound.second && *key == upper) || *key > upper) break;
-                    auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                    auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                     result.emplace_back(RecordDescriptor{classId, *positionId});
                 }
             }
             return result;
         };
 
-        inline static std::vector<RecordDescriptor> betweenSearchIndex(Datastore::CursorHandler *cursorHandler,
+        inline static std::vector<RecordDescriptor> betweenSearchIndex(LMDBInterface::CursorHandler *cursorHandler,
                                                                        ClassId classId,
                                                                        const std::string &lower,
                                                                        const std::string &upper,
                                                                        const std::pair<bool, bool> &isIncludeBound) {
             auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = Datastore::getSetRangeCursor(cursorHandler, lower);
+            for (auto keyValue = LMDBInterface::getSetRangeCursor(cursorHandler, lower);
                  !keyValue.empty();
-                 keyValue = Datastore::getNextCursor(cursorHandler)) {
-                auto key = Datastore::getKeyAsString(keyValue);
+                 keyValue = LMDBInterface::getNextCursor(cursorHandler)) {
+                auto key = LMDBInterface::getKeyAsString(keyValue);
                 if (!isIncludeBound.first && (key == lower)) continue;
                 if ((!isIncludeBound.second && (key == upper)) || (key > upper)) break;
-                auto positionId = Datastore::getValueAsNumeric<PositionId>(keyValue);
+                auto positionId = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
                 result.emplace_back(RecordDescriptor{classId, *positionId});
             }
             return result;
