@@ -196,21 +196,18 @@ namespace nogdb {
 
                         if (distance.find(nextVertex) == distance.end() || CompareT()(distance.at(nextVertex), nextDist)) {
 
-                            parent.insert({nextVertex, edge});
-                            distance.insert({nextVertex, nextDist});
+                            parent[nextVertex] = edge;
+                            distance[nextVertex] = nextDist;
 
                             heap.push(nodeInfo{nextDist, nextVertex});
                         }
                     }
                 }
 
-                std::vector<RecordDescriptor> result {};
+                std::vector<RecordDescriptor> result {dstId};
                 for (RecordId vertex = dstId; vertex != srcId;) {
-                    if (parent.find(vertex) == parent.cend()) {
-                        return {T(), std::vector<RecordDescriptor>()};
-                    }
-                    result.emplace_back(std::move(parent.at(vertex)));
-                    vertex = txn.txnCtx.dbRelation->getVertexSrc(*(txn.txnBase), result.back().rid);
+                    vertex = txn.txnCtx.dbRelation->getVertexSrc(*(txn.txnBase), parent.at(vertex).rid);
+                    result.emplace_back(vertex);
                 }
 
                 std::reverse(result.begin(), result.end());

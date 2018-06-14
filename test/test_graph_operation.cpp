@@ -4579,7 +4579,7 @@ void test_shortest_path_dijkstra() {
         auto pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() >= 1000ULL);
         }).setEdge([](const nogdb::Record &record) {
-            return (record.get("distance").toIntU() <= 120U);
+            return (record.get("distance").toIntU() <= 150U);
         });
 
         // normal traversal
@@ -4589,7 +4589,7 @@ void test_shortest_path_dijkstra() {
 
         auto res = nogdb::Traverse::shortestPath(txn, a, f, costFunction, pathFilter);
 
-        assert(res.first == 4);
+        assert(res.first == 3);
         assertSize(res.second, 4);
 
         // traverse by distance
@@ -4600,8 +4600,19 @@ void test_shortest_path_dijkstra() {
 
         auto res2 = nogdb::Traverse::shortestPath(txn, a, f, costFunctionDistance, pathFilter);
 
-        assert(res2.first == 350);
+        assert(res2.first == 280);
         assertSize(res2.second, 4);
+
+        auto costFunctionDistanceOffset = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
+            const nogdb::Record &record = nogdb::Db::getRecord(txn, descriptor);
+            return record.getIntU("distance") + 20;
+        };
+
+        auto res3 = nogdb::Traverse::shortestPath(txn, a, c, costFunctionDistanceOffset, nogdb::PathFilter());
+
+        std::cerr << res3.first << std::endl;
+        assert(res3.first == 170);
+        assertSize(res3.second, 3);
 
         txn.commit();
     } catch (const nogdb::Error &ex) {
