@@ -263,8 +263,6 @@ namespace nogdb {
 
         uint32_t getDepth() const;
 
-        const Record &updateVersion(const Txn &txn) const;
-
         uint64_t getVersion() const;
 
         void unset(const std::string &className);
@@ -319,6 +317,7 @@ namespace nogdb {
             return *this;
         };
 
+        const Record &updateVersion(const Txn &txn) const;
     };
 
     struct RecordDescriptor {

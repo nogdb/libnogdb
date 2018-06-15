@@ -131,8 +131,6 @@ namespace nogdb {
 
         private:
 
-            friend nogdb::Record;
-
             map<string, Bytes> properties{};
         };
 

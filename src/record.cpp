@@ -198,14 +198,6 @@ namespace nogdb {
         return getIntU(DEPTH_PROPERTY);
     }
 
-    const Record &Record::updateVersion(const Txn& txn) const {
-        if (basicProperties.find(TXN_VERSION) == basicProperties.end() || getBigIntU(TXN_VERSION) != txn.getVersionId()) {
-            setBasicInfo(TXN_VERSION, txn.getVersionId());
-            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
-        }
-        return *this;
-    }
-
     uint64_t Record::getVersion() const {
         const auto it = basicProperties.find(VERSION_PROPERTY);
         return (it == basicProperties.cend() ? 0ULL : it->second.toBigIntU());
@@ -267,4 +259,13 @@ namespace nogdb {
         }
         return *this;
     }
+
+    const Record &Record::updateVersion(const Txn& txn) const {
+        if (basicProperties.find(TXN_VERSION) == basicProperties.end() || getBigIntU(TXN_VERSION) != txn.getVersionId()) {
+            setBasicInfo(TXN_VERSION, txn.getVersionId());
+            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
+        }
+        return *this;
+    }
+
 }
