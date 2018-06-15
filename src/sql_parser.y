@@ -188,6 +188,13 @@ proj_item(A) ::= STRING(X) LB integer(index) RB. {
                 Projection(ProjectionType::PROPERTY, make_shared<string>(X.toString())),
                 stoull(string(index.z, index.n))));
 }
+proj_item(A) ::= IDENTITY(fName) LP projections(fArgs) RP LB cond(c) RB. {
+    A = Projection(
+        ProjectionType::CONDITION,
+        make_shared<pair<Projection, Condition>>(
+            Projection(ProjectionType::FUNCTION, make_shared<Function>(fName.toString(), move(fArgs))),
+            c));
+}
 
 // from_opt
 %type from_opt { Target }
@@ -389,6 +396,8 @@ multi_cond(A) ::= multi_cond(X) AND multi_cond(Y). { A = make_shared<MultiCondit
 multi_cond(A) ::= multi_cond(X) OR multi_cond(Y). { A = make_shared<MultiCondition>(*X || *Y); }
 multi_cond(A) ::= multi_cond(X) AND cond(Y). { A = make_shared<MultiCondition>(*X && Y); }
 multi_cond(A) ::= multi_cond(X) OR cond(Y). { A = make_shared<MultiCondition>(*X || Y); }
+multi_cond(A) ::= cond(X) AND multi_cond(Y). { A = make_shared<MultiCondition>(X && *Y); }
+multi_cond(A) ::= cond(X) OR multi_cond(Y). { A = make_shared<MultiCondition>(X || *Y); }
 multi_cond(A) ::= cond(X) AND cond(Y). { A = make_shared<MultiCondition>(X && Y); }
 multi_cond(A) ::= cond(X) OR cond(Y). { A = make_shared<MultiCondition>(X || Y); }
 multi_cond(A) ::= NOT multi_cond(X). { A = make_shared<MultiCondition>(!(*X)); }

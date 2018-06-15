@@ -4,7 +4,7 @@ AR		= ar
 CXXFLAGS	= -std=c++11
 TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option
 DEBUGFLAGS  ?= -ggdb
-OPTFLAGS    ?= -Ofast -Os
+OPTFLAGS    ?= 
 EXTFLAGS	=
 SRCDIR		= src
 BUILDDIR	= build
