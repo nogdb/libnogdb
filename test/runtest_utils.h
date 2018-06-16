@@ -28,7 +28,7 @@
 #include <string>
 #include <functional>
 #include <set>
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 inline void init() {
     const std::string clear_dir_command = "rm -rf " + DATABASE_PATH;
