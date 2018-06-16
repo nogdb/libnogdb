@@ -29,9 +29,9 @@ void test_create_edges() {
     init_vertex_person();
     init_edge_author();
 
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::RecordDescriptor v1_1{}, v1_2{}, v2{};
     try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Record r1{}, r2{};
         r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
         v1_1 = nogdb::Vertex::create(txn, "books", r1);
@@ -40,23 +40,29 @@ void test_create_edges() {
 
         r2.set("name", "J.K. Rowlings").set("age", 32);
         v2 = nogdb::Vertex::create(txn, "persons", r2);
+        txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Record r{};
         r.set("time_used", 365U);
         nogdb::Edge::create(txn, "authors", v1_1, v2, r);
         r.set("time_used", 180U);
         nogdb::Edge::create(txn, "authors", v1_1, v2, r);
+
+        auto v1 = nogdb::Db::getRecord(txn, v1_1);
+        assert(v1.getVersion() == 2ULL);
+
+        txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
-    txn.commit();
 
     destroy_edge_author();
     destroy_vertex_person();
