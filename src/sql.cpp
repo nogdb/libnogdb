@@ -20,6 +20,7 @@
  */
 
 #include <cstring>
+#include <numeric>
 #include <cassert>
 
 #include "constant.hpp"
@@ -66,8 +67,31 @@ static unsigned char *HexToBlob(const char *z, int n) {
     return blob;
 }
 
-string nogdb::sql_parser::to_string(const RecordDescriptor &r) {
-    return "#" + to_string(r.rid.first) + ":" + to_string(r.rid.second);
+typedef function<bool(const string &, const string &)> StringCaseCompare;
+static bool stringcasecmp(const string &a, const string &b) {
+    return strcasecmp(a.c_str(), b.c_str()) < 0;
+}
+
+string nogdb::sql_parser::to_string(const Projection &proj) {
+    switch (proj.type) {
+        case ProjectionType::PROPERTY:
+            return proj.get<string>();
+        case ProjectionType::FUNCTION:
+            return proj.get<Function>().toString();
+        case ProjectionType::METHOD: {
+            const auto &method = proj.get<pair<Projection, Projection>>();
+            return to_string(method.first) + "." + to_string(method.second);
+        }
+        case ProjectionType::ARRAY_SELECTOR: {
+            const auto &arrSel = proj.get<pair<Projection, unsigned long>>();
+            return to_string(arrSel.first) + "[" + ::to_string(arrSel.second) + "]";
+        }
+        case ProjectionType::ALIAS:
+            return proj.get<pair<Projection, string>>().second;
+        default:
+            assert(false);
+            abort();
+    }
 }
 
 
@@ -125,12 +149,20 @@ string &Token::dequote(string &z) const {
         for (i = 1, j = 0;; i++) {
             require(z[i]);
             if (z[i] == quote) {
+                break;
+            } else if (z[i] == '\\') {
                 if (z[i + 1] == quote) {
+                    // if backslash quote (escape quote), remove backslash.
                     z[j++] = quote;
-                    i++;
+                } else if (z[i + 1] == '\\') {
+                    // if (backslash backslash (escape backslash, remove one backslash.
+                    z[j++] = '\\';
                 } else {
-                    break;
+                    // else don't remove anything.
+                    z[j++] = z[i];
+                    z[j++] = z[i + 1];
                 }
+                i++;
             } else {
                 z[j++] = z[i];
             }
@@ -260,9 +292,23 @@ string ResultSet::descriptorsToString() const {
     stringstream buff;
     buff << this->size();
     for (const Result &r: *this) {
-        buff << "," << to_string(r.descriptor);
+        buff << "," << r.descriptor.rid;
     }
     return buff.str();
+}
+
+ResultSet& ResultSet::limit(int skip, int limit) {
+    if (skip > 0) {
+        if ((unsigned long)skip < this->size()) {
+            this->erase(this->begin(), this->begin() + skip);
+        } else {
+            this->clear();
+        }
+    }
+    if (limit >= 0 && (unsigned) limit < this->size()) {
+        this->resize(limit);
+    }
+    return *this;
 }
 
 
@@ -270,7 +316,7 @@ string ResultSet::descriptorsToString() const {
 
 Function::Function(const string &name_, vector<Projection> &&args_)
         : name(name_), args(move(args_)) {
-    static const auto nameMap = map<string, Id, function<bool(const string &, const string &)>>
+    static const auto nameMap = map<string, Id, StringCaseCompare>
             (
                     {
                             {"COUNT",  Id::COUNT},
@@ -286,7 +332,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
                             {"BOTHE",  Id::BOTH_E},
                             {"EXPAND", Id::EXPAND},
                     },
-                    [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+                    stringcasecmp
             );
 
     auto id_ = nameMap.find(name);
@@ -298,7 +344,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
 }
 
 Bytes Function::execute(Txn &txn, const Result &input) const {
-    require(this->isGroupResult() == false);
+    require(this->isAggregateResult() == false);
     require(this->isExpand() == false);
 
     function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
@@ -333,7 +379,7 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
     return func(txn, input, this->args);
 }
 
-Bytes Function::executeGroupResult(const ResultSet &input) const {
+Bytes Function::executeAggregateResult(const ResultSet &input) const {
     function<Bytes(const ResultSet &, const vector<Projection> &)> func;
     switch (this->id) {
         case Id::COUNT:
@@ -353,7 +399,7 @@ Bytes Function::executeExpand(Txn &txn, ResultSet &input) const {
     return expand(txn, input, args);
 }
 
-bool Function::isGroupResult() const {
+bool Function::isAggregateResult() const {
     switch (this->id) {
         case Id::COUNT:
         case Id::MIN:
@@ -385,24 +431,17 @@ bool Function::isExpand() const {
 }
 
 string Function::toString() const {
-    string result(this->name + "(");
-    if (!this->args.empty()) {
-        for (const Projection &arg: this->args) {
-            switch (arg.type) {
-                case ProjectionType::PROPERTY:
-                    result += arg.get<string>() + ", ";
-                    break;
-                case ProjectionType::FUNCTION:
-                    result += arg.get<Function>().toString() + ", ";
-                default:
-                    throw Error(SQL_INVALID_PROJECTION, Error::Type::SQL);
-            }
-        }
-        // remove lase ", "
-        result.pop_back();
-        result.pop_back();
-    }
-    return result + ")";
+    return (this->name + "(" +
+            (this->args.size() == 0
+             ? ""
+             : accumulate(this->args.cbegin() + 1,
+                          this->args.cend(),
+                          to_string(this->args.front()),
+                          [](const string &acc, const Projection &proj) {
+                              return acc + ", " + to_string(proj);
+                          })
+             ) +
+            ")");
 }
 
 #pragma mark -- private
@@ -493,27 +532,22 @@ Bytes Function::walkBothEdge(Txn &txn, const Result &input, const vector<Project
 }
 
 Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &args) {
-    if (args.size() == 1) {
-        ResultSet results;
-        const Projection &arg = args[0];
-        if (arg.type == ProjectionType::FUNCTION) {
-            const Function &func = arg.get<Function>();
-            if (func.isWalkResult()) {
-                for (const Result &in: input) {
-                    Bytes out = func.execute(txn, in);
-                    require(out.isResults());
-                    results.insert(results.end(), make_move_iterator(out.results().begin()),
-                                   make_move_iterator(out.results().end()));
-                }
-            }
-        } else {
-            throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
-        }
-        input = move(results);
-        return Bytes();
-    } else {
+    if (args.size() != 1) {
         throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
     }
+
+    ResultSet results{};
+    const Projection &arg = args[0];
+    for (const Result &in: input) {
+        Bytes out = Context::getProjectionItem(txn, in, arg, {});
+        if (!out.isResults()) {
+            throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        }
+        results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
+    }
+
+    input = move(results);
+    return Bytes();
 }
 
 nogdb::ClassFilter Function::argsToClassFilter(const vector<Projection> &args) {
@@ -603,7 +637,7 @@ static const unsigned char aiClass[] = {
 #define IdChar(C)  (((unsigned char)C)&0x80 || isalnum(C))
 
 static int keywordCode(const char *z, int n, int *pType) {
-    static const auto kw = map<string, int, function<bool(const string &, const string &)>>(
+    static const auto kw = map<string, int, StringCaseCompare>(
             {
                     {"ALTER",    TK_ALTER},
                     {"AND",      TK_AND},
@@ -646,7 +680,7 @@ static int keywordCode(const char *z, int n, int *pType) {
                     {"WHERE",    TK_WHERE},
                     {"WITH",     TK_WITH},
             },
-            [](const string &a, const string &b) { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+            stringcasecmp
     );
     try {
         *pType = kw.at(string(z, n));
@@ -739,12 +773,10 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
         case CC_QUOTE: {
             int delim = z[0];
             for (i = 1; z[i] != '\0'; i++) {
-                if (z[i] == delim) {
-                    if (z[i + 1] == delim) {
-                        i++;
-                    } else {
-                        break;
-                    }
+                if (z[i] == '\\') {
+                    i++;
+                } else if (z[i] == delim) {
+                    break;
                 }
             }
             if (z[i] == '\'' || z[i] == '"') {

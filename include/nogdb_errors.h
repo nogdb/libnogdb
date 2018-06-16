@@ -82,6 +82,7 @@
 #define SQL_INVALID_TRAVERSE_MIN_DEPTH  0xa00b
 #define SQL_INVALID_TRAVERSE_MAX_DEPTH  0xa00c
 #define SQL_INVALID_TRAVERSE_STRATEGY   0xa00d
+#define SQL_INVALID_PROJECTION_METHOD   0xa00e
 #define SQL_NOT_IMPLEMENTED             0xaf01
 #define SQL_UNKNOWN_ERR                 0xafff
 
@@ -224,6 +225,8 @@ namespace nogdb {
                             return "SQL_INVALID_TRAVERSE_MAX_DEPTH: Traverse maximum depth must be unsigned integer.";
                         case SQL_INVALID_TRAVERSE_STRATEGY:
                             return "SQL_INVALID_TRAVERSE_STRATEGY: Traverse strategy must be DEPTH_FIRST or BREADTH_FIRST.";
+                        case SQL_INVALID_PROJECTION_METHOD:
+                            return "SQL_INVALID_PROJECTION_METHOD: Projection method has some problem (invalid results).";
                         case SQL_NOT_IMPLEMENTED:
                             return "SQL_NOT_IMPLEMENTED: A function has not been implemented yet.";
                         case SQL_UNKNOWN_ERR:
