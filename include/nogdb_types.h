@@ -201,7 +201,7 @@ namespace nogdb {
     class Record {
     public:
 
-        using RecordPropertyType = std::map<std::string, Bytes>;
+        using DataType = std::map<std::string, Bytes>;
 
         Record() = default;
 
@@ -229,9 +229,9 @@ namespace nogdb {
             return *this;
         }
 
-        const RecordPropertyType &getAll() const;
+        const DataType &getAll() const;
 
-        const RecordPropertyType &getBasicInfo() const;
+        const DataType &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -283,15 +283,15 @@ namespace nogdb {
         friend struct Vertex;
         friend struct Edge;
 
-        Record(RecordPropertyType properties);
+        Record(DataType properties);
 
-        Record(RecordPropertyType properties, RecordPropertyType basicProperties)
+        Record(DataType properties, DataType basicProperties)
                 : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
 
         inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
 
-        RecordPropertyType properties{};
-        mutable RecordPropertyType basicProperties{};
+        DataType properties{};
+        mutable DataType basicProperties{};
 
         template<typename T>
         const Record &setBasicInfo(const std::string &propName, const T &value) const {
