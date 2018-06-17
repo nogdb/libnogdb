@@ -40,7 +40,7 @@ namespace nogdb {
      * NOTE: Special thanks to https://github.com/bendiken/lmdbxx/blob/master/lmdb%2B%2B.h
      * for the original idea and source code of lmdbxx
      */
-    namespace lmdb {
+    namespace lmdb_interface {
 
         /**
          * Definitions of mdb environment flags
@@ -648,7 +648,7 @@ namespace nogdb {
              * @param key
              * @param val
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             template<typename K, typename V>
             void put(TxnHandler* const txn,
@@ -670,7 +670,7 @@ namespace nogdb {
              * @param key
              * @param blob
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             template<typename K>
             void put(TxnHandler* const txn,
@@ -692,7 +692,7 @@ namespace nogdb {
              * @param key
              * @param data
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             void put(TxnHandler* const txn,
                      const Key& key,
@@ -711,7 +711,7 @@ namespace nogdb {
              * @param key a NUL-terminated string key
              * @param val
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             template<typename V>
             void put(TxnHandler* const txn,
@@ -733,7 +733,7 @@ namespace nogdb {
              * @param key a NUL-terminated string key
              * @param blob
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             void put(TxnHandler* const txn,
                      const char* const key,
@@ -754,7 +754,7 @@ namespace nogdb {
              * @param key a NUL-terminated string key
              * @param val a NUL-terminated string key
              * @param append a new value will be appended at the bottom of the database
-             * @param overwrite enter the new key/data pair only although the key already appear in the database
+             * @param overwrite enter the new key/data pair although the key already appears in the database
              */
             bool put(TxnHandler* const txn,
                      const char* const key,
