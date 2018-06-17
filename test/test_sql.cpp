@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "nogdb.h"
+#include <nogdb/nogdb.h>
 #include "runtest.h"
 #include "runtest_utils.h"
 #include "test_prepare.h"

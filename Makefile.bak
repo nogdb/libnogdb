@@ -16,7 +16,7 @@ SOURCES		= $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 TESTSRCS	= $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
 OBJECTS		= $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 TESTOBJS	= $(patsubst $(TESTDIR)/%,$(TESTDIR)/%,$(TESTSRCS:.$(SRCEXT)=.o))
-HEADERS		= -Iinclude -I$(LIBPATH) -I.
+HEADERS		= -Iinclude -Iinclude/nogdb -I$(LIBPATH) -I.
 ANAME		= $(TARGETDIR)/libnogdb.a
 SONAME		= $(TARGETDIR)/libnogdb.so
 DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
@@ -109,10 +109,8 @@ install:
 	@cp $(TARGETDIR)/* /usr/local/lib
 	@mkdir -p /usr/local/include/nogdb
 	@mkdir -p /usr/local/include/nogdb/lmdb
-	@mkdir -p /usr/local/include/nogdb/boost
-	@cp include/*.h /usr/local/include/nogdb
+	@cp -R include/nogdb /usr/local/include
 	@cp lib/lmdb/*.h /usr/local/include/nogdb/lmdb
-	@cp -R lib/boost/* /usr/local/include/nogdb/boost
 	@echo " [Done]"
 
 uninstall:
