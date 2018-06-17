@@ -72,6 +72,7 @@ add_dependencies(nogdb lmdb_OBJ sql_parser.cpp)
 target_include_directories(nogdb
     PRIVATE
         /usr/local/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/
         ${CMAKE_CURRENT_SOURCE_DIR}/include/
@@ -86,14 +87,55 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(nogdb Threads::Threads)
 
+## TARGET test
+enable_testing()
+
+set(TEST_COMPILE_OPTIONS
+    -std=c++11
+    -W
+    -Wall
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-unused-but-set-variable
+    -Wno-unknown-warning-option
+)
+
+set(RUNTEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/runtest.cpp")
+string(REPLACE ${RUNTEST_PATH} "" nogdb_TEST "${nogdb_TEST}")
+add_library(nogdb_test_object OBJECT ${nogdb_TEST} ${nogdb_TEST_HEADER})
+target_include_directories(nogdb_test_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
+
+# runtest_executable(name)
+function(runtest_executable name)
+    string(TOUPPER ${name} upper_name)
+    add_executable(runtest_${name} EXCLUDE_FROM_ALL ${RUNTEST_PATH} $<TARGET_OBJECTS:nogdb_test_object>)
+    target_link_libraries(runtest_${name} nogdb)
+    target_compile_options(runtest_${name}
+        PRIVATE
+            ${TEST_COMPILE_OPTIONS}
+            -DTEST_${upper_name}_OPERATIONS
+    )
+    add_test(build_runtest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target runtest_${name})
+    add_test(NAME test_${name} COMMAND runtest_${name})
+    set_tests_properties(test_${name} PROPERTIES DEPENDS ctest_build_test_${name})
+endfunction()
+
+runtest_executable(context)
+runtest_executable(schema)
+runtest_executable(record)
+runtest_executable(misc)
+runtest_executable(graph)
+runtest_executable(find)
+runtest_executable(inheritance)
+runtest_executable(index)
+runtest_executable(schema_txn)
+runtest_executable(txn)
+runtest_executable(sql)
+
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include/nogdb
-    FILES_MATCHING PATTERN "*.h"
+install(DIRECTORY include/ DESTINATION include
 )
 install(DIRECTORY lib/lmdb/ DESTINATION include/nogdb/lmdb
     FILES_MATCHING PATTERN "lib/lmdb/*.h"
-)
-install(DIRECTORY lib/boost/ DESTINATION include/nogdb/boost
-    FILES_MATCHING PATTERN "lib/boost/*.hpp"
 )
