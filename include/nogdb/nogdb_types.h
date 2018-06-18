@@ -201,7 +201,7 @@ namespace nogdb {
     class Record {
     public:
 
-        using StringToBytesMap = std::map<std::string, Bytes>;
+        using PropertyToBytesMap = std::map<std::string, Bytes>;
 
         Record() = default;
 
@@ -229,9 +229,9 @@ namespace nogdb {
             return *this;
         }
 
-        const StringToBytesMap &getAll() const;
+        const PropertyToBytesMap &getAll() const;
 
-        const StringToBytesMap &getBasicInfo() const;
+        const PropertyToBytesMap &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -283,15 +283,15 @@ namespace nogdb {
         friend struct Vertex;
         friend struct Edge;
 
-        Record(StringToBytesMap properties);
+        Record(PropertyToBytesMap properties);
 
-        Record(StringToBytesMap properties, StringToBytesMap basicProperties)
+        Record(PropertyToBytesMap properties, PropertyToBytesMap basicProperties)
                 : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
 
         inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
 
-        StringToBytesMap properties{};
-        mutable StringToBytesMap basicProperties{};
+        PropertyToBytesMap properties{};
+        mutable PropertyToBytesMap basicProperties{};
 
         template<typename T>
         const Record &setBasicInfo(const std::string &propName, const T &value) const {

@@ -62,17 +62,17 @@ namespace nogdb {
         return *this;
     }
 
-    const Record::StringToBytesMap &Record::getAll() const {
+    const Record::PropertyToBytesMap &Record::getAll() const {
         return properties;
     }
 
-    const Record::StringToBytesMap &Record::getBasicInfo() const {
+    const Record::PropertyToBytesMap &Record::getBasicInfo() const {
         return basicProperties;
     }
 
     Bytes Record::get(const std::string &propName) const {
-        const StringToBytesMap &prop = (isBasicInfo(propName) ? basicProperties : properties);
-        const StringToBytesMap::const_iterator it = prop.find(propName);
+        const PropertyToBytesMap &prop = (isBasicInfo(propName) ? basicProperties : properties);
+        const PropertyToBytesMap::const_iterator it = prop.find(propName);
         return it == prop.cend() ? Bytes{} : it->second;
     }
 
@@ -220,7 +220,7 @@ namespace nogdb {
         properties.clear();
     }
 
-    Record::Record(StringToBytesMap properties) : properties(std::move(properties)) {
+    Record::Record(PropertyToBytesMap properties) : properties(std::move(properties)) {
         for (auto it = this->properties.begin(); it != this->properties.end();) {
             if (isBasicInfo(it->first)) {
                 basicProperties.insert(*it);
