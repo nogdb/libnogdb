@@ -110,7 +110,7 @@ Bytes Token::toBytes() const {
         case TK_BLOB: {
             // "x'hhhh' or X'hhhh'"
             const char *z = this->z + 2;
-            int n = this->n - 3;
+            int n = this->n - 3; // -3 is remove X and two quote.
             auto blob = unique_ptr<unsigned char[]>(HexToBlob(z, n));
             return Bytes(blob.get(), n / 2, nogdb::PropertyType::BLOB);
         }
