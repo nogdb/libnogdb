@@ -30,7 +30,7 @@
 #include <vector>
 #include <algorithm>
 #include <set>
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 #include "runtest_config.h"
 #include "runtest_utils.h"
 
