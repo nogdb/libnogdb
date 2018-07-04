@@ -28,11 +28,22 @@
 #include <string>
 #include <functional>
 #include <set>
+#include <dirent.h>
+#include <sys/file.h>
 #include "nogdb/nogdb.h"
 
 inline void init() {
-    const std::string clear_dir_command = "rm -rf " + DATABASE_PATH;
-    system(clear_dir_command.c_str());
+    // clear_dir
+    DIR *theFolder = opendir(DATABASE_PATH.c_str());
+    struct dirent *next_file;
+    char filepath[256];
+    while ( (next_file = readdir(theFolder)) != NULL )
+    {
+        sprintf(filepath, "%s/%s", DATABASE_PATH.c_str(), next_file->d_name);
+        remove(filepath);
+    }
+    closedir(theFolder);
+    rmdir(DATABASE_PATH.c_str());
 }
 
 inline void showSchema(const nogdb::Txn &txn) {

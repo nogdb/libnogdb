@@ -79,7 +79,10 @@ target_compile_options(nogdb
 )
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(nogdb Threads::Threads)
+target_link_libraries(nogdb
+    Threads::Threads
+    atomic
+)
 
 ## TARGET test
 enable_testing()

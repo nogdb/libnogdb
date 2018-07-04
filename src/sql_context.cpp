@@ -19,6 +19,8 @@
  *
  */
 
+#include <functional>
+
 #include "constant.hpp"
 #include "sql.hpp"
 #include "sql_parser.h"
