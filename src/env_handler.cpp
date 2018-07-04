@@ -20,8 +20,6 @@
  */
 
 #include <iomanip>
-#include <sys/file.h>
-#include <sys/stat.h>
 
 #include "utils.hpp"
 #include "constant.hpp"

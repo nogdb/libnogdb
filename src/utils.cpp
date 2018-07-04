@@ -88,19 +88,19 @@ namespace nogdb {
 #else
 
     int mkdir(const char *pathname, int mode) {
-        return mkdir(pathname, mode);
+        return ::mkdir(pathname, mode);
     }
 
     int openLockFile(const char *pathname) {
         int lockFileDescriptor = open(pathname, O_CREAT | O_RDONLY, 0644);
-        if (flock(lockFileDescriptor, LOCK_EX, LOCK_NB) == -1) {
+        if (flock(lockFileDescriptor, LOCK_EX | LOCK_NB) == -1) {
             lockFileDescriptor = -1;
         }
         return lockFileDescriptor;
     }
 
     int unlockFile(int fd) {
-        return flock(fd, LOCK_UN)
+        return flock(fd, LOCK_UN);
     }
 
 #endif

@@ -28,6 +28,7 @@
 #include <string>
 #include <functional>
 #include <set>
+#include <unistd.h>
 #include <dirent.h>
 #include <sys/file.h>
 #include "nogdb/nogdb.h"
@@ -35,15 +36,17 @@
 inline void init() {
     // clear_dir
     DIR *theFolder = opendir(DATABASE_PATH.c_str());
-    struct dirent *next_file;
-    char filepath[256];
-    while ( (next_file = readdir(theFolder)) != NULL )
-    {
-        sprintf(filepath, "%s/%s", DATABASE_PATH.c_str(), next_file->d_name);
-        remove(filepath);
+    if (theFolder != NULL) {
+        struct dirent *next_file;
+        char filepath[256];
+        while ( (next_file = readdir(theFolder)) != NULL )
+        {
+            sprintf(filepath, "%s/%s", DATABASE_PATH.c_str(), next_file->d_name);
+            remove(filepath);
+        }
+        closedir(theFolder);
+        rmdir(DATABASE_PATH.c_str());
     }
-    closedir(theFolder);
-    rmdir(DATABASE_PATH.c_str());
 }
 
 inline void showSchema(const nogdb::Txn &txn) {
