@@ -1,5 +1,8 @@
 # Change Log
-## v0.11.0-beta [2018-06-??]
+## v0.12.0-beta [2018-??-??]
+* TBA
+
+## v0.11.0-beta [2018-06-18]
 * General changes:
   * All `nogdb::Vertex::find*(...)` and `nogdb::Edge::find*(...)` functions are obsoleted and have been renamed to `nogdb::Vertex::get*(...)` and `nogdb::Edge::get*(...)` respectively.
   * `nogdb::Class::create(...)` and `nogdb::Class::createExtend(...)` with `PropertyMapType` functions are deprecated.
