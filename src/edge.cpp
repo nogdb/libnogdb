@@ -25,7 +25,7 @@
 #include "schema.hpp"
 #include "constant.hpp"
 #include "env_handler.hpp"
-#include "lmdb_interface.hpp"
+#include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
 #include "compare.hpp"

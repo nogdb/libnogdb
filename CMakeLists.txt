@@ -20,8 +20,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(COMPILE_OPTIONS
     -std=c++11
-    -Os
-    -Ofast
     -W
     -Wall
     -Wno-unused-parameter
@@ -31,10 +29,6 @@ set(COMPILE_OPTIONS
     -fPIC
     -march=native
 )
-
-## TARGET test
-include(${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt)
-include(${CMAKE_CURRENT_SOURCE_DIR}/test/module/CMakeLists.txt)
 
 ## TARGET lmdb
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb)

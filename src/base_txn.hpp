@@ -24,7 +24,7 @@
 
 #include <atomic>
 
-#include "lmdb_interface.hpp"
+#include "lmdb_engine.hpp"
 #include "txn_object.hpp"
 #include "graph.hpp"
 #include "schema.hpp"

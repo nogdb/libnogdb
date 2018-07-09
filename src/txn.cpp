@@ -23,7 +23,7 @@
 
 #include "shared_lock.hpp"
 #include "graph.hpp"
-#include "lmdb_interface.hpp"
+#include "lmdb_engine.hpp"
 #include "base_txn.hpp"
 
 #include "nogdb_txn.h"

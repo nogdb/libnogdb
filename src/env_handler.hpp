@@ -22,7 +22,7 @@
 #ifndef __ENV_HANDLER_HPP_INCLUDED_
 #define __ENV_HANDLER_HPP_INCLUDED_
 
-#include "lmdb_interface.hpp"
+#include "lmdb_engine.hpp"
 
 namespace nogdb {
 

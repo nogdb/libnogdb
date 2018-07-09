@@ -12,8 +12,6 @@ target_include_directories(lmdb
 )
 target_compile_options(lmdb
     PRIVATE
-        -Ofast
-        -fPIC
         -W
         -Wall
         -Wno-unused-parameter

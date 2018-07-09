@@ -20,6 +20,3 @@
  */
 
 #include <gtest/gtest.h>
-#include "../../src/lmdb_interface.hpp"
-
-int

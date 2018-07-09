@@ -26,10 +26,7 @@
 
 namespace nogdb {
 
-    constexpr unsigned int MAX_DB_NUM = 1024;
-    constexpr unsigned long MAX_DB_SIZE = 1073741824; // 1GB
     constexpr unsigned int MAX_VERSION_CONTROL_SIZE = 128;
-    const std::string DB_LOCK_FILE = "/.context.lock";
 
     constexpr uint16_t INIT_NUM_CLASSES = 4;
     const std::string TB_CLASSES = ".classes";

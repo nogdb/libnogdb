@@ -28,7 +28,7 @@
 #include <type_traits>
 
 #include "schema.hpp"
-#include "lmdb_interface.hpp"
+#include "lmdb_engine.hpp"
 #include "base_txn.hpp"
 
 #include "nogdb_types.h"
