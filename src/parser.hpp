@@ -51,7 +51,7 @@ namespace nogdb {
 
         static Record parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo);
 
-        static Record parseRawDataWithBasicInfo(const std::string className,
+        static Record parseRawDataWithBasicInfo(const std::string &className,
                                                 const RecordId& rid,
                                                 const KeyValue &keyValue,
                                                 const ClassPropertyInfo &classPropertyInfo);

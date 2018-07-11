@@ -23,6 +23,7 @@
 #ifndef __NOGDB_TYPES_H_INCLUDED_
 #define __NOGDB_TYPES_H_INCLUDED_
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <map>
@@ -122,6 +123,8 @@ namespace nogdb {
         IndexId numIndex{0};           // a number of indexes in the database.
     };
 
+    class Txn;
+
     class Bytes {
     public:
         friend class Record;
@@ -197,12 +200,15 @@ namespace nogdb {
 
     class Record {
     public:
+
+        using PropertyToBytesMap = std::map<std::string, Bytes>;
+
         Record() = default;
 
         template<typename T>
-        Record &set(const std::string &propName, T value) {
-            if (!propName.empty() && propName.at(0) != '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+        Record &set(const std::string &propName, const T &value) {
+            if (!propName.empty() && !isBasicInfo(propName)) {
+                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
         }
@@ -215,7 +221,17 @@ namespace nogdb {
 
         Record &set(const std::string &propName, const nogdb::Bytes &b);
 
-        const std::map<std::string, Bytes> &getAll() const;
+        template<typename T>
+        Record &setIfNotExists(const std::string &propName, const T &value) {
+            if (properties.find(propName) == properties.cend()) {
+                set(propName, value);
+            }
+            return *this;
+        }
+
+        const PropertyToBytesMap &getAll() const;
+
+        const PropertyToBytesMap &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -258,26 +274,50 @@ namespace nogdb {
         void clear();
 
     private:
+
         friend struct Parser;
         friend struct Generic;
         friend struct Algorithm;
         friend class sql_parser::Record;
 
-        std::map<std::string, Bytes> properties{};
+        friend struct Vertex;
+        friend struct Edge;
+
+        Record(PropertyToBytesMap properties);
+
+        Record(PropertyToBytesMap properties, PropertyToBytesMap basicProperties)
+                : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
+
+        inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
+
+        PropertyToBytesMap properties{};
+        mutable PropertyToBytesMap basicProperties{};
 
         template<typename T>
-        Record &setBasicInfo(const std::string &propName, T value) {
-            if (!propName.empty() && propName.at(0) == '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+        const Record &setBasicInfo(const std::string &propName, const T &value) const {
+            if (!propName.empty() && isBasicInfo(propName)) {
+                basicProperties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
             }
             return *this;
         };
 
-        Record &setBasicInfo(const std::string &propName, const unsigned char *value);
+        const Record &setBasicInfo(const std::string &propName, const unsigned char *value) const;
 
-        Record &setBasicInfo(const std::string &propName, const char *value);
+        const Record &setBasicInfo(const std::string &propName, const char *value) const;
 
-        Record &setBasicInfo(const std::string &propName, const std::string &value);
+        const Record &setBasicInfo(const std::string &propName, const std::string &value) const;
+
+        const Record &setBasicInfo(const std::string &propName, const Bytes& b) const;
+
+        template<typename T>
+        const Record &setBasicInfoIfNotExists(const std::string &propName, const T &value) const {
+            if (basicProperties.find(propName) == basicProperties.cend()) {
+                setBasicInfo(propName, value);
+            }
+            return *this;
+        };
+
+        const Record &updateVersion(const Txn &txn) const;
     };
 
     struct RecordDescriptor {
