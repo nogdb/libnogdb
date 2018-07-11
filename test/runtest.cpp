@@ -118,6 +118,7 @@ int main() {
     exec(test_get_edge_all_cursor, "retrieving a cursor of incoming and outgoing edges from a vertex");
     exec(test_get_invalid_edge_all_cursor, "retrieving a cursor of incoming and outgoing edges from an invalid vertex");
     exec(test_update_vertex, "updating a vertex");
+    exec(test_update_vertex_version, "updating version of a vertex");
     exec(test_update_invalid_vertex, "updating an invalid vertex");
     exec(test_delete_vertex_only, "deleting a vertex (without edges)");
     exec(test_delete_all_vertices, "deleting all vertices in the same class");

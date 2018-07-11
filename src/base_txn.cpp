@@ -218,9 +218,9 @@ namespace nogdb {
                         WriteLock<boost::shared_mutex> _(*(ctx.dbInfoMutex));
                         (*ctx.dbInfo) = dbInfo;
                     }
-                    // allow the next txns to see the latest version and updates
-                    ctx.dbTxnStat->fetchAddMaxVersionId();
                 }
+                // allow the next txns to see the latest version and updates
+                ctx.dbTxnStat->fetchAddMaxVersionId();
                 auto minTxn = ctx.dbTxnStat->minActiveTxnId();
                 if (minTxn.first == 0 && minTxn.second == 0) {
                     ctx.dbSchema->clearDeletedElements(versionId);
