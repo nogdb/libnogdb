@@ -29,9 +29,9 @@ void test_create_edges() {
     init_vertex_person();
     init_edge_author();
 
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::RecordDescriptor v1_1{}, v1_2{}, v2{};
     try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Record r1{}, r2{};
         r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
         v1_1 = nogdb::Vertex::create(txn, "books", r1);
@@ -40,23 +40,29 @@ void test_create_edges() {
 
         r2.set("name", "J.K. Rowlings").set("age", 32);
         v2 = nogdb::Vertex::create(txn, "persons", r2);
+        txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Record r{};
         r.set("time_used", 365U);
         nogdb::Edge::create(txn, "authors", v1_1, v2, r);
         r.set("time_used", 180U);
         nogdb::Edge::create(txn, "authors", v1_1, v2, r);
+
+        auto v1 = nogdb::Db::getRecord(txn, v1_1);
+        assert(v1.getVersion() == 2ULL);
+
+        txn.commit();
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
-    txn.commit();
 
     destroy_edge_author();
     destroy_vertex_person();
@@ -669,6 +675,12 @@ void test_update_edge() {
         r3.set("time_used", 365U);
         auto e1 = nogdb::Edge::create(txn, "authors", v1, v2, r3);
 
+        auto rec_book = nogdb::Vertex::get(txn, "books")[0].record;
+        assert(rec_book.getVersion() == 1ULL);
+
+        auto rec_person = nogdb::Vertex::get(txn, "persons")[0].record;
+        assert(rec_person.getVersion() == 1ULL);
+
         auto record = nogdb::Db::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
@@ -678,17 +690,17 @@ void test_update_edge() {
         assert(res[0].record.get("time_used").toIntU() == 400U);
         assert(res[0].record.getText("@className") == "authors");
         assert(res[0].record.getText("@recordId") == rid2str(e1.rid));
-        assert(res[0].record.getBigIntU("@version") == 2ULL);
-        assert(res[0].record.getVersion() == 2ULL);
+        assert(res[0].record.getBigIntU("@version") == 1ULL);
+        assert(res[0].record.getVersion() == 1ULL);
 
         // update 10 times
         for (size_t i = 0; i < 10; ++i) {
 
             res[0].record.set("time_used", 1000U);
 
-            assert(res[0].record.getVersion() == 2ULL + i);
+            assert(res[0].record.getVersion() == 1ULL);
             nogdb::Edge::update(txn, res[0].descriptor, res[0].record);
-            assert(res[0].record.getVersion() == 3ULL + i);
+            assert(res[0].record.getVersion() == 1ULL);
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1052,8 +1064,8 @@ void test_delete_edge() {
     init_vertex_person();
     init_edge_author();
 
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Record r1{}, r2{}, r3{};
         r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
         auto v1 = nogdb::Vertex::create(txn, "books", r1);
@@ -1062,6 +1074,15 @@ void test_delete_edge() {
         r3.set("time_used", 365U);
         auto e1 = nogdb::Edge::create(txn, "authors", v1, v2, r3);
 
+        txn.commit();
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+        auto e1 = nogdb::Edge::get(txn, "authors")[0].descriptor;
         auto record = nogdb::Db::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
@@ -1070,18 +1091,76 @@ void test_delete_edge() {
         assertSize(res, 0);
         nogdb::Edge::destroy(txn, e1);
 
+        auto v1 = nogdb::Vertex::get(txn, "books")[0];
+        auto v2 = nogdb::Vertex::get(txn, "persons")[0];
+
+        assert(v1.record.getVersion() == 2ULL);
+        assert(v2.record.getVersion() == 2ULL);
+
+        txn.commit();
+
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
-
-    txn.commit();
 
     destroy_edge_author();
     destroy_vertex_person();
     destroy_vertex_book();
 }
 
+void test_update_version() {
+    init_vertex_book();
+    init_vertex_person();
+    init_edge_author();
+
+    const int E = 5;
+    nogdb::RecordDescriptor edge[E];
+
+    try {
+        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+        nogdb::Record r1{}, r2{};
+        r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
+        auto v1 = nogdb::Vertex::create(txn, "books", r1);
+        r2.set("name", "J.K. Rowlings").set("age", 32);
+        auto v2 = nogdb::Vertex::create(txn, "persons", r2);
+
+        for (int i = 0; i < E; ++i) {
+            nogdb::Record r3{};
+            r3.set("time_used", 365U + i);
+            edge[i] = nogdb::Edge::create(txn, "authors", v1, v2, r3);
+        }
+
+        txn.commit();
+
+    } catch (const nogdb::Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+    const int ITERATION = 10;
+    for (int i = 0; i < ITERATION; ++i) {
+        try {
+
+            auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+
+            for (int j = 0; j < E; ++j) {
+                nogdb::Record r3 = nogdb::Db::getRecord(txn, edge[j]);
+                assert(r3.getVersion() == 1ULL + j);
+                r3.set("time_used", 365U + j + E);
+                assert(r3.getVersion() == 2ULL + j);
+
+                r3.set("time_used", 365U + j + E * i);
+                assert(r3.getVersion() == 2ULL + j);
+            }
+
+            txn.commit();
+
+        } catch (const nogdb::Error &ex) {
+            std::cout << "\nError: " << ex.what() << std::endl;
+            assert(false);
+        }
+    }
+}
 
 void test_delete_invalid_edge() {
     init_vertex_book();

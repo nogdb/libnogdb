@@ -111,6 +111,10 @@ namespace nogdb {
                 dataSize += getRawDataSize(property.second.size());
                 properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
             }
+            if (property.first == TXN_VERSION) {
+                dataSize += getRawDataSize(property.second.size());
+                properties.emplace(std::make_pair(foundProperty->first, foundProperty->second));
+            }
         }
 
         return parseRecord(txn, dataSize, properties, record);
@@ -122,7 +126,7 @@ namespace nogdb {
         }
         auto rawData = Datastore::getValueAsBlob(keyValue);
         auto offset = size_t{0};
-        Record::RecordPropertyType properties;
+        Record::PropertyToBytesMap properties;
         if (rawData.capacity() == 0) {
             throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
@@ -170,7 +174,7 @@ namespace nogdb {
         return Record(properties);
     }
 
-    Record Parser::parseRawDataWithBasicInfo(const std::string className,
+    Record Parser::parseRawDataWithBasicInfo(const std::string &className,
                                              const RecordId& rid,
                                              const KeyValue &keyValue,
                                              const ClassPropertyInfo &classPropertyInfo) {

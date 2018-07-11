@@ -118,6 +118,7 @@ int main() {
     exec(test_get_edge_all_cursor, "retrieving a cursor of incoming and outgoing edges from a vertex");
     exec(test_get_invalid_edge_all_cursor, "retrieving a cursor of incoming and outgoing edges from an invalid vertex");
     exec(test_update_vertex, "updating a vertex");
+    exec(test_update_vertex_version, "updating version of a vertex");
     exec(test_update_invalid_vertex, "updating an invalid vertex");
     exec(test_delete_vertex_only, "deleting a vertex (without edges)");
     exec(test_delete_all_vertices, "deleting all vertices in the same class");
@@ -336,18 +337,18 @@ int main() {
     exec(test_drop_index_with_records, "dropping indexes for some properties with existing records");
     exec(test_drop_index_extended_class_with_records, "dropping indexes for some properties which belong to super classes with existing records");
     exec(test_drop_invalid_index_with_records, "dropping invalid indexes with existing records");
-    exec(test_search_by_index_unique_condition, "getting records from unique indexing with condition");
-    exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
-    exec(test_search_by_index_unique_multicondition, "getting records from unique indexing with multi-condition");
-    exec(test_search_by_index_non_unique_multicondition, "getting records from non-unique indexing with multi-condition");
-    exec(test_search_by_index_unique_cursor_condition, "getting cursor from unique indexing with condition");
-    exec(test_search_by_index_non_unique_cursor_condition, "getting cursor from non-unique indexing with condition");
-    exec(test_search_by_index_unique_cursor_multicondition, "getting cursor from unique indexing with multi-condition");
-    exec(test_search_by_index_non_unique_cursor_multicondition, "getting cursor from non-unique indexing with multi-condition");
-    exec(test_search_by_index_extended_class_condition, "getting records from indexing with extended class with condition");
-    exec(test_search_by_index_extended_class_cursor_condition, "getting cursor from indexing with extended class with condition");
-    exec(test_search_by_index_extended_class_multicondition, "getting records from indexing with extended class with condition");
-    exec(test_search_by_index_extended_class_cursor_multicondition, "getting cursor from indexing with extended class with condition");
+//    exec(test_search_by_index_unique_condition, "getting records from unique indexing with condition");
+//    exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
+//    exec(test_search_by_index_unique_multicondition, "getting records from unique indexing with multi-condition");
+//    exec(test_search_by_index_non_unique_multicondition, "getting records from non-unique indexing with multi-condition");
+//    exec(test_search_by_index_unique_cursor_condition, "getting cursor from unique indexing with condition");
+//    exec(test_search_by_index_non_unique_cursor_condition, "getting cursor from non-unique indexing with condition");
+//    exec(test_search_by_index_unique_cursor_multicondition, "getting cursor from unique indexing with multi-condition");
+//    exec(test_search_by_index_non_unique_cursor_multicondition, "getting cursor from non-unique indexing with multi-condition");
+//    exec(test_search_by_index_extended_class_condition, "getting records from indexing with extended class with condition");
+//    exec(test_search_by_index_extended_class_cursor_condition, "getting cursor from indexing with extended class with condition");
+//    exec(test_search_by_index_extended_class_multicondition, "getting records from indexing with extended class with condition");
+//    exec(test_search_by_index_extended_class_cursor_multicondition, "getting cursor from indexing with extended class with condition");
 #endif
     // ctx
 #ifdef TEST_CONTEXT_OPERATIONS
@@ -458,7 +459,7 @@ int main() {
     exec(test_sql_select_method_property, "retrieving data with method property with sql command");
     exec(test_sql_select_alias_property, "retrieving data with alias property with sql command");
     exec(test_sql_select_vertex_condition, "finding records from a vertex class with a given condition with sql command");
-    exec(test_sql_select_vertex_with_expression, "finding records from a vertex class with a given expression with sql command");
+    exec(test_sql_select_vertex_with_multi_condition, "finding records from a vertex class with a given multi-condition with sql command");
     exec(test_sql_select_nested_condition, "finding records from vertex class by nested condition with sql command");
     exec(test_sql_select_skip_limit, "retrieving data with specific length with sql command");
     exec(test_sql_select_group_by, "retrieving data with 'group by' sql command");

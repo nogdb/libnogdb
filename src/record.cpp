@@ -62,23 +62,23 @@ namespace nogdb {
         return *this;
     }
 
-    const Record::RecordPropertyType &Record::getAll() const {
+    const Record::PropertyToBytesMap &Record::getAll() const {
         return properties;
     }
 
-    const Record::RecordPropertyType &Record::getBasicInfo() const {
+    const Record::PropertyToBytesMap &Record::getBasicInfo() const {
         return basicProperties;
     }
 
     Bytes Record::get(const std::string &propName) const {
-        const RecordPropertyType& prop = (isBasicInfo(propName) ? basicProperties : properties);
-        const RecordPropertyType::const_iterator it = prop.find(propName);
+        const PropertyToBytesMap &prop = (isBasicInfo(propName) ? basicProperties : properties);
+        const PropertyToBytesMap::const_iterator it = prop.find(propName);
         return it == prop.cend() ? Bytes{} : it->second;
     }
 
     std::vector<std::string> Record::getProperties() const {
         auto propertyNames = std::vector<std::string>{};
-        for(const auto& property: properties) {
+        for (const auto &property: properties) {
             propertyNames.emplace_back(property.first);
         }
         return propertyNames;
@@ -186,7 +186,7 @@ namespace nogdb {
                 auto classId = strtoul(sp[0].c_str(), nullptr, 0);
                 auto positionId = strtoul(sp[1].c_str(), nullptr, 0);;
                 return RecordId{classId, positionId};
-            } catch(...) {
+            } catch (...) {
                 throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
             }
         } else {
@@ -199,11 +199,8 @@ namespace nogdb {
     }
 
     uint64_t Record::getVersion() const {
-        try {
-            return getBigIntU(VERSION_PROPERTY);
-        } catch (const Error &e) {
-            return 1ULL;
-        }
+        const auto it = basicProperties.find(VERSION_PROPERTY);
+        return (it == basicProperties.cend() ? 0ULL : it->second.toBigIntU());
     }
 
     void Record::unset(const std::string &propName) {
@@ -223,7 +220,7 @@ namespace nogdb {
         properties.clear();
     }
 
-    Record::Record(RecordPropertyType properties) : properties(std::move(properties)) {
+    Record::Record(PropertyToBytesMap properties) : properties(std::move(properties)) {
         for (auto it = this->properties.begin(); it != this->properties.end();) {
             if (isBasicInfo(it->first)) {
                 basicProperties.insert(*it);
@@ -262,4 +259,13 @@ namespace nogdb {
         }
         return *this;
     }
+
+    const Record &Record::updateVersion(const Txn& txn) const {
+        if (basicProperties.find(TXN_VERSION) == basicProperties.end() || getBigIntU(TXN_VERSION) != txn.getVersionId()) {
+            setBasicInfo(TXN_VERSION, txn.getVersionId());
+            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
+        }
+        return *this;
+    }
+
 }

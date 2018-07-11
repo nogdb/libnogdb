@@ -224,7 +224,7 @@ namespace nogdb {
                 auto subClassDescriptorPtr = subClassDescriptor.lock();
                 require(subClassDescriptorPtr != nullptr);
                 auto name = subClassDescriptorPtr->name.getLatestVersion().first;
-                assert(!name.empty());
+                require(!name.empty());
                 auto totalLength = sizeof(subClassDescriptorPtr->type) + sizeof(ClassId) + name.length();
                 auto value = Blob(totalLength);
                 value.append(&subClassDescriptorPtr->type, sizeof(subClassDescriptorPtr->type));

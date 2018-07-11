@@ -123,6 +123,8 @@ namespace nogdb {
         IndexId numIndex{0};           // a number of indexes in the database.
     };
 
+    class Txn;
+
     class Bytes {
     public:
         friend class Record;
@@ -199,7 +201,7 @@ namespace nogdb {
     class Record {
     public:
 
-        using RecordPropertyType = std::map<std::string, Bytes>;
+        using PropertyToBytesMap = std::map<std::string, Bytes>;
 
         Record() = default;
 
@@ -227,9 +229,9 @@ namespace nogdb {
             return *this;
         }
 
-        const RecordPropertyType &getAll() const;
+        const PropertyToBytesMap &getAll() const;
 
-        const RecordPropertyType &getBasicInfo() const;
+        const PropertyToBytesMap &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -278,18 +280,18 @@ namespace nogdb {
         friend struct Algorithm;
         friend class sql_parser::Record;
 
-        friend class Vertex;
-        friend class Edge;
+        friend struct Vertex;
+        friend struct Edge;
 
-        Record(RecordPropertyType properties);
+        Record(PropertyToBytesMap properties);
 
-        Record(RecordPropertyType properties, RecordPropertyType basicProperties)
+        Record(PropertyToBytesMap properties, PropertyToBytesMap basicProperties)
                 : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
 
         inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
 
-        RecordPropertyType properties{};
-        mutable RecordPropertyType basicProperties{};
+        PropertyToBytesMap properties{};
+        mutable PropertyToBytesMap basicProperties{};
 
         template<typename T>
         const Record &setBasicInfo(const std::string &propName, const T &value) const {
@@ -315,6 +317,7 @@ namespace nogdb {
             return *this;
         };
 
+        const Record &updateVersion(const Txn &txn) const;
     };
 
     struct RecordDescriptor {

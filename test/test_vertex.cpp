@@ -392,8 +392,8 @@ void test_update_vertex() {
         assert(res[0].record.get("pages").toInt() == 400);
         assert(res[0].record.get("words").toBigIntU() == 90000ULL);
         assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
-        assert(res[0].record.getBigIntU("@version") == 2ULL);
-        assert(res[0].record.getVersion() == 2ULL);
+        assert(res[0].record.getBigIntU("@version") == 1ULL);
+        assert(res[0].record.getVersion() == 1ULL);
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
@@ -407,23 +407,11 @@ void test_update_vertex() {
         assert(res[0].record.empty() == true);
         assert(res[0].record.getText("@className") == "books");
         assert(res[0].record.getText("@recordId") == rid2str(rdesc1.rid));
-        assert(res[0].record.getVersion() == 2ULL);
+        assert(res[0].record.getVersion() == 1ULL);
 
         assert(res[1].record.get("title").toText() == "Tarzan");
         assert(res[1].record.get("price").toReal() == 60);
         assert(res[1].record.get("pages").toInt() == 360);
-
-        // test version after 10 updates
-        for (size_t i = 0; i < 10u; ++i) {
-            res = nogdb::Vertex::get(txn, "books");
-
-            res[0].record.set("price", 1.0 * (100 + i));
-            res[0].record.set("pages", 100 * i);
-
-            assert(res[0].record.getVersion() == 2ULL + i);
-            nogdb::Vertex::update(txn, res[0].descriptor, res[0].record);
-            assert(res[0].record.getVersion() == 3ULL + i);
-        }
 
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -433,6 +421,45 @@ void test_update_vertex() {
     destroy_vertex_book();
 }
 
+void test_update_vertex_version() {
+    init_vertex_book();
+    const int ITERATION = 10;
+    try { // init
+        nogdb::Txn txn = nogdb::Txn(*ctx, nogdb::Txn::Mode::READ_WRITE);
+        nogdb::Record r{};
+        r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
+        auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+        r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
+        auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
+
+        txn.commit();
+
+    } catch (const nogdb::Error &ex) {
+        std::cout << "Error in initialization step" << std::endl;
+        std::cout << "Error: " << ex.what() << std::endl;
+    }
+    for (int i = 0; i < ITERATION; ++i) {
+        try {
+            nogdb::Txn txn = nogdb::Txn(*ctx, nogdb::Txn::Mode::READ_WRITE);
+            nogdb::ResultSet res = nogdb::Vertex::get(txn, "books");
+            nogdb::Result rec0 = res[0], rec1 = res[1];
+
+            assert(rec0.record.getVersion() == 1ULL + i);
+            nogdb::Vertex::update(txn, rec0.descriptor, rec0.record);
+
+            assert(rec0.record.getVersion() == 2ULL + i);
+            assert(rec1.record.getVersion() == 1ULL);
+
+            txn.commit();
+
+        } catch (const nogdb::Error &ex) {
+            std::cout << "\n In Round " << i << std::endl;
+            std::cout << "Error: " << ex.what() << std::endl;
+            assert(false);
+        }
+    }
+    destroy_vertex_book();
+}
 void test_update_invalid_vertex() {
     init_vertex_book();
     init_edge_author();

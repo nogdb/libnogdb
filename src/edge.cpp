@@ -44,8 +44,6 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
 
-        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
-
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::EDGE);
         auto srcVertexDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto dstVertexDescriptor = Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
@@ -64,9 +62,19 @@ namespace nogdb {
             if (dstKeyValue.empty()) {
                 throw Error(GRAPH_NOEXST_DST, Error::Type::GRAPH);
             }
+
+            // update src and dst version
+            Vertex::update(txn, srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor.rid));
+            Vertex::update(txn, dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor.rid));
+
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
+
+        // set version
+        record.setBasicInfo(TXN_VERSION, txn.getVersionId());
+        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
+
         const PositionId *maxRecordNum = nullptr;
         auto maxRecordNumValue = 0U;
         try {
@@ -113,7 +121,7 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
 
-        record.setBasicInfo(VERSION_PROPERTY, record.getVersion() + 1ULL);
+        record.updateVersion(txn);
 
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = ClassPropertyInfo{};
@@ -172,6 +180,19 @@ namespace nogdb {
     void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        try {
+            // update src and dst version
+            ResultSet srcDst = Edge::getSrcDst(txn, recordDescriptor);
+            Result src = srcDst[0], dst = srcDst[1];
+
+            Vertex::update(txn, src.descriptor, src.record);
+            Vertex::update(txn, dst.descriptor, dst.record);
+
+        } catch (const Error &err) {
+            // do nothing
+        }
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
@@ -256,9 +277,7 @@ namespace nogdb {
                     case PropertyType::UNSIGNED_SMALLINT:
                     case PropertyType::UNSIGNED_INTEGER:
                     case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                     TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                     true, isUnique);
+                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
                         break;
                     }
@@ -267,22 +286,14 @@ namespace nogdb {
                     case PropertyType::INTEGER:
                     case PropertyType::BIGINT:
                     case PropertyType::REAL: {
-                        auto dataIndexDBHandlerPositive =
-                                Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_positive",
-                                                   true, isUnique);
-                        auto dataIndexDBHandlerNegative =
-                                Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + "_negative",
-                                                   true, isUnique);
+                        auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
+                        auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);
                         break;
                     }
                     case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                     TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                     false, isUnique);
+                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
                         break;
                     }
@@ -308,6 +319,18 @@ namespace nogdb {
                     Datastore::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordDescriptor.rid));
                     // delete a record in a datastore
                     //Datastore::deleteCursor(cursorHandler);
+
+                    // update src and dst version
+                    try {
+                        auto res = getSrcDst(txn, recordDescriptor);
+                        Result src = res[0], dst = res[1];
+
+                        Vertex::update(txn, src.descriptor, src.record);
+                        Vertex::update(txn, dst.descriptor, src.record);
+
+                    } catch (const Error& err) {
+                        // do nothing
+                    }
                 }
                 keyValue = Datastore::getNextCursor(cursorHandler.get());
             }
@@ -327,6 +350,23 @@ namespace nogdb {
                          const RecordDescriptor &newSrcVertexRecordDescriptor) {
         // transaction validations
         Validate::isTransactionValid(txn);
+
+        // update source
+        try {
+            Result currentSrc = getSrc(txn, recordDescriptor);
+            Vertex::update(txn, currentSrc.descriptor, currentSrc.record);
+        } catch (const Error &err) {
+            // do nothing
+        }
+
+        // update new source
+        try {
+            Record newSrcRecord = Db::getRecord(txn, newSrcVertexRecordDescriptor);
+            Vertex::update(txn, newSrcVertexRecordDescriptor, newSrcRecord);
+        } catch (const Error &err) {
+            // do nothing
+        }
+
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto vertexDescriptor = Generic::getClassDescriptor(txn, newSrcVertexRecordDescriptor.rid.first,
                                                             ClassType::VERTEX);
