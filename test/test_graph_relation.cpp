@@ -179,7 +179,7 @@ void test_create_complex_graph() {
         auto e = nogdb::Vertex::create(txn, "files", rf.set("name", "e"));
         auto f = nogdb::Vertex::create(txn, "files", rf.set("name", "f"));
 
-        rl.set("null", "0");
+//        rl.set("null", "0");
         nogdb::Edge::create(txn, "link", A, B, rl);
         nogdb::Edge::create(txn, "link", A, a, rl);
         nogdb::Edge::create(txn, "link", A, C, rl);

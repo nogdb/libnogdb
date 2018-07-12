@@ -2,7 +2,8 @@
 ## v0.12.0-beta [2018-??-??]
 * General changes:
   * `nogdb::Db::getRecord(...)` now throws an exception `CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
-* TBA
+* Fixed bugs:
+  * Fixing the algorithm for graph traversal with empty edges. Previously, it was working incorrectly by considering empty edges as invalid objects which could not be used to traverse to adjacent vertices.
 
 ## v0.11.0-beta [2018-06-18]
 * General changes:
