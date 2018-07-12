@@ -1,5 +1,7 @@
 # Change Log
 ## v0.12.0-beta [2018-??-??]
+* General changes:
+  * `nogdb::Db::getRecord(...)` now throws an exception `CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
 * TBA
 
 ## v0.11.0-beta [2018-06-18]
