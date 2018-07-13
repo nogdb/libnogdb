@@ -19,6 +19,7 @@
  *
  */
 
+#include <cmath>
 #include "runtest.h"
 
 struct myobject {
@@ -42,6 +43,13 @@ constexpr unsigned long long ubigint_value = 424242424242;
 constexpr double real_value = 42.4242;
 const std::string text_value = "hello world";
 const myobject blob_value = {42, 42424242424242ULL, 42.42};
+const std::vector<int> vector_int_value = {1, 2, 3, 4, 5};
+const std::vector<const char *> vector_c_str {"hello", "world", "this", "is ", " a ", "test"};
+const std::vector<std::vector<const char *>> vv_c_str {{"hello", "world1"}, {"hello2", "world2"}, {"data 1", " data2", "   "}};
+const std::set<std::pair<int, int>> set_pii {{2, 3}, {4, 5}, {6, 7}, {8, 9}};
+const std::map<int, const char *> map_p_int_c_str {{0, "helloQWE@!#"}, {1, "กดฟหฟหกดก่าฟหกสดว"}};
+const int array_int[] = {3, 4, 5, 6, 10};
+const std::array<double, 5> array_double_5 = {3.0, 2.1, acos(-1), sin(3), tan(-2)};
 
 void test_bytes_only() {
     nogdb::Bytes int_vb{int_value}, uint_vb{uint_value},
@@ -49,7 +57,12 @@ void test_bytes_only() {
             smallint_vb{smallint_value}, usmallint_vb{usmallint_value},
             bigint_vb{bigint_value}, ubigint_vb{ubigint_value},
             real_vb{real_value}, text_vb{text_value},
-            blob_vb{blob_value};
+            blob_vb{blob_value}, vector_int_vb {nogdb::Bytes::toBytes(vector_int_value)},
+            vector_c_str_vb {nogdb::Bytes::toBytes(vector_c_str)},
+            vv_c_str_vb {nogdb::Bytes::toBytes(vv_c_str)},
+            set_pii_vb {nogdb::Bytes::toBytes(set_pii)},
+            map_p_int_c_str_vb {nogdb::Bytes::toBytes(map_p_int_c_str)};
+
     assert(int_vb.toInt() == int_value);
     assert(uint_vb.toIntU() == uint_value);
     assert(tinyint_vb.toTinyInt() == tinyint_value);
@@ -60,6 +73,27 @@ void test_bytes_only() {
     assert(ubigint_vb.toBigIntU() == ubigint_value);
     assert(real_vb.toReal() == real_value);
     assert(text_vb.toText() == text_value);
+    assert(vector_int_vb.convert<std::vector<int>>() == vector_int_value);
+
+    auto vector_c_str_check = vector_c_str_vb.convert<std::vector<std::string>>();
+    assert(vector_c_str_check.size() == vector_c_str.size());
+    for (size_t i = 0; i < vector_c_str.size(); ++i) {
+        assert(strcmp(vector_c_str_check[i].c_str(), vector_c_str[i]) == 0);
+    }
+
+    auto vv_c_str_check = vv_c_str_vb.convert<std::vector<std::vector<std::string>>>();
+    assert(vv_c_str_check.size() == 3u);
+    assert(vv_c_str_check[0].size() == 2u);
+    assert(vv_c_str_check[1].size() == 2u);
+    assert(vv_c_str_check[2].size() == 3u);
+
+    auto set_pii_check = set_pii_vb.convert<std::set<std::pair<int, int>>>();
+    assert (set_pii_check == set_pii);
+
+    for (const auto &it : map_p_int_c_str_vb.convert< std::map<int, std::string> >()) {
+        assert(it.second == map_p_int_c_str.at(it.first));
+    }
+
     auto tmp = myobject{};
     blob_vb.convertTo(tmp);
     assert(tmp.x == blob_value.x);
@@ -80,20 +114,11 @@ void test_record_with_bytes() {
             .set("real", real_value)
             .set("text", text_value)
             .set("blob", nogdb::Bytes{blob_value})
-            .set("null", "");
-
-    assert(r.get("int").toInt() == int_value);
-    assert(r.get("uint").toIntU() == uint_value);
-    assert(r.get("bigint").toBigInt() == bigint_value);
-    assert(r.get("ubigint").toBigIntU() == ubigint_value);
-    assert(r.get("tinyint").toTinyInt() == tinyint_value);
-    assert(r.get("utinyint").toTinyIntU() == utinyint_value);
-    assert(r.get("smallint").toSmallInt() == smallint_value);
-    assert(r.get("usmallint").toSmallIntU() == usmallint_value);
-    assert(r.get("real").toReal() == real_value);
-    assert(r.get("text").toText() == text_value);
-    assert(r.get("null").toText() == "");
-    assert(r.get("invalid").toText() == "");
+            .set("null", "")
+            .set("vector_int", vector_int_value)
+            .set("set_pii", set_pii)
+            .set("array_int", array_int)
+            .set("array_double_5", array_double_5);
 
     assert(r.getInt("int") == int_value);
     assert(r.getIntU("uint") == uint_value);
@@ -106,6 +131,12 @@ void test_record_with_bytes() {
     assert(r.getReal("real") == real_value);
     assert(r.getText("text") == text_value);
     assert(r.getText("invalid") == "");
+    assert(r.get("set_pii").convert<decltype(set_pii)>() == set_pii);
+    for (size_t i = 0; i < 5; ++i) {
+        assert(r.get("array_int").convert<int *>()[i] == array_int[i]);
+        assert(r.get("array_double_5").convert<double *>()[i] = array_double_5[i]);
+        assert(r.get("array_double_5").convert<std::vector<double>>()[i] = array_double_5[i]);
+    }
 
     auto bytes_tmp = myobject{};
     r.get("blob").convertTo(bytes_tmp);

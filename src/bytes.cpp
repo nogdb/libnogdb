@@ -108,7 +108,7 @@ namespace nogdb {
     }
 
     std::string Bytes::toText() const {
-        return (size_ == 0) ? std::string{} : std::string{reinterpret_cast<char *>(value_), size_};
+        return convert<std::string>();
     }
 
     Bytes::operator unsigned char *() const {
@@ -127,4 +127,33 @@ namespace nogdb {
         return !size_;
     }
 
+    Bytes Bytes::merge(const Bytes &bytes1, const Bytes &bytes2) {
+
+        const size_t total_size = bytes1.size() + bytes2.size();
+
+        auto * data = new unsigned char [total_size];
+
+        std::copy(bytes1.getRaw(), bytes1.getRaw() + bytes1.size(), data);
+        std::copy(bytes2.getRaw(), bytes2.getRaw() + bytes2.size(), data + bytes1.size());
+
+        return Bytes {data, total_size};
+    };
+
+    Bytes Bytes::merge(const std::vector<Bytes> &bytes) {
+
+        size_t total_size = 0u;
+        for (const Bytes& b : bytes) {
+            total_size += b.size();
+        }
+
+        auto * data = new unsigned char [total_size];
+
+        size_t idx = 0;
+        for (const Bytes& b : bytes) {
+            std::copy(b.getRaw(), b.getRaw() + b.size(), data + idx);
+            idx += b.size();
+        }
+
+        return Bytes {data, total_size};
+    }
 }
