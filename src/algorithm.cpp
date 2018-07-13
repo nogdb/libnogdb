@@ -105,7 +105,7 @@ namespace nogdb {
                                 auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                           classDBHandler, edge,
                                                           pathFilter, ClassType::EDGE);
-                                if (!tmpResult.record.empty()) {
+                                if (tmpResult.descriptor != RecordDescriptor{}) {
                                     edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                 }
                             }
@@ -115,7 +115,7 @@ namespace nogdb {
                                     auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                               classDBHandler, edge,
                                                               pathFilter, ClassType::EDGE);
-                                    if (!tmpResult.record.empty()) {
+                                    if (tmpResult.descriptor != RecordDescriptor{}) {
                                         edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                     }
                                 }
@@ -193,7 +193,7 @@ namespace nogdb {
                                     for (const auto &edge: ((*txn.txnCtx.dbRelation).*edgeFunc)(*(txn.txnBase), vertexId, 0)) {
                                         auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                                   classDBHandler, edge, pathFilter, ClassType::EDGE);
-                                        if (!tmpResult.record.empty()) {
+                                        if (tmpResult.descriptor != RecordDescriptor{}) {
                                             edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                         }
                                     }
@@ -203,7 +203,7 @@ namespace nogdb {
                                             auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                                       classDBHandler, edge, pathFilter,
                                                                       ClassType::EDGE);
-                                            if (!tmpResult.record.empty()) {
+                                            if (tmpResult.descriptor != RecordDescriptor{}) {
                                                 edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                             }
                                         }
@@ -290,7 +290,7 @@ namespace nogdb {
                             for (const auto &edge: txn.txnCtx.dbRelation->getEdgeOut(*(txn.txnBase), vertex, 0)) {
                                 auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                           classDBHandler, edge, pathFilter, ClassType::EDGE);
-                                if (!tmpResult.record.empty()) {
+                                if (tmpResult.descriptor != RecordDescriptor{}) {
                                     edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                 }
                             }
@@ -299,7 +299,7 @@ namespace nogdb {
                                 for (const auto &edge: txn.txnCtx.dbRelation->getEdgeOut(*(txn.txnBase), vertex, edgeId)) {
                                     auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                               classDBHandler, edge, pathFilter, ClassType::EDGE);
-                                    if (!tmpResult.record.empty()) {
+                                    if (tmpResult.descriptor != RecordDescriptor{}) {
                                         edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
                                     }
                                 }
@@ -310,7 +310,7 @@ namespace nogdb {
                             if (visited.find(nextVertex) == visited.cend()) {
                                 auto tmpResult = retrieve(txn, classDescriptor, classPropertyInfo,
                                                           classDBHandler, nextVertex, pathFilter, ClassType::VERTEX);
-                                if (!tmpResult.record.empty()) {
+                                if (tmpResult.descriptor != RecordDescriptor{}) {
                                     visited.insert({nextVertex, {tmpResult, vertex}});
                                     queue.push(nextVertex);
                                 }

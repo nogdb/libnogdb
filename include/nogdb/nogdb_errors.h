@@ -56,7 +56,7 @@
 #define CTX_OVERRIDE_PROPERTY           0x2040
 #define CTX_CONFLICT_PROPTYPE           0x2050
 #define CTX_IN_USED_PROPERTY            0x2060
-//#define CTX_EMPTY_RECORD			    0x3000
+#define CTX_NOEXST_RECORD			    0x3000
 #define CTX_INVALID_COMPARATOR          0x4000
 #define CTX_INVALID_PROPTYPE_INDEX      0x6000
 #define CTX_NOEXST_INDEX                0x6010
@@ -155,8 +155,8 @@ namespace nogdb {
                             return "CTX_IN_USED_PROPERTY: A property is used by one or more database indexes";
                         case CTX_MISMATCH_CLASSTYPE:
                             return "CTX_MISMATCH_CLASSTYPE: A type of a class does not match as expected";
-//            case CTX_EMPTY_RECORD:
-//                return "CTX_EMPTY_RECORD: A record has no properties (required at least one)";
+                        case CTX_NOEXST_RECORD:
+                            return "CTX_NOEXST_RECORD: A record with the given descriptor doesn't exist";
                         case CTX_INTERNAL_ERR:
                             return "CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
                         case CTX_INVALID_COMPARATOR:
