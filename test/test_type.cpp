@@ -49,7 +49,6 @@ const std::vector<std::vector<const char *>> vv_c_str {{"hello", "world1"}, {"he
 const std::set<std::pair<int, int>> set_pii {{2, 3}, {4, 5}, {6, 7}, {8, 9}};
 const std::map<int, const char *> map_p_int_c_str {{0, "helloQWE@!#"}, {1, "กดฟหฟหกดก่าฟหกสดว"}};
 const int array_int[] = {3, 4, 5, 6, 10};
-const std::array<double, 5> array_double_5 = {3.0, 2.1, acos(-1), sin(3), tan(-2)};
 
 void test_bytes_only() {
     nogdb::Bytes int_vb{int_value}, uint_vb{uint_value},
@@ -117,8 +116,7 @@ void test_record_with_bytes() {
             .set("null", "")
             .set("vector_int", vector_int_value)
             .set("set_pii", set_pii)
-            .set("array_int", array_int)
-            .set("array_double_5", array_double_5);
+            .set("array_int", array_int);
 
     assert(r.getInt("int") == int_value);
     assert(r.getIntU("uint") == uint_value);
@@ -134,8 +132,6 @@ void test_record_with_bytes() {
     assert(r.get("set_pii").convert<decltype(set_pii)>() == set_pii);
     for (size_t i = 0; i < 5; ++i) {
         assert(r.get("array_int").convert<int *>()[i] == array_int[i]);
-        assert(r.get("array_double_5").convert<double *>()[i] = array_double_5[i]);
-        assert(r.get("array_double_5").convert<std::vector<double>>()[i] = array_double_5[i]);
     }
 
     auto bytes_tmp = myobject{};

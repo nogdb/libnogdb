@@ -369,7 +369,9 @@ namespace nogdb {
                     } else {
                         std::vector<T> result;
                         while (total_size > 0) {
+                            const auto current = total_size;
                             result.emplace_back(Converter<T>::convert(ptr, total_size, true));
+                            if (current == total_size) break;
                         }
                         return result;
                     }
