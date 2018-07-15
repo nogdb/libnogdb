@@ -33,35 +33,6 @@
 
 namespace nogdb {
 
-    Record &Record::set(const std::string &propName, const unsigned char *value) {
-        if (!propName.empty() && !isBasicInfo(propName)) {
-            properties[propName] = Bytes{value, strlen((char *) value)};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const char *value) {
-        if (!propName.empty() && !isBasicInfo(propName)) {
-            properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const std::string &value) {
-        if (!propName.empty() && !isBasicInfo(propName)) {
-            properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         value.length()};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const nogdb::Bytes &b) {
-        if (!propName.empty() && !isBasicInfo(propName)) {
-            properties[propName] = b;
-        }
-        return *this;
-    }
-
     const Record::PropertyToBytesMap &Record::getAll() const {
         return properties;
     }
@@ -229,35 +200,6 @@ namespace nogdb {
                 ++it;
             }
         }
-    }
-
-    const Record &Record::setBasicInfo(const std::string &propName, const unsigned char *value) const {
-        if (!propName.empty() && isBasicInfo(propName)) {
-            basicProperties[propName] = Bytes{value, strlen((char *) value)};
-        }
-        return *this;
-    }
-
-    const Record &Record::setBasicInfo(const std::string &propName, const char *value) const {
-        if (!propName.empty() && isBasicInfo(propName)) {
-            basicProperties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-        }
-        return *this;
-    }
-
-    const Record &Record::setBasicInfo(const std::string &propName, const std::string &value) const {
-        if (!propName.empty() && isBasicInfo(propName)) {
-            basicProperties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                              value.length()};
-        }
-        return *this;
-    }
-
-    const Record &Record::setBasicInfo(const std::string &propName, const nogdb::Bytes &b) const {
-        if (!propName.empty() && isBasicInfo(propName)) {
-            basicProperties[propName] = b;
-        }
-        return *this;
     }
 
     const Record &Record::updateVersion(const Txn& txn) const {

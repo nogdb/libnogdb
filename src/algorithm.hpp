@@ -41,7 +41,7 @@ namespace nogdb {
 
         ~Algorithm() noexcept = delete;
 
-        static ResultSet breathFirstSearch(const Txn &txn,
+        static ResultSet breadthFirstSearch(const Txn &txn,
                                            const RecordDescriptor &recordDescriptor,
                                            unsigned int minDepth,
                                            unsigned int maxDepth,
@@ -70,7 +70,7 @@ namespace nogdb {
                                          const PathFilter &pathFilter);
 
         static std::vector<RecordDescriptor>
-        breathFirstSearchRdesc(const Txn &txn,
+        breadthFirstSearchRdesc(const Txn &txn,
                                const RecordDescriptor &recordDescriptor,
                                unsigned int minDepth,
                                unsigned int maxDepth,

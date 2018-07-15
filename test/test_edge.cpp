@@ -1295,9 +1295,11 @@ void test_get_invalid_edge() {
         auto e1 = nogdb::Edge::create(txn, "authors", v1, v2, r3);
         nogdb::Edge::destroy(txn, e1);
 
-        auto record = nogdb::Db::getRecord(txn, e1);
-        assert(record.empty());
-
+        try {
+            auto res = nogdb::Db::getRecord(txn, e1);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
