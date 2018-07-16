@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.5.1)
 
-project(nogdb VERSION 0.11.0 LANGUAGES C CXX)
+project(nogdb VERSION 0.12.0 LANGUAGES C CXX)
 
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 file(GLOB nogdb_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
-file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
+file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/*.h)
 file(GLOB nogdb_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp)
 file(GLOB nogdb_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/*.h)
 
