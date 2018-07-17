@@ -423,6 +423,9 @@ extern void test_sql_delete_edge_with_rid();
 extern void test_sql_delete_edge_with_condition();
 extern void test_sql_validate_property_type();
 extern void test_sql_traverse();
+extern void test_sql_create_index();
+extern void test_sql_create_index_unique();
+extern void test_sql_drop_index();
 #endif
 
 #endif
