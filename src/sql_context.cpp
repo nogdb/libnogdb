@@ -44,7 +44,7 @@ static bool stringcasecmp(const string &a, const string &b) {
 
 #pragma mark - Context
 
-void Context::createClass(const Token &tName, const Token &tExtend, char checkIfNotExists) {
+void Context::createClass(const Token &tName, const Token &tExtend, bool checkIfNotExists) {
     ClassDescriptor result;
     string name = tName.toString();
     try {
@@ -109,7 +109,7 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
     }
 }
 
-void Context::dropClass(const Token &tName, char checkIfExists) {
+void Context::dropClass(const Token &tName, bool checkIfExists) {
     try {
         Class::drop(this->txn, tName.toString());
         this->rc = SQL_OK;
@@ -126,7 +126,7 @@ void Context::dropClass(const Token &tName, char checkIfExists) {
 }
 
 void
-Context::createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, char checkIfNotExists) {
+Context::createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, bool checkIfNotExists) {
     static const auto mapType = map<std::string, nogdb::PropertyType, StringCaseCompare>(
             {
                     {"TINYINT",           nogdb::PropertyType::TINYINT},
@@ -207,7 +207,7 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
     }
 }
 
-void Context::dropProperty(const Token &tClassName, const Token &tPropName, char checkIfExists) {
+void Context::dropProperty(const Token &tClassName, const Token &tPropName, bool checkIfExists) {
     try {
         Property::remove(this->txn, tClassName.toString(), tPropName.toString());
         this->rc = SQL_OK;
@@ -410,6 +410,31 @@ void Context::traverse(const TraverseArgs &args) {
         nogdb::ResultSet *tmp = new nogdb::ResultSet(result.size());
         transform(result.cbegin(), result.cend(), tmp->begin(), [](const Result &r) { return r.toBaseResult(); });
         this->result = SQL::Result(tmp);
+    } catch (const Error &e) {
+        this->rc = SQL_ERROR;
+        this->result = SQL::Result(new Error(e));
+    }
+}
+
+void Context::createIndex(const Token &tClassName, const Token &tPropName, const Token &tIndexType) {
+    try {
+        bool unique = stringcasecmp(tIndexType.toString(), "UNIQUE") == 0 ? true : false;
+        Property::createIndex(this->txn, tClassName.toString(), tPropName.toString(), unique);
+
+        this->rc = SQL_OK;
+        this->result = SQL::Result();
+    } catch (const Error &e) {
+        this->rc = SQL_ERROR;
+        this->result = SQL::Result(new Error(e));
+    }
+}
+
+void Context::dropIndex(const Token &tClassName, const Token &tPropName) {
+    try {
+        Property::dropIndex(this->txn, tClassName.toString(), tPropName.toString());
+
+        this->rc = SQL_OK;
+        this->result = SQL::Result();
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
         this->result = SQL::Result(new Error(e));

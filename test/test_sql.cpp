@@ -1615,3 +1615,67 @@ void test_sql_traverse() {
     Class::drop(txn, "ER");
     txn.commit();
 }
+
+void test_sql_create_index() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+
+    try {
+        SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 1);
+        assert(propD.indexInfo.begin()->second.second == false);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Property::dropIndex(txn, "V", "p");
+    Property::remove(txn, "V", "p");
+    Class::drop(txn, "V");
+    txn.commit();
+}
+
+void test_sql_create_index_unique() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+
+    try {
+        SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p UNIQUE");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 1);
+        assert(propD.indexInfo.begin()->second.second == true);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Property::dropIndex(txn, "V", "p");
+    Property::remove(txn, "V", "p");
+    Class::drop(txn, "V");
+    txn.commit();
+}
+
+void test_sql_drop_index() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+    Property::createIndex(txn, "V", "p");
+
+    try {
+        SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 0);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Class::drop(txn, "V");
+    txn.commit();
+}

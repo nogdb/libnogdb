@@ -663,6 +663,7 @@ static int keywordCode(const char *z, int n, int *pType) {
                     {"FROM",     TK_FROM},
                     {"GROUP",    TK_GROUP},
                     {"IF",       TK_IF},
+                    {"INDEX",    TK_INDEX},
                     {"IS",       TK_IS},
                     {"LIKE",     TK_LIKE},
                     {"LIMIT",    TK_LIMIT},

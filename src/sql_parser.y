@@ -333,6 +333,21 @@ max_depth_opt(A) ::= MAXDEPTH integer(X). { A = stoll(string(X.z, X.n)); }
 strategy_opt(A) ::= . { A = "DEPTH_FIRST"; }
 strategy_opt(A) ::= STRATEGY IDENTITY(X). { A = X.toString(); }
 
+//////////////////// The INDEX command ////////////////////
+// CREATE
+cmd ::= CREATE INDEX name(className) DOT name(propName) index_type(type) SEMI. {
+    this->createIndex(className, propName, type);
+}
+
+// DROP
+cmd ::= DROP INDEX name(className) DOT name(propName) SEMI. {
+    this->dropIndex(className, propName);
+}
+
+
+index_type ::= .
+index_type(A) ::= IDENTITY(X). { A = X; }
+
 
 //////////////////// Other options ////////////////////
 // if (not) exists
