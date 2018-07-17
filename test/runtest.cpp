@@ -471,6 +471,9 @@ int main() {
     exec(test_sql_delete_edge_with_condition, "deleting an edge by condition with sql command");
     exec(test_sql_validate_property_type, "validating every property type on sql command");
     exec(test_sql_traverse, "traversing graph with sql command");
+    exec(test_sql_create_index, "creating index with sql command");
+    exec(test_sql_create_index_unique, "creating unique index with sql command");
+    exec(test_sql_drop_index, "droping index with sql command");
 #endif
 
     std::cout << "\n[\x1B[32mSuccess\x1B[0m] Test passed: " << tnum << "/" << tnum << ", "
