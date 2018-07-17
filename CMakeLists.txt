@@ -82,6 +82,9 @@ target_compile_options(nogdb
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(nogdb Threads::Threads)
+if(MINGW)
+    target_link_libraries(nogdb atomic)
+endif()
 
 ## TARGET test
 set(TEST_COMPILE_OPTIONS
@@ -96,7 +99,7 @@ set(TEST_COMPILE_OPTIONS
 
 set(RUNTEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/runtest.cpp")
 string(REPLACE ${RUNTEST_PATH} "" nogdb_TEST "${nogdb_TEST}")
-add_library(nogdb_test_object EXCLUDE_FROM_ALL OBJECT ${nogdb_TEST} ${nogdb_TEST_HEADER})
+add_library(nogdb_test_object OBJECT EXCLUDE_FROM_ALL ${nogdb_TEST} ${nogdb_TEST_HEADER})
 target_include_directories(nogdb_test_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # runtest_executable(name)

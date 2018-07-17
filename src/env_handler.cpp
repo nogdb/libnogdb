@@ -20,8 +20,6 @@
  */
 
 #include <iomanip>
-#include <sys/file.h>
-#include <sys/stat.h>
 
 #include "utils.hpp"
 #include "constant.hpp"
@@ -49,9 +47,9 @@ namespace nogdb {
             mkdir(dbPath.c_str(), 0755);
         }
         const auto lockFile = dbPath + DB_LOCK_FILE;
-        lockFileDescriptor = open(lockFile.c_str(), O_CREAT | O_RDONLY, 0644);
-        if (flock(lockFileDescriptor, LOCK_EX | LOCK_NB) == -1) {
-            if (errno == EWOULDBLOCK) {
+        lockFileDescriptor = openLockFile(lockFile.c_str());
+        if (lockFileDescriptor == -1) {
+            if (errno == EWOULDBLOCK || errno == EEXIST) {
                 throw Error(CTX_IS_LOCKED, Error::Type::CONTEXT);
             } else {
                 throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
@@ -72,7 +70,7 @@ namespace nogdb {
             if (--pointer_->refCount == 0) {
                 if (pointer_->env != nullptr) {
                     Datastore::destroyEnv(pointer_->env);
-                    flock(pointer_->lockFileDescriptor, LOCK_UN);
+                    unlockFile(pointer_->lockFileDescriptor);
                 }
                 delete pointer_;
             }
@@ -85,7 +83,7 @@ namespace nogdb {
         if (--pointer_->refCount == 0) {
             if (pointer_->env != nullptr) {
                 Datastore::destroyEnv(pointer_->env);
-                flock(pointer_->lockFileDescriptor, LOCK_UN);
+                unlockFile(pointer_->lockFileDescriptor);
             }
             delete pointer_;
         }

@@ -22,6 +22,7 @@
 #include <cstring>
 #include <numeric>
 #include <cassert>
+#include <functional>
 
 #include "constant.hpp"
 #include "sql_parser.h"
