@@ -1290,17 +1290,25 @@ void test_sql_delete_vertex_with_rid() {
 
         SQL::execute(txn, "DELETE VERTEX " + to_string(v2_1));
 
-        auto record = Db::getRecord(txn, v2_1);
-        assert(record.empty());
-        record = Db::getRecord(txn, v1_1);
+        try {
+            auto record = Db::getRecord(txn, v2_1);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
+        auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
         record = Db::getRecord(txn, v1_2);
         assert(!record.empty());
-        record = Db::getRecord(txn, e1);
-        assert(record.empty());
-        record = Db::getRecord(txn, e2);
-        assert(record.empty());
-
+        try {
+            auto record = Db::getRecord(txn, e1);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
+        try {
+            auto record = Db::getRecord(txn, e2);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1340,17 +1348,25 @@ void test_sql_delete_vertex_with_condition() {
 
         SQL::execute(txn, "DELETE VERTEX persons WHERE name='J.K. Rowlings'");
 
-        auto record = Db::getRecord(txn, v2_1);
-        assert(record.empty());
-        record = Db::getRecord(txn, v1_1);
+        try {
+            auto record = Db::getRecord(txn, v2_1);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
+        auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
         record = Db::getRecord(txn, v1_2);
         assert(!record.empty());
-        record = Db::getRecord(txn, e1);
-        assert(record.empty());
-        record = Db::getRecord(txn, e2);
-        assert(record.empty());
-
+        try {
+            auto record = Db::getRecord(txn, e1);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
+        try {
+            auto record = Db::getRecord(txn, e2);
+        } catch (const nogdb::Error &ex) {
+            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+        }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);

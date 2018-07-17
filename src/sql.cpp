@@ -204,6 +204,9 @@ Record::Record(nogdb::Record &&rec) {
     for (auto p: rec.getAll()) {
         properties.insert(move(p));
     }
+    for (auto p : rec.getBasicInfo()) {
+        properties.insert(move(p));
+    }
 }
 
 Record &Record::set(const string &propName, const Bytes &value) {
@@ -248,12 +251,11 @@ bool Record::empty() const {
 }
 
 nogdb::Record Record::toBaseRecord() const {
-    nogdb::Record base{};
-    for (auto p: this->properties) {
-        const string &name = p.first;
-        base.properties[name] = p.second;
+    std::map<string, nogdb::Bytes> baseProperty;
+    for (auto &p : this->properties) {
+        baseProperty[p.first] = move(p.second);
     }
-    return base;
+    return nogdb::Record(baseProperty);
 }
 
 

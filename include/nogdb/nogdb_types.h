@@ -23,6 +23,7 @@
 #ifndef __NOGDB_TYPES_H_INCLUDED_
 #define __NOGDB_TYPES_H_INCLUDED_
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <map>
@@ -31,6 +32,8 @@
 #include <string>
 #include <memory>
 #include <ostream>
+#include <set>
+#include <type_traits>
 
 //******************************************************************
 //*  Forward declarations of NogDB and boost internal classes.     *
@@ -122,6 +125,8 @@ namespace nogdb {
         IndexId numIndex{0};           // a number of indexes in the database.
     };
 
+    class Txn;
+
     class Bytes {
     public:
         friend class Record;
@@ -183,39 +188,364 @@ namespace nogdb {
             memcpy(&object, value_, size_);
         }
 
+        template<typename T>
+        T convert() const {
+            unsigned char * ptr = getRaw();
+            size_t size = this->size();
+            return Converter<T>::convert(ptr, size, false);
+        }
+
+        template<typename T>
+        static Bytes toBytes(const T& data) {
+            return Converter<T>::toBytes(data);
+        }
     private:
         unsigned char *value_{nullptr};
         size_t size_{0};
 
+        static Bytes merge(const Bytes& bytes1, const Bytes& byte2);
+        static Bytes merge(const std::vector<Bytes> &bytes);
+
+        using CollectionSizeType = u_int16_t;
+
         template<typename T>
-        T convert() const {
-            T result = 0;
-            memcpy(static_cast<void *>(&result), static_cast<const void *>(value_), sizeof(T));
-            return result;
+        class Converter {
+        public:
+
+            static const bool special = false;
+
+            static Bytes toBytes(const T &value, bool delimiter = false) {
+                return Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(T)};
+            };
+
+            static T convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+//                assert(sizeof(T) <= total_size);
+                if (delimiter) {
+                    ptr += sizeof(T);
+                    total_size -= sizeof(T);
+                    return *reinterpret_cast<T*>(ptr - sizeof(T));
+                } else {
+                    return *reinterpret_cast<T*>(ptr);
+                }
+            }
+        };
+
+        template<typename T> class Converter<const T> : public Converter<T> {};
+
+        template<typename T>
+        class Converter<T*> {
+        public:
+
+            static const bool special = true;
+
+            static T* convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                if (!Converter<T>::special) {
+//                    assert(sizeof(T) <= total_size);
+                    if (delimiter) {
+                        const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
+                        ptr += sizeof(CollectionSizeType) + size * sizeof(T);
+                        total_size -= sizeof(CollectionSizeType);
+                        return reinterpret_cast<T*>(ptr - size * sizeof(T));
+                    } else {
+                        return reinterpret_cast<T*>(ptr);
+                    }
+                } else {
+                    if (delimiter) {
+                        const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
+                        auto * result = new T[size];
+                        for (size_t i = 0; i < size; ++i) {
+                            result[i] = std::move(Converter<T>::convert(ptr, total_size, true));
+                        }
+                        return result;
+                    } else {
+                        std::vector<T> result;
+                        while (total_size > 0) {
+                            result.emplace_back(Converter<T>::convert(ptr, total_size, true));
+                        }
+                        auto * data = new T[result.size()];
+                        for (size_t i = 0; i < result.size(); ++i) {
+                            data[i] = std::move(result[i]);
+                        }
+                        return data;
+                    }
+                }
+            }
+        };
+
+        template<typename T, CollectionSizeType N>
+        class Converter<T[N]> {
+        public:
+
+            static const bool special = true;
+
+            static Bytes toBytes(const T (&value)[N], bool delimiter = false) {
+                if (!Converter<T>::special) {
+                    if (delimiter) {
+                        return merge(Bytes(N), toBytes(value, false));
+                    } else {
+                        return Bytes{reinterpret_cast<const unsigned char *>(value),
+                                     (N - std::is_same<typename std::remove_const<T>::type, char>::value) * sizeof(T)};
+                    }
+                } else {
+                    std::vector<Bytes> result (N + delimiter);
+                    if (delimiter) {
+                        result[0] = Bytes(N);
+                    }
+                    for (CollectionSizeType i = 0; i < N; ++i) {
+                        result[i + delimiter] = Converter<T>::toBytes(value[i], true);
+                    }
+                    return merge(result);
+                }
+            };
+
+            static T* convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                return Converter<T*>::convert(ptr, total_size, delimiter);
+            }
+        };
+
+        template<typename T1, typename T2>
+        class Converter<std::pair<T1, T2>> {
+        public:
+
+            static const bool special = Converter<T1>::special || Converter<T2>::special;
+
+            static Bytes toBytes(const std::pair<T1, T2>& value, bool delimiter = false) {
+                return merge({Converter<T1>::toBytes(value.first, true), Converter<T2>::toBytes(value.second, delimiter)});
+            }
+
+            static std::pair<T1, T2> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                const T1 &first = Converter<T1>::convert(ptr, total_size, true);
+                const T2 &second = Converter<T2>::convert(ptr, total_size, delimiter);
+                return std::pair<T1, T2> (first, second);
+            }
+        };
+
+        template<typename T>
+        class Converter<std::vector<T>> {
+        public:
+
+            static const bool special = true;
+
+            static Bytes toBytes(const std::vector<T> &value, bool delimiter = false) {
+                if (!Converter<T>::special) {
+                    if (delimiter) {
+                        return merge(Bytes((CollectionSizeType) value.size()), toBytes(value, false));
+                    } else {
+                        return Bytes{reinterpret_cast<const unsigned char *>(&value[0]), value.size() * sizeof(T)};
+                    }
+                } else {
+                    std::vector<Bytes> result (value.size() + delimiter);
+                    if (delimiter) {
+                        result[0] = Bytes((CollectionSizeType) value.size());
+                    }
+                    for (CollectionSizeType i = 0; i < value.size(); ++i) {
+                        result[i + delimiter] = std::move(Converter<T>::toBytes(value[i], true));
+                    }
+                    return merge(result);
+                }
+            }
+
+            static std::vector<T> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                if (!Converter<T>::special) {
+//                    assert(sizeof(T) <= total_size);
+                    if (delimiter) {
+                        const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
+                        ptr += size * sizeof(T);
+                        auto bptr = reinterpret_cast<T*>(ptr - size * sizeof(T));
+                        return std::vector<T> (bptr, bptr + size);
+                    } else {
+//                        assert(total_size % sizeof(T) == 0);
+                        auto bptr = reinterpret_cast<T*>(ptr);
+                        return std::vector<T> (bptr, bptr + total_size / sizeof(T));
+                    }
+                } else {
+                    if (delimiter) {
+                        const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
+                        std::vector<T> result;
+                        for (size_t i = 0; i < size; ++i) {
+                            result.emplace_back(Converter<T>::convert(ptr, total_size, true));
+                        }
+                        return result;
+                    } else {
+                        std::vector<T> result;
+                        while (total_size > 0) {
+                            const auto current = total_size;
+                            result.emplace_back(Converter<T>::convert(ptr, total_size, true));
+                            if (current == total_size) break;
+                        }
+                        return result;
+                    }
+                }
+            }
+        };
+
+        template<typename T, size_t N>
+        class Converter<std::array<T, N>> {
+        public:
+
+            static const bool special = false;
+
+            static Bytes toBytes(const std::array<T, N>& value, bool delimiter = false) {
+                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.begin(), value.end()), delimiter);
+            }
+
+            static std::array<T, N> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                return Converter<std::vector<T>>::convert(ptr, total_size, delimiter);
+            }
+        };
+
+        template<typename T>
+        class Converter<std::set<T>> {
+        public:
+
+            static const bool special = true;
+
+            static Bytes toBytes(const std::set<T>& value, bool delimiter = false) {
+                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.begin(), value.end()), delimiter);
+            }
+
+            static std::set<T> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                auto result = Converter<std::vector<T>>::convert(ptr, total_size, delimiter);
+                return std::set<T> (result.begin(), result.end());
+            }
+        };
+
+        template<typename T1, typename T2>
+        class Converter<std::map<T1, T2>> {
+        public:
+
+            static const bool special = true;
+
+            using Key = std::vector<typename std::map<T1, T2>::value_type>;
+
+            static Bytes toBytes(const std::map<T1, T2>& value, bool delimiter = false) {
+                return Converter<Key>::toBytes(Key(value.begin(), value.end()), delimiter);
+            }
+
+            static std::map<T1, T2> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+                auto result = Converter<Key>::convert(ptr, total_size, delimiter);
+                return std::map<T1, T2> (result.begin(), result.end());
+            }
+        };
+    };
+
+    // list of converters
+    template<>
+    class Bytes::Converter<const unsigned char *> {
+    public:
+
+        static const bool special = true;
+
+        static Bytes toBytes(const unsigned char * value, bool delimiter = false) {
+            if (delimiter) {
+                auto result = toBytes(value, false);
+                return merge(Bytes((CollectionSizeType) result.size()), result);
+            } else {
+                return Bytes{value};
+            }
+        };
+    };
+
+    template<>
+    class Bytes::Converter<const char *> {
+    public:
+
+        static const bool special = true;
+
+        static Bytes toBytes(const char * value, bool delimiter = false) {
+            if (delimiter) {
+                auto result = toBytes(value, false);
+                return merge(Bytes((CollectionSizeType) result.size()), Bytes {value});
+            } else {
+                return Bytes {value};
+            }
+        }
+    };
+
+    template<>
+    class Bytes::Converter<std::string> {
+    public:
+
+        static const bool special = true;
+
+        static Bytes toBytes(const std::string &value, bool delimiter = false) {
+            if (delimiter) {
+                // attach size in front of the data
+                return merge(Converter<CollectionSizeType>::toBytes((CollectionSizeType) value.size()), Bytes{value});
+            } else {
+                return Bytes {value};
+            };
+        }
+
+        static std::string convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+            if (delimiter) {
+                const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, delimiter);
+//                assert(size <= total_size);
+                ptr += size;
+                total_size -= size;
+                auto bptr = reinterpret_cast<char *>(ptr - size);
+                return std::string {bptr, bptr + size};
+            } else {
+                auto bptr = reinterpret_cast<char *>(ptr);
+                return std::string {bptr, bptr + total_size};
+            };
+        }
+    };
+
+    template<>
+    class Bytes::Converter<Bytes> {
+    public :
+
+        static const bool special = true;
+
+        static Bytes toBytes(const Bytes &bytes, bool delimiter = false) {
+            if (delimiter) {
+                // attach size in front of the data
+                return merge(Converter<CollectionSizeType>::toBytes((CollectionSizeType) bytes.size()), bytes);
+            } else {
+                return bytes;
+            }
+        }
+
+        static Bytes convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
+            if (delimiter) {
+//                assert(sizeof(size_t) + size <= total_size);
+                const CollectionSizeType size = Converter<CollectionSizeType >::convert(ptr, total_size, delimiter);
+                ptr += size;
+                total_size -= size;
+                return Bytes {ptr - size, size};
+            } else {
+                return Bytes {ptr, total_size};
+            }
         }
     };
 
     class Record {
     public:
-        Record() = default;
+
+        using PropertyToBytesMap = std::map<std::string, Bytes>;
+
+        explicit Record() = default;
 
         template<typename T>
-        Record &set(const std::string &propName, T value) {
-            if (!propName.empty() && propName.at(0) != '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+        Record &set(const std::string &propName, const T &value) {
+            if (!propName.empty() && !isBasicInfo(propName)) {
+                properties[propName] = Bytes::Converter<T>::toBytes(value);
             }
             return *this;
         }
 
-        Record &set(const std::string &propName, const unsigned char *value);
+        template<typename T>
+        Record &setIfNotExists(const std::string &propName, const T &value) {
+            if (properties.find(propName) == properties.cend()) {
+                set(propName, value);
+            }
+            return *this;
+        }
 
-        Record &set(const std::string &propName, const char *value);
+        const PropertyToBytesMap &getAll() const;
 
-        Record &set(const std::string &propName, const std::string &value);
-
-        Record &set(const std::string &propName, const nogdb::Bytes &b);
-
-        const std::map<std::string, Bytes> &getAll() const;
+        const PropertyToBytesMap &getBasicInfo() const;
 
         std::vector<std::string> getProperties() const;
 
@@ -258,26 +588,42 @@ namespace nogdb {
         void clear();
 
     private:
+
         friend struct Parser;
         friend struct Generic;
         friend struct Algorithm;
         friend class sql_parser::Record;
 
-        std::map<std::string, Bytes> properties{};
+        friend struct Vertex;
+        friend struct Edge;
+
+        Record(PropertyToBytesMap properties);
+
+        Record(PropertyToBytesMap properties, PropertyToBytesMap basicProperties)
+                : properties(std::move(properties)), basicProperties(std::move(basicProperties)) {}
+
+        inline bool isBasicInfo(const std::string &str) const { return str.at(0) == '@'; }
+
+        PropertyToBytesMap properties{};
+        mutable PropertyToBytesMap basicProperties{};
 
         template<typename T>
-        Record &setBasicInfo(const std::string &propName, T value) {
-            if (!propName.empty() && propName.at(0) == '@') {
-                properties[propName] = Bytes{static_cast<const unsigned char *>((void *) &value), sizeof(value)};
+        const Record &setBasicInfo(const std::string &propName, const T &value) const {
+            if (!propName.empty() && isBasicInfo(propName)) {
+                basicProperties[propName] = Bytes::Converter<T>::toBytes(value);
             }
             return *this;
         };
 
-        Record &setBasicInfo(const std::string &propName, const unsigned char *value);
+        template<typename T>
+        const Record &setBasicInfoIfNotExists(const std::string &propName, const T &value) const {
+            if (basicProperties.find(propName) == basicProperties.cend()) {
+                setBasicInfo(propName, value);
+            }
+            return *this;
+        };
 
-        Record &setBasicInfo(const std::string &propName, const char *value);
-
-        Record &setBasicInfo(const std::string &propName, const std::string &value);
+        const Record &updateVersion(const Txn &txn) const;
     };
 
     struct RecordDescriptor {

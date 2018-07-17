@@ -1,4 +1,4 @@
-# NogDB Documentation [v0.11.0]
+# NogDB Documentation [v0.12.0]
 ================================
 :toc:
 :toc-placement: preamble
@@ -1085,6 +1085,7 @@ nogdb::Record getRecord(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::Record` - A record of a specified record descriptor.
 * Exceptions:
+** `CTX_NOEXST_RECORD` - A record with the given descriptor does not exist.
 ** `CTX_NOEXST_CLASS` - A class does not exist.
 
 == Vertex Operations - `nogdb::Vertex`

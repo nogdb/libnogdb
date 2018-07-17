@@ -19,7 +19,9 @@
  *
  */
 
+#include <algorithm>
 #include <cstdlib>
+#include <iostream>
 
 #include "constant.hpp"
 #include "validate.hpp"
@@ -31,73 +33,23 @@
 
 namespace nogdb {
 
-    Record &Record::set(const std::string &propName, const unsigned char *value) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties[propName] = Bytes{value, strlen((char *) value)};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const char *value) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const std::string &value) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         strlen(value.c_str())};
-        }
-        return *this;
-    }
-
-    Record &Record::set(const std::string &propName, const nogdb::Bytes &b) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties[propName] = b;
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const unsigned char *value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{value, strlen((char *) value)};
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const char *value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{reinterpret_cast<const unsigned char *>(value), strlen(value)};
-        }
-        return *this;
-    }
-
-    Record &Record::setBasicInfo(const std::string &propName, const std::string &value) {
-        if (!propName.empty() && propName.at(0) == '@') {
-            properties[propName] = Bytes{static_cast<const unsigned char *>((void *) value.c_str()),
-                                         strlen(value.c_str())};
-        }
-        return *this;
-    }
-
-    const std::map<std::string, Bytes> &Record::getAll() const {
+    const Record::PropertyToBytesMap &Record::getAll() const {
         return properties;
     }
 
+    const Record::PropertyToBytesMap &Record::getBasicInfo() const {
+        return basicProperties;
+    }
+
     Bytes Record::get(const std::string &propName) const {
-        auto value = properties.find(propName);
-        if (value == properties.cend()) {
-            return Bytes{};
-        } else {
-            return value->second;
-        }
+        const PropertyToBytesMap &prop = (isBasicInfo(propName) ? basicProperties : properties);
+        const PropertyToBytesMap::const_iterator it = prop.find(propName);
+        return it == prop.cend() ? Bytes{} : it->second;
     }
 
     std::vector<std::string> Record::getProperties() const {
         auto propertyNames = std::vector<std::string>{};
-        for(const auto& property: properties) {
+        for (const auto &property: properties) {
             propertyNames.emplace_back(property.first);
         }
         return propertyNames;
@@ -205,7 +157,7 @@ namespace nogdb {
                 auto classId = strtoul(sp[0].c_str(), nullptr, 0);
                 auto positionId = strtoul(sp[1].c_str(), nullptr, 0);;
                 return RecordId{classId, positionId};
-            } catch(...) {
+            } catch (...) {
                 throw Error(CTX_INTERNAL_ERR, Error::Type::CONTEXT);
             }
         } else {
@@ -218,30 +170,44 @@ namespace nogdb {
     }
 
     uint64_t Record::getVersion() const {
-        return getBigIntU(VERSION_PROPERTY);
+        const auto it = basicProperties.find(VERSION_PROPERTY);
+        return (it == basicProperties.cend() ? 0ULL : it->second.toBigIntU());
     }
 
     void Record::unset(const std::string &propName) {
-        if (!propName.empty() && propName.at(0) != '@') {
-            properties.erase(propName);
-        }
+        (isBasicInfo(propName) ? basicProperties : properties).erase(propName);
     }
 
     size_t Record::size() const {
-        auto size = size_t{0};
-        for(auto iter = properties.upper_bound(VERSION_PROPERTY); iter != properties.cend(); ++iter) {
-            ++size;
-        }
-        return size;
+        return properties.size();
     }
 
     bool Record::empty() const {
-        return size() < 1;
+        return properties.empty();
     }
 
     void Record::clear() {
+        basicProperties.clear();
         properties.clear();
     }
 
+    Record::Record(PropertyToBytesMap properties) : properties(std::move(properties)) {
+        for (auto it = this->properties.begin(); it != this->properties.end();) {
+            if (isBasicInfo(it->first)) {
+                basicProperties.insert(*it);
+                this->properties.erase(it++);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    const Record &Record::updateVersion(const Txn& txn) const {
+        if (basicProperties.find(TXN_VERSION) == basicProperties.end() || getBigIntU(TXN_VERSION) != txn.getVersionId()) {
+            setBasicInfo(TXN_VERSION, txn.getVersionId());
+            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
+        }
+        return *this;
+    }
 
 }
