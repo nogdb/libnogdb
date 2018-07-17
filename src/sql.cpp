@@ -22,6 +22,7 @@
 #include <cstring>
 #include <numeric>
 #include <cassert>
+#include <functional>
 
 #include "constant.hpp"
 #include "sql_parser.h"
@@ -77,15 +78,13 @@ string nogdb::sql_parser::to_string(const Projection &proj) {
         case ProjectionType::PROPERTY:
             return proj.get<string>();
         case ProjectionType::FUNCTION:
-            return proj.get<Function>().toString();
-        case ProjectionType::METHOD: {
-            const auto &method = proj.get<pair<Projection, Projection>>();
-            return to_string(method.first) + "." + to_string(method.second);
-        }
-        case ProjectionType::ARRAY_SELECTOR: {
-            const auto &arrSel = proj.get<pair<Projection, unsigned long>>();
-            return to_string(arrSel.first) + "[" + ::to_string(arrSel.second) + "]";
-        }
+            return proj.get<Function>().name;
+        case ProjectionType::METHOD:
+            return to_string(proj.get<pair<Projection, Projection>>().first);
+        case ProjectionType::ARRAY_SELECTOR:
+            return to_string(proj.get<pair<Projection, unsigned long>>().first);
+        case ProjectionType::CONDITION:
+            return to_string(proj.get<pair<Projection, Condition>>().first);
         case ProjectionType::ALIAS:
             return proj.get<pair<Projection, string>>().second;
         default:
@@ -112,7 +111,7 @@ Bytes Token::toBytes() const {
         case TK_BLOB: {
             // "x'hhhh' or X'hhhh'"
             const char *z = this->z + 2;
-            int n = this->n - 3;
+            int n = this->n - 3; // -3 is remove X and two quote.
             auto blob = unique_ptr<unsigned char[]>(HexToBlob(z, n));
             return Bytes(blob.get(), n / 2, nogdb::PropertyType::BLOB);
         }
@@ -216,12 +215,16 @@ Record &Record::set(const string &propName, const Bytes &value) {
 }
 
 Record &Record::set(const string &propName, Bytes &&value) {
-    properties[propName] = move(value);
-    return *this;
-}
-
-Record &Record::set(pair<string, Bytes> &&prop) {
-    properties.insert(prop);
+    if (properties.find(propName) == properties.end()) {
+        properties[propName] = move(value);
+    } else {
+        int num = 2;
+        string name = propName + ::to_string(num);
+        while (properties.find(name) != properties.end()) {
+            name = propName + ::to_string(++num);
+        }
+        properties[name] = move(value);
+    }
     return *this;
 }
 
@@ -330,6 +333,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
                             {"OUTV",   Id::OUT_V},
                             {"BOTH",   Id::BOTH},
                             {"BOTHE",  Id::BOTH_E},
+                            {"BOTHV",  Id::BOTH_V},
                             {"EXPAND", Id::EXPAND},
                     },
                     stringcasecmp
@@ -372,6 +376,9 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
             break;
         case Id::BOTH_E:
             func = walkBothEdge;
+            break;
+        case Id::BOTH_V:
+            func = walkBothVertex;
             break;
         default:
             throw Error(NOGDB_SQL_INVALID_FUNCTION_NAME, Error::Type::SQL);
@@ -430,34 +437,21 @@ bool Function::isExpand() const {
     return this->id == Id::EXPAND;
 }
 
-string Function::toString() const {
-    return (this->name + "(" +
-            (this->args.size() == 0
-             ? ""
-             : accumulate(this->args.cbegin() + 1,
-                          this->args.cend(),
-                          to_string(this->args.front()),
-                          [](const string &acc, const Projection &proj) {
-                              return acc + ", " + to_string(proj);
-                          })
-             ) +
-            ")");
-}
 
 #pragma mark -- private
 
 Bytes Function::count(const ResultSet &input, const vector<Projection> &args) {
     if (args.empty()) {
-        return Bytes(PositionId(input.size()), PropertyType(nogdb::PropertyType::UNSIGNED_INTEGER));
+        return Bytes(input.size(), PropertyType(nogdb::PropertyType::UNSIGNED_BIGINT));
     } else if (args.size() == 1 && args[0].type == ProjectionType::PROPERTY) {
         string propName = args[0].get<string>();
-        PositionId result = 0;
+        size_t result = 0;
         for (const auto &row: input) {
             if (!row.record.get(propName).empty()) {
                 result++;
             }
         }
-        return Bytes(result, PropertyType(nogdb::PropertyType::UNSIGNED_INTEGER));
+        return Bytes(result, PropertyType(nogdb::PropertyType::UNSIGNED_BIGINT));
     } else {
         throw Error(NOGDB_SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
     }
@@ -531,6 +525,14 @@ Bytes Function::walkBothEdge(Txn &txn, const Result &input, const vector<Project
     return Bytes(Vertex::getAllEdge(txn, input.descriptor, filter));
 }
 
+Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
+    if (args.size() == 0) {
+        return Bytes(Edge::getSrcDst(txn, input.descriptor));
+    } else {
+        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+    }
+}
+
 Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &args) {
     if (args.size() != 1) {
         throw Error(NOGDB_SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
@@ -540,10 +542,13 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
     const Projection &arg = args[0];
     for (const Result &in: input) {
         Bytes out = Context::getProjectionItem(txn, in, arg, {});
-        if (!out.isResults()) {
+        if (out.isResults()) {
+            results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
+        } else if (out.empty()) {
+            // no-op.
+        } else {
             throw Error(NOGDB_SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
         }
-        results.insert(results.end(), make_move_iterator(out.results().begin()), make_move_iterator(out.results().end()));
     }
 
     input = move(results);
@@ -659,6 +664,7 @@ static int keywordCode(const char *z, int n, int *pType) {
                     {"FROM",     TK_FROM},
                     {"GROUP",    TK_GROUP},
                     {"IF",       TK_IF},
+                    {"INDEX",    TK_INDEX},
                     {"IS",       TK_IS},
                     {"LIKE",     TK_LIKE},
                     {"LIMIT",    TK_LIMIT},

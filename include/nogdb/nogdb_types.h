@@ -206,7 +206,7 @@ namespace nogdb {
         static Bytes merge(const Bytes& bytes1, const Bytes& byte2);
         static Bytes merge(const std::vector<Bytes> &bytes);
 
-        using CollectionSizeType = u_int16_t;
+        using CollectionSizeType = uint16_t;
 
         template<typename T>
         class Converter {

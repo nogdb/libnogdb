@@ -457,18 +457,6 @@ void test_sql_select_vertex() {
         SQL::Result result = SQL::execute(txn, "SELECT * FROM books");
         assert(result.type() == SQL::Result::Type::RESULT_SET);
         ResultSet res = result.get<ResultSet>();
-        assert(res[0].record.get("title").toText() == "Percy Jackson");
-        assert(res[0].record.get("pages").toInt() == 456);
-        assert(res[0].record.get("price").toReal() == 24.5);
-        assert(res[0].record.get("words").empty());
-        assert(res[1].record.get("title").toText() == "Batman VS Superman");
-        assert(res[1].record.get("words").toBigIntU() == 9999999);
-        assert(res[1].record.get("price").toReal() == 36.0);
-        assert(res[1].record.get("pages").empty());
-
-        result = SQL::execute(txn, "SELECT * FROM books");
-        assert(result.type() == SQL::Result::Type::RESULT_SET);
-        res = result.get<ResultSet>();
         assertSize(res, 2);
         assert(res[0].record.get("title").toText() == "Percy Jackson");
         assert(res[0].record.get("pages").toInt() == 456);
@@ -557,16 +545,53 @@ void test_sql_select_property() {
 
     // select properties.
     try {
-        SQL::Result result = SQL::execute(txn, "SELECT @recordId, name, age FROM " + to_string(rdesc));
+        SQL::Result result = SQL::execute(txn, "SELECT name, age FROM " + to_string(rdesc));
         assert(result.type() == result.RESULT_SET);
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
         assert(res[0].record.get("name").toText() == "Jim Beans");
         assert(res[0].record.get("age").toIntU() == 40U);
-        res[0].record.get("@recordId").convertTo(rdResult);
-        assert(rdResult == rdesc);
     } catch(const Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @recordId.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @recordId FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@recordId").toText() == rid2str(rdesc.rid));
+    } catch (const Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @className.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @className FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@className").toText() == "persons");
+    } catch (const Error &ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // select @version.
+    try {
+        SQL::Result result = SQL::execute(txn, "SELECT @version FROM " + to_string(rdesc));
+        assert(result.type() == result.RESULT_SET);
+        auto res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].descriptor == RecordDescriptor(-2, 0));
+        assert(res[0].record.get("@version").empty() == false);
+    } catch (const Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
@@ -607,15 +632,15 @@ void test_sql_select_count() {
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toIntU() == 3);
+        assert(res[0].record.get("count").toBigIntU() == 3);
 
         result = SQL::execute(txn, "SELECT count('name'), count(age) FROM persons");
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count(name)").toIntU() == 2);
-        assert(res[0].record.get("count(age)").toIntU() == 1);
+        assert(res[0].record.get("count").toBigIntU() == 2);
+        assert(res[0].record.get("count2").toBigIntU() == 1);
 
         // count empty result.
         result = SQL::execute(txn, "SELECT count(*) FROM persons WHERE name='Sam'");
@@ -623,7 +648,7 @@ void test_sql_select_count() {
         res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.get("count()").toIntU() == 0);
+        assert(res[0].record.get("count").toBigIntU() == 0);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -690,6 +715,13 @@ void test_sql_select_walk() {
         assertSize(res, 1);
         assert(res[0].descriptor == v3);
 
+        result = SQL::execute(txn, "SELECT expand(bothV()) FROM " + to_string(eA13));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assertSize(res, 2);
+        assert(res[0].descriptor == v1);
+        assert(res[1].descriptor == v3);
+
         result = SQL::execute(txn, "SELECT expand(out()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
@@ -728,15 +760,20 @@ void test_sql_select_walk() {
         result = SQL::execute(txn, "SELECT expand(in('eA').out('eB')) FROM " + to_string(v3));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
-        assert(res.size() == 2);
+        assertSize(res, 2);
         assert(res[0].descriptor == v4);
         assert(res[1].descriptor == v4);
 
         result = SQL::execute(txn, "SELECT expand(outE()[p='e13'].inV()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
-        assert(res.size() == 1);
+        assertSize(res, 1);
         assert(res[0].descriptor == v3);
+
+        // expand empty result from condition projection.
+        result = SQL::execute(txn, "SELECT expand(outE()[p='e99']) FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        assertSize(result.get<ResultSet>(), 0);
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -766,37 +803,50 @@ void test_sql_select_method_property() {
         auto eB14 = Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
         auto eB24 = Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
 
+        // normal method
         auto result = SQL::execute(txn, "SELECT inV().propV FROM " + to_string(eA13));
         assert(result.type() == result.RESULT_SET);
         auto res = result.get<ResultSet>();
         assertSize(res, 1);
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("inV().propV") == "v3");
+        assert(res[0].record.get("inV").toText() == "v3");
 
+        // normal method with array selector
         result = SQL::execute(txn, "SELECT out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("out()[0].propV") == "v4");
+        assert(res[0].record.get("out").toText() == "v4");
 
+        // normal method with array selector and normal property
         result = SQL::execute(txn, "SELECT propV, out()[0].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("propV") == "v1");
-        assert(res[0].record.getText("out()[0].propV") == "v4");
+        assert(res[0].record.get("propV").toText() == "v1");
+        assert(res[0].record.get("out").toText() == "v4");
 
+        // normal method with out of range array selector
         result = SQL::execute(txn, "SELECT out()[2].propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 0);
 
-        result = SQL::execute(txn, "SELECT propV, out()[2].propV FROM " + to_string(v1));
+        // method with condition
+        result = SQL::execute(txn, "SELECT out()[propV='v3'].propV FROM " + to_string(v1));
+        assert(result.type() == result.RESULT_SET);
+        res = result.get<ResultSet>();
+        assertSize(res, 1);
+        assert(res[0].record.get("out").toText() == "v3");
+
+        // normal property, out of range array select and method with empty result from walk
+        result = SQL::execute(txn, "SELECT propV, out('e')[2].propV, outE()[propE='e1->5'].inV().propV as out_propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
-        assert(res[0].record.getText("propV") == "v1");
-        assert(res[0].record.get("out()[0].propV").empty());
+        assert(res[0].record.get("propV").toText() == "v1");
+        assert(res[0].record.get("out").empty());
+        assert(res[0].record.get("out_propV").empty());
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -899,6 +949,24 @@ void test_sql_select_vertex_condition() {
         result = SQL::execute(txn, "SELECT FROM v WHERE real=4.5");
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").eq(4.5)));
+    } catch (const Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    // Condition special properties.
+    try {
+        auto result = SQL::execute(txn, "SELECT FROM v WHERE @recordId = '" + rid2str(v1.rid) + "'");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@recordId").eq(rid2str(v1.rid))));
+
+        result = SQL::execute(txn, "SELECT FROM v WHERE @className = 'v'");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@className").eq("v")));
+
+        result = SQL::execute(txn, "SELECT FROM v WHERE @version > 0");
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@version").gt(0ULL)));
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1545,5 +1613,69 @@ void test_sql_traverse() {
     Class::drop(txn, "V");
     Class::drop(txn, "EL");
     Class::drop(txn, "ER");
+    txn.commit();
+}
+
+void test_sql_create_index() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+
+    try {
+        SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 1);
+        assert(propD.indexInfo.begin()->second.second == false);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Property::dropIndex(txn, "V", "p");
+    Property::remove(txn, "V", "p");
+    Class::drop(txn, "V");
+    txn.commit();
+}
+
+void test_sql_create_index_unique() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+
+    try {
+        SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p UNIQUE");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 1);
+        assert(propD.indexInfo.begin()->second.second == true);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Property::dropIndex(txn, "V", "p");
+    Property::remove(txn, "V", "p");
+    Class::drop(txn, "V");
+    txn.commit();
+}
+
+void test_sql_drop_index() {
+    Txn txn(*ctx, Txn::Mode::READ_WRITE);
+    Class::create(txn, "V", ClassType::VERTEX);
+    Property::add(txn, "V", "p", PropertyType::TEXT);
+    Property::createIndex(txn, "V", "p");
+
+    try {
+        SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
+        assert(result.type() == result.NO_RESULT);
+        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        assert(propD.indexInfo.size() == 0);
+    } catch (const Error &e) {
+        cout << "\nError: " << e.what() << endl;
+        assert(false);
+    }
+
+    Class::drop(txn, "V");
     txn.commit();
 }
