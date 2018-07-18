@@ -18,7 +18,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "runtest.h"
+#include "apitest.h"
 
 void test_schema_txn_create_class_commit() {
     try {

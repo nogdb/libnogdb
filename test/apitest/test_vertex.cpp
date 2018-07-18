@@ -19,7 +19,7 @@
  *
  */
 
-#include "runtest.h"
+#include "apitest.h"
 #include "test_prepare.h"
 #include <climits>
 #include <set>

@@ -19,7 +19,7 @@
  *
  */
 
-#include "runtest.h"
+#include "apitest.h"
 
 void test_create_class() {
     try {

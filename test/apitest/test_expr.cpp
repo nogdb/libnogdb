@@ -21,7 +21,7 @@
 
 #include <map>
 #include <string>
-#include "runtest.h"
+#include "apitest.h"
 
 void test_expression() {
     nogdb::PropertyMapType propTypes;

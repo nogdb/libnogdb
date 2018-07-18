@@ -24,7 +24,7 @@
 
 #include <map>
 
-#include "blob.hpp"
+#include "datatype.hpp"
 #include "keyval.hpp"
 #include "schema.hpp"
 

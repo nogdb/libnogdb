@@ -24,87 +24,108 @@
 
 #include <type_traits>
 #include <string>
+#include <cstdlib>
 #include <map>
+#include <unordered_map>
 #include <sys/file.h>
 #include <sys/stat.h>
 
-#include "utils.hpp"
 #include "lmdb_engine.hpp"
 
-#include "nogdb_context.h"
+#define NOGDB_MAX_DATABASE_NUMBER        "max_database_number"
+#define NOGDB_MAX_DATABASE_SIZE          "max_database_size"
+#define NOGDB_MAX_DATABASE_READERS       "max_database_readers"
+
+#define NOGDB_LMDB_ENGINE                0
+//#define NOGDB_ROCKSDB_ENGINE             1
+#define NOGDB_DEFAULT_ENGINE             NOGDB_LMDB_ENGINE
 
 namespace nogdb {
 
     namespace storage_engine {
 
-        auto
+        class Settings {
+        public:
+            Settings() = default;
+
+            void set(const std::string& settingKey, const std::string& settingValue) {
+                settings[settingKey] = settingValue;
+            }
+
+            unsigned long getValueAsNumeric(const std::string& settingKey, const unsigned long defaultValue) const {
+                auto iter = settings.find(settingKey);
+                if (iter != settings.cend()) {
+                    return strtoul(iter->second.c_str(), nullptr, 10);
+                } else {
+                    return defaultValue;
+                }
+            }
+
+            std::string getValueAsString(const std::string& settingKey, const std::string& defaultValue) const {
+                auto iter = settings.find(settingKey);
+                if (iter != settings.cend()) {
+                    return iter->second;
+                } else {
+                    return defaultValue;
+                }
+            }
+
+        private:
+            std::map<std::string, std::string> settings;
+        };
 
         class Env {
         public:
-            /**
-             * Destructor
-             */
+
             virtual ~Env() noexcept = default;
 
-            /**
-             * Close a common database environment
-             */
             virtual void close() noexcept = 0;
+
+            unsigned int engine() const noexcept {
+                return _engine;
+            }
+
+        protected:
+
+            unsigned int _engine{NOGDB_DEFAULT_ENGINE};
+
+            inline bool fileExists(const std::string &fileName) {
+                struct stat fileStat;
+                return stat((char *) fileName.c_str(), &fileStat) == 0;
+            }
+
         };
 
         class Txn {
         public:
-            /**
-             * Destructor
-             */
+
             virtual ~Txn() noexcept = default;
 
-            /**
-             * Commit a common transaction
-             */
             virtual void commit() = 0;
 
-            /**
-             * Abort a common transaction
-             */
             virtual void rollback() = 0;
         };
 
         class LMDBEnv: public Env {
         public:
-            /**
-             * Constructor
-             *
-             * @param dbPath a full path (including name) of a database file
-             * @param params given parameters for database configurations
-             */
-            LMDBEnv(const std::string& dbPath, const StorageEngineSettings& settings) {
+
+            LMDBEnv(const std::string& dbPath, const Settings& settings) {
                 auto dbNum = static_cast<unsigned int>(settings.getValueAsNumeric(NOGDB_MAX_DATABASE_NUMBER, 1024));
                 auto dbSize = settings.getValueAsNumeric(NOGDB_MAX_DATABASE_SIZE, 1073741824); // 1GB
                 if (!fileExists(dbPath)) {
                     mkdir(dbPath.c_str(), 0755);
                 }
-                _env = lmdb::Env::create(dbNum, dbSize).open(dbPath);
+                _env = std::move(lmdb::Env::create(dbNum, dbSize).open(dbPath));
+                _engine = NOGDB_LMDB_ENGINE;
             }
 
-            /**
-             * Destructor
-             */
-            ~LMDBEnv() noexcept {
-                try { close(); } catch (...) {}
-            }
+            ~LMDBEnv() noexcept = default;
 
-            /**
-             * Move constructor
-             */
             LMDBEnv(LMDBEnv &&other) noexcept {
                 using std::swap;
                 swap(_env, other._env);
             }
 
-            /**
-             * Move assignment operator
-             */
             LMDBEnv &operator=(LMDBEnv &&other) noexcept {
                 if (this != &other) {
                     using std::swap;
@@ -113,11 +134,12 @@ namespace nogdb {
                 return *this;
             }
 
-            /**
-             * Close LMDB environment
-             */
             void close() noexcept override {
                 _env.close();
+            }
+
+            lmdb::EnvHandler* handle() const noexcept {
+                return _env.handle();
             }
 
         private:
@@ -127,31 +149,55 @@ namespace nogdb {
 
         class LMDBTxn: public Txn {
         public:
-            LMDBTxn(LMDBEnv* const env, const unsigned int txnMode) {
 
+            LMDBTxn(LMDBEnv* const env, const unsigned int txnMode) {
+                _txn = lmdb::Txn::begin(env->handle(), txnMode);
+            }
+
+            ~LMDBTxn() noexcept = default;
+
+            LMDBTxn(LMDBTxn &&other) noexcept {
+                using std::swap;
+                swap(_txn, other._txn);
+            }
+
+            LMDBTxn &operator=(LMDBTxn &&other) noexcept {
+                if (this != &other) {
+                    using std::swap;
+                    swap(_txn, other._txn);
+                }
+                return *this;
+            }
+
+            lmdb::Dbi openDbi(const std::string& dbName, bool numericKey, bool unique) {
+                return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+            }
+
+            lmdb::Cursor openCursor(const lmdb::Dbi& dbi) {
+                return lmdb::Cursor::open(_txn.handle(), dbi.handle());
+            }
+
+            lmdb::Cursor openCursor(const std::string& dbName, bool numericKey, bool unique) {
+                return openCursor(openDbi(dbName, numericKey, unique));
+            }
+
+            void commit() {
+                _txn.commit();
+            }
+
+            void rollback() {
+                _txn.abort();
+            }
+
+            lmdb::TxnHandler* handle() const noexcept {
+                return _txn.handle();
             }
 
         private:
-
+            lmdb::Txn _txn{nullptr};
         };
 
-
         //TODO: implement more storage engine interfaces when other databases are available
-
-//        class InMemEnv: public Env {
-//        public:
-//
-//        private:
-//
-//        };
-//
-//        class InMemTxn: public Txn {
-//        public:
-//
-//        private:
-//
-//        };
-
 //        class RocksDBEnv: public Env {
 //        public:
 //

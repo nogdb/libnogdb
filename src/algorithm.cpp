@@ -24,7 +24,7 @@
 #include <vector>
 #include <queue>
 
-#include "blob.hpp"
+#include "datatype.hpp"
 #include "keyval.hpp"
 #include "schema.hpp"
 #include "env_handler.hpp"

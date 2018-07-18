@@ -20,7 +20,7 @@
  */
 
 #include <cmath>
-#include "runtest.h"
+#include "apitest.h"
 
 struct myobject {
     myobject() {};

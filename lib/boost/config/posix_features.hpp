@@ -9,7 +9,7 @@
 // All POSIX feature tests go in this file,
 // Note that we test _POSIX_C_SOURCE and _XOPEN_SOURCE as well
 // _POSIX_VERSION and _XOPEN_VERSION: on some systems POSIX API's
-// may be present but none-functional unless _POSIX_C_SOURCE and
+// may be present but none-apitest unless _POSIX_C_SOURCE and
 // _XOPEN_SOURCE have been defined to the right value (it's up
 // to the user to do this *before* including any header, although
 // in most cases the compiler will do this for you).

@@ -21,7 +21,7 @@
 
 #include <algorithm>
 #include <set>
-#include "runtest.h"
+#include "apitest.h"
 #include "test_prepare.h"
 
 struct Coordinates {

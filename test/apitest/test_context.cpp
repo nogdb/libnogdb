@@ -19,7 +19,7 @@
  *
  */
 
-#include "runtest.h"
+#include "apitest.h"
 
 void assert_dbinfo(const nogdb::DBInfo &info1, const nogdb::DBInfo &info2) {
 	assert(info1.numClass == info2.numClass);

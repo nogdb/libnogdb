@@ -27,7 +27,7 @@
 
 #include "utils.hpp"
 
-#include "nogdb_errors.h"
+#include "nogdb/nogdb_errors.h"
 
 namespace nogdb {
 
@@ -66,7 +66,7 @@ namespace nogdb {
 
     void require(bool cmp) {
         if (!cmp) {
-            throw Error(NOGDB_CTX_INTERNAL_ERR, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INTERNAL_ERR);
         }
     }
 
