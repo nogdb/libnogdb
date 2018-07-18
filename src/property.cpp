@@ -48,7 +48,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if (dbInfo.maxPropertyId >= UINT16_MAX) {
-            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
             ++dbInfo.maxPropertyId;
         }
@@ -73,7 +73,7 @@ namespace nogdb {
             txn.txnCtx.dbSchema->addProperty(*txn.txnBase, foundClass->id, propertyName, propertyDescriptor);
             ++dbInfo.numProperty;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -112,7 +112,7 @@ namespace nogdb {
             // update in-memory schema
             txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundClass->id, oldPropertyName, newPropertyName);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -129,7 +129,7 @@ namespace nogdb {
 
         // check if all index tables associated with the column have bee removed beforehand
         if (!foundProperty.indexInfo.empty()) {
-            throw Error(NOGDB_CTX_IN_USED_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
         }
 
         auto &dbInfo = txn.txnBase->dbInfo;
@@ -143,7 +143,7 @@ namespace nogdb {
             // update in-memory database info
             --dbInfo.numProperty;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -157,7 +157,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if (dbInfo.maxIndexId >= UINT32_MAX) {
-            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
             ++dbInfo.maxIndexId;
         }
@@ -170,11 +170,11 @@ namespace nogdb {
 
         // index validations
         if (foundProperty.type == PropertyType::BLOB || foundProperty.type == PropertyType::UNDEFINED) {
-            throw Error(NOGDB_CTX_INVALID_PROPTYPE_INDEX, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE_INDEX);
         }
         auto indexInfo = foundProperty.indexInfo.find(foundClass->id);
         if (indexInfo != foundProperty.indexInfo.cend()) {
-            throw Error(NOGDB_CTX_DUPLICATE_INDEX, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
         }
 
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
@@ -314,9 +314,9 @@ namespace nogdb {
             ++dbInfo.numIndex;
         } catch (LMDBInterface::ErrorType &err) {
             if (err == MDB_KEYEXIST) {
-                throw Error(NOGDB_CTX_INVALID_INDEX_CONSTRAINT, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
             } else {
-                throw Error(err, Error::Type::DATASTORE);
+                throw Error(err);
             }
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
@@ -338,7 +338,7 @@ namespace nogdb {
         // index validations
         auto indexInfo = foundProperty.indexInfo.find(foundClass->id);
         if (indexInfo == foundProperty.indexInfo.cend()) {
-            throw Error(NOGDB_CTX_NOEXST_INDEX, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
         }
 
         auto &dbInfo = txn.txnBase->dbInfo;
@@ -393,7 +393,7 @@ namespace nogdb {
             // update in-memory database info
             --dbInfo.numIndex;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info

@@ -40,10 +40,10 @@ namespace nogdb {
             auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classDescriptor->id), true);
             keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, recordDescriptor.rid.second);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         if (keyValue.empty()) {
-            throw Error(CTX_NOEXST_RECORD, Error::Type::CONTEXT);
+            throw Error(CTX_NOEXST_RECORD);
         }
         return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
     }

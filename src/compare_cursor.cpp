@@ -77,7 +77,7 @@ namespace nogdb {
                                     }
                                     break;
                                 default:
-                                    throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                             }
                         }
                     }
@@ -85,7 +85,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -114,7 +114,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -126,7 +126,7 @@ namespace nogdb {
                                    const Condition &condition, PropertyType type) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
@@ -159,7 +159,7 @@ namespace nogdb {
                                     }
                                     break;
                                 default:
-                                    throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                             }
                         }
                         return false;
@@ -190,12 +190,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -209,7 +209,7 @@ namespace nogdb {
                                         const MultiCondition &conditions, const PropertyMapType &types) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
@@ -245,12 +245,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -269,13 +269,13 @@ namespace nogdb {
                     propertyType = propertyInfo->second.type;
                 } else {
                     if (propertyType != propertyInfo->second.type) {
-                        throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                     }
                 }
             }
         }
         if (propertyType == PropertyType::UNDEFINED) {
-            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
                                          [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
@@ -318,14 +318,14 @@ namespace nogdb {
                         --numOfUndefPropertyType;
                     } else {
                         if (property.second != propertyInfo->second.type) {
-                            throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
             }
         }
         if (numOfUndefPropertyType != 0) {
-            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
                                          [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
@@ -364,7 +364,7 @@ namespace nogdb {
                         isFoundProperty = true;
                     } else {
                         if (propertyType != propertyInfo->second.type) {
-                            throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
@@ -376,14 +376,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getRdescEdgeCondition(txn, recordDescriptor, edgeClassIds, func1, condition, propertyType);
@@ -421,7 +421,7 @@ namespace nogdb {
                             --numOfUndefPropertyType;
                         } else {
                             if (property.second != propertyInfo->second.type) {
-                                throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                             }
                         }
                     }
@@ -434,14 +434,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getRdescEdgeMultiCondition(txn, recordDescriptor, edgeClassIds, func1, conditions, conditionPropertyTypes);
@@ -473,7 +473,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -494,7 +494,7 @@ namespace nogdb {
                                    bool (*condition)(const Record &record)) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
@@ -530,12 +530,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }

@@ -137,9 +137,9 @@ namespace nogdb {
                 }
             } catch (LMDBInterface::ErrorType &err) {
                 if (err == MDB_KEYEXIST) {
-                    throw Error(NOGDB_CTX_UNIQUE_CONSTRAINT, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNIQUE_CONSTRAINT);
                 } else {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
             }
         }

@@ -122,7 +122,7 @@ namespace nogdb {
             txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RW);
         } catch (LMDBInterface::ErrorType &err) {
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // prepare schema for classes, properties, and relations
         auto classDBHandler = LMDBInterface::DBHandler{};
@@ -141,14 +141,14 @@ namespace nogdb {
             LMDBInterface::commitTxn(txn);
         } catch (LMDBInterface::ErrorType &err) {
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // create read-only transaction
         try {
             txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RO);
         } catch (LMDBInterface::ErrorType &err) {
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // create read-write in memory transaction
         BaseTxn baseTxn{*this, true, true};
@@ -186,7 +186,7 @@ namespace nogdb {
             baseTxn.rollback(*this);
             dbSchema->clear();
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
 
         // retrieve properties and indexing information
@@ -245,7 +245,7 @@ namespace nogdb {
             baseTxn.rollback(*this);
             dbSchema->clear();
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
 
         // retrieve relations information
@@ -262,7 +262,7 @@ namespace nogdb {
                 // resolve a rid of an edge from a key
                 auto sp = split(key, ':');
                 if (sp.size() != 2) {
-                    throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
                 }
                 auto edgeId = RecordId{
                         static_cast<ClassId>(std::stoul(std::string{sp[0]}, nullptr, 0)),
@@ -298,13 +298,13 @@ namespace nogdb {
             dbRelation->clear();
             dbSchema->clear();
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (LMDBInterface::ErrorType &err) {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
             LMDBInterface::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // end of transaction
         LMDBInterface::abortTxn(txn);

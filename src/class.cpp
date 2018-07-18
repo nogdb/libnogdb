@@ -49,7 +49,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
-            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
             ++dbInfo.maxClassId;
         }
@@ -78,7 +78,7 @@ namespace nogdb {
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -98,7 +98,7 @@ namespace nogdb {
 
         auto &dbInfo = txn.txnBase->dbInfo;
         if ((dbInfo.maxClassId >= CLASS_ID_UPPER_LIMIT)) {
-            throw Error(NOGDB_CTX_LIMIT_DBSCHEMA, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
             ++dbInfo.maxClassId;
         }
@@ -138,7 +138,7 @@ namespace nogdb {
             txn.txnCtx.dbSchema->insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -153,14 +153,14 @@ namespace nogdb {
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
         if (foundClass->type != ClassType::VERTEX && foundClass->type != ClassType::EDGE) {
-            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         }
         // retrieve relevant properties information
         auto propertyIds = std::vector<PropertyId>{};
         for (const auto &property: foundClass->properties.getLatestVersion().first) {
             // check if all index tables associated with the column have been removed beforehand
             if (!property.second.indexInfo.empty()) {
-                throw Error(NOGDB_CTX_IN_USED_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
             }
             propertyIds.push_back(property.second.id);
         }
@@ -199,7 +199,7 @@ namespace nogdb {
                             }
                         } catch (Graph::ErrorType &err) {
                             if (err != NOGDB_GRAPH_NOEXST_VERTEX) {
-                                throw Error(err, Error::Type::GRAPH);
+                                throw Error(err);
                             }
                         }
                     }
@@ -278,9 +278,9 @@ namespace nogdb {
             dbInfo.numProperty -= propertyIds.size();
             --dbInfo.numClass;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -314,7 +314,7 @@ namespace nogdb {
             // update in-memory schema
             txn.txnCtx.dbSchema->replace(*txn.txnBase, foundClass, newClassName);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info

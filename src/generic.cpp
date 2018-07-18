@@ -54,7 +54,7 @@ namespace nogdb {
             record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
             return Result{recordDescriptor, record};
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 
@@ -73,7 +73,7 @@ namespace nogdb {
             record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
             result.emplace_back(Result{recordDescriptor, record});
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -95,7 +95,7 @@ namespace nogdb {
                     result.emplace_back(Result{recordDescriptor, record});
                 }
             } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
+                throw Error(err);
             }
         }
         return result;
@@ -117,7 +117,7 @@ namespace nogdb {
                 keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -136,7 +136,7 @@ namespace nogdb {
                 keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -157,7 +157,7 @@ namespace nogdb {
                                         (Graph::*func)(const BaseTxn &baseTxn, const RecordId &rid, const ClassId &classId)) {
         switch (checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ResultSet{};
             default:
@@ -191,12 +191,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -210,7 +210,7 @@ namespace nogdb {
                                    (Graph::*func)(const BaseTxn &baseTxn, const RecordId &rid, const ClassId &classId)) {
         switch (checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
@@ -229,12 +229,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -251,7 +251,7 @@ namespace nogdb {
                 keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
                                                 recordDescriptor.rid.second);
             } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
+                throw Error(err);
             }
             return (keyValue.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
         }

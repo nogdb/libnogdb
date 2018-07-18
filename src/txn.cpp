@@ -34,9 +34,9 @@ namespace nogdb {
         try {
             txnBase = std::make_shared<BaseTxn>(txnCtx, txnMode == Mode::READ_WRITE);
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (...) {
             std::rethrow_exception(std::current_exception());
         }
@@ -73,10 +73,10 @@ namespace nogdb {
             txnBase->commit(txnCtx);
         } catch (Graph::ErrorType &err) {
             rollback();
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (LMDBInterface::ErrorType &err) {
             rollback();
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (const Error &err) {
             rollback();
             throw err;

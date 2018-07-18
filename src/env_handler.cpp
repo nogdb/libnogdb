@@ -50,16 +50,16 @@ namespace nogdb {
         lockFileDescriptor = openLockFile(lockFile.c_str());
         if (lockFileDescriptor == -1) {
             if (errno == EWOULDBLOCK || errno == EEXIST) {
-                throw Error(NOGDB_CTX_IS_LOCKED, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
             } else {
-                throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
             }
         }
 
         try {
             env = LMDBInterface::createEnv(dbPath, maxdb, maxdbSize, maxdbReaders, flag, perm);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 

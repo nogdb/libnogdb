@@ -76,7 +76,7 @@ namespace nogdb {
                             return (cmpValue1.toTinyInt() < value.toTinyInt()) &&
                                    (value.toTinyInt() < cmpValue2.toTinyInt());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::UNSIGNED_TINYINT:
                     switch (cmp) {
@@ -103,7 +103,7 @@ namespace nogdb {
                             return (cmpValue1.toTinyIntU() < value.toTinyIntU()) &&
                                    (value.toTinyIntU() < cmpValue2.toTinyIntU());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::SMALLINT:
                     switch (cmp) {
@@ -130,7 +130,7 @@ namespace nogdb {
                             return (cmpValue1.toSmallInt() < value.toSmallInt()) &&
                                    (value.toSmallInt() < cmpValue2.toSmallInt());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::UNSIGNED_SMALLINT:
                     switch (cmp) {
@@ -157,7 +157,7 @@ namespace nogdb {
                             return (cmpValue1.toSmallIntU() < value.toSmallIntU()) &&
                                    (value.toSmallIntU() < cmpValue2.toSmallIntU());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::INTEGER:
                     switch (cmp) {
@@ -180,7 +180,7 @@ namespace nogdb {
                         case Condition::Comparator::BETWEEN_NO_BOUND:
                             return (cmpValue1.toInt() < value.toInt()) && (value.toInt() < cmpValue2.toInt());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::UNSIGNED_INTEGER:
                     switch (cmp) {
@@ -203,7 +203,7 @@ namespace nogdb {
                         case Condition::Comparator::BETWEEN_NO_BOUND:
                             return (cmpValue1.toIntU() < value.toIntU()) && (value.toIntU() < cmpValue2.toIntU());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::BIGINT:
                     switch (cmp) {
@@ -230,7 +230,7 @@ namespace nogdb {
                             return (cmpValue1.toBigInt() < value.toBigInt()) &&
                                    (value.toBigInt() < cmpValue2.toBigInt());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::UNSIGNED_BIGINT:
                     switch (cmp) {
@@ -257,7 +257,7 @@ namespace nogdb {
                             return (cmpValue1.toBigIntU() < value.toBigIntU()) &&
                                    (value.toBigIntU() < cmpValue2.toBigIntU());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::REAL:
                     switch (cmp) {
@@ -280,7 +280,7 @@ namespace nogdb {
                         case Condition::Comparator::BETWEEN_NO_BOUND:
                             return (cmpValue1.toReal() < value.toReal()) && (value.toReal() < cmpValue2.toReal());
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 case PropertyType::TEXT: {
                     auto textValue = (isIgnoreCase) ? to_lower(value.toText()) : value.toText();
@@ -322,7 +322,7 @@ namespace nogdb {
                         case Condition::Comparator::BETWEEN_NO_BOUND:
                             return (textCmpValue1 < textValue) && (textValue < textCmpValue2);
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 }
                 case PropertyType::BLOB:
@@ -330,10 +330,10 @@ namespace nogdb {
                         case Condition::Comparator::EQUAL:
                             return memcmp(value.getRaw(), cmpValue1.getRaw(), value.size()) == 0;
                         default:
-                            throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                     }
                 default:
-                    throw Error(NOGDB_CTX_INVALID_PROPTYPE, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE);
             }
         };
         if (condition.comp == Condition::Comparator::IN) {
@@ -395,7 +395,7 @@ namespace nogdb {
                                     }
                                     break;
                                 default:
-                                    throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                             }
                         }
                     }
@@ -403,7 +403,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -431,7 +431,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -445,7 +445,7 @@ namespace nogdb {
                                         PropertyType type) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ResultSet{};
             default:
@@ -478,7 +478,7 @@ namespace nogdb {
                                     }
                                     break;
                                 default:
-                                    throw Error(NOGDB_CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                             }
                         }
                         return false;
@@ -509,12 +509,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -529,7 +529,7 @@ namespace nogdb {
                                              const PropertyMapType &types) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ResultSet{};
             default:
@@ -565,12 +565,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -591,13 +591,13 @@ namespace nogdb {
                     propertyType = propertyInfo->second.type;
                 } else {
                     if (propertyType != propertyInfo->second.type) {
-                        throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                     }
                 }
             }
         }
         if (propertyType == PropertyType::UNDEFINED) {
-            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
                                          [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
@@ -643,14 +643,14 @@ namespace nogdb {
                         --numOfUndefPropertyType;
                     } else {
                         if (property.second != propertyInfo->second.type) {
-                            throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
             }
         }
         if (numOfUndefPropertyType != 0) {
-            throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
                                          [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
@@ -690,7 +690,7 @@ namespace nogdb {
                         isFoundProperty = true;
                     } else {
                         if (propertyType != propertyInfo->second.type) {
-                            throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
@@ -703,14 +703,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getEdgeCondition(txn, recordDescriptor, edgeClassIds, func1, condition, propertyType);
@@ -750,7 +750,7 @@ namespace nogdb {
                             --numOfUndefPropertyType;
                         } else {
                             if (property.second != propertyInfo->second.type) {
-                                throw Error(NOGDB_CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                             }
                         }
                     }
@@ -763,14 +763,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(NOGDB_CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getEdgeMultiCondition(txn, recordDescriptor, edgeClassIds, func1, conditions, conditionPropertyTypes);
@@ -802,7 +802,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return result;
     }
@@ -824,7 +824,7 @@ namespace nogdb {
                                         bool (*condition)(const Record &record)) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ResultSet{};
             default:
@@ -860,12 +860,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }

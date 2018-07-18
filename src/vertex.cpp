@@ -70,7 +70,7 @@ namespace nogdb {
         } catch (const Error &err) {
             throw err;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         return RecordDescriptor{classDescriptor->id, maxRecordNumValue};
     }
@@ -90,7 +90,7 @@ namespace nogdb {
             auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
             auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             }
             auto existingRecord = Parser::parseRawData(keyValue, classInfo);
             auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -130,7 +130,7 @@ namespace nogdb {
 
             LMDBInterface::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 
@@ -146,7 +146,7 @@ namespace nogdb {
             }
         } catch (Graph::ErrorType &err) {
             if (err != NOGDB_GRAPH_NOEXST_VERTEX)
-                throw Error(err, Error::Type::GRAPH);
+                throw Error(err);
         }
         // delete edges and relations
         for (const auto &edge: edgeRecordDescriptors) {
@@ -191,7 +191,7 @@ namespace nogdb {
             // delete actual record
             LMDBInterface::deleteRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // update in-memory relations
         txn.txnCtx.dbRelation->deleteVertex(*txn.txnBase, recordDescriptor.rid);
@@ -257,7 +257,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // remove all records in a database
         try {
@@ -277,7 +277,7 @@ namespace nogdb {
                         }
                     } catch (Graph::ErrorType &err) {
                         if (err != NOGDB_GRAPH_NOEXST_VERTEX) {
-                            throw Error(err, Error::Type::GRAPH);
+                            throw Error(err);
                         }
                     }
                     // delete from relations
@@ -292,7 +292,7 @@ namespace nogdb {
             // empty a database
             LMDBInterface::emptyDbi(dsTxnHandler, classDBHandler);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // update in-memory
         for (const auto &recordId: recordIds) {

@@ -55,12 +55,12 @@ namespace nogdb {
             auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(srcVertexRecordDescriptor.rid.first), true);
             auto srcKeyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, srcVertexRecordDescriptor.rid.second);
             if (srcKeyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
             }
             auto dstDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dstVertexRecordDescriptor.rid.first), true);
             auto dstKeyValue = LMDBInterface::getRecord(dsTxnHandler, dstDBHandler, dstVertexRecordDescriptor.rid.second);
             if (dstKeyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
             }
 
             // update src and dst version
@@ -68,7 +68,7 @@ namespace nogdb {
             Vertex::update(txn, dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor.rid));
 
         } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
 
         // set version
@@ -109,10 +109,10 @@ namespace nogdb {
         } catch (const Error &err) {
             throw err;
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         } catch (Graph::ErrorType &err) {
             // should not get here
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         }
         return RecordDescriptor{classDescriptor->id, maxRecordNumValue};
     }
@@ -132,7 +132,7 @@ namespace nogdb {
             auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
             auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_EDGE, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
             }
             auto existingRecord = Parser::parseRawData(keyValue, classInfo);
             auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
@@ -173,7 +173,7 @@ namespace nogdb {
 
             LMDBInterface::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 
@@ -236,7 +236,7 @@ namespace nogdb {
             // delete actual record
             LMDBInterface::deleteRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // update in-memory relations
         txn.txnCtx.dbRelation->deleteEdge(*txn.txnBase, recordDescriptor.rid);
@@ -302,7 +302,7 @@ namespace nogdb {
                 }
             }
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // remove all records in database
         try {
@@ -337,7 +337,7 @@ namespace nogdb {
             // empty a database
             LMDBInterface::emptyDbi(dsTxnHandler, classDBHandler);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
         // update in-memory relations
         for (const auto &recordId: recordIds) {
@@ -375,12 +375,12 @@ namespace nogdb {
             auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
             auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_EDGE, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
             }
             auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(newSrcVertexRecordDescriptor.rid.first), true);
             keyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, newSrcVertexRecordDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
             }
             auto key = rid2str(recordDescriptor.rid);
             auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
@@ -400,9 +400,9 @@ namespace nogdb {
             // update in-memory relations
             txn.txnCtx.dbRelation->alterVertexSrc(*txn.txnBase, recordDescriptor.rid, newSrcVertexRecordDescriptor.rid);
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 
@@ -418,12 +418,12 @@ namespace nogdb {
             auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
             auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_EDGE, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
             }
             auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(newDstVertexDescriptor.rid.first), true);
             keyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, newDstVertexDescriptor.rid.second);
             if (keyValue.empty()) {
-                throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
             }
             auto key = rid2str(recordDescriptor.rid);
             auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
@@ -443,9 +443,9 @@ namespace nogdb {
             // update in-memory relations
             txn.txnCtx.dbRelation->alterVertexDst(*txn.txnBase, recordDescriptor.rid, newDstVertexDescriptor.rid);
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            throw Error(err);
         }
     }
 
@@ -482,7 +482,7 @@ namespace nogdb {
             auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
             return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         }
     }
 
@@ -493,7 +493,7 @@ namespace nogdb {
             auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
             return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         }
     }
 
@@ -508,7 +508,7 @@ namespace nogdb {
                     Result{dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor)}
             };
         } catch (Graph::ErrorType &err) {
-            throw Error(err, Error::Type::GRAPH);
+            throw Error(err);
         }
     }
 

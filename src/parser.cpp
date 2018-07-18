@@ -81,7 +81,7 @@ namespace nogdb {
         for (const auto &property: record.getAll()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
             if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw Error(CTX_NOEXST_PROPERTY);
             }
             // check if having any index
             for (const auto &indexIter: foundProperty->second.indexInfo) {
@@ -105,7 +105,7 @@ namespace nogdb {
         for (const auto &property : record.getBasicInfo()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
             if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw Error(CTX_NOEXST_PROPERTY);
             }
             if (property.first == VERSION_PROPERTY) {
                 dataSize += getRawDataSize(property.second.size());
@@ -128,7 +128,7 @@ namespace nogdb {
         auto offset = size_t{0};
         Record::PropertyToBytesMap properties;
         if (rawData.capacity() == 0) {
-            throw Error(NOGDB_CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
             //TODO: should be concerned about ENDIAN?
             // NOTE: each property block consists of property id, flag, size, and value

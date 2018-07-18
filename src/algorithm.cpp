@@ -51,7 +51,7 @@ namespace nogdb {
                                            const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        Generic::getRecordFromRdesc(txn, recordDescriptor) : ResultSet{};
@@ -134,12 +134,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -157,7 +157,7 @@ namespace nogdb {
                                           const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        Generic::getRecordFromRdesc(txn, recordDescriptor) : ResultSet{};
@@ -235,12 +235,12 @@ namespace nogdb {
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -254,9 +254,9 @@ namespace nogdb {
         auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
         auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
         if (srcStatus == RECORD_NOT_EXIST) {
-            throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
         } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
         } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
             return ResultSet{};
         } else {
@@ -349,12 +349,12 @@ namespace nogdb {
                 }
             } catch (Graph::ErrorType &err) {
                 if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                    throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                 } else {
-                    throw Error(err, Error::Type::GRAPH);
+                    throw Error(err);
                 }
             } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
+                throw Error(err);
             }
             return result;
         }
@@ -373,7 +373,7 @@ namespace nogdb {
                                       const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -450,12 +450,12 @@ namespace nogdb {
                     }
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -474,7 +474,7 @@ namespace nogdb {
                                      const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(NOGDB_GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -560,12 +560,12 @@ namespace nogdb {
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
                 } catch (Graph::ErrorType &err) {
                     if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw Error(err);
                     }
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 return result;
         }
@@ -580,9 +580,9 @@ namespace nogdb {
         auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
         auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
         if (srcStatus == RECORD_NOT_EXIST) {
-            throw Error(NOGDB_GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
         } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw Error(NOGDB_GRAPH_NOEXST_DST, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
         } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
             return std::vector<RecordDescriptor>{};
         } else {
@@ -662,12 +662,12 @@ namespace nogdb {
                 }
             } catch (Graph::ErrorType &err) {
                 if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
-                    throw Error(NOGDB_GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                    throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                 } else {
-                    throw Error(err, Error::Type::GRAPH);
+                    throw Error(err);
                 }
             } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
+                throw Error(err);
             }
             return result;
         }

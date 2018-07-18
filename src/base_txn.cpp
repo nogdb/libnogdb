@@ -41,7 +41,7 @@ namespace nogdb {
                 try {
                     dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RO);
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
             }
             txnId = ctx.dbTxnStat->fetchAddMaxTxnId();
@@ -53,7 +53,7 @@ namespace nogdb {
                 try {
                     dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RW);
                 } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
+                    throw Error(err);
                 }
                 // check if the previous writer committed all stuff in memory
                 {
@@ -74,7 +74,7 @@ namespace nogdb {
                 if (isWithDataStore) {
                     LMDBInterface::abortTxn(dsTxnHandler);
                 }
-                throw Error(NOGDB_TXN_VERSION_MAXREACH, Error::Type::GRAPH);
+                throw NOGDB_TXN_ERROR(NOGDB_TXN_VERSION_MAXREACH);
             }
         }
     }
@@ -120,7 +120,7 @@ namespace nogdb {
                         LMDBInterface::commitTxn(dsTxnHandler);
                         isCommitDatastore = true;
                     } catch (LMDBInterface::ErrorType &err) {
-                        throw Error(err, Error::Type::DATASTORE);
+                        throw Error(err);
                     }
                 }
                 auto oldestTxn = ctx.dbTxnStat->minActiveTxnId();
