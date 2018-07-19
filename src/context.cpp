@@ -32,8 +32,7 @@
 #include "constant.hpp"
 #include "spinlock.hpp"
 #include "base_txn.hpp"
-#include "env_handler.hpp"
-#include "lmdb_engine.hpp"
+#include "storage_engine.hpp"
 #include "graph.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
@@ -43,32 +42,44 @@
 namespace nogdb {
 
     Context::Context(const std::string &dbPath)
-            : Context{dbPath, MAX_DB_NUM, MAX_DB_SIZE} {};
+            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
     Context::Context(const std::string &dbPath, unsigned int maxDbNum)
-            : Context{dbPath, maxDbNum, MAX_DB_SIZE} {};
+            : Context{dbPath, maxDbNum, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
     Context::Context(const std::string &dbPath, unsigned long maxDbSize)
-            : Context{dbPath, MAX_DB_NUM, maxDbSize} {};
+            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
 
     Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize) {
-        dbInfo = std::make_shared<DBInfo>();
-        dbSchema = std::make_shared<Schema>();
-        dbTxnStat = std::make_shared<TxnStat>();
-        dbRelation = std::make_shared<Graph>();
-        dbInfoMutex = std::make_shared<boost::shared_mutex>();
-        dbWriterMutex = std::make_shared<boost::shared_mutex>();
-        dbInfo->dbPath = dbPath;
-        dbInfo->maxDB = maxDbNum;
-        dbInfo->maxDBSize = maxDbSize;
-        dbInfo->maxClassId = ClassId{INIT_NUM_CLASSES};
-        dbInfo->maxPropertyId = PropertyId{INIT_NUM_PROPERTIES};
-        dbInfo->numClass = ClassId{0};
-        dbInfo->numProperty = PropertyId{0};
-        envHandler = std::make_shared<EnvHandlerPtr>(
-                EnvHandler::create(dbInfo->dbPath, dbInfo->maxDB, dbInfo->maxDBSize, LMDBInterface::MAX_READERS,
-                                   LMDBInterface::FLAG, LMDBInterface::PERMISSION));
-        initDatabase();
+        if (!fileExists(dbPath)) {
+            mkdir(dbPath.c_str(), 0755);
+        }
+        const auto lockFile = dbPath + DB_LOCK_FILE;
+        if (openLockFile(lockFile.c_str()) == -1) {
+            if (errno == EWOULDBLOCK || errno == EEXIST) {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+            }
+        } else {
+            envHandler = std::make_shared<storage_engine::LMDBEnv>(
+                    dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS
+            );
+            dbInfo = std::make_shared<DBInfo>();
+            dbSchema = std::make_shared<Schema>();
+            dbTxnStat = std::make_shared<TxnStat>();
+            dbRelation = std::make_shared<Graph>();
+            dbInfoMutex = std::make_shared<boost::shared_mutex>();
+            dbWriterMutex = std::make_shared<boost::shared_mutex>();
+            dbInfo->dbPath = dbPath;
+            dbInfo->maxDB = maxDbNum;
+            dbInfo->maxDBSize = maxDbSize;
+            dbInfo->maxClassId = ClassId{INIT_NUM_CLASSES};
+            dbInfo->maxPropertyId = PropertyId{INIT_NUM_PROPERTIES};
+            dbInfo->numClass = ClassId{0};
+            dbInfo->numProperty = PropertyId{0};
+            initDatabase();
+        }
     }
 
     Context::Context(const Context &ctx)
@@ -116,54 +127,39 @@ namespace nogdb {
 
     void Context::initDatabase() {
         auto currentTime = std::to_string(currentTimestamp());
-        LMDBInterface::TxnHandler *txn = nullptr;
-        // create read-write transaction
-        try {
-            txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RW);
-        } catch (LMDBInterface::ErrorType &err) {
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
-        }
+        // perform read-write operations
+        auto wtxn = storage_engine::LMDBTxn(envHandler.get(), storage_engine::lmdb::TXN_RW);
         // prepare schema for classes, properties, and relations
-        auto classDBHandler = LMDBInterface::DBHandler{};
-        auto propDBHndler = LMDBInterface::DBHandler{};
-        auto indexDBHandler = LMDBInterface::DBHandler{};
-        auto relationDBHandler = LMDBInterface::DBHandler{};
         try {
-            classDBHandler = LMDBInterface::openDbi(txn, TB_CLASSES, true);
-            propDBHndler = LMDBInterface::openDbi(txn, TB_PROPERTIES, true);
-            indexDBHandler = LMDBInterface::openDbi(txn, TB_INDEXES, true, false);
-            relationDBHandler = LMDBInterface::openDbi(txn, TB_RELATIONS);
-            LMDBInterface::putRecord(txn, classDBHandler, ClassId{UINT16_EM_INIT}, currentTime);
-            LMDBInterface::putRecord(txn, propDBHndler, PropertyId{UINT16_EM_INIT}, currentTime);
-            LMDBInterface::putRecord(txn, indexDBHandler, PropertyId{UINT16_EM_INIT}, currentTime);
-            LMDBInterface::putRecord(txn, relationDBHandler, STRING_EM_INIT, currentTime);
-            LMDBInterface::commitTxn(txn);
-        } catch (LMDBInterface::ErrorType &err) {
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
+            auto classDBHandler = wtxn.openDbi(TB_CLASSES, true);
+            auto propDBHndler = wtxn.openDbi(TB_PROPERTIES, true);
+            auto indexDBHandler = wtxn.openDbi(TB_INDEXES, true, false);
+            auto relationDBHandler = wtxn.openDbi(TB_RELATIONS);
+            classDBHandler.put(wtxn.handle(), ClassId{UINT16_EM_INIT}, currentTime);
+            propDBHndler.put(wtxn.handle(), PropertyId{UINT16_EM_INIT}, currentTime);
+//            indexDBHandler.put(wtxn.handle(), PropertyId{UINT16_EM_INIT}, currentTime);
+            relationDBHandler.put(wtxn.handle(), STRING_EM_INIT, currentTime);
+            wtxn.commit();
+        } catch (const Error &err) {
+            wtxn.rollback();
+            throw err;
         }
-        // create read-only transaction
-        try {
-            txn = LMDBInterface::beginTxn(envHandler->get(), LMDBInterface::TXN_RO);
-        } catch (LMDBInterface::ErrorType &err) {
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
-        }
+        // perform read-only operations
+        auto rtxn = storage_engine::LMDBTxn(envHandler.get(), storage_engine::lmdb::TXN_RO);
         // create read-write in memory transaction
         BaseTxn baseTxn{*this, true, true};
         // retrieve classes information
         try {
             auto inheritanceInfo = Schema::InheritanceInfo{};
-            auto classCursor = LMDBInterface::CursorHandlerWrapper(txn, classDBHandler);
-            for (auto classKeyValue = LMDBInterface::getNextCursor(classCursor.get());
+            auto classCursor = rtxn.openCursor(TB_CLASSES, true);
+            for (auto classKeyValue = classCursor.getNext();
                  !classKeyValue.empty();
-                 classKeyValue = LMDBInterface::getNextCursor(classCursor.get())) {
-                auto key = LMDBInterface::getKeyAsNumeric<ClassId>(classKeyValue);
-                if (*key == ClassId{UINT16_EM_INIT}) {
+                 classKeyValue = classCursor.getNext()) {
+                auto key = classKeyValue.key.data.numeric<ClassId>();
+                if (key == ClassId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = LMDBInterface::getValueAsBlob(classKeyValue);
+                auto data = classKeyValue.val.data.blob();
                 auto classType = ClassType::UNDEFINED;
                 auto offset = data.retrieve(&classType, 0, sizeof(ClassType));
                 auto superClassId = ClassId{0};
@@ -173,7 +169,7 @@ namespace nogdb {
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto className = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
-                auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(ClassId{*key}, className, classType);
+                auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(key, className, classType);
                 dbSchema->insert(baseTxn, classDescriptor);
                 inheritanceInfo.emplace_back(std::make_pair(classDescriptor->id, superClassId));
                 if (classDescriptor->id > dbInfo->maxClassId) {
@@ -182,25 +178,24 @@ namespace nogdb {
                 ++baseTxn.dbInfo.numClass;
             }
             dbSchema->apply(baseTxn, inheritanceInfo);
-        } catch (LMDBInterface::ErrorType &err) {
+        } catch (const Error &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
+            throw err;
         }
 
         // retrieve properties and indexing information
         try {
-            auto propCursor = LMDBInterface::CursorHandlerWrapper(txn, propDBHndler);
-            auto indexCursor = LMDBInterface::CursorHandlerWrapper(txn, indexDBHandler);
-            for (auto propKeyValue = LMDBInterface::getNextCursor(propCursor.get());
+            auto propCursor = rtxn.openCursor(TB_PROPERTIES, true);
+            auto indexCursor = rtxn.openCursor(TB_INDEXES, true, false);
+            for (auto propKeyValue = propCursor.getNext();
                  !propKeyValue.empty();
-                 propKeyValue = LMDBInterface::getNextCursor(propCursor.get())) {
-                auto key = LMDBInterface::getKeyAsNumeric<PropertyId>(propKeyValue);
-                if (*key == PropertyId{UINT16_EM_INIT}) {
+                 propKeyValue = propCursor.getNext()) {
+                auto key = propKeyValue.key.data.numeric<PropertyId>();
+                if (key == PropertyId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = LMDBInterface::getValueAsBlob(propKeyValue);
+                auto data = propKeyValue.val.data.blob();
                 auto propType = PropertyType::UNDEFINED;
                 auto propClassId = PropertyId{0};
                 auto offset = data.retrieve(&propType, 0, sizeof(PropertyDescriptor::type));
@@ -210,7 +205,7 @@ namespace nogdb {
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto propertyName = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
-                auto propertyDescriptor = Schema::PropertyDescriptor{PropertyId{*key}, propType};
+                auto propertyDescriptor = Schema::PropertyDescriptor{key, propType};
                 auto ptrClassDescriptor = dbSchema->find(baseTxn, propClassId);
                 require(ptrClassDescriptor != nullptr);
                 // get indexes associated with property
@@ -218,10 +213,14 @@ namespace nogdb {
                 auto isUniqueNumeric = uint8_t{1};
                 auto indexId = IndexId{0};
                 auto classId = ClassId{0};
-                for (auto indexKeyValue = LMDBInterface::getSetKeyCursor(indexCursor.get(), propertyDescriptor.id);
+                for (auto indexKeyValue = indexCursor.find(propertyDescriptor.id);
                      !indexKeyValue.empty();
-                     indexKeyValue = LMDBInterface::getNextDupCursor(indexCursor.get())) {
-                    data = LMDBInterface::getValueAsBlob(indexKeyValue);
+                     indexKeyValue = indexCursor.getNextDup()) {
+                    key = indexKeyValue.key.data.numeric<PropertyId>();
+                    if (key != propertyDescriptor.id) {
+                        break;
+                    }
+                    data = indexKeyValue.val.data.blob();
                     offset = data.retrieve(&isCompositeNumeric, 0, sizeof(isCompositeNumeric));
                     offset = data.retrieve(&isUniqueNumeric, offset, sizeof(isUniqueNumeric));
                     offset = data.retrieve(&indexId, offset, sizeof(IndexId));
@@ -241,24 +240,23 @@ namespace nogdb {
                 }
                 ++baseTxn.dbInfo.numProperty;
             }
-        } catch (LMDBInterface::ErrorType &err) {
+        } catch (const Error &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
+            throw err;
         }
 
         // retrieve relations information
         try {
-            auto relationCursor = LMDBInterface::CursorHandlerWrapper(txn, relationDBHandler);
-            for (auto relationKeyValue = LMDBInterface::getNextCursor(relationCursor.get());
+            auto relationCursor = rtxn.openCursor(TB_RELATIONS);
+            for (auto relationKeyValue = relationCursor.getNext();
                  !relationKeyValue.empty();
-                 relationKeyValue = LMDBInterface::getNextCursor(relationCursor.get())) {
-                auto key = LMDBInterface::getKeyAsString(relationKeyValue);
+                 relationKeyValue = relationCursor.getNext()) {
+                auto key = relationKeyValue.key.data.string();
                 if (key == STRING_EM_INIT) {
                     continue;
                 }
-                auto data = LMDBInterface::getValueAsBlob(relationKeyValue);
+                auto data = relationKeyValue.val.data.blob();
                 // resolve a rid of an edge from a key
                 auto sp = split(key, ':');
                 if (sp.size() != 2) {
@@ -291,23 +289,9 @@ namespace nogdb {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            LMDBInterface::abortTxn(txn);
             throw err;
-        } catch (Graph::ErrorType &err) {
-            baseTxn.rollback(*this);
-            dbRelation->clear();
-            dbSchema->clear();
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
-        } catch (LMDBInterface::ErrorType &err) {
-            baseTxn.rollback(*this);
-            dbRelation->clear();
-            dbSchema->clear();
-            LMDBInterface::abortTxn(txn);
-            throw Error(err);
         }
         // end of transaction
-        LMDBInterface::abortTxn(txn);
     }
 
 }

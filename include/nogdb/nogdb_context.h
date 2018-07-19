@@ -30,45 +30,11 @@
 
 #include "nogdb_types.h"
 
-#define NOGDB_MAX_DATABASE_NUMBER        "max_database_number"
-#define NOGDB_MAX_DATABASE_SIZE          "max_database_size"
-#define NOGDB_MAX_DATABASE_READERS       "max_database_readers"
-
 //******************************************************************
 //*  A declaration of NogDB database context.                      *
 //******************************************************************
 
 namespace nogdb {
-
-    class StorageEngineSettings {
-    public:
-        StorageEngineSettings() = default;
-
-        void set(const std::string& settingKey, const std::string& settingValue) {
-            settings[settingKey] = settingValue;
-        }
-
-        unsigned long getValueAsNumeric(const std::string& settingKey, const unsigned long defaultValue) const {
-            auto iter = settings.find(settingKey);
-            if (iter != settings.cend()) {
-                return strtoul(iter->second.c_str(), nullptr, 10);
-            } else {
-                return defaultValue;
-            }
-        }
-
-        std::string getValueAsString(const std::string& settingKey, const std::string& defaultValue) const {
-            auto iter = settings.find(settingKey);
-            if (iter != settings.cend()) {
-                return iter->second;
-            } else {
-                return defaultValue;
-            }
-        }
-
-    private:
-        std::map<std::string, std::string> settings;
-    };
 
     class Context {
     public:
@@ -114,7 +80,7 @@ namespace nogdb {
         std::pair<TxnId, TxnId> getMinActiveTxnId() const;
 
     private:
-        std::shared_ptr<EnvHandlerPtr> envHandler;
+        std::shared_ptr<storage_engine::LMDBEnv> envHandler;
         std::shared_ptr<DBInfo> dbInfo;
         std::shared_ptr<Schema> dbSchema;
         std::shared_ptr<TxnStat> dbTxnStat;

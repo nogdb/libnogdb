@@ -72,6 +72,11 @@ namespace nogdb {
 
     class RWSpinLock;
 
+    namespace storage_engine {
+        class LMDBEnv;
+        class LMDBTxn;
+    }
+
     namespace sql_parser {
         class Record;
     }

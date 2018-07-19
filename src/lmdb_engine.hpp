@@ -40,7 +40,6 @@ namespace nogdb {
 
             constexpr static unsigned int DEFAULT_ENV_FLAG = MDB_NOTLS;
             constexpr static unsigned int DEFAULT_ENV_MODE = 0664;
-            constexpr static unsigned int DEFAULT_ENV_MAX_READERS = 65536;
             constexpr static unsigned int TXN_RW = 0;
             constexpr static unsigned int TXN_RO = MDB_RDONLY;
 
@@ -161,7 +160,7 @@ namespace nogdb {
 
                 static Env create(unsigned int dbNum,
                                   unsigned long dbSize,
-                                  unsigned int dbMaxReaders = DEFAULT_ENV_MAX_READERS) {
+                                  unsigned int dbMaxReaders) {
                     EnvHandler *handler = nullptr;
                     if (auto error = mdb_env_create(&handler)) {
                         throw NOGDB_STORAGE_ERROR(error);
