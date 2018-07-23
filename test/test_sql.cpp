@@ -715,12 +715,12 @@ void test_sql_select_walk() {
         assertSize(res, 1);
         assert(res[0].descriptor == v3);
 
-        result = SQL::execute(txn, "SELECT expand(bothV()) FROM " + to_string(eA13));
+        result = SQL::execute(txn, "SELECT expand(bothV()) FROM " + to_string(eB24));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assertSize(res, 2);
-        assert(res[0].descriptor == v1);
-        assert(res[1].descriptor == v3);
+        assert(res[0].descriptor == v2);
+        assert(res[1].descriptor == v4);
 
         result = SQL::execute(txn, "SELECT expand(out()) FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
@@ -800,8 +800,8 @@ void test_sql_select_method_property() {
         auto v3 = Vertex::create(txn, "v", Record().set("propV", "v3"));
         auto v4 = Vertex::create(txn, "v", Record().set("propV", "v4"));
         auto eA13 = Edge::create(txn, "e", v1, v3, Record().set("propE", "e1->3"));
-        auto eB14 = Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
-        auto eB24 = Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
+        Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
+        Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
 
         // normal method
         auto result = SQL::execute(txn, "SELECT inV().propV FROM " + to_string(eA13));
@@ -867,12 +867,8 @@ void test_sql_select_alias_property() {
 
     try {
         auto v1 = Vertex::create(txn, "v", Record().set("propV", "v1"));
-        auto v2 = Vertex::create(txn, "v", Record().set("propV", "v2"));
         auto v3 = Vertex::create(txn, "v", Record().set("propV", "v3"));
-        auto v4 = Vertex::create(txn, "v", Record().set("propV", "v4"));
         auto eA13 = Edge::create(txn, "e", v1, v3, Record().set("propE", "e1->3"));
-        auto eB14 = Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
-        auto eB24 = Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
 
         auto result = SQL::execute(txn, "SELECT inV().propV AS my_prop FROM " + to_string(eA13));
         assert(result.type() == result.RESULT_SET);
@@ -915,11 +911,11 @@ void test_sql_select_vertex_condition() {
     Property::add(txn, "v", "bigint", nogdb::PropertyType::BIGINT);
     Property::add(txn, "v", "ubigint", nogdb::PropertyType::UNSIGNED_BIGINT);
     Property::add(txn, "v", "real", nogdb::PropertyType::REAL);
-    auto v1 = nogdb::Vertex::create(txn, "v", nogdb::Record{}.set("text", "A").set("int", 11).set("uint", 10200U).set("bigint", 200000LL).set("ubigint", 2000ULL).set("real", 4.5));
-    auto v2 = nogdb::Vertex::create(txn, "v", nogdb::Record{}.set("text", "B1Y").set("int", 37).set("bigint", 280000LL).set("ubigint", 1800ULL).set("real", 5.0));
-    auto v3 = nogdb::Vertex::create(txn, "v", nogdb::Record{}.set("text", "B2Y").set("uint", 10250U).set("bigint", 220000LL).set("ubigint", 2400ULL).set("real", 4.5));
-    auto v4 = nogdb::Vertex::create(txn, "v", nogdb::Record{}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real", 3.5));
-    auto v5 = nogdb::Vertex::create(txn, "v", nogdb::Record{}.set("text", "DX").set("int", 18).set("uint", 10475U).set("bigint", 300000LL).set("ubigint", 900ULL));
+    auto v1 = Vertex::create(txn, "v", nogdb::Record{}.set("text", "A").set("int", 11).set("uint", 10200U).set("bigint", 200000LL).set("ubigint", 2000ULL).set("real", 4.5));
+    Vertex::create(txn, "v", nogdb::Record{}.set("text", "B1Y").set("int", 37).set("bigint", 280000LL).set("ubigint", 1800ULL).set("real", 5.0));
+    Vertex::create(txn, "v", nogdb::Record{}.set("text", "B2Y").set("uint", 10250U).set("bigint", 220000LL).set("ubigint", 2400ULL).set("real", 4.5));
+    Vertex::create(txn, "v", nogdb::Record{}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real", 3.5));
+    Vertex::create(txn, "v", nogdb::Record{}.set("text", "DX").set("int", 18).set("uint", 10475U).set("bigint", 300000LL).set("ubigint", 900ULL));
 
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE text='A'");
@@ -1072,9 +1068,9 @@ void test_sql_select_vertex_with_multi_condition() {
     Class::create(txn, "v", ClassType::VERTEX);
     Property::add(txn, "v", "prop1", PropertyType::TEXT);
     Property::add(txn, "v", "prop2", PropertyType::INTEGER);
-    auto v1 = Vertex::create(txn, "v", Record().set("prop1", "AX").set("prop2", 1));
-    auto v2 = Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
-    auto v3 = Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
+    Vertex::create(txn, "v", Record().set("prop1", "AX").set("prop2", 1));
+    Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
+    Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE prop1 END WITH 'X' OR prop2 >= 2");
         assert(result.type() == result.RESULT_SET);
@@ -1118,8 +1114,8 @@ void test_sql_select_nested_condition() {
     Property::add(txn, "v", "prop1", PropertyType::TEXT);
     Property::add(txn, "v", "prop2", PropertyType::INTEGER);
     auto v1 = Vertex::create(txn, "v", Record().set("prop1", "AX").set("prop2", 1));
-    auto v2 = Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
-    auto v3 = Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
+    Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
+    Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
     try {
         auto result = SQL::execute(txn, "SELECT * FROM (SELECT FROM v) WHERE prop2=1");
         assert(result.type() == result.RESULT_SET);
@@ -1149,10 +1145,10 @@ void test_sql_select_skip_limit() {
     Class::create(txn, "v", ClassType::VERTEX);
     Property::add(txn, "v", "prop1", PropertyType::TEXT);
     Property::add(txn, "v", "prop2", PropertyType::INTEGER);
-    auto v1 = Vertex::create(txn, "v", Record().set("prop1", "A").set("prop2", 1));
-    auto v2 = Vertex::create(txn, "v", Record().set("prop1", "B").set("prop2", 2));
-    auto v3 = Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
-    auto v4 = Vertex::create(txn, "v", Record().set("prop1", "D").set("prop2", 4));
+    Vertex::create(txn, "v", Record().set("prop1", "A").set("prop2", 1));
+    Vertex::create(txn, "v", Record().set("prop1", "B").set("prop2", 2));
+    Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
+    Vertex::create(txn, "v", Record().set("prop1", "D").set("prop2", 4));
     try {
         SQL::Result result = SQL::execute(txn, "SELECT * FROM v SKIP 1 LIMIT 2");
         assert(result.type() == result.RESULT_SET);
@@ -1182,14 +1178,14 @@ void test_sql_select_group_by() {
     try {
         Record r{};
         r.set("title", "Lion King").set("price", 100.0);
-        auto rdesc1 = Vertex::create(txn, "books", r);
+        Vertex::create(txn, "books", r);
         r.set("title", "Tarzan").set("price", 100.0);
-        auto rdesc2 = Vertex::create(txn, "books", r);
+        Vertex::create(txn, "books", r);
 
         SQL::Result result = SQL::execute(txn, "SELECT * FROM books GROUP BY price");
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>().size() == 1);
-        assert(result.get<ResultSet>()[0].descriptor == rdesc2);
+        assert(result.get<ResultSet>()[0].record.get("price") == r.get("price"));
     } catch (const Error &e) {
         cout << "\nError: " << e.what() << endl;
         assert(false);
@@ -1206,7 +1202,7 @@ void test_sql_update_vertex_with_rid() {
         r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
         auto rdesc1 = Vertex::create(txn, "books", r);
         r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-        auto rdesc2 = Vertex::create(txn, "books", r);
+        Vertex::create(txn, "books", r);
 
         auto record = Db::getRecord(txn, rdesc1);
         assert(record.get("title").toText() == "Lion King");
@@ -1238,7 +1234,7 @@ void test_sql_update_vertex_with_condition() {
         r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
         auto rdesc1 = Vertex::create(txn, "books", r);
         r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-        auto rdesc2 = Vertex::create(txn, "books", r);
+        Vertex::create(txn, "books", r);
 
         auto record = Db::getRecord(txn, rdesc1);
         assert(record.get("title").toText() == "Lion King");
@@ -1273,20 +1269,14 @@ void test_sql_delete_vertex_with_rid() {
         auto v1_1 = Vertex::create(txn, "books", r1);
         r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
         auto v1_2 = Vertex::create(txn, "books", r1);
-        r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-        auto v1_3 = Vertex::create(txn, "books", r1);
 
         r2.set("name", "J.K. Rowlings").set("age", 32);
         auto v2_1 = Vertex::create(txn, "persons", r2);
-        r2.set("name", "David Lahm").set("age", 29);
-        auto v2_2 = Vertex::create(txn, "persons", r2);
 
         r3.set("time_used", 365U);
         auto e1 = Edge::create(txn, "authors", v1_1, v2_1, r3);
         r3.set("time_used", 180U);
         auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
-        r3.set("time_used", 430U);
-        auto e3 = Edge::create(txn, "authors", v1_3, v2_2, r3);
 
         SQL::execute(txn, "DELETE VERTEX " + to_string(v2_1));
 
@@ -1331,20 +1321,14 @@ void test_sql_delete_vertex_with_condition() {
         auto v1_1 = Vertex::create(txn, "books", r1);
         r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
         auto v1_2 = Vertex::create(txn, "books", r1);
-        r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-        auto v1_3 = Vertex::create(txn, "books", r1);
 
         r2.set("name", "J.K. Rowlings").set("age", 32);
         auto v2_1 = Vertex::create(txn, "persons", r2);
-        r2.set("name", "David Lahm").set("age", 29);
-        auto v2_2 = Vertex::create(txn, "persons", r2);
 
         r3.set("time_used", 365U);
         auto e1 = Edge::create(txn, "authors", v1_1, v2_1, r3);
         r3.set("time_used", 180U);
         auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
-        r3.set("time_used", 430U);
-        auto e3 = Edge::create(txn, "authors", v1_3, v2_2, r3);
 
         SQL::execute(txn, "DELETE VERTEX persons WHERE name='J.K. Rowlings'");
 
@@ -1563,11 +1547,11 @@ void test_sql_traverse() {
         auto v31 = Vertex::create(txn, "V", Record().set("p", "v31"));
         auto v32 = Vertex::create(txn, "V", Record().set("p", "v32"));
         auto v33 = Vertex::create(txn, "V", Record().set("p", "v33"));
-        auto e1_21 = Edge::create(txn, "EL", v1, v21);
-        auto e1_22 = Edge::create(txn, "ER", v1, v22);
-        auto e21_31 = Edge::create(txn, "EL", v21, v31);
-        auto e21_32 = Edge::create(txn, "ER", v21, v32);
-        auto e22_33 = Edge::create(txn, "EL", v22, v33);
+        Edge::create(txn, "EL", v1, v21);
+        Edge::create(txn, "ER", v1, v22);
+        Edge::create(txn, "EL", v21, v31);
+        Edge::create(txn, "ER", v21, v32);
+        Edge::create(txn, "EL", v22, v33);
 
         SQL::Result result = SQL::execute(txn, "TRAVERSE all() FROM " + to_string(v21));
         assert(result.type() == result.RESULT_SET);
