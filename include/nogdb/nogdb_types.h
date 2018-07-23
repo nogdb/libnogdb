@@ -765,6 +765,30 @@ namespace nogdb {
         const ClassPropertyInfo resolveClassPropertyInfo(ClassId classId);
     };
 
+    inline bool operator<(const RecordId &lhs, const RecordId &rhs) {
+        return (lhs.first == rhs.first) ? lhs.second < rhs.second : lhs.first < rhs.first;
+    }
+
+    inline bool operator==(const RecordId &lhs, const RecordId &rhs) {
+        return (lhs.first == rhs.first) && (lhs.second == rhs.second);
+    }
+
+    inline bool operator!=(const RecordId &lhs, const RecordId &rhs) {
+        return !operator==(lhs, rhs);
+    }
+
+    inline bool operator<(const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+        return lhs.rid < rhs.rid;
+    }
+
+    inline bool operator==(const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+        return lhs.rid == rhs.rid;
+    }
+
+    inline bool operator!=(const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+        return !operator==(lhs, rhs);
+    }
+
 }
 
 inline std::ostream &operator<<(std::ostream &os, const nogdb::RecordId &rid) {
@@ -827,30 +851,6 @@ inline std::ostream &operator<<(std::ostream &os, nogdb::ClassType type) {
             break;
     }
     return os;
-}
-
-inline bool operator<(const nogdb::RecordId &lhs, const nogdb::RecordId &rhs) {
-    return (lhs.first == rhs.first) ? lhs.second < rhs.second : lhs.first < rhs.first;
-}
-
-inline bool operator==(const nogdb::RecordId &lhs, const nogdb::RecordId &rhs) {
-    return (lhs.first == rhs.first) && (lhs.second == rhs.second);
-}
-
-inline bool operator!=(const nogdb::RecordId &lhs, const nogdb::RecordId &rhs) {
-    return !operator==(lhs, rhs);
-}
-
-inline bool operator<(const nogdb::RecordDescriptor &lhs, const nogdb::RecordDescriptor &rhs) {
-    return lhs.rid < rhs.rid;
-}
-
-inline bool operator==(const nogdb::RecordDescriptor &lhs, const nogdb::RecordDescriptor &rhs) {
-    return lhs.rid == rhs.rid;
-}
-
-inline bool operator!=(const nogdb::RecordDescriptor &lhs, const nogdb::RecordDescriptor &rhs) {
-    return !operator==(lhs, rhs);
 }
 
 #endif

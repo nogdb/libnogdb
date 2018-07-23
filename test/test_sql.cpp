@@ -30,21 +30,20 @@ using namespace std;
 using namespace nogdb;
 
 namespace nogdb {
-    string to_string(const RecordDescriptor& recD) {
+    inline string to_string(const RecordDescriptor& recD) {
         return "#" + ::to_string(recD.rid.first) + ":" + ::to_string(recD.rid.second);
     }
 
-    bool operator==(const Bytes &lhs, const Bytes &rhs) {
+    inline bool operator==(const Bytes &lhs, const Bytes &rhs) {
         return lhs.size() == rhs.size() && memcmp(lhs.getRaw(), rhs.getRaw(), lhs.size()) == 0;
     }
 
-    bool operator==(const Record &lhs, const Record &rhs) {
+    inline bool operator==(const Record &lhs, const Record &rhs) {
         return lhs.getAll() == rhs.getAll();
     }
 
-    bool operator==(const Result &lhs, const Result &rhs) {
+    inline bool operator==(const Result &lhs, const Result &rhs) {
         if (lhs.descriptor.rid.first != (ClassId)(-2)) {
-            using ::operator==;
             return lhs.descriptor == rhs.descriptor;
         } else {
             return lhs.record == rhs.record;
@@ -1209,7 +1208,10 @@ void test_sql_update_vertex_with_rid() {
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
 
-        SQL::execute(txn, "UPDATE " + to_string(rdesc1) + " SET price=50.0, pages=400, words=90000");
+        auto result = SQL::execute(txn, "UPDATE " + to_string(rdesc1) + " SET price=50.0, pages=400, words=90000");
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        using ::operator==;
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{rdesc1});
         auto res = Vertex::get(txn, "books");
         assert(res[0].record.get("title").toText() == "Lion King");
         assert(res[0].record.get("price").toReal() == 50);
@@ -1241,7 +1243,9 @@ void test_sql_update_vertex_with_condition() {
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
 
-        SQL::execute(txn, "UPDATE books SET price=50.0, pages=400, words=90000 where title='Lion King'");
+        auto result = SQL::execute(txn, "UPDATE books SET price=50.0, pages=400, words=90000 where title='Lion King'");
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{rdesc1});
         auto res = Vertex::get(txn, "books");
         assert(res[0].record.get("title").toText() == "Lion King");
         assert(res[0].record.get("price").toReal() == 50);
@@ -1278,7 +1282,9 @@ void test_sql_delete_vertex_with_rid() {
         r3.set("time_used", 180U);
         auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
 
-        SQL::execute(txn, "DELETE VERTEX " + to_string(v2_1));
+        auto result = SQL::execute(txn, "DELETE VERTEX " + to_string(v2_1));
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
         try {
             auto record = Db::getRecord(txn, v2_1);
@@ -1330,7 +1336,9 @@ void test_sql_delete_vertex_with_condition() {
         r3.set("time_used", 180U);
         auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
 
-        SQL::execute(txn, "DELETE VERTEX persons WHERE name='J.K. Rowlings'");
+        auto result = SQL::execute(txn, "DELETE VERTEX persons WHERE name='J.K. Rowlings'");
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
         try {
             auto record = Db::getRecord(txn, v2_1);
@@ -1380,7 +1388,9 @@ void test_sql_delete_edge_with_rid() {
         auto record = Db::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
-        SQL::execute(txn, "DELETE EDGE " + to_string(e1));
+        auto result = SQL::execute(txn, "DELETE EDGE " + to_string(e1));
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{e1});
 
         auto res = Edge::get(txn, "authors");
         assertSize(res, 0);
@@ -1415,11 +1425,12 @@ void test_sql_delete_edge_with_condition() {
         auto record = Db::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
-        SQL::execute(txn, "DELETE EDGE authors FROM (SELECT FROM books WHERE title='Harry Potter') TO (SELECT FROM persons WHERE name='J.K. Rowlings') WHERE time_used=365");
+        auto result = SQL::execute(txn, "DELETE EDGE authors FROM (SELECT FROM books WHERE title='Harry Potter') TO (SELECT FROM persons WHERE name='J.K. Rowlings') WHERE time_used=365");
+        assert(result.type() == result.RECORD_DESCRIPTORS);
+        assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{e1});
 
         auto res = Edge::get(txn, "authors");
         assertSize(res, 0);
-        Edge::destroy(txn, e1);
 
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

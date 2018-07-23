@@ -338,8 +338,6 @@ namespace nogdb {
 
         string to_string(const Projection &proj);
     }
-
-    using ::operator<;
 }
 
 #endif
