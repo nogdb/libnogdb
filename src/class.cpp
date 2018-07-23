@@ -38,9 +38,7 @@
 
 namespace nogdb {
 
-    const ClassDescriptor Class::create(Txn &txn,
-                                        const std::string &className,
-                                        ClassType type) {
+    const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {
         // transaction validations
         Validate::isTransactionValid(txn);
         // basic validations
@@ -58,7 +56,6 @@ namespace nogdb {
         Validate::isNotDuplicatedClass(txn, className);
 
         auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(dbInfo.maxClassId, className, type);
-        auto beginMaxPropertyId = dbInfo.maxPropertyId;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             // create interface for .classes
@@ -69,16 +66,16 @@ namespace nogdb {
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(className.c_str(), className.length());
-            classDBHandler.put(dsTxnHandler->handle(), dbInfo.maxClassId, value, true);
+            classDBHandler.put(dbInfo.maxClassId, value, true);
             // create interface for itself
             auto newClassDBHandler = dsTxnHandler->openDbi(std::to_string(dbInfo.maxClassId), true);
-            newClassDBHandler.put(dsTxnHandler->handle(), EM_MAXRECNUM, PositionId{1}, true);
+            newClassDBHandler.put(EM_MAXRECNUM, PositionId{1}, true);
 
             // update in-memory schema and info
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -109,21 +106,20 @@ namespace nogdb {
         auto superClassDescriptor = Generic::getClassDescriptor(txn, superClass, ClassType::UNDEFINED);
         auto type = superClassDescriptor->type;
         auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(dbInfo.maxClassId, className, type);
-        auto beginMaxPropertyId = dbInfo.maxPropertyId;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             // create interface for .classes
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = dsTxnHandler->openDbi(TB_CLASSES, true);
             auto superClassId = static_cast<ClassId>(superClassDescriptor->id);
             auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(className.c_str(), className.length());
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
+            classDBHandler.put(dbInfo.maxClassId, value, true);
             // create interface for itself
-            auto newClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
-            LMDBInterface::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
+            auto newClassDBHandler = dsTxnHandler->openDbi(std::to_string(dbInfo.maxClassId), true);
+            newClassDBHandler.put(EM_MAXRECNUM, PositionId{1}, true);
 
             // update in-memory schema and info
             auto superClassDescriptorPtr = txn.txnCtx.dbSchema->find(*txn.txnBase, superClassDescriptor->id);
@@ -137,8 +133,8 @@ namespace nogdb {
 
             txn.txnCtx.dbSchema->insert(*txn.txnBase, classDescriptor);
             ++dbInfo.numClass;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -170,46 +166,46 @@ namespace nogdb {
         // update data store
         try {
             // delete class schema from .classes
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
-            LMDBInterface::deleteRecord(dsTxnHandler, classDBHandler, foundClass->id);
+            auto classDBHandler = dsTxnHandler->openDbi(TB_CLASSES, true);
+            classDBHandler.del(foundClass->id);
 
             // delete property schema from .properties
-            auto propi = LMDBInterface::openDbi(dsTxnHandler, TB_PROPERTIES, true);
+            auto propi = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             for (const auto &id : propertyIds) {
-                LMDBInterface::deleteRecord(dsTxnHandler, propi, id);
+                propi.del(id);
                 //TODO: implement existing index deletion if needed
             }
             // delete all associated relations
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto dbHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-            auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, dbHandler);
-            auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    auto recordId = RecordId{foundClass->id, *key};
+            auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+            auto dbHandler = dsTxnHandler->openDbi(std::to_string(foundClass->id), true);
+            auto cursorHandler = dsTxnHandler->openCursor(dbHandler);
+            for(auto keyValue = cursorHandler.getNext();
+                !keyValue.empty();
+                keyValue = cursorHandler.getNext()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key != EM_MAXRECNUM) {
+                    auto recordId = RecordId{foundClass->id, key};
                     if (foundClass->type == ClassType::EDGE) {
-                        LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordId));
+                        relationDBHandler.del(rid2str(recordId));
                     } else {
                         try {
                             for (const auto &edgeId : txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordId)) {
-                                auto edgeClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(edgeId.first), true);
-                                LMDBInterface::deleteRecord(dsTxnHandler, edgeClassDBHandler, edgeId.second);
-                                LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(edgeId));
+                                auto edgeClassDBHandler = dsTxnHandler->openDbi(std::to_string(edgeId.first), true);
+                                edgeClassDBHandler.del(edgeId.second);
+                                relationDBHandler.del(rid2str(edgeId));
                             }
-                        } catch (Graph::ErrorType &err) {
-                            if (err != NOGDB_GRAPH_NOEXST_VERTEX) {
-                                throw Error(err);
+                        } catch (const Error &err) {
+                            if (err.code() != NOGDB_GRAPH_NOEXST_VERTEX) {
+                                throw err;
                             }
                         }
                     }
                     rids.push_back(recordId);
                 }
-                keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
             }
 
             // drop the actual table
-            LMDBInterface::dropDbi(dsTxnHandler, dbHandler);
+            dbHandler.drop(true);
 
             // prepare for class inheritance
             auto superClassDescriptor = foundClass->super.getLatestVersion().first.lock();
@@ -230,7 +226,7 @@ namespace nogdb {
                 value.append(&subClassDescriptorPtr->type, sizeof(subClassDescriptorPtr->type));
                 value.append(&superClassId, sizeof(ClassId));
                 value.append(name.c_str(), name.length());
-                LMDBInterface::putRecord(dsTxnHandler, classDBHandler, subClassDescriptorPtr->id, value);
+                classDBHandler.put(subClassDescriptorPtr->id, value);
             }
 
             // update in-memory relations
@@ -277,10 +273,8 @@ namespace nogdb {
             auto &dbInfo = txn.txnBase->dbInfo;
             dbInfo.numProperty -= propertyIds.size();
             --dbInfo.numClass;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -299,7 +293,7 @@ namespace nogdb {
         Validate::isNotDuplicatedClass(txn, newClassName);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = dsTxnHandler->openDbi(TB_CLASSES, true);
             auto superClassId = ClassId{0};
             if (auto superClassDescriptor = foundClass->super.getLatestVersion().first.lock()) {
                 superClassId = superClassDescriptor->id;
@@ -309,12 +303,12 @@ namespace nogdb {
             value.append(&foundClass->type, sizeof(foundClass->type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(newClassName.c_str(), newClassName.length());
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, foundClass->id, value);
+            classDBHandler.put(foundClass->id, value);
 
             // update in-memory schema
             txn.txnCtx.dbSchema->replace(*txn.txnBase, foundClass, newClassName);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info

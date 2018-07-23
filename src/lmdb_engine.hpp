@@ -328,8 +328,10 @@ namespace nogdb {
                     }
                 }
 
+                Dbi() = default;
+
                 Dbi(TxnHandler *const txnHandler, const DBHandler handle) noexcept
-                        : _txn{txnHandler}, _handle{handle} {}
+                        : _handle{handle}, _txn{txnHandler} {}
 
                 ~Dbi() noexcept {}
 
@@ -356,6 +358,10 @@ namespace nogdb {
 
                 DBHandler handle() const noexcept {
                     return _handle;
+                }
+
+                TxnHandler *txn() const noexcept {
+                    return _txn;
                 }
 
                 unsigned int flags() const {
@@ -592,7 +598,7 @@ namespace nogdb {
                 }
 
                 Cursor(TxnHandler *const txn, CursorHandler *const handle) noexcept
-                        : _txn{txn}, _handle{handle} {}
+                        : _handle{handle}, _txn{txn} {}
 
                 Cursor(Cursor &&other) noexcept {
                     using std::swap;

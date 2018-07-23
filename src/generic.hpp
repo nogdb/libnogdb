@@ -54,7 +54,7 @@ namespace nogdb {
             auto foundClass = Validate::isExistingClass(txn, className);
             if (type != ClassType::UNDEFINED) {
                 if (foundClass->type != type) {
-                    throw Error(CTX_MISMATCH_CLASSTYPE, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
                 }
             }
             return foundClass;

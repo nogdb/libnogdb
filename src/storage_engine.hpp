@@ -115,6 +115,7 @@ namespace nogdb {
             }
 
             lmdb::Cursor openCursor(const lmdb::Dbi &dbi) {
+                require(_txn.handle() == dbi.txn());
                 return lmdb::Cursor::open(_txn.handle(), dbi.handle());
             }
 

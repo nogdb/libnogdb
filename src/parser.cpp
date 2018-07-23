@@ -24,7 +24,6 @@
 #include <vector>
 #include <cmath>
 
-#include "lmdb_engine.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
 #include "utils.hpp"
@@ -81,7 +80,7 @@ namespace nogdb {
         for (const auto &property: record.getAll()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
             if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
             // check if having any index
             for (const auto &indexIter: foundProperty->second.indexInfo) {
@@ -105,7 +104,7 @@ namespace nogdb {
         for (const auto &property : record.getBasicInfo()) {
             auto foundProperty = classInfo.nameToDesc.find(property.first);
             if (foundProperty == classInfo.nameToDesc.cend()) {
-                throw Error(CTX_NOEXST_PROPERTY);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
             if (property.first == VERSION_PROPERTY) {
                 dataSize += getRawDataSize(property.second.size());
@@ -120,16 +119,17 @@ namespace nogdb {
         return parseRecord(txn, dataSize, properties, record);
     }
 
-    Record Parser::parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo) {
-        if (keyValue.empty()) {
+    Record Parser::parseRawData(const storage_engine::lmdb::Result &rawData,
+                                const ClassPropertyInfo &classPropertyInfo) {
+        if (rawData.empty) {
             return Record{};
         }
-        auto rawData = LMDBInterface::getValueAsBlob(keyValue);
+        auto rawDataBlob = rawData.data.blob();
         auto offset = size_t{0};
         Record::PropertyToBytesMap properties;
-        if (rawData.capacity() == 0) {
+        if (rawDataBlob.capacity() == 0) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
-        } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
+        } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
             //TODO: should be concerned about ENDIAN?
             // NOTE: each property block consists of property id, flag, size, and value
             // when option flag = 0
@@ -140,28 +140,28 @@ namespace nogdb {
             // +----------------------+--------------------+------------------------+-----------+
             // | propertyId (16bits)  | option flag (1bit) | propertySize (31bits)  |   value   | (next block) ...
             // +----------------------+--------------------+------------------------+-----------+
-            while (offset < rawData.size()) {
+            while (offset < rawDataBlob.size()) {
                 auto propertyId = PropertyId{};
                 auto optionFlag = uint8_t{};
-                offset = rawData.retrieve(&propertyId, offset, sizeof(PropertyId));
-                rawData.retrieve(&optionFlag, offset, sizeof(optionFlag));
+                offset = rawDataBlob.retrieve(&propertyId, offset, sizeof(PropertyId));
+                rawDataBlob.retrieve(&optionFlag, offset, sizeof(optionFlag));
                 auto propertySize = size_t{};
                 if ((optionFlag & 0x1) == 1) {
                     //extra large size of value (exceed 127 bytes)
                     auto tmpSize =  uint32_t{};
-                    offset = rawData.retrieve(&tmpSize, offset, sizeof(uint32_t));
+                    offset = rawDataBlob.retrieve(&tmpSize, offset, sizeof(uint32_t));
                     propertySize = static_cast<size_t>(tmpSize >> 1);
                 } else {
                     //normal size of value (not exceed 127 bytes)
                     auto tmpSize = uint8_t{};
-                    offset = rawData.retrieve(&tmpSize, offset, sizeof(uint8_t));
+                    offset = rawDataBlob.retrieve(&tmpSize, offset, sizeof(uint8_t));
                     propertySize = static_cast<size_t>(tmpSize >> 1);
                 }
                 auto foundInfo = classPropertyInfo.idToName.find(propertyId);
                 if (foundInfo != classPropertyInfo.idToName.cend()) {
                     if (propertySize > 0) {
                         Blob::Byte byteData[propertySize];
-                        offset = rawData.retrieve(byteData, offset, propertySize);
+                        offset = rawDataBlob.retrieve(byteData, offset, propertySize);
                         properties[foundInfo->second] = Bytes{byteData, propertySize};
                     } else {
                         properties[foundInfo->second] = Bytes{};
@@ -176,9 +176,9 @@ namespace nogdb {
 
     Record Parser::parseRawDataWithBasicInfo(const std::string &className,
                                              const RecordId& rid,
-                                             const KeyValue &keyValue,
+                                             const storage_engine::lmdb::Result &rawData,
                                              const ClassPropertyInfo &classPropertyInfo) {
-        return parseRawData(keyValue, classPropertyInfo)
+        return parseRawData(rawData, classPropertyInfo)
                 .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
                 .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
                 .setBasicInfoIfNotExists(VERSION_PROPERTY, 1LL)

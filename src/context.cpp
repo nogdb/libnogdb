@@ -135,10 +135,10 @@ namespace nogdb {
             auto propDBHndler = wtxn.openDbi(TB_PROPERTIES, true);
             auto indexDBHandler = wtxn.openDbi(TB_INDEXES, true, false);
             auto relationDBHandler = wtxn.openDbi(TB_RELATIONS);
-            classDBHandler.put(wtxn.handle(), ClassId{UINT16_EM_INIT}, currentTime);
-            propDBHndler.put(wtxn.handle(), PropertyId{UINT16_EM_INIT}, currentTime);
-//            indexDBHandler.put(wtxn.handle(), PropertyId{UINT16_EM_INIT}, currentTime);
-            relationDBHandler.put(wtxn.handle(), STRING_EM_INIT, currentTime);
+            classDBHandler.put(ClassId{UINT16_EM_INIT}, currentTime);
+            propDBHndler.put(PropertyId{UINT16_EM_INIT}, currentTime);
+//            indexDBHandler.put(PropertyId{UINT16_EM_INIT}, currentTime);
+            relationDBHandler.put(STRING_EM_INIT, currentTime);
             wtxn.commit();
         } catch (const Error &err) {
             wtxn.rollback();

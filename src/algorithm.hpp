@@ -101,7 +101,7 @@ namespace nogdb {
         inline static Result retrieve(const Txn &txn,
                                       Schema::ClassDescriptorPtr &classDescriptor,
                                       ClassPropertyInfo &classPropertyInfo,
-                                      LMDBInterface::DBHandler &classDBHandler,
+                                      storage_engine::lmdb::Dbi &classDBHandler,
                                       const RecordId &rid,
                                       const PathFilter &pathFilter,
                                       ClassType type) {
@@ -109,11 +109,11 @@ namespace nogdb {
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(rid.first), true);
+                classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
+            auto rawData = classDBHandler.get(rid.second);
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
                 if ((*pathFilter.vertexFilter)(record)) {
                     return Result{RecordDescriptor{rid}, record};
@@ -134,7 +134,7 @@ namespace nogdb {
         inline static RecordDescriptor retrieveRdesc(const Txn &txn,
                                                      Schema::ClassDescriptorPtr &classDescriptor,
                                                      ClassPropertyInfo &classPropertyInfo,
-                                                     LMDBInterface::DBHandler &classDBHandler,
+                                                     storage_engine::lmdb::Dbi &classDBHandler,
                                                      const RecordId &rid,
                                                      const PathFilter &pathFilter,
                                                      ClassType type) {
@@ -142,11 +142,11 @@ namespace nogdb {
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(rid.first), true);
+                classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
+            auto rawData = classDBHandler.get(rid.second);
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
                 if ((*pathFilter.vertexFilter)(record)) {
                     return RecordDescriptor{rid};

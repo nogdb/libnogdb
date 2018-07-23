@@ -25,9 +25,9 @@
 #include <queue>
 
 #include "datatype.hpp"
-#include "keyval.hpp"
+#include "storage_engine.hpp"
+#include "lmdb_engine.hpp"
 #include "schema.hpp"
-#include "env_handler.hpp"
 #include "algorithm.hpp"
 
 #include "nogdb_errors.h"
@@ -57,9 +57,10 @@ namespace nogdb {
                        Generic::getRecordFromRdesc(txn, recordDescriptor) : ResultSet{};
             default:
                 auto result = ResultSet{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = LMDBInterface::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
                 auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
                 queue.push(std::make_pair(0, recordDescriptor.rid));
@@ -86,12 +87,10 @@ namespace nogdb {
                         classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first,
                                                                       ClassType::UNDEFINED);
                         classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                        classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                            std::to_string(recordDescriptor.rid.first), true);
+                        classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
                         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
-                                                             classDBHandler, recordDescriptor.rid.second);
-                        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
+                        auto rawData = classDBHandler.get(recordDescriptor.rid.second);
+                        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, rawData, classPropertyInfo);
                         result.emplace_back(Result{recordDescriptor, record});
                     }
                     while (!queue.empty()) {
@@ -132,14 +131,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -165,7 +162,7 @@ namespace nogdb {
                 auto result = ResultSet{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = LMDBInterface::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 auto usedEdges = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 try {
@@ -233,14 +230,12 @@ namespace nogdb {
                     };
 
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -261,20 +256,19 @@ namespace nogdb {
             return ResultSet{};
         } else {
             auto result = ResultSet{};
+            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             auto classDescriptor = Schema::ClassDescriptorPtr{};
             auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = LMDBInterface::DBHandler{};
+            auto classDBHandler = storage_engine::lmdb::Dbi{};
             try {
                 if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                     classDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first,
                                                                   ClassType::UNDEFINED);
                     classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                    classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                        std::to_string(srcVertexRecordDescriptor.rid.first), true);
-                    auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
-                                                         classDBHandler, srcVertexRecordDescriptor.rid.second);
+                    classDBHandler = dsTxnHandler->openDbi(std::to_string(srcVertexRecordDescriptor.rid.first), true);
+                    auto rawData = classDBHandler.get(srcVertexRecordDescriptor.rid.second);
                     auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                    auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
+                    auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, rawData, classPropertyInfo);
                     result.emplace_back(Result{srcVertexRecordDescriptor, record});
                 } else {
                     bool found = false;
@@ -331,12 +325,10 @@ namespace nogdb {
                         classDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first,
                                                                       ClassType::UNDEFINED);
                         classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                        classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                            std::to_string(srcVertexRecordDescriptor.rid.first), true);
-                        auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(),
-                                                             classDBHandler, srcVertexRecordDescriptor.rid.second);
+                        classDBHandler = dsTxnHandler->openDbi(std::to_string(srcVertexRecordDescriptor.rid.first), true);
+                        auto rawData = classDBHandler.get(srcVertexRecordDescriptor.rid.second);
                         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-                        auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, keyValue, classPropertyInfo);
+                        auto record = Parser::parseRawDataWithBasicInfo(className, srcVertexRecordDescriptor.rid, rawData, classPropertyInfo);
                         result.emplace_back(Result{srcVertexRecordDescriptor, record});
                         std::reverse(result.begin(), result.end());
                         auto currentLevel = 0U;
@@ -347,14 +339,12 @@ namespace nogdb {
                         }
                     }
                 }
-            } catch (Graph::ErrorType &err) {
-                if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+            } catch (const Error &err) {
+                if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                     throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                 } else {
-                    throw Error(err);
+                    throw err;
                 }
-            } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err);
             }
             return result;
         }
@@ -381,7 +371,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = LMDBInterface::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
                 auto queue = std::queue<std::pair<unsigned int, RecordId>> {};
                 queue.push(std::make_pair(0, recordDescriptor.rid));
@@ -448,14 +438,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -482,7 +470,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = LMDBInterface::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 auto usedEdges = std::unordered_set<RecordId, Graph::RecordIdHash> {};
                 try {
@@ -558,14 +546,12 @@ namespace nogdb {
                     };
 
                     addUniqueVertex(recordDescriptor.rid, 0, pathFilter);
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -589,7 +575,7 @@ namespace nogdb {
             auto result = std::vector<RecordDescriptor>{};
             auto classDescriptor = Schema::ClassDescriptorPtr{};
             auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = LMDBInterface::DBHandler{};
+            auto classDBHandler = storage_engine::lmdb::Dbi{};
             try {
                 if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                     result.emplace_back(srcVertexRecordDescriptor);
@@ -660,14 +646,12 @@ namespace nogdb {
                         }
                     }
                 }
-            } catch (Graph::ErrorType &err) {
-                if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+            } catch (const Error &err) {
+                if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                     throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                 } else {
-                    throw Error(err);
+                    throw err;
                 }
-            } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err);
             }
             return result;
         }
