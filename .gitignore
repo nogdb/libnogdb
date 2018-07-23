@@ -39,3 +39,7 @@ lemon++
 *.gcov
 *.gcno
 *.gcda
+unittest
+unittest_all
+apitest
+apitest_all
