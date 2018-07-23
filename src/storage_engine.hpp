@@ -91,7 +91,7 @@ namespace nogdb {
             }
 
             ~LMDBTxn() noexcept {
-                if (_txn) {
+                if (_txn.handle()) {
                     try { rollback(); } catch (...) {}
                     _txn = nullptr;
                 }

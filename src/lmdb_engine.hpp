@@ -219,8 +219,8 @@ namespace nogdb {
                 }
 
                 void close() noexcept {
-                    if (handle()) {
-                        mdb_env_close(handle());
+                    if (_handle) {
+                        mdb_env_close(_handle);
                         _handle = nullptr;
                     }
                 }
@@ -283,7 +283,7 @@ namespace nogdb {
                 }
 
                 EnvHandler *env() const noexcept {
-                    return mdb_txn_env(handle());
+                    return mdb_txn_env(_handle);
                 }
 
                 void commit() {
@@ -324,24 +324,28 @@ namespace nogdb {
                     if (auto error = mdb_open(txnHandler, dbName.c_str(), MDB_CREATE | flags, &dbHandler)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     } else {
-                        return Dbi{dbHandler};
+                        return Dbi{txnHandler, dbHandler};
                     }
                 }
 
-                Dbi(const DBHandler handle) noexcept
-                        : _handle{handle} {}
+                Dbi(TxnHandler *const txnHandler, const DBHandler handle) noexcept
+                        : _txn{txnHandler}, _handle{handle} {}
 
                 ~Dbi() noexcept {}
 
                 Dbi(Dbi &&other) noexcept {
                     using std::swap;
                     swap(_handle, other._handle);
+                    _txn = other._txn;
+                    other._txn = nullptr;
                 }
 
                 Dbi &operator=(Dbi &&other) noexcept {
                     if (this != &other) {
                         using std::swap;
                         swap(_handle, other._handle);
+                        _txn = other._txn;
+                        other._txn = nullptr;
                     }
                     return *this;
                 }
@@ -354,63 +358,63 @@ namespace nogdb {
                     return _handle;
                 }
 
-                unsigned int flags(TxnHandler *const txn) const {
+                unsigned int flags() const {
                     unsigned int result{};
-                    if (auto error = mdb_dbi_flags(txn, handle(), &result)) {
+                    if (auto error = mdb_dbi_flags(_txn, _handle, &result)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                     return result;
                 }
 
-                size_t size(TxnHandler *const txn) const {
-                    return stat(txn).ms_entries;
+                size_t size() const {
+                    return stat().ms_entries;
                 }
 
-                void drop(TxnHandler *const txn, const bool del = false) {
-                    if (auto error = mdb_drop(txn, handle(), del)) {
+                void drop(const bool del = false) {
+                    if (auto error = mdb_drop(_txn, _handle, del)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                 }
 
-                Dbi &setCompareFunc(TxnHandler *const txn, MDB_cmp_func *const cmp = nullptr) {
-                    if (auto error = mdb_set_compare(txn, handle(), cmp)) {
+                Dbi &setCompareFunc(MDB_cmp_func *const cmp = nullptr) {
+                    if (auto error = mdb_set_compare(_txn, _handle, cmp)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                     return *this;
                 }
 
-                Dbi &setDupSortFunc(TxnHandler *const txn, MDB_cmp_func *const cmp = nullptr) {
-                    if (auto error = mdb_set_dupsort(txn, handle(), cmp)) {
+                Dbi &setDupSortFunc(MDB_cmp_func *const cmp = nullptr) {
+                    if (auto error = mdb_set_dupsort(_txn, _handle, cmp)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                     return *this;
                 }
 
                 template<typename K>
-                Result get(TxnHandler *const txn, const K &key) const {
+                Result get(const K &key) const {
                     Result result{};
-                    auto found = dbGet(txn, handle(), Key{&key, sizeof(K)}, result.data);
+                    auto found = dbGet(Key{&key, sizeof(K)}, result.data);
                     result.empty = !found;
                     return result;
                 }
 
-                Result get(TxnHandler *const txn, const Key &key) const {
+                Result get(const Key &key) const {
                     Result result{};
-                    auto found = dbGet(txn, handle(), key, result.data);
+                    auto found = dbGet(key, result.data);
                     result.empty = !found;
                     return result;
                 }
 
-                Result get(TxnHandler *const txn, const char *const key) const {
+                Result get(const char *const key) const {
                     Result result{};
-                    auto found = dbGet(txn, handle(), Key{key, strlen(key)}, result.data);
+                    auto found = dbGet(Key{key, strlen(key)}, result.data);
                     result.empty = !found;
                     return result;
                 }
 
-                Result get(TxnHandler *const txn, const std::string& key) const {
+                Result get(const std::string& key) const {
                     Result result{};
-                    auto found = dbGet(txn, handle(), Key{key}, result.data);
+                    auto found = dbGet(Key{key}, result.data);
                     result.empty = !found;
                     return result;
                 }
@@ -418,171 +422,138 @@ namespace nogdb {
 #define LMDB_PUT_FLAGS_GENERATE(append, overwrite)  ((append) ? MDB_APPEND : 0U) | ((overwrite) ? 0U : MDB_NOOVERWRITE)
 
                 template<typename K, typename V>
-                void put(TxnHandler *const txn,
-                         const K &key,
+                void put(const K &key,
                          const V &val,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{&key, sizeof(K)},
-                          Value{&val, sizeof(V)},
-                          LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{&key, sizeof(K)}, Value{&val, sizeof(V)}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
                 template<typename K>
-                void put(TxnHandler *const txn,
-                         const K &key,
+                void put(const K &key,
                          const Blob &blob,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{&key, sizeof(K)},
+                    dbPut(Key{&key, sizeof(K)},
                           Value{blob.bytes(), blob.size()},
                           LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
                 template<typename K>
-                void put(TxnHandler *const txn,
-                         const K &key,
+                void put(const K &key,
                          const std::string &data,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{&key, sizeof(K)},
-                          Value{data},
-                          LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{&key, sizeof(K)}, Value{data}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
-                void put(TxnHandler *const txn,
-                         const Key &key,
+                void put(const Key &key,
                          const Value &data,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn, handle(), key, data, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(key, data, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
                 template<typename V>
-                void put(TxnHandler *const txn,
-                         const char *const key,
+                void put(const char *const key,
                          const V &val,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{key, strlen(key)},
-                          Value{&val, sizeof(V)},
-                          LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{key, strlen(key)}, Value{&val, sizeof(V)}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
-                void put(TxnHandler *const txn,
-                         const char *const key,
+                void put(const char *const key,
                          const Blob &blob,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{key, strlen(key)},
+                    dbPut(Key{key, strlen(key)},
                           Value{blob.bytes(), blob.size()},
                           LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
-                void put(TxnHandler *const txn,
-                         const char *const key,
+                void put(const char *const key,
                          const char *const val,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{key, strlen(key)},
-                          Value{val, strlen(val)},
-                          LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{key, strlen(key)}, Value{val, strlen(val)}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
                 template<typename V>
-                void put(TxnHandler *const txn,
-                         const std::string& key,
+                void put(const std::string& key,
                          const V &val,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn, handle(), Key{key}, Value{&val, sizeof(V)}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{key}, Value{&val, sizeof(V)}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
-                void put(TxnHandler *const txn,
-                         const std::string& key,
+                void put(const std::string& key,
                          const Blob &blob,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn,
-                          handle(),
-                          Key{key},
+                    dbPut(Key{key},
                           Value{blob.bytes(), blob.size()},
                           LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
-                void put(TxnHandler *const txn,
-                         const std::string& key,
+                void put(const std::string& key,
                          const std::string& val,
                          bool append = false,
                          bool overwrite = true) {
-                    dbPut(txn, handle(), Key{key}, Value{val}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
+                    dbPut(Key{key}, Value{val}, LMDB_PUT_FLAGS_GENERATE(append, overwrite));
                 }
 
                 template<typename K>
-                void del(TxnHandler *const txn, const K &key) {
-                    dbDel(txn, handle(), Key{&key, sizeof(K)});
+                void del(const K &key) {
+                    dbDel(Key{&key, sizeof(K)});
                 }
 
-                void del(TxnHandler *const txn, const Key &key) {
-                    dbDel(txn, handle(), key);
+                void del(const Key &key) {
+                    dbDel(key);
                 }
 
-                void del(TxnHandler *const txn, const char *const key) {
-                    dbDel(txn, handle(), Key{key, strlen(key)});
+                void del(const char *const key) {
+                    dbDel(Key{key, strlen(key)});
                 }
 
-                void del(TxnHandler *const txn, const std::string& key) {
-                    dbDel(txn, handle(), Key{key});
+                void del(const std::string& key) {
+                    dbDel(Key{key});
                 }
 
                 template<typename K, typename V>
-                void del(TxnHandler *const txn, const K &key, const V &val) {
-                    dbDel(txn, handle(), Key{key, strlen(key)}, Value{&val, sizeof(V)});
+                void del(const K &key, const V &val) {
+                    dbDel(Key{key, strlen(key)}, Value{&val, sizeof(V)});
                 }
 
                 template<typename V>
-                void del(TxnHandler *const txn, const Key &key, const V &val) {
-                    dbDel(txn, handle(), key, Value{&val, sizeof(V)});
+                void del(const Key &key, const V &val) {
+                    dbDel(key, Value{&val, sizeof(V)});
                 }
 
-                void del(TxnHandler *const txn, const char *const key, const char *const val) {
-                    dbDel(txn, handle(), Key{key, strlen(key)}, Value{val, strlen(val)});
+                void del(const char *const key, const char *const val) {
+                    dbDel(Key{key, strlen(key)}, Value{val, strlen(val)});
                 }
 
-                void del(TxnHandler *const txn, const std::string& key, const std::string& val) {
-                    dbDel(txn, handle(), Key{key}, Value{val});
+                void del(const std::string& key, const std::string& val) {
+                    dbDel(Key{key}, Value{val});
                 }
 
             protected:
                 DBHandler _handle{0};
+                TxnHandler *_txn{nullptr};
 
             private:
 
-                MDB_stat stat(TxnHandler *const txn) const {
+                MDB_stat stat() const {
                     MDB_stat result;
-                    if (auto error = mdb_stat(txn, handle(), &result)) {
+                    if (auto error = mdb_stat(_txn, _handle, &result)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                     return result;
                 }
 
-                inline bool dbGet(TxnHandler* const txn,
-                                  const DBHandler dbi,
-                                  const MDB_val* const key,
+                inline bool dbGet(const MDB_val* const key,
                                   MDB_val* const data) const {
-                    if (auto error = mdb_get(txn, dbi, const_cast<MDB_val*>(key), data)) {
+                    if (auto error = mdb_get(_txn, _handle, const_cast<MDB_val*>(key), data)) {
                         if (error != MDB_NOTFOUND) {
                             throw NOGDB_STORAGE_ERROR(error);
                         }
@@ -591,21 +562,17 @@ namespace nogdb {
                     return true;
                 }
 
-                inline void dbPut(TxnHandler* const txn,
-                                  const DBHandler dbi,
-                                  const MDB_val* const key,
+                inline void dbPut(const MDB_val* const key,
                                   const MDB_val* const data,
                                   const unsigned int flags = 0) {
-                    if (auto error = mdb_put(txn, dbi, const_cast<MDB_val*>(key), const_cast<MDB_val*>(data), flags)) {
+                    if (auto error = mdb_put(_txn, _handle, const_cast<MDB_val*>(key), const_cast<MDB_val*>(data), flags)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                 }
 
-                inline void dbDel(TxnHandler* const txn,
-                                  const DBHandler dbi,
-                                  const MDB_val* const key,
+                inline void dbDel(const MDB_val* const key,
                                   const MDB_val* const data = nullptr) {
-                    if (auto error = mdb_del(txn, dbi, const_cast<MDB_val*>(key), const_cast<MDB_val*>(data))) {
+                    if (auto error = mdb_del(_txn, _handle, const_cast<MDB_val*>(key), const_cast<MDB_val*>(data))) {
                         if (error != MDB_NOTFOUND) {
                             throw NOGDB_STORAGE_ERROR(error);
                         }
@@ -621,21 +588,25 @@ namespace nogdb {
                     if (auto error = mdb_cursor_open(txn, dbi, &handle)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
-                    return Cursor{handle};
+                    return Cursor{txn, handle};
                 }
 
-                Cursor(CursorHandler *const handle) noexcept
-                        : _handle{handle} {}
+                Cursor(TxnHandler *const txn, CursorHandler *const handle) noexcept
+                        : _txn{txn}, _handle{handle} {}
 
                 Cursor(Cursor &&other) noexcept {
                     using std::swap;
                     swap(_handle, other._handle);
+                    _txn = other._txn;
+                    other._txn = nullptr;
                 }
 
                 Cursor &operator=(Cursor &&other) noexcept {
                     if (this != &other) {
                         using std::swap;
                         swap(_handle, other._handle);
+                        _txn = other._txn;
+                        other._txn = nullptr;
                     }
                     return *this;
                 }
@@ -659,22 +630,22 @@ namespace nogdb {
                     }
                 }
 
-                void renew(TxnHandler *const txn) {
-                    if (auto error = mdb_cursor_renew(txn, handle())) {
+                void renew() {
+                    if (auto error = mdb_cursor_renew(_txn, _handle)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                 }
 
                 TxnHandler *txn() const noexcept {
-                    return mdb_cursor_txn(handle());
+                    return mdb_cursor_txn(_handle);
                 }
 
                 DBHandler dbi() const noexcept {
-                    return mdb_cursor_dbi(handle());
+                    return mdb_cursor_dbi(_handle);
                 }
 
                 void del(bool duplicate = false) {
-                    if (auto error = mdb_cursor_del(handle(), duplicate)) {
+                    if (auto error = mdb_cursor_del(_handle, duplicate)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                 }
@@ -707,12 +678,13 @@ namespace nogdb {
 
             protected:
                 CursorHandler *_handle{nullptr};
+                TxnHandler *_txn{nullptr};
 
             private:
 
                 CursorResult get(const MDB_cursor_op op) {
                     CursorResult result{};
-                    if (auto error = mdb_cursor_get(handle(), result.key.data, result.val.data, op)) {
+                    if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {
                         if (error != MDB_NOTFOUND) {
                             throw NOGDB_STORAGE_ERROR(error);
                         }
@@ -726,7 +698,7 @@ namespace nogdb {
                 CursorResult dbFind(const K &key, const MDB_cursor_op op) {
                     CursorResult result{};
                     result.key.data = Key{&key, sizeof(K)};
-                    if (auto error = mdb_cursor_get(handle(), result.key.data, result.val.data, op)) {
+                    if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {
                         if (error != MDB_NOTFOUND) {
                             throw NOGDB_STORAGE_ERROR(error);
                         }
@@ -739,7 +711,7 @@ namespace nogdb {
                 CursorResult dbFind(const std::string &key, const MDB_cursor_op op) {
                     CursorResult result{};
                     result.key.data = Key{key};
-                    if (auto error = mdb_cursor_get(handle(), result.key.data, result.val.data, op)) {
+                    if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {
                         if (error != MDB_NOTFOUND) {
                             throw NOGDB_STORAGE_ERROR(error);
                         }

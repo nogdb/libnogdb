@@ -24,13 +24,13 @@
 
 #include <atomic>
 
+#include "storage_engine.hpp"
 #include "lmdb_engine.hpp"
 #include "txn_object.hpp"
 #include "graph.hpp"
 #include "schema.hpp"
 #include "spinlock.hpp"
 #include "version_control.hpp"
-#include "env_handler.hpp"
 
 #include "nogdb_types.h"
 #include "nogdb_context.h"
@@ -49,7 +49,11 @@ namespace nogdb {
 
         ~BaseTxn() noexcept {
             if (isWithDataStore && !isCompleted) {
-                LMDBInterface::abortTxn(dsTxnHandler);
+                dsTxnHandler->rollback();
+            }
+            if (dsTxnHandler) {
+                delete dsTxnHandler;
+                dsTxnHandler = nullptr;
             }
         }
 
@@ -57,7 +61,7 @@ namespace nogdb {
 
         BaseTxn &operator=(const BaseTxn &txn) = delete;
 
-        LMDBInterface::TxnHandler *getDsTxnHandler() const { return dsTxnHandler; }
+        storage_engine::LMDBTxn *getDsTxnHandler() const { return dsTxnHandler; }
 
         const TxnId &getVersionId() const { return versionId; }
 
@@ -115,7 +119,7 @@ namespace nogdb {
         DBInfo dbInfo{};
 
     private:
-        LMDBInterface::TxnHandler *dsTxnHandler;
+        storage_engine::LMDBTxn *dsTxnHandler{nullptr};
         TxnId txnId;
         TxnId versionId;
         TxnType txnType;

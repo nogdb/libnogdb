@@ -33,10 +33,8 @@ namespace nogdb {
     Txn::Txn(Context &ctx, Mode mode) : txnCtx{ctx}, txnMode{mode} {
         try {
             txnBase = std::make_shared<BaseTxn>(txnCtx, txnMode == Mode::READ_WRITE);
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             std::rethrow_exception(std::current_exception());
         }
@@ -71,12 +69,6 @@ namespace nogdb {
     void Txn::commit() {
         try {
             txnBase->commit(txnCtx);
-        } catch (Graph::ErrorType &err) {
-            rollback();
-            throw Error(err);
-        } catch (LMDBInterface::ErrorType &err) {
-            rollback();
-            throw Error(err);
         } catch (const Error &err) {
             rollback();
             throw err;

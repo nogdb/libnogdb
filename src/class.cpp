@@ -26,7 +26,7 @@
 #include "schema.hpp"
 #include "constant.hpp"
 #include "base_txn.hpp"
-#include "env_handler.hpp"
+#include "storage_engine.hpp"
 #include "lmdb_engine.hpp"
 #include "generic.hpp"
 #include "validate.hpp"
@@ -62,17 +62,17 @@ namespace nogdb {
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             // create interface for .classes
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_CLASSES, true);
+            auto classDBHandler = dsTxnHandler->openDbi(TB_CLASSES, true);
             auto superClassId = ClassId{0};
             auto totalLength = sizeof(type) + sizeof(ClassId) + className.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&superClassId, sizeof(ClassId));
             value.append(className.c_str(), className.length());
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, dbInfo.maxClassId, value, true);
+            classDBHandler.put(dsTxnHandler->handle(), dbInfo.maxClassId, value, true);
             // create interface for itself
-            auto newClassDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dbInfo.maxClassId), true);
-            LMDBInterface::putRecord(dsTxnHandler, newClassDBHandler, EM_MAXRECNUM, PositionId{1}, true);
+            auto newClassDBHandler = dsTxnHandler->openDbi(std::to_string(dbInfo.maxClassId), true);
+            newClassDBHandler.put(dsTxnHandler->handle(), EM_MAXRECNUM, PositionId{1}, true);
 
             // update in-memory schema and info
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);

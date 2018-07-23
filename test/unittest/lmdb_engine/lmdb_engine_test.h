@@ -59,7 +59,10 @@ private:
     std::string _dbName{};
 
     inline void beforeAll() {
-        env = new nogdb::storage_engine::LMDBEnv(_dbName.c_str(), nogdb::storage_engine::Settings{});
+        env = new nogdb::storage_engine::LMDBEnv(_dbName.c_str(),
+                                                 DEFAULT_NOGDB_MAX_DATABASE_NUMBER,
+                                                 DEFAULT_NOGDB_MAX_DATABASE_SIZE,
+                                                 DEFAULT_NOGDB_MAX_READERS);
     }
 
     inline void afterAll() {

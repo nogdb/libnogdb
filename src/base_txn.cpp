@@ -24,7 +24,6 @@
 #include <tuple>
 
 #include "shared_lock.hpp"
-#include "env_handler.hpp"
 #include "base_txn.hpp"
 #include "utils.hpp" // for benchmarking
 
@@ -36,13 +35,10 @@ namespace nogdb {
             : dsTxnHandler{nullptr},
               txnType{(isReadWrite) ? TxnType::READ_WRITE : TxnType::READ_ONLY},
               isWithDataStore{!inMemory} {
+        auto envHandler = ctx.envHandler.get();
         if (!isReadWrite) {
             if (isWithDataStore) {
-                try {
-                    dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RO);
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
-                }
+                dsTxnHandler = new storage_engine::LMDBTxn(envHandler, storage_engine::lmdb::TXN_RO);
             }
             txnId = ctx.dbTxnStat->fetchAddMaxTxnId();
             // get the recent version that was committed
@@ -50,11 +46,7 @@ namespace nogdb {
             ctx.dbTxnStat->addActiveTxnId(txnId, versionId);
         } else {
             if (isWithDataStore) {
-                try {
-                    dsTxnHandler = LMDBInterface::beginTxn(ctx.envHandler->get(), LMDBInterface::TXN_RW);
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
-                }
+                dsTxnHandler = new storage_engine::LMDBTxn(envHandler, storage_engine::lmdb::TXN_RW);
                 // check if the previous writer committed all stuff in memory
                 {
                     ReadLock<boost::shared_mutex> _(*(ctx.dbWriterMutex));
@@ -72,7 +64,7 @@ namespace nogdb {
             versionId = ctx.dbTxnStat->maxVersionId + 1;
             if (versionId == std::numeric_limits<TxnId>::max()) {
                 if (isWithDataStore) {
-                    LMDBInterface::abortTxn(dsTxnHandler);
+                    dsTxnHandler->rollback();
                 }
                 throw NOGDB_TXN_ERROR(NOGDB_TXN_VERSION_MAXREACH);
             }
@@ -116,17 +108,13 @@ namespace nogdb {
                 // after datastore has committed
                 WriteLock<boost::shared_mutex> _(*(ctx.dbWriterMutex));
                 if (isWithDataStore) {
-                    try {
-                        LMDBInterface::commitTxn(dsTxnHandler);
-                        isCommitDatastore = true;
-                    } catch (LMDBInterface::ErrorType &err) {
-                        throw Error(err);
-                    }
+                    dsTxnHandler->commit();
+                    isCommitDatastore = true;
                 }
                 auto oldestTxn = ctx.dbTxnStat->minActiveTxnId();
                 auto currentMinVersion = (oldestTxn.first != 0) ? oldestTxn.second : versionId - 1;
                 // commit changes in database schema
-                if (ucSchema.size() > 0) {
+                if (!ucSchema.empty()) {
                     DeleteQueue<ClassId> tmpDeletedClassId;
                     for (const auto &classDescriptor: ucSchema) {
                         if (auto classDescriptorPtr = classDescriptor.second) {
@@ -233,7 +221,7 @@ namespace nogdb {
                 }
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
                 if (isWithDataStore) {
-                    LMDBInterface::abortTxn(dsTxnHandler);
+                    dsTxnHandler->rollback();
                 }
             }
             isCompleted = true;
@@ -315,7 +303,7 @@ namespace nogdb {
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
             }
             if (isWithDataStore && !isCommitDatastore) {
-                LMDBInterface::abortTxn(dsTxnHandler);
+                dsTxnHandler->rollback();
             }
             isCompleted = true;
             return true;
