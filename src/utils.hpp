@@ -59,6 +59,11 @@ namespace nogdb {
 
     void require(bool cmp);
 
+    int mkdir(const char*, int);
+
+    int openLockFile(const char*);
+
+    int unlockFile(int);
 }
 
 #endif

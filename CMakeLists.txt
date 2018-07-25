@@ -30,6 +30,8 @@ set(COMPILE_OPTIONS
     -march=native
 )
 
+option(nogdb_BuildTests "Build the tests when enabled." ON)
+
 ## TARGET lmdb
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb)
 
@@ -80,10 +82,11 @@ target_compile_options(nogdb
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(nogdb Threads::Threads)
+if(MINGW)
+    target_link_libraries(nogdb atomic)
+endif()
 
 ## TARGET test
-enable_testing()
-
 set(TEST_COMPILE_OPTIONS
     -std=c++11
     -W
@@ -96,7 +99,7 @@ set(TEST_COMPILE_OPTIONS
 
 set(RUNTEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/runtest.cpp")
 string(REPLACE ${RUNTEST_PATH} "" nogdb_TEST "${nogdb_TEST}")
-add_library(nogdb_test_object OBJECT ${nogdb_TEST} ${nogdb_TEST_HEADER})
+add_library(nogdb_test_object OBJECT EXCLUDE_FROM_ALL ${nogdb_TEST} ${nogdb_TEST_HEADER})
 target_include_directories(nogdb_test_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # runtest_executable(name)
@@ -114,17 +117,20 @@ function(runtest_executable name)
     set_tests_properties(test_${name} PROPERTIES DEPENDS ctest_build_test_${name})
 endfunction()
 
-runtest_executable(context)
-runtest_executable(schema)
-runtest_executable(record)
-runtest_executable(misc)
-runtest_executable(graph)
-runtest_executable(find)
-runtest_executable(inheritance)
-runtest_executable(index)
-runtest_executable(schema_txn)
-runtest_executable(txn)
-runtest_executable(sql)
+if(nogdb_BuildTests)
+    enable_testing()
+    runtest_executable(context)
+    runtest_executable(schema)
+    runtest_executable(record)
+    runtest_executable(misc)
+    runtest_executable(graph)
+    runtest_executable(find)
+    runtest_executable(inheritance)
+    runtest_executable(index)
+    runtest_executable(schema_txn)
+    runtest_executable(txn)
+    runtest_executable(sql)
+endif()
 
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)

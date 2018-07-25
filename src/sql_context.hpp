@@ -61,19 +61,19 @@ namespace nogdb {
 
 
             // CLASS operations
-            void createClass(const Token &tName, const Token &tExtends, char checkIfNotExists);
+            void createClass(const Token &tName, const Token &tExtends, bool checkIfNotExists);
 
             void alterClass(const Token &tName, const Token &tAttr, const Bytes &value);
 
-            void dropClass(const Token &tName, char checkIfExists);
+            void dropClass(const Token &tName, bool checkIfExists);
 
             // PROPERTY operations
             void
-            createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, char checkIfNotExists);
+            createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, bool checkIfNotExists);
 
             void alterProperty(const Token &tClassName, const Token &tPropName, const Token &tAttr, const Bytes &value);
 
-            void dropProperty(const Token &tClassName, const Token &tPropName, char checkIfExists);
+            void dropProperty(const Token &tClassName, const Token &tPropName, bool checkIfExists);
 
             // VERTEX operations
             void createVertex(const Token &tClassName, const nogdb::Record &prop);
@@ -94,6 +94,12 @@ namespace nogdb {
 
             // TRAVERSE operations
             void traverse(const TraverseArgs &args);
+
+            // INDEX operations
+            void createIndex(const Token &tClassName, const Token &tPropName, const Token &tIndexType);
+
+            void dropIndex(const Token &tClassName, const Token &tPropName);
+            
 
         private:
             void newTxnIfRootStmt(bool isRoot, Txn::Mode mode);

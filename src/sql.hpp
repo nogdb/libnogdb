@@ -119,8 +119,6 @@ namespace nogdb {
 
             Record &set(const string &propName, Bytes &&value);
 
-            Record &set(pair<string, Bytes> &&prop);
-
             const map<string, Bytes> &getAll() const;
 
             Bytes get(const string &propName) const;
@@ -236,7 +234,7 @@ namespace nogdb {
                 MIN, MAX,
                 IN, IN_E, IN_V,
                 OUT, OUT_E, OUT_V,
-                BOTH, BOTH_E,
+                BOTH, BOTH_E, BOTH_V,
                 EXPAND,
             };
 
@@ -260,8 +258,6 @@ namespace nogdb {
 
             bool isExpand() const;
 
-            string toString() const;
-
         private:
             static Bytes count(const ResultSet &input, const vector<Projection> &args);
 
@@ -282,6 +278,8 @@ namespace nogdb {
             static Bytes walkBoth(Txn &txn, const Result &input, const vector<Projection> &args);
 
             static Bytes walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+
+            static Bytes walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args);
 
             static Bytes expand(Txn &txn, ResultSet &input, const vector<Projection> &args);
 
@@ -340,8 +338,6 @@ namespace nogdb {
 
         string to_string(const Projection &proj);
     }
-
-    using ::operator<;
 }
 
 #endif

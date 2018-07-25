@@ -1694,24 +1694,24 @@ void test_txn_stat() {
         nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Seechang"));
         txnRw1.commit();
-        assert(ctx->getMinActiveTxnId() == std::make_pair(0, 0));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)0, (nogdb::TxnId)0));
 
         nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 2);
         assert(ctx->getMaxVersionId() == 2);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(1, 2));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)1, (nogdb::TxnId)2));
 
         nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 3);
         assert(ctx->getMaxVersionId() == 2);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(1, 2));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)1, (nogdb::TxnId)2));
 
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
         txnRw2.commit();
 
         assert(ctx->getMaxTxnId() == 3);
         assert(ctx->getMaxVersionId() == 3);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(1, 2));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)1, (nogdb::TxnId)2));
 
         nogdb::Txn txnRw3{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Vertex::create(txnRw3, "islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1724,12 +1724,12 @@ void test_txn_stat() {
         txnRo1.commit();
         assert(ctx->getMaxTxnId() == 3);
         assert(ctx->getMaxVersionId() == 4);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(2, 2));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)2, (nogdb::TxnId)2));
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 4);
         assert(ctx->getMaxVersionId() == 4);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(2, 2));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)2, (nogdb::TxnId)2));
 
         nogdb::Txn txnRw5{*ctx, nogdb::Txn::Mode::READ_WRITE};
         auto v1 = nogdb::Vertex::create(txnRw5, "islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
@@ -1741,25 +1741,25 @@ void test_txn_stat() {
 
         assert(ctx->getMaxTxnId() == 4);
         assert(ctx->getMaxVersionId() == 5);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(3, 4));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)3, (nogdb::TxnId)4));
 
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRo5{*ctx, nogdb::Txn::Mode::READ_ONLY};
         assert(ctx->getMaxTxnId() == 6);
         assert(ctx->getMaxVersionId() == 5);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(3, 4));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)3, (nogdb::TxnId)4));
 
         txnRo3.commit();
 
         assert(ctx->getMaxTxnId() == 6);
         assert(ctx->getMaxVersionId() == 5);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(4, 5));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)4, (nogdb::TxnId)5));
 
         txnRo5.commit();
 
         assert(ctx->getMaxTxnId() == 6);
         assert(ctx->getMaxVersionId() == 5);
-        assert(ctx->getMinActiveTxnId() == std::make_pair(4, 5));
+        assert(ctx->getMinActiveTxnId() == std::make_pair((nogdb::TxnId)4, (nogdb::TxnId)5));
 
     } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;

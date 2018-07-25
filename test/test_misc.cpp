@@ -28,7 +28,7 @@ void test_get_set_empty_value() {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     try {
         nogdb::Record r_blank_name{};
-        r_blank_name.set("name", "\0");
+        r_blank_name.set("name", "");
         auto rdesc1 = nogdb::Vertex::create(txn, "persons", r_blank_name);
         auto r1 = nogdb::Db::getRecord(txn, rdesc1);
         assert(r1.get("name").toText() == "");

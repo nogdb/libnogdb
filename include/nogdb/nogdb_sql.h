@@ -48,7 +48,7 @@ namespace nogdb {
                 RESULT_SET
             };
 
-            inline Type type() {
+            inline Type type() const {
                 return this->t;
             }
 
@@ -57,7 +57,7 @@ namespace nogdb {
                 return *std::static_pointer_cast<T>(this->value);
             }
 
-        private:
+        protected:
             Result(Type type_, std::shared_ptr<void> value_) : t(type_), value(value_) {}
 
             Result(Error *error) : t(ERROR), value(error) {}
