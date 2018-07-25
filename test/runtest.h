@@ -186,7 +186,7 @@ extern void test_shortest_path_with_condition();
 extern void test_bfs_traverse_cursor_with_condition();
 extern void test_dfs_traverse_cursor_with_condition();
 extern void test_shortest_path_cursor_with_condition();
-extern void test_shortest_path_dijkstra();
+// extern void test_shortest_path_dijkstra();
 #endif
 
 // find operations testing

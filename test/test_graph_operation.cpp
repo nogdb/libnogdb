@@ -4539,6 +4539,7 @@ void test_shortest_path_cursor_with_condition() {
     txn.commit();
 }
 
+/*
 void test_shortest_path_dijkstra() {
 
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -4622,3 +4623,4 @@ void test_shortest_path_dijkstra() {
     }
 
 }
+*/

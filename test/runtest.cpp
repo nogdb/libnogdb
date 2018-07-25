@@ -209,7 +209,7 @@ int main() {
     exec(test_invalid_shortest_path, "finding the shortest path with invalid parameters");
     exec(test_shortest_path_cursor, "finding a cursor of the shortest path in a graph");
     exec(test_invalid_shortest_path_cursor, "finding a cursor of the shortest path with invalid parameters");
-    exec(test_shortest_path_dijkstra, "finding the shortest path with dijkstra's algorithm");
+    // exec(test_shortest_path_dijkstra, "finding the shortest path with dijkstra's algorithm");
     exec(test_bfs_traverse_with_condition, "traversing a graph using bfs algorithm with conditional functions");
     exec(test_dfs_traverse_with_condition, "traversing a graph using dfs algorithm with conditional functions");
     exec(test_shortest_path_with_condition, "finding the shortest path in a graph with conditional functions");
