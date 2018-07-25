@@ -34,7 +34,6 @@
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
 #include "nogdb_sql.h"
-#include "../src/algorithm.hpp"
 
 namespace nogdb {
 
@@ -343,6 +342,7 @@ namespace nogdb {
                                       const RecordDescriptor &dstVertexRecordDescriptor, const PathFilter &pathFilter,
                                       const ClassFilter &classFilter = ClassFilter{});
 
+        /*
         template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
         static std::pair<T, ResultSet> shortestPath(const Txn &txn,
                                          const RecordDescriptor &srcVertexRecordDescriptor,
@@ -357,6 +357,7 @@ namespace nogdb {
                     txn, srcVertexRecordDescriptor,
                     dstVertexRecordDescriptor, costFunction, edgeClassIds, pathFilter);
         }
+         */
 
         static ResultSetCursor
         inEdgeBfsCursor(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
@@ -421,6 +422,7 @@ namespace nogdb {
                                                   const PathFilter &pathFilter,
                                                   const ClassFilter &classFilter = ClassFilter{});
 
+        /*
         template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
         static std::pair<T, ResultSetCursor> shortestPathCursor(Txn &txn,
                                                                 const RecordDescriptor &srcVertexRecordDescriptor,
@@ -439,6 +441,7 @@ namespace nogdb {
             result.metadata.insert(result.metadata.end(), metadata.second.cbegin(), metadata.second.cend());
             return {metadata.first, result};
         }
+        */
     };
 
 }
