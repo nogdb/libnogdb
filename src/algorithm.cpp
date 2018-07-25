@@ -76,7 +76,6 @@ namespace nogdb {
                                           const PathFilter &pathFilter) {
         const auto searchResultDescriptor = depthFirstSearchRdesc(txn, recordDescriptor, minDepth, maxDepth,
                                                                   edgeClassIds, edgeFunc, vertexFunc, pathFilter);
-
         ResultSet result (searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                        [&txn] (const RecordDescriptor& descriptor) {

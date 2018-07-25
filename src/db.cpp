@@ -42,6 +42,9 @@ namespace nogdb {
         } catch (Datastore::ErrorType &err) {
             throw Error(err, Error::Type::DATASTORE);
         }
+        if (keyValue.empty()) {
+            throw Error(CTX_NOEXST_RECORD, Error::Type::CONTEXT);
+        }
         return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
     }
 

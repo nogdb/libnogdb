@@ -79,17 +79,6 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
 
-        // update version
-        // set correct version
-        /*
-        try {
-            const uint64_t correctVersion = Db::getRecord(txn, recordDescriptor).getVersion();
-            record.setBasicInfo(VERSION_PROPERTY, correctVersion);
-            record.setBasicInfo(TXN_VERSION, txn.getVersionId());
-        } catch (const Error& err) {
-            // do nothing
-        }
-        */
         record.updateVersion(txn);
 
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
@@ -243,9 +232,7 @@ namespace nogdb {
                     case PropertyType::UNSIGNED_SMALLINT:
                     case PropertyType::UNSIGNED_INTEGER:
                     case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                     TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                     true, isUnique);
+                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
                         break;
                     }
@@ -254,22 +241,14 @@ namespace nogdb {
                     case PropertyType::INTEGER:
                     case PropertyType::BIGINT:
                     case PropertyType::REAL: {
-                        auto dataIndexDBHandlerPositive =
-                                Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_POSITIVE_SUFFIX,
-                                                   true, isUnique);
-                        auto dataIndexDBHandlerNegative =
-                                Datastore::openDbi(dsTxnHandler,
-                                                   TB_INDEXING_PREFIX + std::to_string(indexId) + INDEX_NEGATIVE_SUFFIX,
-                                                   true, isUnique);
+                        auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
+                        auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);
                         break;
                     }
                     case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler,
-                                                                     TB_INDEXING_PREFIX + std::to_string(indexId),
-                                                                     false, isUnique);
+                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
                         Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
                         break;
                     }

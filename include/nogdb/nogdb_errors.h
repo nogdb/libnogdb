@@ -56,7 +56,7 @@
 #define CTX_OVERRIDE_PROPERTY           0x2040
 #define CTX_CONFLICT_PROPTYPE           0x2050
 #define CTX_IN_USED_PROPERTY            0x2060
-//#define CTX_EMPTY_RECORD			    0x3000
+#define CTX_NOEXST_RECORD			    0x3000
 #define CTX_INVALID_COMPARATOR          0x4000
 #define CTX_INVALID_PROPTYPE_INDEX      0x6000
 #define CTX_NOEXST_INDEX                0x6010
@@ -82,6 +82,7 @@
 #define SQL_INVALID_TRAVERSE_MIN_DEPTH  0xa00b
 #define SQL_INVALID_TRAVERSE_MAX_DEPTH  0xa00c
 #define SQL_INVALID_TRAVERSE_STRATEGY   0xa00d
+#define SQL_INVALID_PROJECTION_METHOD   0xa00e
 #define SQL_NOT_IMPLEMENTED             0xaf01
 #define SQL_UNKNOWN_ERR                 0xafff
 
@@ -154,8 +155,8 @@ namespace nogdb {
                             return "CTX_IN_USED_PROPERTY: A property is used by one or more database indexes";
                         case CTX_MISMATCH_CLASSTYPE:
                             return "CTX_MISMATCH_CLASSTYPE: A type of a class does not match as expected";
-//            case CTX_EMPTY_RECORD:
-//                return "CTX_EMPTY_RECORD: A record has no properties (required at least one)";
+                        case CTX_NOEXST_RECORD:
+                            return "CTX_NOEXST_RECORD: A record with the given descriptor doesn't exist";
                         case CTX_INTERNAL_ERR:
                             return "CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
                         case CTX_INVALID_COMPARATOR:
@@ -224,6 +225,8 @@ namespace nogdb {
                             return "SQL_INVALID_TRAVERSE_MAX_DEPTH: Traverse maximum depth must be unsigned integer.";
                         case SQL_INVALID_TRAVERSE_STRATEGY:
                             return "SQL_INVALID_TRAVERSE_STRATEGY: Traverse strategy must be DEPTH_FIRST or BREADTH_FIRST.";
+                        case SQL_INVALID_PROJECTION_METHOD:
+                            return "SQL_INVALID_PROJECTION_METHOD: Projection method has some problem (invalid results).";
                         case SQL_NOT_IMPLEMENTED:
                             return "SQL_NOT_IMPLEMENTED: A function has not been implemented yet.";
                         case SQL_UNKNOWN_ERR:

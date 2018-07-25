@@ -30,7 +30,7 @@
 #include <vector>
 #include <algorithm>
 #include <set>
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 #include "runtest_config.h"
 #include "runtest_utils.h"
 
@@ -412,7 +412,7 @@ extern void test_sql_select_walk();
 extern void test_sql_select_method_property();
 extern void test_sql_select_alias_property();
 extern void test_sql_select_vertex_condition();
-extern void test_sql_select_vertex_with_expression();
+extern void test_sql_select_vertex_with_multi_condition();
 extern void test_sql_select_nested_condition();
 extern void test_sql_select_skip_limit();
 extern void test_sql_select_group_by();

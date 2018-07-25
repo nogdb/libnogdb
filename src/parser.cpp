@@ -126,7 +126,7 @@ namespace nogdb {
         }
         auto rawData = Datastore::getValueAsBlob(keyValue);
         auto offset = size_t{0};
-        Record::RecordPropertyType properties;
+        Record::PropertyToBytesMap properties;
         if (rawData.capacity() == 0) {
             throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
         } else if (rawData.capacity() >= 2 * sizeof(uint16_t)) {
