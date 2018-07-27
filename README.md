@@ -28,20 +28,11 @@
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
-### With CMake (recommended)
 ```
 $ cmake .
 $ cmake --build .
 $ ctest --verbose
 $ sudo make install
-```
-
-### With Makefile (debug mode by default)
-```
-$ sh install_make.sh
-$ make && make test
-$ sudo make install
-$ make clean
 ```
 
 ## Usage

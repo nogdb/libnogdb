@@ -650,35 +650,35 @@ namespace nogdb {
                     return mdb_cursor_dbi(_handle);
                 }
 
-                void del(bool duplicate = false) {
+                void del(bool duplicate = false) const {
                     if (auto error = mdb_cursor_del(_handle, duplicate)) {
                         throw NOGDB_STORAGE_ERROR(error);
                     }
                 }
 
-                CursorResult getNext() {
+                CursorResult getNext() const {
                     return get(MDB_NEXT);
                 }
 
-                CursorResult getNextDup() {
+                CursorResult getNextDup() const {
                     return get(MDB_NEXT_DUP);
                 }
 
-                CursorResult getPrev() {
+                CursorResult getPrev() const {
                     return get(MDB_PREV);
                 }
 
-                CursorResult getPrevDup() {
+                CursorResult getPrevDup() const {
                     return get(MDB_PREV_DUP);
                 }
 
                 template<typename K>
-                CursorResult find(const K &key) {
+                CursorResult find(const K &key) const {
                     return dbFind(key, MDB_SET_KEY);
                 }
 
                 template<typename K>
-                CursorResult findRange(const K &key) {
+                CursorResult findRange(const K &key) const {
                     return dbFind(key, MDB_SET_RANGE);
                 }
 
@@ -688,7 +688,7 @@ namespace nogdb {
 
             private:
 
-                CursorResult get(const MDB_cursor_op op) {
+                CursorResult get(const MDB_cursor_op op) const {
                     CursorResult result{};
                     if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {
                         if (error != MDB_NOTFOUND) {
@@ -701,7 +701,7 @@ namespace nogdb {
                 }
 
                 template<typename K>
-                CursorResult dbFind(const K &key, const MDB_cursor_op op) {
+                CursorResult dbFind(const K &key, const MDB_cursor_op op) const {
                     CursorResult result{};
                     result.key.data = Key{&key, sizeof(K)};
                     if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {
@@ -714,7 +714,7 @@ namespace nogdb {
                     return result;
                 }
 
-                CursorResult dbFind(const std::string &key, const MDB_cursor_op op) {
+                CursorResult dbFind(const std::string &key, const MDB_cursor_op op) const {
                     CursorResult result{};
                     result.key.data = Key{key};
                     if (auto error = mdb_cursor_get(_handle, result.key.data, result.val.data, op)) {

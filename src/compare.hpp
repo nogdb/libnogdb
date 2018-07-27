@@ -35,11 +35,24 @@ namespace nogdb {
 
         ~Compare() noexcept = delete;
 
+        inline static std::string toLower(const std::string &text) {
+            auto tmp = std::string{};
+            std::transform(text.cbegin(), text.cend(), std::back_inserter(tmp), ::tolower);
+            return tmp;
+        };
+
+        static bool genericCompareFunc(const Bytes &value,
+                                       PropertyType type,
+                                       const Bytes &cmpValue1,
+                                       const Bytes &cmpValue2,
+                                       Condition::Comparator cmp,
+                                       bool isIgnoreCase);
+
+        static bool compareBytesValue(const Bytes &value, PropertyType type, const Condition &condition);
+
         //*****************************************************************
         //*  result set supported functions                               *
         //*****************************************************************
-
-        static bool compareBytesValue(const Bytes &value, PropertyType type, const Condition &condition);
 
         static ResultSet getRecordCondition(const Txn &txn,
                                             const std::vector<ClassInfo> &classInfos,
