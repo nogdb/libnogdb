@@ -272,6 +272,7 @@ void Context::select(const SelectArgs &args) {
 
 void Context::update(const UpdateArgs &args) {
     try {
+        vector<nogdb::RecordDescriptor> result{};
         ResultSet targets = this->select(args.target, args.where);
         for (auto &target: targets) {
             nogdb::Record r = target.record.toBaseRecord();
@@ -289,9 +290,10 @@ void Context::update(const UpdateArgs &args) {
                 case ClassType::UNDEFINED:
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSTYPE);
             }
+            result.push_back(target.descriptor);
         }
         this->rc = SQL_OK;
-        this->result = SQL::Result();
+        this->result = SQL::Result(new vector<nogdb::RecordDescriptor>(move(result)));
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
         this->result = SQL::Result(new Error(e));
@@ -300,13 +302,14 @@ void Context::update(const UpdateArgs &args) {
 
 void Context::deleteVertex(const DeleteVertexArgs &args) {
     try {
+        vector<nogdb::RecordDescriptor> result{};
         ResultSet targets = select(args.target, args.where);
         for (const auto &target: targets) {
             Vertex::destroy(this->txn, target.descriptor);
+            result.push_back(target.descriptor);
         }
-
         this->rc = SQL_OK;
-        this->result = SQL::Result();
+        this->result = SQL::Result(new vector<nogdb::RecordDescriptor>(move(result)));
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
         this->result = SQL::Result(new Error(e));
@@ -398,7 +401,7 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
         }
 
         this->rc = SQL_OK;
-        this->result = SQL::Result();
+        this->result = SQL::Result(new vector<RecordDescriptor>(targets.begin(), targets.end()));
     } catch (const Error &e) {
         this->rc = SQL_ERROR;
         this->result = SQL::Result(new Error(e));

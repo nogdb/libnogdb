@@ -37,11 +37,11 @@
 #include "nogdb_context.h"
 #include "nogdb_txn.h"
 
-namespace nogdb {
-
 #define RECORD_NOT_EXIST                0
 #define RECORD_NOT_EXIST_IN_MEMORY      1
 #define RECORD_EXIST                    2
+
+namespace nogdb {
 
     struct Generic {
         Generic() = delete;
