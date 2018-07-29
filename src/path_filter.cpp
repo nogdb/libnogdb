@@ -23,10 +23,8 @@
 
 namespace nogdb {
 
-    PathFilter::PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record)) {
-        vertexFilter = vertexFunc;
-        edgeFilter = edgeFunc;
-    }
+    PathFilter::PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record)) :
+            vertexFilter(vertexFunc), edgeFilter(edgeFunc) {}
 
     PathFilter &PathFilter::setVertex(bool (*function)(const Record &record)) {
         vertexFilter = function;
@@ -39,7 +37,7 @@ namespace nogdb {
     }
 
     bool PathFilter::isEnable() const {
-        return vertexFilter != nullptr || edgeFilter != nullptr;
+        return isSetVertex() || isSetEdge();
     }
 
     bool PathFilter::isSetVertex() const {
