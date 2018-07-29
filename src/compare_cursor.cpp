@@ -23,7 +23,6 @@
 
 #include "shared_lock.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
 #include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"

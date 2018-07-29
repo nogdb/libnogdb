@@ -56,7 +56,7 @@ namespace nogdb {
                  keyValue = cursorHandler.getNext()) {
                 auto key = keyValue.key.data.numeric();
                 if (key == value) {
-                    auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
+                    auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
                     if (positionId == valueAsPositionId) {
                         cursorHandler.del();
                         break;
@@ -226,7 +226,7 @@ namespace nogdb {
                  keyValue = cursorHandler.getNext()) {
                 auto key = keyValue.key.data.numeric();
                 if (key == value) {
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 } else {
                     break;
@@ -277,8 +277,8 @@ namespace nogdb {
                 for (auto keyValue = cursorHandler.getPrev();
                      !keyValue.empty();
                      keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.numeric();
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto key = keyValue.key.data.template numeric<T>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
             } else {
@@ -286,11 +286,11 @@ namespace nogdb {
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
                     if (!isInclude) {
-                        auto key = keyValue.key.data.numeric();
+                        auto key = keyValue.key.data.template numeric<T>();
                         if (key == value) continue;
                         else isInclude = true;
                     }
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
             }
@@ -311,7 +311,7 @@ namespace nogdb {
                         if (key == value) continue;
                         else isInclude = true;
                     }
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
             } else {
@@ -323,7 +323,7 @@ namespace nogdb {
                 for (auto keyValue = cursorHandler.getPrev();
                      !keyValue.empty();
                      keyValue = cursorHandler.getPrev()) {
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
             }
@@ -360,10 +360,10 @@ namespace nogdb {
                 for (auto keyValue = cursorHandler.findRange(lower);
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
-                    auto key = keyValue.key.data.numeric();
+                    auto key = keyValue.key.data.template numeric<T>();
                     if (!isIncludeBound.first && key == lower) continue;
                     else if ((!isIncludeBound.second && key == upper) || key > upper) break;
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
+                    auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
             } else {
@@ -375,7 +375,7 @@ namespace nogdb {
                 for (auto keyValue = cursorHandler.getPrev();
                      !keyValue.empty();
                      keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.numeric();
+                    auto key = keyValue.key.data.numeric<T>();
                     if ((!isIncludeBound.second && key == upper) || key > upper) break;
                     auto positionId = keyValue.val.data.numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
