@@ -1298,7 +1298,7 @@ void test_get_invalid_edge() {
         try {
             auto res = nogdb::Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

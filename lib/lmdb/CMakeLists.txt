@@ -18,4 +18,3 @@ target_compile_options(lmdb
         -Wno-format-extra-args
         -pthread
 )
-

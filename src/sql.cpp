@@ -529,7 +529,7 @@ Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Proje
     if (args.size() == 0) {
         return Bytes(Edge::getSrcDst(txn, input.descriptor));
     } else {
-        throw Error(SQL_INVALID_FUNCTION_ARGS);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 }
 

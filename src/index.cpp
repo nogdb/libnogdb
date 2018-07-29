@@ -388,10 +388,10 @@ namespace nogdb {
             auto getResult = [&](const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
                                  bool isNegative) -> std::vector<RecordDescriptor> {
                 if (!exprNode->checkIfCondition()) {
-                    auto compositeNodePtr = (MultiCondition::CompositeNode *) exprNode;
+                    auto compositeNodePtr = (MultiCondition::CompositeNode *) exprNode.get();
                     return getRecordFromIndex(compositeNodePtr, isNegative);
                 } else {
-                    auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode;
+                    auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode.get();
                     auto &condition = conditionNodePtr->getCondition();
                     auto indexPropertyTypeMap = indexPropertyTypes.find(condition.propName);
                     require(indexPropertyTypeMap != indexPropertyTypes.cend());
@@ -419,7 +419,7 @@ namespace nogdb {
             }
             return result;
         };
-        getRecordFromIndex(conditions.root, false);
+        getRecordFromIndex(conditions.root.get(), false);
         return std::vector<RecordDescriptor>{};
     }
 

@@ -257,7 +257,7 @@ namespace nogdb {
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
                     auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
-                    dataIndexDBHandler.drop(true);
+                    dataIndexDBHandler.drop();
                     break;
                 }
                 case PropertyType::TINYINT:
@@ -267,13 +267,13 @@ namespace nogdb {
                 case PropertyType::REAL: {
                     auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
                     auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
-                    dataIndexDBHandlerPositive.drop(true);
-                    dataIndexDBHandlerNegative.drop(true);
+                    dataIndexDBHandlerPositive.drop();
+                    dataIndexDBHandlerNegative.drop();
                     break;
                 }
                 case PropertyType::TEXT: {
                     auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
-                    dataIndexDBHandler.drop(true);
+                    dataIndexDBHandler.drop();
                     break;
                 }
                 default:
@@ -310,7 +310,7 @@ namespace nogdb {
         }
 
         // empty a database
-        classDBHandler.drop(true);
+        classDBHandler.drop();
 
         // update in-memory relations
         for (const auto &recordId: recordIds) {

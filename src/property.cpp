@@ -24,7 +24,6 @@
 #include "shared_lock.hpp"
 #include "constant.hpp"
 #include "base_txn.hpp"
-#include "env_handler.hpp"
 #include "lmdb_engine.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
@@ -61,19 +60,19 @@ namespace nogdb {
         auto propertyDescriptor = Schema::PropertyDescriptor{dbInfo.maxPropertyId, type};
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto propDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_PROPERTIES, true);
+            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             auto totalLength = sizeof(type) + sizeof(ClassId) + propertyName.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(type));
             value.append(&foundClass->id, sizeof(ClassId));
             value.append(propertyName.c_str(), propertyName.length());
-            LMDBInterface::putRecord(dsTxnHandler, propDBHandler, dbInfo.maxPropertyId, value);
+            propDBHandler.put(dbInfo.maxPropertyId, value);
 
             // update in-memory schema and info
             txn.txnCtx.dbSchema->addProperty(*txn.txnBase, foundClass->id, propertyName, propertyDescriptor);
             ++dbInfo.numProperty;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -100,19 +99,19 @@ namespace nogdb {
 
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto propDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_PROPERTIES, true);
+            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             auto type = foundOldProperty.type;
             auto totalLength = sizeof(type) + sizeof(ClassId) + newPropertyName.length();
             auto value = Blob(totalLength);
             value.append(&type, sizeof(decltype(type)));
             value.append(&foundClass->id, sizeof(ClassId));
             value.append(newPropertyName.c_str(), newPropertyName.length());
-            LMDBInterface::putRecord(dsTxnHandler, propDBHandler, foundOldProperty.id, value);
+            propDBHandler.put(foundOldProperty.id, value);
 
             // update in-memory schema
             txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundClass->id, oldPropertyName, newPropertyName);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -135,15 +134,15 @@ namespace nogdb {
         auto &dbInfo = txn.txnBase->dbInfo;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto propDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_PROPERTIES, true);
-            LMDBInterface::deleteRecord(dsTxnHandler, propDBHandler, foundProperty.id);
+            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
+            propDBHandler.del(foundProperty.id);
 
             // update in-memory schema
             txn.txnCtx.dbSchema->deleteProperty(*txn.txnBase, foundClass->id, propertyName);
             // update in-memory database info
             --dbInfo.numProperty;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info
@@ -179,7 +178,7 @@ namespace nogdb {
 
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto indexDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_INDEXES, true, false);
+            auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
             auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
             auto isCompositeNumeric = uint8_t{0}; //TODO: change it when a composite index is available
             auto isUniqueNumeric = (isUnique) ? uint8_t{1} : uint8_t{0};
@@ -188,45 +187,37 @@ namespace nogdb {
             valueIndex.append(&isUniqueNumeric, sizeof(isUniqueNumeric));
             valueIndex.append(&dbInfo.maxIndexId, sizeof(IndexId));
             valueIndex.append(&foundClass->id, sizeof(ClassId));
-            LMDBInterface::putRecord(dsTxnHandler, indexDBHandler, foundProperty.id, valueIndex);
+            indexDBHandler.put(foundProperty.id, valueIndex);
             switch (foundProperty.type) {
                 case PropertyType::UNSIGNED_TINYINT:
                 case PropertyType::UNSIGNED_SMALLINT:
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId), true, isUnique);
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
-                    auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
-                    auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
+                    auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
-                        auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                        if (*key != EM_MAXRECNUM) {
-                            auto const positionId = *key;
-                            auto const record = Parser::parseRawData(keyValue, classPropertyInfo);
+                        auto key = keyValue.key.data.numeric<PositionId>();
+                        if (key != EM_MAXRECNUM) {
+                            auto const positionId = key;
+                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto bytesValue = record.get(propertyName);
                             if (!bytesValue.empty()) {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
                                 if (foundProperty.type == PropertyType::UNSIGNED_TINYINT) {
-                                    LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
-                                                         static_cast<uint64_t>(bytesValue.toTinyIntU()),
-                                                         indexRecord, false, !isUnique);
+                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::UNSIGNED_SMALLINT) {
-                                    LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
-                                                         static_cast<uint64_t>(bytesValue.toSmallIntU()),
-                                                         indexRecord, false, !isUnique);
+                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord, false, !isUnique);
                                 } else if (foundProperty.type == PropertyType::UNSIGNED_INTEGER) {
-                                    LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler,
-                                                         static_cast<uint64_t>(bytesValue.toIntU()),
-                                                         indexRecord, false, !isUnique);
+                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toIntU()), indexRecord, false, !isUnique);
                                 } else {
-                                    LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler, bytesValue.toBigIntU(),
-                                                         indexRecord, false, !isUnique);
+                                    dataIndexDBHandler.put(bytesValue.toBigIntU(), indexRecord, false, !isUnique);
                                 }
                             }
                         }
-                        keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                        keyValue = cursorHandler.getNext();
                     }
                     break;
                 }
@@ -235,72 +226,80 @@ namespace nogdb {
                 case PropertyType::INTEGER:
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId, false), true, isUnique);
+                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, false), true, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
-                    auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
-                    auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
+                    auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
-                        auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                        if (*key != EM_MAXRECNUM) {
-                            auto const positionId = *key;
-                            auto const record = Parser::parseRawData(keyValue, classPropertyInfo);
+                        auto key = keyValue.key.data.numeric<PositionId>();
+                        if (key != EM_MAXRECNUM) {
+                            auto const positionId = key;
+                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto bytesValue = record.get(propertyName);
                             if (!bytesValue.empty()) {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
                                 if (foundProperty.type == PropertyType::TINYINT) {
                                     auto value = static_cast<int64_t>(bytesValue.toTinyInt());
-                                    LMDBInterface::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
+                                    if (value >= 0) {
+                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
+                                    } else {
+                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
+                                    }
                                 } else if (foundProperty.type == PropertyType::SMALLINT) {
                                     auto value = static_cast<int64_t>(bytesValue.toSmallInt());
-                                    LMDBInterface::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
+                                    if (value >= 0) {
+                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
+                                    } else {
+                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
+                                    }
                                 } else if (foundProperty.type == PropertyType::INTEGER) {
                                     auto value = static_cast<int64_t>(bytesValue.toInt());
-                                    LMDBInterface::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
+                                    if (value >= 0) {
+                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
+                                    } else {
+                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
+                                    }
                                 } else if (foundProperty.type == PropertyType::REAL) {
                                     auto value = bytesValue.toReal();
-                                    LMDBInterface::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
+                                    if (value >= 0) {
+                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
+                                    } else {
+                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
+                                    }
                                 } else {
                                     auto value = bytesValue.toBigInt();
-                                    LMDBInterface::putRecord(dsTxnHandler, (value >= 0) ? dataIndexDBHandlerPositive
-                                                                                    : dataIndexDBHandlerNegative,
-                                                         value, indexRecord, false, !isUnique);
+                                    if (value >= 0) {
+                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
+                                    } else {
+                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
+                                    }
                                 }
                             }
                         }
-                        keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                        keyValue = cursorHandler.getNext();
                     }
                     break;
                 }
                 case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(dbInfo.maxIndexId), false, isUnique);
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), false, isUnique);
                     auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
-                    auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(foundClass->id), true);
-                    auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
-                    auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
+                    auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
-                        auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                        if (*key != EM_MAXRECNUM) {
-                            auto const positionId = *key;
-                            auto const record = Parser::parseRawData(keyValue, classPropertyInfo);
+                        auto key = keyValue.key.data.numeric<PositionId>();
+                        if (key != EM_MAXRECNUM) {
+                            auto const positionId = key;
+                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto value = record.get(propertyName).toText();
                             if (!value.empty()) {
                                 auto indexRecord = Blob(sizeof(PositionId));
                                 indexRecord.append(&positionId, sizeof(PositionId));
-                                LMDBInterface::putRecord(dsTxnHandler, dataIndexDBHandler, value, indexRecord, false, !isUnique);
+                                dataIndexDBHandler.put(value, indexRecord, false, !isUnique);
                             }
                         }
-                        keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+                        keyValue = cursorHandler.getNext();
                     }
                     break;
                 }
@@ -312,11 +311,11 @@ namespace nogdb {
             foundProperty.indexInfo.emplace(foundClass->id, std::make_pair(dbInfo.maxIndexId, isUnique));
             txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
             ++dbInfo.numIndex;
-        } catch (LMDBInterface::ErrorType &err) {
-            if (err == MDB_KEYEXIST) {
+        } catch (const Error &err) {
+            if (err.code() == MDB_KEYEXIST) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
             } else {
-                throw Error(err);
+                throw err;
             }
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
@@ -344,7 +343,7 @@ namespace nogdb {
         auto &dbInfo = txn.txnBase->dbInfo;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
-            auto indexDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_INDEXES, true, false);
+            auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
             auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
             auto isCompositeNumeric = uint8_t{0}; //TODO: change it when a composite index is available
             auto isUnique = indexInfo->second.second;
@@ -356,15 +355,15 @@ namespace nogdb {
             value.append(&indexId, sizeof(IndexId));
             value.append(&foundClass->id, sizeof(ClassId));
             // delete metadata from index mapping table
-            LMDBInterface::deleteRecord(dsTxnHandler, indexDBHandler, foundProperty.id, value);
+            indexDBHandler.del(foundProperty.id, value);
             // drop the actual index data table
             switch (foundProperty.type) {
                 case PropertyType::UNSIGNED_TINYINT:
                 case PropertyType::UNSIGNED_SMALLINT:
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
-                    LMDBInterface::dropDbi(dsTxnHandler, dataIndexDBHandler);
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
+                    dataIndexDBHandler.drop(true);
                     break;
                 }
                 case PropertyType::TINYINT:
@@ -372,15 +371,15 @@ namespace nogdb {
                 case PropertyType::INTEGER:
                 case PropertyType::BIGINT:
                 case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
-                    LMDBInterface::dropDbi(dsTxnHandler, dataIndexDBHandlerPositive);
-                    LMDBInterface::dropDbi(dsTxnHandler, dataIndexDBHandlerNegative);
+                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
+                    dataIndexDBHandlerPositive.drop(true);
+                    dataIndexDBHandlerNegative.drop(true);
                     break;
                 }
                 case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
-                    LMDBInterface::dropDbi(dsTxnHandler, dataIndexDBHandler);
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
+                    dataIndexDBHandler.drop(true);
                     break;
                 }
                 default:
@@ -392,8 +391,8 @@ namespace nogdb {
             txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
             // update in-memory database info
             --dbInfo.numIndex;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        } catch (const Error &err) {
+            throw err;
         } catch (...) {
             // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
             // other than errors from datastore due to failures in updating in-memory schema or database info

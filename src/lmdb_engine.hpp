@@ -108,7 +108,7 @@ namespace nogdb {
                     return std::string(static_cast<char *>(_val.mv_data), _val.mv_size);
                 }
 
-                Blob blob() noexcept {
+                Blob blob() const noexcept {
                     return Blob(static_cast<Blob::Byte *>(_val.mv_data), _val.mv_size);
                 }
 
@@ -527,12 +527,21 @@ namespace nogdb {
 
                 template<typename K, typename V>
                 void del(const K &key, const V &val) {
-                    dbDel(Key{key, strlen(key)}, Value{&val, sizeof(V)});
+                    dbDel(Key{&key, sizeof(key)}, Value{&val, sizeof(V)});
+                }
+
+                template<typename K>
+                void del(const K& key, const Blob& blob) {
+                    dbDel(Key{&key, sizeof(key)}, Value{blob.bytes(), blob.size()});
                 }
 
                 template<typename V>
                 void del(const Key &key, const V &val) {
                     dbDel(key, Value{&val, sizeof(V)});
+                }
+
+                void del(const Key &key, const Blob &blob) {
+                    dbDel(key, Value{blob.bytes(), blob.size()});
                 }
 
                 void del(const char *const key, const char *const val) {

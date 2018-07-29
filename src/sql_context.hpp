@@ -50,13 +50,13 @@ namespace nogdb {
             void syntax_error(int tokenType, Token &token) {
                 cerr << "nogdb::SQL::execute: syntax error near '" << string(token.z, token.n) << "'" << endl;
                 rc = SQL_ERROR;
-                result = SQL::Result(new Error(SQL_SYNTAX_ERROR, Error::Type::SQL));
+                result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
             }
 
             void parse_failure() {
                 cerr << "nogdb::SQL::execute: parse failure." << endl;
                 rc = SQL_ERROR;
-                result = SQL::Result(new Error(SQL_SYNTAX_ERROR, Error::Type::SQL));
+                result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
             }
 
 

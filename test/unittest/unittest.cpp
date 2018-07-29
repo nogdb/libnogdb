@@ -23,7 +23,7 @@
 #include <cassert>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "nogdb/nogdb.h"
+#include "../../include/nogdb/nogdb.h"
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);

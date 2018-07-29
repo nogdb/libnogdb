@@ -63,7 +63,7 @@ void test_get_invalid_record() {
         try {
             auto res = nogdb::Db::getRecord(txn, rdesc1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -196,7 +196,7 @@ void test_delete_vertex_with_edges() {
         try {
             auto record = nogdb::Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = nogdb::Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -205,12 +205,12 @@ void test_delete_vertex_with_edges() {
         try {
             auto record = nogdb::Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = nogdb::Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -255,7 +255,7 @@ void test_delete_all_vertices_with_edges() {
         try {
             auto record = nogdb::Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = nogdb::Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -264,12 +264,12 @@ void test_delete_all_vertices_with_edges() {
         try {
             auto record = nogdb::Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = nogdb::Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

@@ -1289,7 +1289,7 @@ void test_sql_delete_vertex_with_rid() {
         try {
             auto record = Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -1298,12 +1298,12 @@ void test_sql_delete_vertex_with_rid() {
         try {
             auto record = Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1343,7 +1343,7 @@ void test_sql_delete_vertex_with_condition() {
         try {
             auto record = Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -1352,12 +1352,12 @@ void test_sql_delete_vertex_with_condition() {
         try {
             auto record = Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

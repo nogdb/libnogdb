@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5.1)
 project(nogdb VERSION 0.12.0 LANGUAGES C CXX)
 
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-file(GLOB nogdb_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
+file(GLOB nogdb_SOURCE_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
 file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/*.h)
 file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.cpp)
 file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.h)
@@ -61,7 +61,7 @@ add_custom_command(
 ## TARGET nogdb
 add_library(nogdb
     ${nogdb_SOURCE}
-    ${nogdb_HEADER}
+    ${nogdb_SOURCE_HEADER}
     ${nogdb_PUBLIC}
     $<TARGET_OBJECTS:lmdb_OBJ>
     ${sql_parser_CPP}
@@ -89,42 +89,44 @@ if(MINGW)
 endif()
 
 ## TARGET unittest
-set(UNITTEST_COMPILE_OPTIONS
-    -std=c++11
-    -W
-    -Wall
-    -Wno-unused-parameter
-    -Wno-unused-variable
-    -Wno-unknown-pragmas
-    -Wno-format-extra-args
-    -fPIC
-    -march=native
-)
-
-set(UNITTEST_PATH "test/unittest/unittest.cpp")
-string(REPLACE ${UNITTEST_PATH} "" nogdb_UNIT_TEST "${nogdb_UNIT_TEST}")
-add_library(nogdb_unittest_object OBJECT EXCLUDE_FROM_ALL
-    ${nogdb_UNIT_TEST}
-    ${nogdb_UNIT_TEST_HEADER}
-    ${nogdb_UNIT_TEST_LMDB}
-    ${nogdb_UNIT_TEST_LMDB_HEADER}
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
-)
-target_include_directories(nogdb_unittest_object
-    PRIVATE
-        $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb
-    PUBLIC
-        /usr/local/include
-)
-add_executable(unittest_all EXCLUDE_FROM_ALL ${UNITTEST_PATH} $<TARGET_OBJECTS:nogdb_unittest_object>)
-find_library(lmdb_LIB lmdb)
-find_library(gtest_LIB gtest)
-find_library(gmock_LIB gmock)
-target_link_libraries(unittest_all ${gtest_LIB} ${gmock_LIB} ${lmdb_LIB})
-add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
-add_test(NAME unittest_all COMMAND unittest_all)
+#set(UNITTEST_COMPILE_OPTIONS
+#    -std=c++11
+#    -W
+#    -Wall
+#    -Wno-unused-parameter
+#    -Wno-unused-variable
+#    -Wno-unknown-pragmas
+#    -Wno-format-extra-args
+#    -fPIC
+#    -march=native
+#)
+#
+#set(UNITTEST_PATH "test/unittest/unittest.cpp")
+#string(REPLACE ${UNITTEST_PATH} "" nogdb_UNIT_TEST "${nogdb_UNIT_TEST}")
+#add_library(nogdb_unittest_object OBJECT EXCLUDE_FROM_ALL
+#    ${nogdb_UNIT_TEST}
+#    ${nogdb_UNIT_TEST_HEADER}
+#    ${nogdb_UNIT_TEST_LMDB}
+#    ${nogdb_UNIT_TEST_LMDB_HEADER}
+#    ${CMAKE_CURRENT_SOURCE_DIR}/include
+#    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
+#    ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
+#)
+#target_include_directories(nogdb_unittest_object
+#    PRIVATE
+#        $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+#        ${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb
+#        ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb
+#    PUBLIC
+#        /usr/local/include
+#)
+#add_executable(unittest_all EXCLUDE_FROM_ALL ${UNITTEST_PATH} $<TARGET_OBJECTS:nogdb_unittest_object>)
+#find_library(lmdb_LIB lmdb)
+#find_library(gtest_LIB gtest)
+#find_library(gmock_LIB gmock)
+#target_link_libraries(unittest_all ${gtest_LIB} ${gmock_LIB} ${lmdb_LIB})
+#add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
+#add_test(NAME unittest_all COMMAND unittest_all)
 
 ## TARGET apitest
 set(APITEST_COMPILE_OPTIONS
