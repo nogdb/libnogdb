@@ -28,9 +28,7 @@
 #include <queue>
 
 #include "datatype.hpp"
-#include "keyval.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
 #include "lmdb_engine.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
@@ -40,62 +38,46 @@
 #include "nogdb_errors.h"
 
 namespace nogdb {
-    Result Generic::getRecordResult(Txn &txn,
-                                    const ClassPropertyInfo &classPropertyInfo,
+    Result Generic::getRecordResult(Txn &txn, const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                     std::to_string(recordDescriptor.rid.first), true);
-            auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                 recordDescriptor.rid.second);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
-            return Result{recordDescriptor, record};
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
-        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+        return Result{recordDescriptor, record};
     }
 
-    ResultSet Generic::getRecordFromRdesc(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor) {
+    ResultSet Generic::getRecordFromRdesc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto result = ResultSet{};
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                     std::to_string(recordDescriptor.rid.first), true);
-            auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                 recordDescriptor.rid.second);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
-            result.emplace_back(Result{recordDescriptor, record});
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
-        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+        result.emplace_back(Result{recordDescriptor, record});
         return result;
     }
 
     ResultSet
     Generic::getMultipleRecordFromRdesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors) {
         auto result = ResultSet{};
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         if (!recordDescriptors.empty()) {
             auto classId = recordDescriptors.cbegin()->rid.first;
             auto classDescriptor = getClassDescriptor(txn, classId, ClassType::UNDEFINED);
             auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            try {
-                auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classId), true);
-                for (const auto &recordDescriptor: recordDescriptors) {
-                    auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                         recordDescriptor.rid.second);
-                    auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-                    result.emplace_back(Result{recordDescriptor, record});
-                }
-            } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err);
+            auto classDBHandler = dsTxnHandler->openDbi( std::to_string(classId), true);
+            for (const auto &recordDescriptor: recordDescriptors) {
+                auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+                auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+                result.emplace_back(Result{recordDescriptor, record});
             }
         }
         return result;
@@ -103,40 +85,32 @@ namespace nogdb {
 
     ResultSet Generic::getRecordFromClassInfo(const Txn &txn, const ClassInfo &classInfo) {
         auto result = ResultSet{};
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-            auto cursorHandler = LMDBInterface::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-            auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    auto rid = RecordId{classInfo.id, *key};
-                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
-                    result.push_back(Result{RecordDescriptor{rid}, record});
-                }
-                keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+        auto keyValue = cursorHandler.getNext();
+        while (!keyValue.empty()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                auto rid = RecordId{classInfo.id, key};
+                auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
+                result.push_back(Result{RecordDescriptor{rid}, record});
             }
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+            keyValue = cursorHandler.getNext();
         }
         return result;
     }
 
     std::vector<RecordDescriptor> Generic::getRdescFromClassInfo(Txn &txn, const ClassInfo &classInfo) {
         auto result = std::vector<RecordDescriptor>{};
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-            auto cursorHandler = LMDBInterface::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-            auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    result.emplace_back(RecordDescriptor{classInfo.id, *key});
-                }
-                keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+        auto keyValue = cursorHandler.getNext();
+        while (!keyValue.empty()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                result.emplace_back(RecordDescriptor{classInfo.id, key});
             }
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+            keyValue = cursorHandler.getNext();
         }
         return result;
     }
@@ -162,20 +136,21 @@ namespace nogdb {
                 return ResultSet{};
             default:
                 auto result = ResultSet{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
-                    auto classDBHandler = LMDBInterface::DBHandler{};
+                    auto classDBHandler = storage_engine::lmdb::Dbi{};
                     auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-                            classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            classDBHandler = dsTxnHandler->openDbi( std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
-                        auto keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        auto dsResult = classDBHandler.get(edge.second);
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, dsResult, classPropertyInfo);
                         result.push_back(Result{RecordDescriptor{edge}, record});
                     };
                     if (edgeClassIds.empty()) {
@@ -189,14 +164,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -227,14 +200,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err);
+                        throw err;
                     }
-                } catch (LMDBInterface::ErrorType &err) {
-                    throw Error(err);
                 }
                 return result;
         }
@@ -244,16 +215,10 @@ namespace nogdb {
         if (txn.txnCtx.dbRelation->lookupVertex(*(txn.txnBase), recordDescriptor.rid)) {
             return RECORD_EXIST;
         } else {
-            auto keyValue = KeyValue{};
-            try {
-                auto classDBHandler = LMDBInterface::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                         std::to_string(recordDescriptor.rid.first), true);
-                keyValue = LMDBInterface::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                recordDescriptor.rid.second);
-            } catch (LMDBInterface::ErrorType &err) {
-                throw Error(err);
-            }
-            return (keyValue.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
+            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+            auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+            return (dsResult.data.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
         }
     }
 

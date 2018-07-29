@@ -54,7 +54,7 @@ namespace nogdb {
             for (auto keyValue = cursorHandler.find(value);
                  !keyValue.empty();
                  keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.numeric();
+                auto key = keyValue.key.data.template numeric<T>();
                 if (key == value) {
                     auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
                     if (positionId == valueAsPositionId) {
@@ -137,14 +137,11 @@ namespace nogdb {
         getLess(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value, bool includeEqual = false) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
             } else {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
                 auto negativeResult = fullScanIndex(cursorHandlerNegative, classId);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
@@ -157,12 +154,10 @@ namespace nogdb {
         getEqual(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return exactMatchIndex(cursorHandlerNegative, classId, value);
             } else {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
                 return exactMatchIndex(cursorHandlerPositive, classId, value);
             }
         };
@@ -173,17 +168,14 @@ namespace nogdb {
                    bool includeEqual = false) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (value < 0) {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 auto positiveResult = fullScanIndex(cursorHandlerPositive, classId);
                 auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
                 return forwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
             }
         };
@@ -194,14 +186,11 @@ namespace nogdb {
                                                         const std::pair<bool, bool> &isIncludeBound) {
             auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             if (lowerBound < 0 && upperBound < 0) {
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);
             } else if (lowerBound < 0 && upperBound >= 0) {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(dataIndexDBHandlerNegative);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
+                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId,
                                                          static_cast<T>(0), upperBound,
                                                          true, {true, isIncludeBound.second});
@@ -211,8 +200,7 @@ namespace nogdb {
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(dataIndexDBHandlerPositive);
+                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
                 return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, true, isIncludeBound);
             }
         };
@@ -224,7 +212,7 @@ namespace nogdb {
             for (auto keyValue = cursorHandler.find(value);
                  !keyValue.empty();
                  keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.numeric();
+                auto key = keyValue.key.data.template numeric<T>();
                 if (key == value) {
                     auto positionId = keyValue.val.data.template numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
@@ -307,7 +295,7 @@ namespace nogdb {
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
                     if (!isInclude) {
-                        auto key = keyValue.key.data.numeric();
+                        auto key = keyValue.key.data.template numeric<T>();
                         if (key == value) continue;
                         else isInclude = true;
                     }

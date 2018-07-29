@@ -24,7 +24,6 @@
 #include "shared_lock.hpp"
 #include "schema.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
 #include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
@@ -51,70 +50,55 @@ namespace nogdb {
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(srcVertexRecordDescriptor.rid.first), true);
-            auto srcKeyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, srcVertexRecordDescriptor.rid.second);
-            if (srcKeyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-            }
-            auto dstDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(dstVertexRecordDescriptor.rid.first), true);
-            auto dstKeyValue = LMDBInterface::getRecord(dsTxnHandler, dstDBHandler, dstVertexRecordDescriptor.rid.second);
-            if (dstKeyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-            }
 
-            // update src and dst version
-            Vertex::update(txn, srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor.rid));
-            Vertex::update(txn, dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor.rid));
-
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err);
+        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(srcVertexRecordDescriptor.rid.first), true);
+        auto srcKeyValue = srcDBHandler.get(srcVertexRecordDescriptor.rid.second);
+        if (srcKeyValue.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
         }
+        auto dstDBHandler = dsTxnHandler->openDbi(std::to_string(dstVertexRecordDescriptor.rid.first), true);
+        auto dstKeyValue = dstDBHandler.get(dstVertexRecordDescriptor.rid.second);
+        if (dstKeyValue.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
+        }
+
+        // update src and dst version
+        Vertex::update(txn, srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor.rid));
+        Vertex::update(txn, dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor.rid));
 
         // set version
         record.setBasicInfo(TXN_VERSION, txn.getVersionId());
         record.setBasicInfo(VERSION_PROPERTY, 1ULL);
 
-        const PositionId *maxRecordNum = nullptr;
-        auto maxRecordNumValue = 0U;
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, EM_MAXRECNUM);
-            maxRecordNum = LMDBInterface::getValueAsNumeric<PositionId>(keyValue);
-            maxRecordNumValue = *maxRecordNum;
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, maxRecordNumValue, value, true);
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, EM_MAXRECNUM, PositionId{maxRecordNumValue + 1});
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(EM_MAXRECNUM);
+        auto maxRecordNum = dsResult.data.numeric<PositionId>();
+        classDBHandler.put(maxRecordNum, value, true);
+        classDBHandler.put(EM_MAXRECNUM, PositionId{maxRecordNum + 1});
 
-            // add index if applied
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::addIndex(*txn.txnBase, indexId, maxRecordNumValue, bytesValue, propertyType, isUnique);
-            }
-
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto edgeRecord = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-            edgeRecord.append(&srcVertexRecordDescriptor.rid.first, sizeof(ClassId));
-            edgeRecord.append(&srcVertexRecordDescriptor.rid.second, sizeof(PositionId));
-            edgeRecord.append(&dstVertexRecordDescriptor.rid.first, sizeof(ClassId));
-            edgeRecord.append(&dstVertexRecordDescriptor.rid.second, sizeof(PositionId));
-            auto key = RecordId{classDescriptor->id, maxRecordNumValue};
-            LMDBInterface::putRecord(dsTxnHandler, relationDBHandler, rid2str(key), edgeRecord);
-
-            // update in-memory relations
-            txn.txnCtx.dbRelation->createEdge(*txn.txnBase, key, srcVertexRecordDescriptor.rid,
-                                              dstVertexRecordDescriptor.rid);
-        } catch (const Error &err) {
-            throw err;
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
-        } catch (Graph::ErrorType &err) {
-            // should not get here
-            throw Error(err);
+        // add index if applied
+        for (const auto &indexInfo: indexInfos) {
+            auto bytesValue = record.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::addIndex(*txn.txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
         }
-        return RecordDescriptor{classDescriptor->id, maxRecordNumValue};
+
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        auto edgeRecord = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
+        edgeRecord.append(&srcVertexRecordDescriptor.rid.first, sizeof(ClassId));
+        edgeRecord.append(&srcVertexRecordDescriptor.rid.second, sizeof(PositionId));
+        edgeRecord.append(&dstVertexRecordDescriptor.rid.first, sizeof(ClassId));
+        edgeRecord.append(&dstVertexRecordDescriptor.rid.second, sizeof(PositionId));
+        auto key = RecordId{classDescriptor->id, maxRecordNum};
+        relationDBHandler.put(rid2str(key), edgeRecord);
+
+        // update in-memory relations
+        txn.txnCtx.dbRelation->createEdge(*txn.txnBase, key, srcVertexRecordDescriptor.rid,
+                                          dstVertexRecordDescriptor.rid);
+
+        return RecordDescriptor{classDescriptor->id, maxRecordNum};
     }
 
     void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
@@ -128,53 +112,50 @@ namespace nogdb {
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-            }
-            auto existingRecord = Parser::parseRawData(keyValue, classInfo);
-            auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-            for (const auto &property: existingRecord.getAll()) {
-                // check if having any index
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty != classInfo.nameToDesc.cend()) {
-                    for (const auto &indexIter: foundProperty->second.indexInfo) {
-                        if (indexIter.second.first == classDescriptor->id) {
-                            existingIndexInfos.emplace(
-                                    property.first,
-                                    std::make_tuple(
-                                            foundProperty->second.type,
-                                            indexIter.first,
-                                            indexIter.second.second
-                                    )
-                            );
-                            break;
-                        }
+
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto keyValue = classDBHandler.get(recordDescriptor.rid.second);
+        if (keyValue.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
+        }
+        auto existingRecord = Parser::parseRawData(keyValue, classInfo);
+        auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
+        for (const auto &property: existingRecord.getAll()) {
+            // check if having any index
+            auto foundProperty = classInfo.nameToDesc.find(property.first);
+            if (foundProperty != classInfo.nameToDesc.cend()) {
+                for (const auto &indexIter: foundProperty->second.indexInfo) {
+                    if (indexIter.second.first == classDescriptor->id) {
+                        existingIndexInfos.emplace(
+                                property.first,
+                                std::make_tuple(
+                                        foundProperty->second.type,
+                                        indexIter.first,
+                                        indexIter.second.second
+                                )
+                        );
+                        break;
                     }
                 }
             }
-            for (const auto &indexInfo: existingIndexInfos) {
-                auto bytesValue = existingRecord.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
-                                   isUnique);
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::addIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-            }
-
-            LMDBInterface::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
         }
+        for (const auto &indexInfo: existingIndexInfos) {
+            auto bytesValue = existingRecord.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
+                               isUnique);
+        }
+        for (const auto &indexInfo: indexInfos) {
+            auto bytesValue = record.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::addIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+        }
+
+        classDBHandler.put(recordDescriptor.rid.second, value);
     }
 
     void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -196,48 +177,46 @@ namespace nogdb {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordDescriptor.rid));
 
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            // delete index if existing
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (!keyValue.empty()) {
-                auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-                auto record = Parser::parseRawData(keyValue, classInfo);
-                for (const auto &property: record.getAll()) {
-                    // check if having any index
-                    auto foundProperty = classInfo.nameToDesc.find(property.first);
-                    if (foundProperty != classInfo.nameToDesc.cend()) {
-                        for (const auto &indexIter: foundProperty->second.indexInfo) {
-                            if (indexIter.second.first == classDescriptor->id) {
-                                indexInfos.emplace(
-                                        property.first,
-                                        std::make_tuple(
-                                                foundProperty->second.type,
-                                                indexIter.first,
-                                                indexIter.second.second
-                                        )
-                                );
-                                break;
-                            }
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        relationDBHandler.del(rid2str(recordDescriptor.rid));
+
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        // delete index if existing
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (!dsResult.data.empty()) {
+            auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
+            auto record = Parser::parseRawData(dsResult, classInfo);
+            for (const auto &property: record.getAll()) {
+                // check if having any index
+                auto foundProperty = classInfo.nameToDesc.find(property.first);
+                if (foundProperty != classInfo.nameToDesc.cend()) {
+                    for (const auto &indexIter: foundProperty->second.indexInfo) {
+                        if (indexIter.second.first == classDescriptor->id) {
+                            indexInfos.emplace(
+                                    property.first,
+                                    std::make_tuple(
+                                            foundProperty->second.type,
+                                            indexIter.first,
+                                            indexIter.second.second
+                                    )
+                            );
+                            break;
                         }
                     }
                 }
-                for (const auto &indexInfo: indexInfos) {
-                    auto bytesValue = record.get(indexInfo.first);
-                    auto const propertyType = std::get<0>(indexInfo.second);
-                    auto const indexId = std::get<1>(indexInfo.second);
-                    auto const isUnique = std::get<2>(indexInfo.second);
-                    Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-                }
             }
-            // delete actual record
-            LMDBInterface::deleteRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+            for (const auto &indexInfo: indexInfos) {
+                auto bytesValue = record.get(indexInfo.first);
+                auto const propertyType = std::get<0>(indexInfo.second);
+                auto const indexId = std::get<1>(indexInfo.second);
+                auto const isUnique = std::get<2>(indexInfo.second);
+                Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+            }
         }
+        // delete actual record
+        classDBHandler.del(recordDescriptor.rid.second);
+
         // update in-memory relations
         txn.txnCtx.dbRelation->deleteEdge(*txn.txnBase, recordDescriptor.rid);
     }
@@ -249,96 +228,90 @@ namespace nogdb {
         auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
         auto recordIds = std::vector<RecordId> {};
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+
         // remove all index records
-        try {
-            auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
-            for (const auto &property: classInfo.nameToDesc) {
-                auto &type = property.second.type;
-                auto &indexInfo = property.second.indexInfo;
-                for (const auto &indexIter: indexInfo) {
-                    if (indexIter.second.first == classDescriptor->id) {
-                        indexInfos.emplace_back(
-                                std::make_tuple(
-                                        type,
-                                        indexIter.first,
-                                        indexIter.second.second
-                                )
-                        );
-                    }
+        auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
+        for (const auto &property: classInfo.nameToDesc) {
+            auto &type = property.second.type;
+            auto &indexInfo = property.second.indexInfo;
+            for (const auto &indexIter: indexInfo) {
+                if (indexIter.second.first == classDescriptor->id) {
+                    indexInfos.emplace_back(
+                            std::make_tuple(
+                                    type,
+                                    indexIter.first,
+                                    indexIter.second.second
+                            )
+                    );
+                }
+                break;
+            }
+        }
+        for (const auto &indexInfo: indexInfos) {
+            auto const propertyType = std::get<0>(indexInfo);
+            auto const indexId = std::get<1>(indexInfo);
+            auto const isUnique = std::get<2>(indexInfo);
+            switch (propertyType) {
+                case PropertyType::UNSIGNED_TINYINT:
+                case PropertyType::UNSIGNED_SMALLINT:
+                case PropertyType::UNSIGNED_INTEGER:
+                case PropertyType::UNSIGNED_BIGINT: {
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
+                    dataIndexDBHandler.drop(true);
                     break;
                 }
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto const propertyType = std::get<0>(indexInfo);
-                auto const indexId = std::get<1>(indexInfo);
-                auto const isUnique = std::get<2>(indexInfo);
-                switch (propertyType) {
-                    case PropertyType::UNSIGNED_TINYINT:
-                    case PropertyType::UNSIGNED_SMALLINT:
-                    case PropertyType::UNSIGNED_INTEGER:
-                    case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
-                        LMDBInterface::emptyDbi(dsTxnHandler, dataIndexDBHandler);
-                        break;
-                    }
-                    case PropertyType::TINYINT:
-                    case PropertyType::SMALLINT:
-                    case PropertyType::INTEGER:
-                    case PropertyType::BIGINT:
-                    case PropertyType::REAL: {
-                        auto dataIndexDBHandlerPositive = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
-                        auto dataIndexDBHandlerNegative = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
-                        LMDBInterface::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
-                        LMDBInterface::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);
-                        break;
-                    }
-                    case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = LMDBInterface::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
-                        LMDBInterface::emptyDbi(dsTxnHandler, dataIndexDBHandler);
-                        break;
-                    }
-                    default:
-                        break;
+                case PropertyType::TINYINT:
+                case PropertyType::SMALLINT:
+                case PropertyType::INTEGER:
+                case PropertyType::BIGINT:
+                case PropertyType::REAL: {
+                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
+                    dataIndexDBHandlerPositive.drop(true);
+                    dataIndexDBHandlerNegative.drop(true);
+                    break;
                 }
+                case PropertyType::TEXT: {
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
+                    dataIndexDBHandler.drop(true);
+                    break;
+                }
+                default:
+                    break;
             }
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
         }
+
         // remove all records in database
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto cursorHandler = LMDBInterface::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = LMDBInterface::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    auto recordDescriptor = RecordDescriptor{classDescriptor->id, *key};
-                    recordIds.push_back(recordDescriptor.rid);
-                    // delete from relations
-                    LMDBInterface::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(recordDescriptor.rid));
-                    // delete a record in a datastore
-                    //Datastore::deleteCursor(cursorHandler);
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        auto keyValue = cursorHandler.getNext();
+        while (!keyValue.empty()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
+                recordIds.push_back(recordDescriptor.rid);
+                // delete from relations
+                relationDBHandler.del(rid2str(recordDescriptor.rid));
 
-                    // update src and dst version
-                    try {
-                        auto res = getSrcDst(txn, recordDescriptor);
-                        Result src = res[0], dst = res[1];
+                // update src and dst version
+                try {
+                    auto res = getSrcDst(txn, recordDescriptor);
+                    Result src = res[0], dst = res[1];
 
-                        Vertex::update(txn, src.descriptor, src.record);
-                        Vertex::update(txn, dst.descriptor, src.record);
-
-                    } catch (const Error& err) {
-                        // do nothing
-                    }
+                    Vertex::update(txn, src.descriptor, src.record);
+                    Vertex::update(txn, dst.descriptor, src.record);
+                } catch (const Error& err) {
+                    // do nothing
                 }
-                keyValue = LMDBInterface::getNextCursor(cursorHandler.get());
+
             }
-            // empty a database
-            LMDBInterface::emptyDbi(dsTxnHandler, classDBHandler);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+            keyValue = cursorHandler.getNext();
         }
+
+        // empty a database
+        classDBHandler.drop(true);
+
         // update in-memory relations
         for (const auto &recordId: recordIds) {
             txn.txnCtx.dbRelation->deleteEdge(*txn.txnBase, recordId);
@@ -371,39 +344,33 @@ namespace nogdb {
         auto vertexDescriptor = Generic::getClassDescriptor(txn, newSrcVertexRecordDescriptor.rid.first,
                                                             ClassType::VERTEX);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-            }
-            auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(newSrcVertexRecordDescriptor.rid.first), true);
-            keyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, newSrcVertexRecordDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-            }
-            auto key = rid2str(recordDescriptor.rid);
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            keyValue = LMDBInterface::getRecord(dsTxnHandler, relationDBHandler, key);
-            auto data = LMDBInterface::getValueAsBlob(keyValue);
-            auto dstClassId = ClassId{0};
-            auto dstPositionId = PositionId{0};
-            auto offset = data.retrieve(&dstClassId, sizeof(ClassId) + sizeof(PositionId), sizeof(ClassId));
-            data.retrieve(&dstPositionId, offset, sizeof(PositionId));
-            auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-            edge.append(&newSrcVertexRecordDescriptor.rid.first, sizeof(ClassId));
-            edge.append(&newSrcVertexRecordDescriptor.rid.second, sizeof(PositionId));
-            edge.append(&dstClassId, sizeof(ClassId));
-            edge.append(&dstPositionId, sizeof(PositionId));
-            LMDBInterface::putRecord(dsTxnHandler, relationDBHandler, key, edge);
-
-            // update in-memory relations
-            txn.txnCtx.dbRelation->alterVertexSrc(*txn.txnBase, recordDescriptor.rid, newSrcVertexRecordDescriptor.rid);
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
         }
+        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(newSrcVertexRecordDescriptor.rid.first), true);
+        dsResult = srcDBHandler.get(newSrcVertexRecordDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
+        }
+        auto key = rid2str(recordDescriptor.rid);
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        dsResult = relationDBHandler.get(key);
+        auto data = dsResult.data.blob();
+        auto dstClassId = ClassId{0};
+        auto dstPositionId = PositionId{0};
+        auto offset = data.retrieve(&dstClassId, sizeof(ClassId) + sizeof(PositionId), sizeof(ClassId));
+        data.retrieve(&dstPositionId, offset, sizeof(PositionId));
+        auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
+        edge.append(&newSrcVertexRecordDescriptor.rid.first, sizeof(ClassId));
+        edge.append(&newSrcVertexRecordDescriptor.rid.second, sizeof(PositionId));
+        edge.append(&dstClassId, sizeof(ClassId));
+        edge.append(&dstPositionId, sizeof(PositionId));
+        relationDBHandler.put(key, edge);
+
+        // update in-memory relations
+        txn.txnCtx.dbRelation->alterVertexSrc(*txn.txnBase, recordDescriptor.rid, newSrcVertexRecordDescriptor.rid);
     }
 
     void Edge::updateDst(Txn &txn,
@@ -414,39 +381,33 @@ namespace nogdb {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto vertexDescriptor = Generic::getClassDescriptor(txn, newDstVertexDescriptor.rid.first, ClassType::VERTEX);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto classDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = LMDBInterface::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-            }
-            auto srcDBHandler = LMDBInterface::openDbi(dsTxnHandler, std::to_string(newDstVertexDescriptor.rid.first), true);
-            keyValue = LMDBInterface::getRecord(dsTxnHandler, srcDBHandler, newDstVertexDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-            }
-            auto key = rid2str(recordDescriptor.rid);
-            auto relationDBHandler = LMDBInterface::openDbi(dsTxnHandler, TB_RELATIONS);
-            keyValue = LMDBInterface::getRecord(dsTxnHandler, relationDBHandler, key);
-            auto data = LMDBInterface::getValueAsBlob(keyValue);
-            auto srcClassId = 0U;
-            auto srcPositionId = 0U;
-            auto offset = data.retrieve(&srcClassId, 0, sizeof(ClassId));
-            data.retrieve(&srcPositionId, offset, sizeof(PositionId));
-            auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-            edge.append(&srcClassId, sizeof(ClassId));
-            edge.append(&srcPositionId, sizeof(PositionId));
-            edge.append(&newDstVertexDescriptor.rid.first, sizeof(ClassId));
-            edge.append(&newDstVertexDescriptor.rid.second, sizeof(PositionId));
-            LMDBInterface::putRecord(dsTxnHandler, relationDBHandler, key, edge);
-
-            // update in-memory relations
-            txn.txnCtx.dbRelation->alterVertexDst(*txn.txnBase, recordDescriptor.rid, newDstVertexDescriptor.rid);
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        } catch (LMDBInterface::ErrorType &err) {
-            throw Error(err);
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
         }
+        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(newDstVertexDescriptor.rid.first), true);
+        dsResult = srcDBHandler.get(newDstVertexDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
+        }
+        auto key = rid2str(recordDescriptor.rid);
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        dsResult = relationDBHandler.get(key);
+        auto data = dsResult.data.blob();
+        auto srcClassId = 0U;
+        auto srcPositionId = 0U;
+        auto offset = data.retrieve(&srcClassId, 0, sizeof(ClassId));
+        data.retrieve(&srcPositionId, offset, sizeof(PositionId));
+        auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
+        edge.append(&srcClassId, sizeof(ClassId));
+        edge.append(&srcPositionId, sizeof(PositionId));
+        edge.append(&newDstVertexDescriptor.rid.first, sizeof(ClassId));
+        edge.append(&newDstVertexDescriptor.rid.second, sizeof(PositionId));
+        relationDBHandler.put(key, edge);
+
+        // update in-memory relations
+        txn.txnCtx.dbRelation->alterVertexDst(*txn.txnBase, recordDescriptor.rid, newDstVertexDescriptor.rid);
     }
 
     ResultSet Edge::get(const Txn &txn, const std::string &className) {
@@ -477,39 +438,30 @@ namespace nogdb {
 
     Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        try {
-            auto vertex = txn.txnCtx.dbRelation->getVertexSrc(*txn.txnBase, recordDescriptor.rid);
-            auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
-            return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        }
+
+        auto vertex = txn.txnCtx.dbRelation->getVertexSrc(*txn.txnBase, recordDescriptor.rid);
+        auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
+        return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
     }
 
     Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        try {
-            auto vertex = txn.txnCtx.dbRelation->getVertexDst(*txn.txnBase, recordDescriptor.rid);
-            auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
-            return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        }
+
+        auto vertex = txn.txnCtx.dbRelation->getVertexDst(*txn.txnBase, recordDescriptor.rid);
+        auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
+        return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
     }
 
     ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        try {
-            auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*txn.txnBase, recordDescriptor.rid);
-            auto srcVertexRecordDescriptor = RecordDescriptor{vertices.first.first, vertices.first.second};
-            auto dstVertexRecordDescriptor = RecordDescriptor{vertices.second.first, vertices.second.second};
-            return ResultSet{
-                    Result{srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor)},
-                    Result{dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor)}
-            };
-        } catch (Graph::ErrorType &err) {
-            throw Error(err);
-        }
+
+        auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*txn.txnBase, recordDescriptor.rid);
+        auto srcVertexRecordDescriptor = RecordDescriptor{vertices.first.first, vertices.first.second};
+        auto dstVertexRecordDescriptor = RecordDescriptor{vertices.second.first, vertices.second.second};
+        return ResultSet{
+                Result{srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor)},
+                Result{dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor)}
+        };
     }
 
     ResultSet Edge::get(const Txn &txn, const std::string &className, const Condition &condition) {

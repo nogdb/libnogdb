@@ -359,8 +359,7 @@ namespace nogdb {
         auto result = ResultSet{};
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         for (const auto &classInfo: classInfos) {
-            auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classInfo.id), true);
-            auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
+            auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
             auto keyValue = cursorHandler.getNext();
             while (!keyValue.empty()) {
                 auto key = keyValue.key.data.numeric<PositionId>();
@@ -406,8 +405,7 @@ namespace nogdb {
         auto result = ResultSet{};
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         for (const auto &classInfo: classInfos) {
-            auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classInfo.id), true);
-            auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
+            auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
             auto keyValue = cursorHandler.getNext();
             while (!keyValue.empty()) {
                 auto key = keyValue.key.data.numeric<PositionId>();
@@ -775,8 +773,7 @@ namespace nogdb {
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         try {
             for (const auto &classInfo: classInfos) {
-                auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classInfo.id), true);
-                auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
+                auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
                 auto keyValue = cursorHandler.getNext();
                 while (!keyValue.empty()) {
                     auto key = keyValue.key.data.numeric<PositionId>();
