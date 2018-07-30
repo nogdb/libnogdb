@@ -132,6 +132,7 @@ uninstall:
 clean:
 	@printf "Cleaning all executable objects and libs..."
 	@rm -f $(TESTPREFIX) $(TESTPREFIX)_debug_address
+	@rm -f unittest
 	@find * -name "*.o" -type f -exec rm -f {} \;
 	@find * -name "*.a" -type f -exec rm -f {} \;
 	@find * -name "*.so" -type f -exec rm -f {} \;
