@@ -47,10 +47,11 @@ before_script:
   - ${CXX} --version
   - export TESTPREFIX="apitest"
   - cmake . && cmake --build .
-  - sh install_make.sh
+  - sh install_ci_make.sh
 
 script:
   - make CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS=""
+  - make test_unit CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS=""
   - make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="" OPTFLAGS=""
   - if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
       make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} ;

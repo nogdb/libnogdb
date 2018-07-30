@@ -10,12 +10,15 @@ SRCDIR		= src
 BUILDDIR	= build
 TARGETDIR	= bin
 TESTDIR	    = test/apitest
+TESTUNITDIR = test/unittest
 LIBPATH		= lib
 SRCEXT		= cpp
 SOURCES		= $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 TESTSRCS	= $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
+TESTUNITSRCS    = $(shell find $(TESTUNITDIR) -type f -name *.$(SRCEXT))
 OBJECTS		= $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 TESTOBJS	= $(patsubst $(TESTDIR)/%,$(TESTDIR)/%,$(TESTSRCS:.$(SRCEXT)=.o))
+TESTUNITOBJS    = $(patsubst $(TESTUNITDIR)/%,$(TESTUNITDIR)/%,$(TESTUNITSRCS:.$(SRCEXT)=.o))
 HEADERS		= -Iinclude -Iinclude/nogdb -I$(LIBPATH) -I.
 ANAME		= $(TARGETDIR)/libnogdb.a
 SONAME		= $(TARGETDIR)/libnogdb.so
@@ -88,13 +91,17 @@ $(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
 $(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
 	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
 
-#test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+#test: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 test: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
-#test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test_unit: verbose lmdb $(ANAME) $(TESTUNITOBJS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTUNITOBJS) $(ANAME) -o unittest $(LDFLAGS) -lgmock -lgtest
+	@./unittest; rm -rf test_*.db
+
+#test_address: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 test_address: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
@@ -102,6 +109,9 @@ test_address: verbose lmdb $(ANAME) $(TESTOBJS)
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
+
+$(TESTUNITDIR)/%.o: $(TESTUNITDIR)/%.$(SRCEXT)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
 install:
 	@printf "Installing libnogdb..."
