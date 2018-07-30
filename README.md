@@ -68,8 +68,6 @@ See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/develop/CO
 ## License & copyright
 Copyright (c) 2018 NogDB contributors.
 
-<img src="https://nogdb.org/content/images/2018/06/NogDB-logo-05-05.png" width="280">
-
 ![](https://www.gnu.org/graphics/agplv3-155x51.png)
 ![](https://www.openldap.org/images/headers/LDAPlogo.gif)
 
