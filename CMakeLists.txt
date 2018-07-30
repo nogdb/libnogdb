@@ -3,10 +3,14 @@ cmake_minimum_required(VERSION 3.5.1)
 project(nogdb VERSION 0.12.0 LANGUAGES C CXX)
 
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-file(GLOB nogdb_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
+file(GLOB nogdb_SOURCE_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
 file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/*.h)
-file(GLOB nogdb_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp)
-file(GLOB nogdb_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/*.h)
+file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.cpp)
+file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.h)
+file(GLOB nogdb_UNIT_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.cpp)
+file(GLOB nogdb_UNIT_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.h)
+file(GLOB nogdb_UNIT_TEST_LMDB ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/lmdb_engine/*.cpp)
+file(GLOB nogdb_UNIT_TEST_LMDB_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/lmdb_engine/*.h)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED OFF)
@@ -18,8 +22,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(COMPILE_OPTIONS
     -std=c++11
-    -Os
-    -Ofast
     -W
     -Wall
     -Wno-unused-parameter
@@ -59,7 +61,7 @@ add_custom_command(
 ## TARGET nogdb
 add_library(nogdb
     ${nogdb_SOURCE}
-    ${nogdb_HEADER}
+    ${nogdb_SOURCE_HEADER}
     ${nogdb_PUBLIC}
     $<TARGET_OBJECTS:lmdb_OBJ>
     ${sql_parser_CPP}
@@ -86,8 +88,48 @@ if(MINGW)
     target_link_libraries(nogdb atomic)
 endif()
 
-## TARGET test
-set(TEST_COMPILE_OPTIONS
+## TARGET unittest
+#set(UNITTEST_COMPILE_OPTIONS
+#    -std=c++11
+#    -W
+#    -Wall
+#    -Wno-unused-parameter
+#    -Wno-unused-variable
+#    -Wno-unknown-pragmas
+#    -Wno-format-extra-args
+#    -fPIC
+#    -march=native
+#)
+#
+#set(UNITTEST_PATH "test/unittest/unittest.cpp")
+#string(REPLACE ${UNITTEST_PATH} "" nogdb_UNIT_TEST "${nogdb_UNIT_TEST}")
+#add_library(nogdb_unittest_object OBJECT EXCLUDE_FROM_ALL
+#    ${nogdb_UNIT_TEST}
+#    ${nogdb_UNIT_TEST_HEADER}
+#    ${nogdb_UNIT_TEST_LMDB}
+#    ${nogdb_UNIT_TEST_LMDB_HEADER}
+#    ${CMAKE_CURRENT_SOURCE_DIR}/include
+#    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
+#    ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
+#)
+#target_include_directories(nogdb_unittest_object
+#    PRIVATE
+#        $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+#        ${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb
+#        ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb
+#    PUBLIC
+#        /usr/local/include
+#)
+#add_executable(unittest_all EXCLUDE_FROM_ALL ${UNITTEST_PATH} $<TARGET_OBJECTS:nogdb_unittest_object>)
+#find_library(lmdb_LIB lmdb)
+#find_library(gtest_LIB gtest)
+#find_library(gmock_LIB gmock)
+#target_link_libraries(unittest_all ${gtest_LIB} ${gmock_LIB} ${lmdb_LIB})
+#add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
+#add_test(NAME unittest_all COMMAND unittest_all)
+
+## TARGET apitest
+set(APITEST_COMPILE_OPTIONS
     -std=c++11
     -W
     -Wall
@@ -95,47 +137,50 @@ set(TEST_COMPILE_OPTIONS
     -Wno-unused-variable
     -Wno-unused-but-set-variable
     -Wno-unknown-warning-option
+    -fPIC
 )
 
-set(RUNTEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/runtest.cpp")
-string(REPLACE ${RUNTEST_PATH} "" nogdb_TEST "${nogdb_TEST}")
-add_library(nogdb_test_object OBJECT EXCLUDE_FROM_ALL ${nogdb_TEST} ${nogdb_TEST_HEADER})
-target_include_directories(nogdb_test_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
+set(APITEST_PATH "test/apitest/apitest.cpp")
+string(REPLACE ${APITEST_PATH} "" nogdb_API_TEST "${nogdb_API_TEST}")
+add_library(nogdb_apitest_object OBJECT EXCLUDE_FROM_ALL
+    ${nogdb_API_TEST}
+    ${nogdb_API_TEST_HEADER}
+)
+target_include_directories(nogdb_apitest_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
 
-# runtest_executable(name)
-function(runtest_executable name)
+# apitest_executable(name)
+function(apitest_executable name)
     string(TOUPPER ${name} upper_name)
-    add_executable(runtest_${name} EXCLUDE_FROM_ALL ${RUNTEST_PATH} $<TARGET_OBJECTS:nogdb_test_object>)
-    target_link_libraries(runtest_${name} nogdb)
-    target_compile_options(runtest_${name}
+    add_executable(apitest_${name} EXCLUDE_FROM_ALL ${APITEST_PATH} $<TARGET_OBJECTS:nogdb_apitest_object>)
+    target_link_libraries(apitest_${name} nogdb)
+    target_compile_options(apitest_${name}
         PRIVATE
-            ${TEST_COMPILE_OPTIONS}
+            ${APITEST_COMPILE_OPTIONS}
             -DTEST_${upper_name}_OPERATIONS
     )
-    add_test(build_runtest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target runtest_${name})
-    add_test(NAME test_${name} COMMAND runtest_${name})
+    add_test(build_apitest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target apitest_${name})
+    add_test(NAME test_${name} COMMAND apitest_${name})
     set_tests_properties(test_${name} PROPERTIES DEPENDS ctest_build_test_${name})
 endfunction()
 
 if(nogdb_BuildTests)
     enable_testing()
-    runtest_executable(context)
-    runtest_executable(schema)
-    runtest_executable(record)
-    runtest_executable(misc)
-    runtest_executable(graph)
-    runtest_executable(find)
-    runtest_executable(inheritance)
-    runtest_executable(index)
-    runtest_executable(schema_txn)
-    runtest_executable(txn)
-    runtest_executable(sql)
+    apitest_executable(context)
+    apitest_executable(schema)
+    apitest_executable(record)
+    apitest_executable(misc)
+    apitest_executable(graph)
+    apitest_executable(find)
+    apitest_executable(inheritance)
+    apitest_executable(index)
+    apitest_executable(schema_txn)
+    apitest_executable(txn)
+    apitest_executable(sql)
 endif()
 
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include
-)
+install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY lib/lmdb/ DESTINATION include/nogdb/lmdb
     FILES_MATCHING PATTERN "lib/lmdb/*.h"
 )

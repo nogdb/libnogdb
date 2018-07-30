@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -127,7 +127,7 @@ namespace nogdb {
                 }
             }
         } else {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         }
     }
 
@@ -154,7 +154,7 @@ namespace nogdb {
         auto value = r.get(cond.propName);
         auto type = propType.find(cond.propName);
         if (type == propType.cend()) {
-            throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         }
         if (cond.comp != Condition::Comparator::IS_NULL && cond.comp != Condition::Comparator::NOT_NULL) {
             if (!value.empty()) {
@@ -168,7 +168,7 @@ namespace nogdb {
                 case Condition::Comparator::NOT_NULL:
                     return !value.empty() ^ cond.isNegative;
                 default:
-                    throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
             }
         }
     }

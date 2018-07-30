@@ -34,6 +34,13 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
         brew update;
     fi
+  - curl https://codeload.github.com/google/googletest/tar.gz/release-1.8.0 -o release-1.8.0.tar.gz
+  - tar xf release-1.8.0.tar.gz
+  - cd googletest-release-1.8.0
+  - cmake -DBUILD_SHARED_LIBS=ON .
+  - make
+  - sudo make install
+  - cd ..
 
 install:
   - eval "${MATRIX_EVAL}"
@@ -45,16 +52,17 @@ before_script:
   - echo ${CC}
   - echo ${CXX}
   - ${CXX} --version
-  - export TESTPREFIX="runtest"
+  - export TESTPREFIX="apitest"
   - cmake . && cmake --build .
-  - sh install_make.sh
+  - sh install_ci_make.sh
 
 script:
-  - make CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS=""
-  - make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="" OPTFLAGS=""
+  - make CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS=""
+  - make test_unit CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS=""
+  - make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="-ggdb" OPTFLAGS=""
   - if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
-      make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} ;
+      make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} ;
     else
-      make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="" OPTFLAGS="" TESTPREFIX=${TESTPREFIX} ;
+      make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" TESTPREFIX=${TESTPREFIX} ;
     fi
   - valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}

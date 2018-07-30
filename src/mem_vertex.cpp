@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -110,7 +110,7 @@ namespace nogdb {
     std::vector<RecordId> Graph::getEdgeIn(const BaseTxn &txn, const RecordId &rid, const ClassId &classId) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<RecordId> {};
         if (classId) {
@@ -144,7 +144,7 @@ namespace nogdb {
     std::vector<ClassId> Graph::getEdgeClassIn(const BaseTxn &txn, const RecordId &rid) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<ClassId> {};
         for (const auto &inEdgeRids: vertex->in.keys()) {
@@ -167,7 +167,7 @@ namespace nogdb {
     std::vector<RecordId> Graph::getEdgeOut(const BaseTxn &txn, const RecordId &rid, const ClassId &classId) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<RecordId> {};
         if (classId) {
@@ -202,7 +202,7 @@ namespace nogdb {
     std::vector<ClassId> Graph::getEdgeClassOut(const BaseTxn &txn, const RecordId &rid) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<ClassId> {};
         for (const auto &outEdgeRids: vertex->out.keys()) {
@@ -225,7 +225,7 @@ namespace nogdb {
     std::vector<RecordId> Graph::getEdgeInOut(const BaseTxn &txn, const RecordId &rid, const ClassId &classId) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<RecordId> {};
         if (classId) {
@@ -286,7 +286,7 @@ namespace nogdb {
     std::vector<ClassId> Graph::getEdgeClassInOut(const BaseTxn &txn, const RecordId &rid) {
         auto vertex = lookupVertex(txn, rid);
         if (vertex == nullptr) {
-            throw ErrorType{GRAPH_NOEXST_VERTEX};
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
         }
         auto result = std::vector<ClassId> {};
         for (const auto &inEdgeRids: vertex->in.keys()) {

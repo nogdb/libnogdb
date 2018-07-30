@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -24,7 +24,6 @@
 #include <tuple>
 
 #include "shared_lock.hpp"
-#include "env_handler.hpp"
 #include "base_txn.hpp"
 #include "utils.hpp" // for benchmarking
 
@@ -36,13 +35,10 @@ namespace nogdb {
             : dsTxnHandler{nullptr},
               txnType{(isReadWrite) ? TxnType::READ_WRITE : TxnType::READ_ONLY},
               isWithDataStore{!inMemory} {
+        auto envHandler = ctx.envHandler.get();
         if (!isReadWrite) {
             if (isWithDataStore) {
-                try {
-                    dsTxnHandler = Datastore::beginTxn(ctx.envHandler->get(), Datastore::TXN_RO);
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
-                }
+                dsTxnHandler = new storage_engine::LMDBTxn(envHandler, storage_engine::lmdb::TXN_RO);
             }
             txnId = ctx.dbTxnStat->fetchAddMaxTxnId();
             // get the recent version that was committed
@@ -50,11 +46,7 @@ namespace nogdb {
             ctx.dbTxnStat->addActiveTxnId(txnId, versionId);
         } else {
             if (isWithDataStore) {
-                try {
-                    dsTxnHandler = Datastore::beginTxn(ctx.envHandler->get(), Datastore::TXN_RW);
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
-                }
+                dsTxnHandler = new storage_engine::LMDBTxn(envHandler, storage_engine::lmdb::TXN_RW);
                 // check if the previous writer committed all stuff in memory
                 {
                     ReadLock<boost::shared_mutex> _(*(ctx.dbWriterMutex));
@@ -72,9 +64,9 @@ namespace nogdb {
             versionId = ctx.dbTxnStat->maxVersionId + 1;
             if (versionId == std::numeric_limits<TxnId>::max()) {
                 if (isWithDataStore) {
-                    Datastore::abortTxn(dsTxnHandler);
+                    dsTxnHandler->rollback();
                 }
-                throw Error(TXN_VERSION_MAXREACH, Error::Type::GRAPH);
+                throw NOGDB_TXN_ERROR(NOGDB_TXN_VERSION_MAXREACH);
             }
         }
     }
@@ -116,17 +108,13 @@ namespace nogdb {
                 // after datastore has committed
                 WriteLock<boost::shared_mutex> _(*(ctx.dbWriterMutex));
                 if (isWithDataStore) {
-                    try {
-                        Datastore::commitTxn(dsTxnHandler);
-                        isCommitDatastore = true;
-                    } catch (Datastore::ErrorType &err) {
-                        throw Error(err, Error::Type::DATASTORE);
-                    }
+                    dsTxnHandler->commit();
+                    isCommitDatastore = true;
                 }
                 auto oldestTxn = ctx.dbTxnStat->minActiveTxnId();
                 auto currentMinVersion = (oldestTxn.first != 0) ? oldestTxn.second : versionId - 1;
                 // commit changes in database schema
-                if (ucSchema.size() > 0) {
+                if (!ucSchema.empty()) {
                     DeleteQueue<ClassId> tmpDeletedClassId;
                     for (const auto &classDescriptor: ucSchema) {
                         if (auto classDescriptorPtr = classDescriptor.second) {
@@ -233,7 +221,7 @@ namespace nogdb {
                 }
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
                 if (isWithDataStore) {
-                    Datastore::abortTxn(dsTxnHandler);
+                    dsTxnHandler->rollback();
                 }
             }
             isCompleted = true;
@@ -315,7 +303,7 @@ namespace nogdb {
                 ctx.dbTxnStat->removeActiveTxnId(txnId);
             }
             if (isWithDataStore && !isCommitDatastore) {
-                Datastore::abortTxn(dsTxnHandler);
+                dsTxnHandler->rollback();
             }
             isCompleted = true;
             return true;

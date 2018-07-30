@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -24,8 +24,8 @@
 
 #include <map>
 
-#include "blob.hpp"
-#include "keyval.hpp"
+#include "datatype.hpp"
+#include "lmdb_engine.hpp"
 #include "schema.hpp"
 
 #include "nogdb_types.h"
@@ -49,11 +49,11 @@ namespace nogdb {
                                 ClassPropertyInfo& classInfo,
                                 std::map<std::string, std::tuple<PropertyType, IndexId, bool>>& indexInfos);
 
-        static Record parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo);
+        static Record parseRawData(const storage_engine::lmdb::Result &rawData, const ClassPropertyInfo &classPropertyInfo);
 
         static Record parseRawDataWithBasicInfo(const std::string &className,
                                                 const RecordId& rid,
-                                                const KeyValue &keyValue,
+                                                const storage_engine::lmdb::Result &rawData,
                                                 const ClassPropertyInfo &classPropertyInfo);
 
         inline static size_t getRawDataSize(size_t size) {

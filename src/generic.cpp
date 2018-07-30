@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -27,11 +27,9 @@
 #include <set>
 #include <queue>
 
-#include "blob.hpp"
-#include "keyval.hpp"
+#include "datatype.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
 #include "schema.hpp"
@@ -40,62 +38,46 @@
 #include "nogdb_errors.h"
 
 namespace nogdb {
-    Result Generic::getRecordResult(Txn &txn,
-                                    const ClassPropertyInfo &classPropertyInfo,
+    Result Generic::getRecordResult(Txn &txn, const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                     std::to_string(recordDescriptor.rid.first), true);
-            auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                 recordDescriptor.rid.second);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
-            return Result{recordDescriptor, record};
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
-        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+        return Result{recordDescriptor, record};
     }
 
-    ResultSet Generic::getRecordFromRdesc(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor) {
+    ResultSet Generic::getRecordFromRdesc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto result = ResultSet{};
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-        try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                     std::to_string(recordDescriptor.rid.first), true);
-            auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                 recordDescriptor.rid.second);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-            record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
-            result.emplace_back(Result{recordDescriptor, record});
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
-        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
+        result.emplace_back(Result{recordDescriptor, record});
         return result;
     }
 
     ResultSet
     Generic::getMultipleRecordFromRdesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors) {
         auto result = ResultSet{};
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         if (!recordDescriptors.empty()) {
             auto classId = recordDescriptors.cbegin()->rid.first;
             auto classDescriptor = getClassDescriptor(txn, classId, ClassType::UNDEFINED);
             auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            try {
-                auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classId), true);
-                for (const auto &recordDescriptor: recordDescriptors) {
-                    auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                         recordDescriptor.rid.second);
-                    auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
-                    result.emplace_back(Result{recordDescriptor, record});
-                }
-            } catch (Datastore::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
+            auto classDBHandler = dsTxnHandler->openDbi( std::to_string(classId), true);
+            for (const auto &recordDescriptor: recordDescriptors) {
+                auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+                auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+                result.emplace_back(Result{recordDescriptor, record});
             }
         }
         return result;
@@ -103,40 +85,32 @@ namespace nogdb {
 
     ResultSet Generic::getRecordFromClassInfo(const Txn &txn, const ClassInfo &classInfo) {
         auto result = ResultSet{};
-        try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-            auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    auto rid = RecordId{classInfo.id, *key};
-                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
-                    result.push_back(Result{RecordDescriptor{rid}, record});
-                }
-                keyValue = Datastore::getNextCursor(cursorHandler.get());
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+        auto keyValue = cursorHandler.getNext();
+        while (!keyValue.empty()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                auto rid = RecordId{classInfo.id, key};
+                auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
+                result.push_back(Result{RecordDescriptor{rid}, record});
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            keyValue = cursorHandler.getNext();
         }
         return result;
     }
 
     std::vector<RecordDescriptor> Generic::getRdescFromClassInfo(Txn &txn, const ClassInfo &classInfo) {
         auto result = std::vector<RecordDescriptor>{};
-        try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-            auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    result.emplace_back(RecordDescriptor{classInfo.id, *key});
-                }
-                keyValue = Datastore::getNextCursor(cursorHandler.get());
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+        auto keyValue = cursorHandler.getNext();
+        while (!keyValue.empty()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                result.emplace_back(RecordDescriptor{classInfo.id, key});
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            keyValue = cursorHandler.getNext();
         }
         return result;
     }
@@ -157,25 +131,26 @@ namespace nogdb {
                                         (Graph::*func)(const BaseTxn &baseTxn, const RecordId &rid, const ClassId &classId)) {
         switch (checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ResultSet{};
             default:
                 auto result = ResultSet{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
-                    auto classDBHandler = Datastore::DBHandler{};
+                    auto classDBHandler = storage_engine::lmdb::Dbi{};
                     auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-                            classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            classDBHandler = dsTxnHandler->openDbi( std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
-                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
+                        auto dsResult = classDBHandler.get(edge.second);
+                        auto record = Parser::parseRawDataWithBasicInfo(className, edge, dsResult, classPropertyInfo);
                         result.push_back(Result{RecordDescriptor{edge}, record});
                     };
                     if (edgeClassIds.empty()) {
@@ -189,14 +164,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -210,7 +183,7 @@ namespace nogdb {
                                    (Graph::*func)(const BaseTxn &baseTxn, const RecordId &rid, const ClassId &classId)) {
         switch (checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
@@ -227,14 +200,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -244,16 +215,10 @@ namespace nogdb {
         if (txn.txnCtx.dbRelation->lookupVertex(*(txn.txnBase), recordDescriptor.rid)) {
             return RECORD_EXIST;
         } else {
-            auto keyValue = KeyValue{};
-            try {
-                auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                         std::to_string(recordDescriptor.rid.first), true);
-                keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler,
-                                                recordDescriptor.rid.second);
-            } catch (Datastore::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
-            }
-            return (keyValue.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
+            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
+            auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+            return (dsResult.data.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
         }
     }
 

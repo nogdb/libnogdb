@@ -5,16 +5,16 @@
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
  *  libnogdb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU Affero General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -24,13 +24,13 @@
 
 #include <atomic>
 
-#include "datastore.hpp"
+#include "storage_engine.hpp"
+#include "lmdb_engine.hpp"
 #include "txn_object.hpp"
 #include "graph.hpp"
 #include "schema.hpp"
 #include "spinlock.hpp"
 #include "version_control.hpp"
-#include "env_handler.hpp"
 
 #include "nogdb_types.h"
 #include "nogdb_context.h"
@@ -49,7 +49,11 @@ namespace nogdb {
 
         ~BaseTxn() noexcept {
             if (isWithDataStore && !isCompleted) {
-                Datastore::abortTxn(dsTxnHandler);
+                dsTxnHandler->rollback();
+            }
+            if (dsTxnHandler) {
+                delete dsTxnHandler;
+                dsTxnHandler = nullptr;
             }
         }
 
@@ -57,7 +61,7 @@ namespace nogdb {
 
         BaseTxn &operator=(const BaseTxn &txn) = delete;
 
-        Datastore::TxnHandler *getDsTxnHandler() const { return dsTxnHandler; }
+        storage_engine::LMDBTxn *getDsTxnHandler() const { return dsTxnHandler; }
 
         const TxnId &getVersionId() const { return versionId; }
 
@@ -115,7 +119,7 @@ namespace nogdb {
         DBInfo dbInfo{};
 
     private:
-        Datastore::TxnHandler *dsTxnHandler;
+        storage_engine::LMDBTxn *dsTxnHandler{nullptr};
         TxnId txnId;
         TxnId versionId;
         TxnType txnType;
