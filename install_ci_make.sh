@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cp Makefile.bak Makefile
-cp lib/lmdb/Makefile.bak lib/lmdb/Makefile
+cp ci/Makefile.ci Makefile
+cp ci/lmdb/Makefile.ci lib/lmdb/Makefile
 
-echo "installing Makefile... [Done]"
+echo "installing Makefile for CI... [Done]"

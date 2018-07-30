@@ -18,7 +18,7 @@
 * Basic database indexing support based on B+Tree
 * Multiple platforms support, e.g. Unix, Linux, BSD and Mac OS X (macOS)
 
-## Dependency
+## Dependencies
 * GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
 * On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above)
 * [Google Test](https://github.com/google/googletest)
@@ -30,6 +30,8 @@
 
 ## Build and Installation
 ```
+$ git clone https://github.com/nogdb/nogdb
+$ cd nogdb
 $ cmake .
 $ cmake --build .
 $ ctest --verbose
@@ -66,6 +68,9 @@ See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/develop/CO
 ## License & copyright
 Copyright (c) 2018 NogDB contributors.
 
-NogDB is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html). See the included LICENSE file for more details.
+![](https://www.gnu.org/graphics/agplv3-155x51.png)
+![](https://www.openldap.org/images/headers/LDAPlogo.gif)
+
+NogDB is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). See the included LICENSE file for more details.
 
 NogDB library build and distribution include LMDB, which is licensed under [The OpenLDAP Public License](http://www.openldap.org/software/release/license.html).

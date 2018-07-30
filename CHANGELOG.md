@@ -1,9 +1,20 @@
 # Change Log
 ## v0.12.0-beta [2018-??-??]
 * General changes:
-  * `nogdb::Db::getRecord(...)` now throws an exception `CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
+  * Adding a prefix `NOGDB_` for all NogDB exception code.
+  * `nogdb::Db::getRecord(...)` now throws an exception `NOGDB_CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
+* New features:
+  * Implementing a feature request [#37](https://github.com/nogdb/nogdb/issues/37). Collections such as `std::pair`, `std::array`, `std::vector`, `std::map`, `std::set` can now be parsed to `nogdb::Bytes`, which allows users to store them in record, through static API function `nogdb::Bytes nogdb::Bytes::toBytes<T>(const T&)`.
+* Implemented enhancements:
+  * `nogdb::Error` is now an interface class for all NogDB error implementations such as `nogdb::ContextError`, `nogdb::StorageError`, `nogdb::GraphError`, `nogdb::TxnError`, and `nogdb::SQLError`.
+  * The underlying storage engine (LMDB) interface and implementation have been improved a lot in term of extendability, readability, and performance. No more environment handlers required for NogDB context.
 * Fixed bugs:
   * Fixing the algorithm for graph traversal with empty edges. Previously, it was working incorrectly by considering empty edges as invalid objects which could not be used to traverse to adjacent vertices.
+  * Fixing issue [#26](https://github.com/nogdb/nogdb/issues/26). A SQL with `SELECT @version` causes segmentation fault.
+  * Fixing issue [#27](https://github.com/nogdb/nogdb/issues/27). A SQL with `SELECT count()` may cause heap buffer overflow.
+  * Fixing issue [#28](https://github.com/nogdb/nogdb/issues/28). A SQL with `SELECT walk[condition].property` may cause segmentation fault.
+  * Fixing issue [#29](https://github.com/nogdb/nogdb/issues/29). A SQL with `SELECR walk[condition].property as alias` may cause segmentation fault when getting the `alias` value.
+  * Temporarily fixing issue [#45](https://github.com/nogdb/nogdb/issues/45). Indexing attributes cause something wrong with `get` functions. This is resolved by bypassing an index search but still creating index records in the data storage.
 
 ## v0.11.0-beta [2018-06-18]
 * General changes:

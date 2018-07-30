@@ -5,7 +5,7 @@
 :toclevels: 3
 :Author: Peerawich Promjai
 :Email: peerawich@throughwave.co.th
-:Date: 26/03/2018
+:Date: 30/07/2018
 :cpp: C++
 
 [big]#**CAUTION:** This manual is only _partially_ written. This message will be removed when it is completed.#
@@ -465,7 +465,7 @@ std::string val = r.getText(const std::string& propName);
 * Return:
 ** A primitive-typed value depending on a member function.
 * Exceptions:
-** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - An old property name does not exist.
 
 ==== GET BASIC INFO
 [source,cpp]
@@ -858,10 +858,10 @@ const nogdb::ClassDescriptor create(nogdb::Txn&                        txn,
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created class.
 * Exceptions:
-** `CTX_INVALID_CLASSNAME` - A length of class name is zero.
-** `CTX_INVALID_CLASSTYPE` - A type of class is not valid.
-** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
-** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A length of class name is zero.
+** `NOGDB_CTX_INVALID_CLASSTYPE` - A type of class is not valid.
+** `NOGDB_CTX_DUPLICATE_CLASS` - A specified class name has already existed.
+** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
 
 === CREATE EXTEND
 [source,cpp]
@@ -880,9 +880,9 @@ const nogdb::ClassDescriptor createExtend(nogdb::Txn&                      txn,
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created sub-class.
 * Exceptions:
-** `CTX_INVALID_CLASSNAME` - A length of class name is zero.
-** `CTX_DUPLICATE_CLASS` - A specified class name has already existed.
-** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A length of class name is zero.
+** `NOGDB_CTX_DUPLICATE_CLASS` - A specified class name has already existed.
+** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
 
 === ALTER
 [source,cpp]
@@ -899,9 +899,9 @@ void alter(nogdb::Txn&           txn,
 ** oldName - An old name of a class that will be changed from.
 ** newName - A new name of a class that will be changed to.
 * Exceptions:
-** `CTX_INVALID_CLASSNAME` - A length of a new class name is zero.
-** `CTX_NOEXST_CLASS` - An old class does not exist.
-** `CTX_DUPLICATE_CLASS` - A new class name has already existed.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A length of a new class name is zero.
+** `NOGDB_CTX_NOEXST_CLASS` - An old class does not exist.
+** `NOGDB_CTX_DUPLICATE_CLASS` - A new class name has already existed.
 
 === DROP
 [source,cpp]
@@ -916,8 +916,8 @@ void drop(nogdb::Txn&           txn,
 ** txn - A database transaction.
 ** name - A name of a class that will be dropped.
 * Exceptions:
-** `CTX_INVALID_CLASSTYPE` - A type of class is not valid.
-** `CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_INVALID_CLASSTYPE` - A type of class is not valid.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 
 == Property Operations  - `nogdb::Property`
 
@@ -940,12 +940,12 @@ const nogdb::PropertyDescriptor add(nogdb::Txn&             txn,
 * Return:
 ** `nogdb::PropertyDescriptor` - A property descriptor of a created property.
 * Exceptions:
-** `CTX_INVALID_PROPERTYNAME` - A length of property name is zero.
-** `CTX_INVALID_PROPTYPE` - A type of class is not valid.
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_DUPLICATE_PROPERTY` - A specified property name has already existed.
-** `CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
-** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A length of property name is zero.
+** `NOGDB_CTX_INVALID_PROPTYPE` - A type of class is not valid.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_DUPLICATE_PROPERTY` - A specified property name has already existed.
+** `NOGDB_CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
+** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
 
 === ALTER
 [source,cpp]
@@ -964,11 +964,11 @@ void alter(nogdb::Txn&           txn,
 ** oldName - An old name of a property that will be changed from.
 ** newName - A new name of a property that will be changed to.
 * Exceptions:
-** `CTX_INVALID_PROPERTYNAME` - A length of a new property name is zero.
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - An old property name does not exist.
-** `CTX_DUPLICATE_PROPERTY` - A new property  name has already existed.
-** `CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A length of a new property name is zero.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - An old property name does not exist.
+** `NOGDB_CTX_DUPLICATE_PROPERTY` - A new property  name has already existed.
+** `NOGDB_CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
 
 === REMOVE
 [source,cpp]
@@ -985,8 +985,8 @@ void remove(nogdb::Txn&           txn,
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property that will be deleted.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
 
 === CREATE INDEX
 [source,cpp]
@@ -1004,12 +1004,12 @@ void createIndex(nogdb::Txn&             txn,
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property that will be indexed.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
-** `CTX_INVALID_PROPTYPE_INDEX` - A property type does not support database indexing.
-** `CTX_DUPLICATE_INDEX` - An index has already existed.
-** `CTX_INVALID_INDEX_CONSTRAINT` - An index could not be created with a unique constraint due to some duplicated values in existing records.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_INVALID_PROPTYPE_INDEX` - A property type does not support database indexing.
+** `NOGDB_CTX_DUPLICATE_INDEX` - An index has already existed.
+** `NOGDB_CTX_INVALID_INDEX_CONSTRAINT` - An index could not be created with a unique constraint due to some duplicated values in existing records.
 
 === DROP INDEX
 [source,cpp]
@@ -1026,9 +1026,9 @@ void dropIndex(nogdb::Txn&              txn,
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property with an index that will be removed.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_NOEXST_INDEX` - An index does not exist on a specified class and property.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_NOEXST_INDEX` - An index does not exist on a specified class and property.
 
 == Database Operations - `nogdb::Db`
 
@@ -1085,8 +1085,8 @@ nogdb::Record getRecord(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::Record` - A record of a specified record descriptor.
 * Exceptions:
-** `CTX_NOEXST_RECORD` - A record with the given descriptor does not exist.
-** `CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_RECORD` - A record with the given descriptor does not exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 
 == Vertex Operations - `nogdb::Vertex`
 
@@ -1105,8 +1105,8 @@ nogdb::ResultSet get(const nogdb::Txn&       txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 === GET CURSOR
 [source,cpp]
@@ -1123,8 +1123,8 @@ nogdb::ResultSetCursor getCursor(const nogdb::Txn&       txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 
 === GET IN-EDGE
@@ -1144,9 +1144,9 @@ nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET IN-EDGE CURSOR
 [source,cpp]
@@ -1165,9 +1165,9 @@ nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET OUT-EDGE
 [source,cpp]
@@ -1186,9 +1186,9 @@ nogdb::ResultSet getOutEdge(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET OUT-EDGE CURSOR
 [source,cpp]
@@ -1207,9 +1207,9 @@ nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET ALL-EDGE
 [source,cpp]
@@ -1228,9 +1228,9 @@ nogdb::ResultSet getAllEdge(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET ALL-EDGE CURSOR
 [source,cpp]
@@ -1249,9 +1249,9 @@ nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET WITH CONDITION
 [source,cpp]
@@ -1270,11 +1270,11 @@ nogdb::ResultSet get(const nogdb::Txn&           txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
 
 === GET CURSOR WITH CONDITION
 [source,cpp]
@@ -1293,11 +1293,11 @@ nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
 
 === GET IN-EDGE WITH CONDITION
 [source,cpp]
@@ -1318,12 +1318,12 @@ nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET IN-EDGE CURSOR WITH CONDITION
 [source,cpp]
@@ -1344,12 +1344,12 @@ nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET OUT-EDGE WITH CONDITION
 [source,cpp]
@@ -1370,12 +1370,12 @@ nogdb::ResultSet getOutEdge(const nogdb::Txn&                txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET OUT-EDGE CURSOR WITH CONDITION
 [source,cpp]
@@ -1396,12 +1396,12 @@ nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET ALL-EDGE WITH CONDITION
 [source,cpp]
@@ -1422,12 +1422,12 @@ nogdb::ResultSet getAllEdge(const nogdb::Txn&                txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === GET ALL-EDGE CURSOR WITH CONDITION
 [source,cpp]
@@ -1448,12 +1448,12 @@ nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === CREATE
 [source,cpp]
@@ -1472,11 +1472,11 @@ const nogdb::RecordDescriptor create(nogdb::Txn&             txn,
 * Return:
 ** `nogdb::RecordDescriptor` - A record descriptor of a created vertex.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
-** Some possible LMDB errors: `MDB_PANIC`, `MDB_MAP_RESIZED`, `MDB_READERS_FULL`, `MDB_NOTFOUND`, `MDB_DBS_FULL`, `MDB_MAP_FULL`, `MDB_TXN_FULL`
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** Some possible LMDB errors: `MDB_PANIC`, `MDB_MAP_RESIZED`, `MDB_READERS_FULL`, `MDB_NOTFOUND`, `MDB_DBS_FULL`, `MDB_MAP_FULL`, `MDB_NOGDB_TXN_FULL`
 
 === UPDATE
 [source,cpp]
@@ -1493,11 +1493,11 @@ void update(nogdb::Txn&                       txn,
 ** recordDescriptor - A record descriptor.
 ** record - A new record object with modified properties and values.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DESTROY
 [source,cpp]
@@ -1516,8 +1516,8 @@ void destroy(nogdb::Txn&                       txn,
 ** recordDesciptor - A record descriptor.
 ** className - A class name of vertices that will be entirely deleted.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 == Edge Operations - `nogdb::Edge`
 
@@ -1536,8 +1536,8 @@ nogdb::ResultSet get(const nogdb::Txn&        txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 === GET CURSOR
 [source,cpp]
@@ -1554,8 +1554,8 @@ nogdb::ResultSetCursor getCursor(const nogdb::Txn&        txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 === GET SOURCE
 [source,cpp]
@@ -1572,9 +1572,9 @@ nogdb::ResultSet getSrc(const nogdb::Txn&                 txn,
 * Return:
 ** A set of results including source and destination vertices.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
 
 === GET DESTINATION
 [source,cpp]
@@ -1591,9 +1591,9 @@ nogdb::Result getDst(const nogdb::Txn&                 txn,
 * Return:
 ** A result of record descriptor and record.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
 
 === GET SOURCE & DESTINATION
 [source,cpp]
@@ -1610,9 +1610,9 @@ nogdb::Result getSrcDst(const nogdb::Txn&                 txn,
 * Return:
 ** A result of record descriptor and record.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
 
 === GET WITH CONDITION
 [source,cpp]
@@ -1631,11 +1631,11 @@ nogdb::ResultSet get(const nogdb::Txn&           txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
 
 === GET CURSOR WITH CONDITION
 [source,cpp]
@@ -1654,11 +1654,11 @@ nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
 
 === CREATE
 [source,cpp]
@@ -1680,12 +1680,12 @@ const nogdb::RecordDescriptor create(nogdb::Txn&                        txn,
 * Return:
 ** `nogdb::RecordDescriptor` - A record descriptor of a created edge.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
-** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
-** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
 
 === UPDATE
 [source,cpp]
@@ -1702,11 +1702,11 @@ void update(nogdb::Txn&                        txn,
 ** recordDescriptor - A record descriptor.
 ** record - A new record object with modified properties and values.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `CTX_NOEXST_PROPERTY` - A property does not exist.
-** `CTX_EMPTY_RECORD` - A class has no properties (required at least one).
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_CTX_EMPTY_RECORD` - A class has no properties (required at least one).
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
 
 === UPDATE SOURCE
 [source,cpp]
@@ -1723,10 +1723,10 @@ void updateSrc(nogdb::Txn&                       txn,
 ** recordDescriptor - A record descriptor of an edge itself.
 ** newSrcVertexRecordDescriptor - A record descriptor of a new source vertex.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
-** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
 
 === UPDATE DESTINATION
 [source,cpp]
@@ -1743,10 +1743,10 @@ void updateDst(nogdb::Txn&                       txn,
 ** recordDescriptor - A record descriptor of an edge itself.
 ** newDstVertexRecordDescriptor - A record descriptor of a new destination vertex.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
-** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_EDGE` - An edge doesn’t exist.
+** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
 
 === DESTROY
 [source,cpp]
@@ -1765,8 +1765,8 @@ void destroy(nogdb::Txn&           txn,
 ** recordDescriptor - A record descriptor.
 ** className - A class name of edges that will be entirely deleted.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
 
 == Traverse (Graph) Operations - `nogdb::Traverse`
 
@@ -1793,9 +1793,9 @@ nogdb::ResultSet inEdgeBfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === BFS TRAVERSE IN-EDGE CURSOR
 [source,cpp]
@@ -1820,9 +1820,9 @@ nogdb::ResultSetCursor inEdgeBfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === BFS TRAVERSE OUT-EDGE
 [source,cpp]
@@ -1847,9 +1847,9 @@ nogdb::ResultSet outEdgeBfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === BFS TRAVERSE OUT-EDGE CURSOR
 [source,cpp]
@@ -1874,9 +1874,9 @@ nogdb::ResultSetCursor outEdgeBfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === BFS TRAVERSE ALL-EDGE
 [source,cpp]
@@ -1901,9 +1901,9 @@ nogdb::ResultSet allEdgeBfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === BFS TRAVERSE ALL-EDGE CURSOR
 [source,cpp]
@@ -1928,9 +1928,9 @@ nogdb::ResultSetCursor allEdgeBfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE IN-EDGE
 [source,cpp]
@@ -1955,9 +1955,9 @@ nogdb::ResultSet inEdgeDfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE IN-EDGE CURSOR
 [source,cpp]
@@ -1982,9 +1982,9 @@ nogdb::ResultSetCursor inEdgeDfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE OUT-EDGE
 [source,cpp]
@@ -2009,9 +2009,9 @@ nogdb::ResultSet outEdgeDfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE OUT-EDGE CURSOR
 [source,cpp]
@@ -2036,9 +2036,9 @@ nogdb::ResultSetCursor outEdgeDfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE ALL-EDGE
 [source,cpp]
@@ -2063,9 +2063,9 @@ nogdb::ResultSet allEdgeDfs(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === DFS TRAVERSE ALL-EDGE CURSOR
 [source,cpp]
@@ -2090,9 +2090,9 @@ nogdb::ResultSetCursor allEdgeDfsCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSetCursor` - A cursor of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
 
 === SHORTEST PATH
 [source,cpp]
@@ -2115,10 +2115,10 @@ nogdb::ResultSet shortestPath(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
-** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
 
 === SHORTEST PATH CURSOR
 [source,cpp]
@@ -2141,10 +2141,10 @@ nogdb::ResultSetCursor shortestPathCursor(const nogdb::Txn&                 txn,
 * Return:
 ** `nogdb::ResultSet` - A set of results.
 * Exceptions:
-** `CTX_NOEXST_CLASS` - A class does not exist.
-** `CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
-** `GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
+** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
 
 
 == Error Handling
@@ -2192,103 +2192,103 @@ A list of errors:
 |Code
 |Description
 
-|CTX_INVALID_CLASSTYPE
+|NOGDB_CTX_INVALID_CLASSTYPE
 |0x1000
 |A type of class is not valid.
 
-|CTX_DUPLICATE_CLASS
+|NOGDB_CTX_DUPLICATE_CLASS
 |0x1010
 |A specified class name has already existed.
 
-|CTX_NOEXST_CLASS
+|NOGDB_CTX_NOEXST_CLASS
 |0x1020
 |A class does not exist.
 
-|CTX_INVALID_CLASSNAME
+|NOGDB_CTX_INVALID_CLASSNAME
 |0x1030
 |A class name is empty or contains invalid characters.
 
-|CTX_MISMATCH_CLASSTYPE
+|NOGDB_CTX_MISMATCH_CLASSTYPE
 |0x1990
 |A type of a class does not match as expected.
 
-|CTX_MISMATCH_CLASSTYPE
+|NOGDB_CTX_MISMATCH_CLASSTYPE
 |0x1990
 |A type of a class does not match as expected.
 
-|CTX_INVALID_PROPTYPE
+|NOGDB_CTX_INVALID_PROPTYPE
 |0x2000
 |A type of a property is not valid.
 
-|CTX_DUPLICATE_PROPERTY
+|NOGDB_CTX_DUPLICATE_PROPERTY
 |0x2010
 |A specified property name has already existed.
 
-|CTX_NOEXST_PROPERTY
+|NOGDB_CTX_NOEXST_PROPERTY
 |0x2020
 |A property does not exist.
 
-|CTX_INVALID_PROPERTYNAME
+|NOGDB_CTX_INVALID_PROPERTYNAME
 |0x2030
 |A property name is empty or contains invalid characters.
 
-|CTX_OVERRIDE_PROPERTY
+|NOGDB_CTX_OVERRIDE_PROPERTY
 |0x2040
 |A specified property name has already existed in some sub-classes.
 
-|CTX_CONFLICT_PROPTYPE
+|NOGDB_CTX_CONFLICT_PROPTYPE
 |0x2050
 |Some properties do not have the same type.
 
-|CTX_IN_USED_PROPERTY
+|NOGDB_CTX_IN_USED_PROPERTY
 |0x2060
-|A property is used by one or more database indexes
+|A property is used by one or more database indexes.
 
-|[.line-through]#CTX_EMPTY_RECORD#
-|[.line-through]#0x3000#
-|[.line-through]#A class has no properties (required at least one).#
+|NOGDB_CTX_NOEXST_RECORD
+|0x3000
+|A record with the given descriptor doesn't exist.
 
-|CTX_INVALID_COMPARATOR
+|NOGDB_CTX_INVALID_COMPARATOR
 |0x4000
 |A comparator is not defined.
 
-|CTX_INVALID_PROPTYPE_INDEX
+|NOGDB_CTX_INVALID_PROPTYPE_INDEX
 |0x6000
-|A property type doesn't support database indexing
+|A property type doesn't support database indexing.
 
-|CTX_NOEXST_INDEX
+|NOGDB_CTX_NOEXST_INDEX
 |0x6010
-|An index doesn't exist on given class and property
+|An index doesn't exist on given class and property.
 
-|CTX_DUPLICATE_INDEX
+|NOGDB_CTX_DUPLICATE_INDEX
 |0x6020
-|A specified index has already existed
+|A specified index has already existed.
 
-|CTX_INVALID_INDEX_CONSTRAINT
+|NOGDB_CTX_INVALID_INDEX_CONSTRAINT
 |0x6030
-|An index couldn't be created with a unique constraint due to some duplicated values in existing records
+|An index couldn't be created with a unique constraint due to some duplicated values in existing records.
 
-|CTX_UNIQUE_CONSTRAINT
+|NOGDB_CTX_UNIQUE_CONSTRAINT
 |0x6040
-|A record has some duplicated values when a unique constraint is applied
+|A record has some duplicated values when a unique constraint is applied.
 
-|CTX_IS_LOCKED
+|NOGDB_CTX_IS_LOCKED
 |0x9fc0
 |A context is locked or being used.
 
-|CTX_LIMIT_DBSCHEMA
+|NOGDB_CTX_LIMIT_DBSCHEMA
 |0x9fd0
 |A limitation of a database schema has been reached.
 
-|CTX_INTERNAL_ERR
+|NOGDB_CTX_INTERNAL_ERR
 |0x9fe0
 |There might be some errors internally.
 
-|CTX_UNKNOWN_ERR
+|NOGDB_CTX_UNKNOWN_ERR
 |0x9ff0
 |An unknown error related to the database context.
 
-|CTX_NOT_IMPLEMENTED
+|NOGDB_CTX_NOT_IMPLEMENTED
 |0x9fff
 |A function or class has not been implemented yet.
 
@@ -2303,31 +2303,31 @@ A list of errors:
 |Code
 |Description
 
-|GRAPH_DUP_VERTEX
+|NOGDB_GRAPH_DUP_VERTEX
 |0x100
 |A duplicated vertex in a graph.
 
-|GRAPH_NOEXST_VERTEX
+|NOGDB_GRAPH_NOEXST_VERTEX
 |0x101
 |A vertex doesn't exist.
 
-|GRAPH_NOEXST_SRC
+|NOGDB_GRAPH_NOEXST_SRC
 |0x102
 |A source vertex doesn't exist.
 
-|GRAPH_NOEXST_DST
+|NOGDB_GRAPH_NOEXST_DST
 |0x103
 |A destination vertex doesn't exist.
 
-|GRAPH_DUP_EDGE
+|NOGDB_GRAPH_DUP_EDGE
 |0x200
 |A duplicated edge in a graph.
 
-|GRAPH_NOEXST_EDGE
+|NOGDB_GRAPH_NOEXST_EDGE
 |0x201
 |An edge doesn't exist.
 
-|GRAPH_UNKNOWN_ERR
+|NOGDB_GRAPH_UNKNOWN_ERR
 |0x9ff
 |An unknown error related to the graph structure.
 
@@ -2342,19 +2342,19 @@ A list of errors:
 |Code
 |Description
 
-|TXN_INVALID_MODE
+|NOGDB_TXN_INVALID_MODE
 |0xa00
 |An operation couldn't be executed due to an invalid transaction mode
 
-|TXN_COMPLETED
+|NOGDB_TXN_COMPLETED
 |0xa01
 |An operation couldn't be executed due to a completed transaction
 
-|TXN_VERSION_MAXREACH
+|NOGDB_TXN_VERSION_MAXREACH
 |0xa02
 |The transaction version has been reached the maximum value
 
-|TXN_UNKNOWN_ERR
+|NOGDB_TXN_UNKNOWN_ERR
 |0xfff
 |An unknown error related to the transaction control.
 
@@ -2364,5 +2364,5 @@ A list of errors:
 [NOTE]
 =====
 * For LMDB, the error and exceptions can be referred to http://104.237.133.194/doc/group__errors.html
-* `CTX_UNKNOWN_ERR` and `GRAPH_UNKNOWN_ERR` are the default exceptions which could be thrown from any operations in a case of errors.
+* `NOGDB_CTX_UNKNOWN_ERR` and `NOGDB_GRAPH_UNKNOWN_ERR` are the default exceptions which could be thrown from any operations in a case of errors.
 =====
