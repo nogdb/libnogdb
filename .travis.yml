@@ -34,14 +34,6 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
         brew update;
     fi
-
-install:
-  - eval "${MATRIX_EVAL}"
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      brew install valgrind;
-    fi
-
-before_install:
   - curl https://codeload.github.com/google/googletest/tar.gz/release-1.8.0 -o release-1.8.0.tar.gz
   - tar xf release-1.8.0.tar.gz
   - cd googletest-release-1.8.0
@@ -49,6 +41,12 @@ before_install:
   - make
   - sudo make install
   - cd ..
+
+install:
+  - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+      brew install valgrind;
+    fi
 
 before_script:
   - echo ${CC}
