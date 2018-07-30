@@ -89,13 +89,13 @@ $(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
 	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
 
 #test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-test: lmdb $(ANAME) $(TESTOBJS)
+test: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
 #test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-test_address: lmdb $(ANAME) $(TESTOBJS)
+test_address: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db

@@ -627,6 +627,7 @@ namespace nogdb {
 
                 ~Cursor() noexcept {
                     try { close(); } catch (...) {}
+                    _txn = nullptr;
                 }
 
                 operator CursorHandler *() const noexcept {

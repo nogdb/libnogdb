@@ -45,7 +45,7 @@ before_script:
   - echo ${CC}
   - echo ${CXX}
   - ${CXX} --version
-  - export TESTPREFIX="runtest"
+  - export TESTPREFIX="apitest"
   - cmake . && cmake --build .
   - sh install_make.sh
 

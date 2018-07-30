@@ -583,21 +583,21 @@ namespace nogdb {
         if (propertyType == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
-        });
-        auto &classId = (*foundClassId)->id;
-        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
-        if (foundIndex.second) {
-            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, condition));
-        }
-        // if indexing is not found, then
-        if (searchIndexOnly) {
-            return ResultSet{};
-        } else {
+        //TODO: temporary fix indexing errors
+//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//        });
+//        auto &classId = (*foundClassId)->id;
+//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
+//        if (foundIndex.second) {
+//            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, condition));
+//        }
+//        if (searchIndexOnly) {
+//            return ResultSet{};
+//        } else {
             return getRecordCondition(txn, classInfos, condition, propertyType);
-        }
+//        }
     }
 
     ResultSet Compare::compareMultiCondition(const Txn &txn,
@@ -636,20 +636,21 @@ namespace nogdb {
         if (numOfUndefPropertyType != 0) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
-        });
-        auto &classId = (*foundClassId)->id;
-        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
-        if (foundIndex.second) {
-            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, conditions));
-        }
-        if (searchIndexOnly) {
-            return ResultSet{};
-        } else {
+        //TODO: temporary fix indexing errors
+//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//        });
+//        auto &classId = (*foundClassId)->id;
+//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
+//        if (foundIndex.second) {
+//            return Generic::getMultipleRecordFromRdesc(txn, Index::getIndexRecord(txn, classId, foundIndex.first, conditions));
+//        }
+//        if (searchIndexOnly) {
+//            return ResultSet{};
+//        } else {
             return getRecordMultiCondition(txn, classInfos, conditions, conditionPropertyTypes);
-        }
+//        }
     }
 
     ResultSet Compare::compareEdgeCondition(const Txn &txn,
