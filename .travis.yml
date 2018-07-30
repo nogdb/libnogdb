@@ -48,6 +48,7 @@ before_install:
   - cmake -DBUILD_SHARED_LIBS=ON .
   - make
   - sudo make install
+  - cd ..
 
 before_script:
   - echo ${CC}
