@@ -1,0 +1,21 @@
+CC      ?= gcc
+AR      = ar
+FLAGS   = -ggdb -fPIC -W -Wall -Wno-unused-parameter -Wno-format-extra-args -Wno-missing-field-initializers -Wno-missing-field-initializers -pthread
+ANAME   = liblmdb.a
+SONAME  = liblmdb.so
+SOURCES = mdb.c midl.c
+OBJECTS = $(SOURCES:.c=.o)
+
+all: $(ANAME) $(SONAME)
+
+$(ANAME): $(OBJECTS) $(SOURCES)
+	$(AR) rs $@ $(OBJECTS)
+
+$(SONAME): $(OBJECTS) $(SOURCES)
+	$(CC) -shared -o $@ $(OBJECTS)
+
+.c.o:
+	$(CC) $(FLAGS) -c $< -o $@
+
+clean:
+	rm -rf *.so *.a *.o
