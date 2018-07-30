@@ -57,6 +57,8 @@ namespace nogdb {
 
         Context() = default;
 
+        ~Context() noexcept;
+
         Context(const std::string &dbPath);
 
         explicit Context(const std::string &dbPath, unsigned int maxDbNum);
@@ -88,6 +90,8 @@ namespace nogdb {
 
         mutable std::shared_ptr<boost::shared_mutex> dbInfoMutex;
         mutable std::shared_ptr<boost::shared_mutex> dbWriterMutex;
+
+        int lockContextFileDescriptor;
 
         void initDatabase();
     };

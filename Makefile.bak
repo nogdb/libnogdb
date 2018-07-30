@@ -9,7 +9,7 @@ EXTFLAGS	=
 SRCDIR		= src
 BUILDDIR	= build
 TARGETDIR	= bin
-TESTDIR	    = test
+TESTDIR	    = test/apitest
 LIBPATH		= lib
 SRCEXT		= cpp
 SOURCES		= $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
@@ -22,7 +22,7 @@ SONAME		= $(TARGETDIR)/libnogdb.so
 DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
-TESTPREFIX	?= runtest
+TESTPREFIX	?= apitest
 TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
 CCNAME      = $(shell $(CXX) --version 2> /dev/null | grep -oe 'clang')

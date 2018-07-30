@@ -111,7 +111,11 @@ namespace nogdb {
             }
 
             lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) {
-                return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+                if (_txn.handle()) {
+                    return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+                } else {
+                    throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
+                }
             }
 
             lmdb::Cursor openCursor(const lmdb::Dbi &dbi) {

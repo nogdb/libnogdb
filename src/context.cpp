@@ -55,7 +55,8 @@ namespace nogdb {
             mkdir(dbPath.c_str(), 0755);
         }
         const auto lockFile = dbPath + DB_LOCK_FILE;
-        if (openLockFile(lockFile.c_str()) == -1) {
+        lockContextFileDescriptor = openLockFile(lockFile.c_str());
+        if (lockContextFileDescriptor == -1) {
             if (errno == EWOULDBLOCK || errno == EEXIST) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
             } else {
@@ -80,6 +81,10 @@ namespace nogdb {
             dbInfo->numProperty = PropertyId{0};
             initDatabase();
         }
+    }
+
+    Context::~Context() noexcept {
+        unlockFile(lockContextFileDescriptor);
     }
 
     Context::Context(const Context &ctx)

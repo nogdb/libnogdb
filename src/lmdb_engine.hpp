@@ -133,7 +133,6 @@ namespace nogdb {
             };
 
             typedef Value Key;
-            typedef int ErrorType;
             typedef unsigned int Flag;
             typedef mdb_mode_t Mode;
             typedef MDB_env EnvHandler;
@@ -177,7 +176,7 @@ namespace nogdb {
                                 throw NOGDB_STORAGE_ERROR(error);
                             }
                         }
-                    } catch (const ErrorType &) {
+                    } catch (const Error &) {
                         mdb_env_close(handler);
                         throw;
                     }

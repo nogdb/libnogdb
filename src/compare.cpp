@@ -549,14 +549,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
                         throw err;
                     }
-                } catch (const Error& err) {
-                    throw err;
                 }
                 return result;
         }
@@ -845,14 +843,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == NOGDB_GRAPH_NOEXST_VERTEX) {
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
                         throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
                         throw err;
                     }
-                } catch (const Error& err) {
-                    throw err;
                 }
                 return result;
         }
