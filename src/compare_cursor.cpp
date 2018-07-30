@@ -23,8 +23,7 @@
 
 #include "shared_lock.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
@@ -45,47 +44,43 @@ namespace nogdb {
     Compare::getRdescCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos, const Condition &condition,
                                PropertyType type) {
         auto result = std::vector<RecordDescriptor>{};
-        try {
-            for (const auto &classInfo: classInfos) {
-                auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-                while (!keyValue.empty()) {
-                    auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                    if (*key != EM_MAXRECNUM) {
-                        auto rid = RecordId{classInfo.id, *key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
-                        if (condition.comp != Condition::Comparator::IS_NULL &&
-                            condition.comp != Condition::Comparator::NOT_NULL) {
-                            if (record.get(condition.propName).empty()) {
-                                keyValue = Datastore::getNextCursor(cursorHandler.get());
-                                continue;
-                            }
-                            if (compareBytesValue(record.get(condition.propName), type, condition)) {
-                                result.emplace_back(RecordDescriptor{rid});
-                            }
-                        } else {
-                            switch (condition.comp) {
-                                case Condition::Comparator::IS_NULL:
-                                    if (record.get(condition.propName).empty()) {
-                                        result.emplace_back(RecordDescriptor{rid});
-                                    }
-                                    break;
-                                case Condition::Comparator::NOT_NULL:
-                                    if (!record.get(condition.propName).empty()) {
-                                        result.emplace_back(RecordDescriptor{rid});
-                                    }
-                                    break;
-                                default:
-                                    throw Error(CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
-                            }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        for (const auto &classInfo: classInfos) {
+            auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+            auto keyValue = cursorHandler.getNext();
+            while (!keyValue.empty()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key != EM_MAXRECNUM) {
+                    auto rid = RecordId{classInfo.id, key};
+                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
+                    if (condition.comp != Condition::Comparator::IS_NULL &&
+                        condition.comp != Condition::Comparator::NOT_NULL) {
+                        if (record.get(condition.propName).empty()) {
+                            keyValue = cursorHandler.getNext();
+                            continue;
+                        }
+                        if (compareBytesValue(record.get(condition.propName), type, condition)) {
+                            result.emplace_back(RecordDescriptor{rid});
+                        }
+                    } else {
+                        switch (condition.comp) {
+                            case Condition::Comparator::IS_NULL:
+                                if (record.get(condition.propName).empty()) {
+                                    result.emplace_back(RecordDescriptor{rid});
+                                }
+                                break;
+                            case Condition::Comparator::NOT_NULL:
+                                if (!record.get(condition.propName).empty()) {
+                                    result.emplace_back(RecordDescriptor{rid});
+                                }
+                                break;
+                            default:
+                                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                         }
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
+                keyValue = cursorHandler.getNext();
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
         return result;
     }
@@ -96,25 +91,21 @@ namespace nogdb {
                                     const MultiCondition &conditions,
                                     const PropertyMapType &types) {
         auto result = std::vector<RecordDescriptor>{};
-        try {
-            for (const auto &classInfo: classInfos) {
-                auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-                while (!keyValue.empty()) {
-                    auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                    if (*key != EM_MAXRECNUM) {
-                        auto rid = RecordId{classInfo.id, *key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
-                        if (conditions.execute(record, types)) {
-                            result.emplace_back(RecordDescriptor{rid});
-                        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        for (const auto &classInfo: classInfos) {
+            auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+            auto keyValue = cursorHandler.getNext();
+            while (!keyValue.empty()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key != EM_MAXRECNUM) {
+                    auto rid = RecordId{classInfo.id, key};
+                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
+                    if (conditions.execute(record, types)) {
+                        result.emplace_back(RecordDescriptor{rid});
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
+                keyValue = cursorHandler.getNext();
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
         return result;
     }
@@ -126,15 +117,16 @@ namespace nogdb {
                                    const Condition &condition, PropertyType type) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
-                    auto classDBHandler = Datastore::DBHandler{};
+                    auto classDBHandler = storage_engine::lmdb::Dbi{};
                     auto className = std::string{};
                     auto filter = [&condition, &type](const Record &record) {
                         if (condition.comp != Condition::Comparator::IS_NULL &&
@@ -159,7 +151,7 @@ namespace nogdb {
                                     }
                                     break;
                                 default:
-                                    throw Error(CTX_INVALID_COMPARATOR, Error::Type::CONTEXT);
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
                             }
                         }
                         return false;
@@ -168,10 +160,10 @@ namespace nogdb {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                            classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
+                        auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
                         if (filter(record)) {
                             result.emplace_back(RecordDescriptor{edge});
@@ -188,14 +180,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -209,24 +199,25 @@ namespace nogdb {
                                         const MultiCondition &conditions, const PropertyMapType &types) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
-                    auto classDBHandler = Datastore::DBHandler{};
+                    auto classDBHandler = storage_engine::lmdb::Dbi{};
                     auto className = std::string{};
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                            classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
+                        auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
                         if (conditions.execute(record, types)) {
                             result.emplace_back(RecordDescriptor{edge});
@@ -243,14 +234,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -269,28 +258,29 @@ namespace nogdb {
                     propertyType = propertyInfo->second.type;
                 } else {
                     if (propertyType != propertyInfo->second.type) {
-                        throw Error(CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                     }
                 }
             }
         }
         if (propertyType == PropertyType::UNDEFINED) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
-        });
-        auto &classId = (*foundClassId)->id;
-        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
-        if (foundIndex.second) {
-            return Index::getIndexRecord(txn, classId, foundIndex.first, condition);
-        }
-        if (searchIndexOnly) {
-            return std::vector<RecordDescriptor>{};
-        } else {
+        //TODO: temporary fix indexing errors
+//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//        });
+//        auto &classId = (*foundClassId)->id;
+//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
+//        if (foundIndex.second) {
+//            return Index::getIndexRecord(txn, classId, foundIndex.first, condition);
+//        }
+//        if (searchIndexOnly) {
+//            return std::vector<RecordDescriptor>{};
+//        } else {
             return getRdescCondition(txn, classInfos, condition, propertyType);
-        }
+//        }
     }
 
     std::vector<RecordDescriptor>
@@ -318,29 +308,30 @@ namespace nogdb {
                         --numOfUndefPropertyType;
                     } else {
                         if (property.second != propertyInfo->second.type) {
-                            throw Error(CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
             }
         }
         if (numOfUndefPropertyType != 0) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
-        });
-        auto &classId = (*foundClassId)->id;
-        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
-        if (foundIndex.second) {
-            return Index::getIndexRecord(txn, classId, foundIndex.first, conditions);
-        }
-        if (searchIndexOnly) {
-            return std::vector<RecordDescriptor>{};
-        } else {
+        //TODO: temporary fix indexing errors
+//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
+//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
+//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//        });
+//        auto &classId = (*foundClassId)->id;
+//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
+//        if (foundIndex.second) {
+//            return Index::getIndexRecord(txn, classId, foundIndex.first, conditions);
+//        }
+//        if (searchIndexOnly) {
+//            return std::vector<RecordDescriptor>{};
+//        } else {
             return getRdescMultiCondition(txn, classInfos, conditions, conditionPropertyTypes);
-        }
+//        }
     }
 
     std::vector<RecordDescriptor>
@@ -364,7 +355,7 @@ namespace nogdb {
                         isFoundProperty = true;
                     } else {
                         if (propertyType != propertyInfo->second.type) {
-                            throw Error(CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                         }
                     }
                 }
@@ -376,14 +367,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getRdescEdgeCondition(txn, recordDescriptor, edgeClassIds, func1, condition, propertyType);
@@ -421,7 +412,7 @@ namespace nogdb {
                             --numOfUndefPropertyType;
                         } else {
                             if (property.second != propertyInfo->second.type) {
-                                throw Error(CTX_CONFLICT_PROPTYPE, Error::Type::CONTEXT);
+                                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
                             }
                         }
                     }
@@ -434,14 +425,14 @@ namespace nogdb {
         if (!edgeClassDescriptors.empty()) {
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
             auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         }
         return getRdescEdgeMultiCondition(txn, recordDescriptor, edgeClassIds, func1, conditions, conditionPropertyTypes);
@@ -455,25 +446,21 @@ namespace nogdb {
     Compare::getRdescCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos,
                                bool (*condition)(const Record &record)) {
         auto result = std::vector<RecordDescriptor>{};
-        try {
-            for (const auto &classInfo: classInfos) {
-                auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classInfo.id), true);
-                auto cursorHandler = Datastore::CursorHandlerWrapper(txn.txnBase->getDsTxnHandler(), classDBHandler);
-                auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-                while (!keyValue.empty()) {
-                    auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                    if (*key != EM_MAXRECNUM) {
-                        auto rid = RecordId{classInfo.id, *key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue, classInfo.propertyInfo);
-                        if ((*condition)(record)) {
-                            result.push_back(RecordDescriptor{rid});
-                        }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        for (const auto &classInfo: classInfos) {
+            auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
+            auto keyValue = cursorHandler.getNext();
+            while (!keyValue.empty()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key != EM_MAXRECNUM) {
+                    auto rid = RecordId{classInfo.id, key};
+                    auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
+                    if ((*condition)(record)) {
+                        result.push_back(RecordDescriptor{rid});
                     }
-                    keyValue = Datastore::getNextCursor(cursorHandler.get());
                 }
+                keyValue = cursorHandler.getNext();
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
         return result;
     }
@@ -494,24 +481,25 @@ namespace nogdb {
                                    bool (*condition)(const Record &record)) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
+                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
-                    auto classDBHandler = Datastore::DBHandler{};
+                    auto classDBHandler = storage_engine::lmdb::Dbi{};
                     auto className = std::string{};
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                            classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(edge.first), true);
+                            classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
                         }
-                        auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, edge.second);
+                        auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
                         if ((*condition)(record)) {
                             result.emplace_back(RecordDescriptor{edge});
@@ -528,14 +516,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }

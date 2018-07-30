@@ -20,7 +20,8 @@
 
 ## Dependency
 * GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
-* On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above) 
+* On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above)
+* [Google Test](https://github.com/google/googletest)
 
 ## Limitations
 * A particular database can be opened and accessed by only one single process at a time. For a multi-threaded application, the database context must be created as a singleton and shared between threads. However, the application can open multiple different databases by using separated database contexts.
@@ -28,20 +29,11 @@
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
-### With CMake (recommended)
 ```
 $ cmake .
 $ cmake --build .
 $ ctest --verbose
 $ sudo make install
-```
-
-### With Makefile (debug mode by default)
-```
-$ sh install_make.sh
-$ make && make test
-$ sudo make install
-$ make clean
 ```
 
 ## Usage

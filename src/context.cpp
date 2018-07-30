@@ -32,8 +32,7 @@
 #include "constant.hpp"
 #include "spinlock.hpp"
 #include "base_txn.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "storage_engine.hpp"
 #include "graph.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
@@ -43,32 +42,49 @@
 namespace nogdb {
 
     Context::Context(const std::string &dbPath)
-            : Context{dbPath, MAX_DB_NUM, MAX_DB_SIZE} {};
+            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
     Context::Context(const std::string &dbPath, unsigned int maxDbNum)
-            : Context{dbPath, maxDbNum, MAX_DB_SIZE} {};
+            : Context{dbPath, maxDbNum, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
     Context::Context(const std::string &dbPath, unsigned long maxDbSize)
-            : Context{dbPath, MAX_DB_NUM, maxDbSize} {};
+            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
 
     Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize) {
-        dbInfo = std::make_shared<DBInfo>();
-        dbSchema = std::make_shared<Schema>();
-        dbTxnStat = std::make_shared<TxnStat>();
-        dbRelation = std::make_shared<Graph>();
-        dbInfoMutex = std::make_shared<boost::shared_mutex>();
-        dbWriterMutex = std::make_shared<boost::shared_mutex>();
-        dbInfo->dbPath = dbPath;
-        dbInfo->maxDB = maxDbNum;
-        dbInfo->maxDBSize = maxDbSize;
-        dbInfo->maxClassId = ClassId{INIT_NUM_CLASSES};
-        dbInfo->maxPropertyId = PropertyId{INIT_NUM_PROPERTIES};
-        dbInfo->numClass = ClassId{0};
-        dbInfo->numProperty = PropertyId{0};
-        envHandler = std::make_shared<EnvHandlerPtr>(
-                EnvHandler::create(dbInfo->dbPath, dbInfo->maxDB, dbInfo->maxDBSize, Datastore::MAX_READERS,
-                                   Datastore::FLAG, Datastore::PERMISSION));
-        initDatabase();
+        if (!fileExists(dbPath)) {
+            mkdir(dbPath.c_str(), 0755);
+        }
+        const auto lockFile = dbPath + DB_LOCK_FILE;
+        lockContextFileDescriptor = openLockFile(lockFile.c_str());
+        if (lockContextFileDescriptor == -1) {
+            if (errno == EWOULDBLOCK || errno == EEXIST) {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+            }
+        } else {
+            envHandler = std::make_shared<storage_engine::LMDBEnv>(
+                    dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS
+            );
+            dbInfo = std::make_shared<DBInfo>();
+            dbSchema = std::make_shared<Schema>();
+            dbTxnStat = std::make_shared<TxnStat>();
+            dbRelation = std::make_shared<Graph>();
+            dbInfoMutex = std::make_shared<boost::shared_mutex>();
+            dbWriterMutex = std::make_shared<boost::shared_mutex>();
+            dbInfo->dbPath = dbPath;
+            dbInfo->maxDB = maxDbNum;
+            dbInfo->maxDBSize = maxDbSize;
+            dbInfo->maxClassId = ClassId{INIT_NUM_CLASSES};
+            dbInfo->maxPropertyId = PropertyId{INIT_NUM_PROPERTIES};
+            dbInfo->numClass = ClassId{0};
+            dbInfo->numProperty = PropertyId{0};
+            initDatabase();
+        }
+    }
+
+    Context::~Context() noexcept {
+        unlockFile(lockContextFileDescriptor);
     }
 
     Context::Context(const Context &ctx)
@@ -116,54 +132,39 @@ namespace nogdb {
 
     void Context::initDatabase() {
         auto currentTime = std::to_string(currentTimestamp());
-        Datastore::TxnHandler *txn = nullptr;
-        // create read-write transaction
-        try {
-            txn = Datastore::beginTxn(envHandler->get(), Datastore::TXN_RW);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
-        }
+        // perform read-write operations
+        auto wtxn = storage_engine::LMDBTxn(envHandler.get(), storage_engine::lmdb::TXN_RW);
         // prepare schema for classes, properties, and relations
-        auto classDBHandler = Datastore::DBHandler{};
-        auto propDBHndler = Datastore::DBHandler{};
-        auto indexDBHandler = Datastore::DBHandler{};
-        auto relationDBHandler = Datastore::DBHandler{};
         try {
-            classDBHandler = Datastore::openDbi(txn, TB_CLASSES, true);
-            propDBHndler = Datastore::openDbi(txn, TB_PROPERTIES, true);
-            indexDBHandler = Datastore::openDbi(txn, TB_INDEXES, true, false);
-            relationDBHandler = Datastore::openDbi(txn, TB_RELATIONS);
-            Datastore::putRecord(txn, classDBHandler, ClassId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, propDBHndler, PropertyId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, indexDBHandler, PropertyId{UINT16_EM_INIT}, currentTime);
-            Datastore::putRecord(txn, relationDBHandler, STRING_EM_INIT, currentTime);
-            Datastore::commitTxn(txn);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            auto classDBHandler = wtxn.openDbi(TB_CLASSES, true);
+            auto propDBHndler = wtxn.openDbi(TB_PROPERTIES, true);
+            auto indexDBHandler = wtxn.openDbi(TB_INDEXES, true, false);
+            auto relationDBHandler = wtxn.openDbi(TB_RELATIONS);
+            classDBHandler.put(ClassId{UINT16_EM_INIT}, currentTime);
+            propDBHndler.put(PropertyId{UINT16_EM_INIT}, currentTime);
+//            indexDBHandler.put(PropertyId{UINT16_EM_INIT}, currentTime);
+            relationDBHandler.put(STRING_EM_INIT, currentTime);
+            wtxn.commit();
+        } catch (const Error &err) {
+            wtxn.rollback();
+            throw err;
         }
-        // create read-only transaction
-        try {
-            txn = Datastore::beginTxn(envHandler->get(), Datastore::TXN_RO);
-        } catch (Datastore::ErrorType &err) {
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
-        }
+        // perform read-only operations
+        auto rtxn = storage_engine::LMDBTxn(envHandler.get(), storage_engine::lmdb::TXN_RO);
         // create read-write in memory transaction
         BaseTxn baseTxn{*this, true, true};
         // retrieve classes information
         try {
             auto inheritanceInfo = Schema::InheritanceInfo{};
-            auto classCursor = Datastore::CursorHandlerWrapper(txn, classDBHandler);
-            for (auto classKeyValue = Datastore::getNextCursor(classCursor.get());
+            auto classCursor = rtxn.openCursor(TB_CLASSES, true);
+            for (auto classKeyValue = classCursor.getNext();
                  !classKeyValue.empty();
-                 classKeyValue = Datastore::getNextCursor(classCursor.get())) {
-                auto key = Datastore::getKeyAsNumeric<ClassId>(classKeyValue);
-                if (*key == ClassId{UINT16_EM_INIT}) {
+                 classKeyValue = classCursor.getNext()) {
+                auto key = classKeyValue.key.data.numeric<ClassId>();
+                if (key == ClassId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(classKeyValue);
+                auto data = classKeyValue.val.data.blob();
                 auto classType = ClassType::UNDEFINED;
                 auto offset = data.retrieve(&classType, 0, sizeof(ClassType));
                 auto superClassId = ClassId{0};
@@ -173,7 +174,7 @@ namespace nogdb {
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto className = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
-                auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(ClassId{*key}, className, classType);
+                auto classDescriptor = std::make_shared<Schema::ClassDescriptor>(key, className, classType);
                 dbSchema->insert(baseTxn, classDescriptor);
                 inheritanceInfo.emplace_back(std::make_pair(classDescriptor->id, superClassId));
                 if (classDescriptor->id > dbInfo->maxClassId) {
@@ -182,25 +183,24 @@ namespace nogdb {
                 ++baseTxn.dbInfo.numClass;
             }
             dbSchema->apply(baseTxn, inheritanceInfo);
-        } catch (Datastore::ErrorType &err) {
+        } catch (const Error &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw err;
         }
 
         // retrieve properties and indexing information
         try {
-            auto propCursor = Datastore::CursorHandlerWrapper(txn, propDBHndler);
-            auto indexCursor = Datastore::CursorHandlerWrapper(txn, indexDBHandler);
-            for (auto propKeyValue = Datastore::getNextCursor(propCursor.get());
+            auto propCursor = rtxn.openCursor(TB_PROPERTIES, true);
+            auto indexCursor = rtxn.openCursor(TB_INDEXES, true, false);
+            for (auto propKeyValue = propCursor.getNext();
                  !propKeyValue.empty();
-                 propKeyValue = Datastore::getNextCursor(propCursor.get())) {
-                auto key = Datastore::getKeyAsNumeric<PropertyId>(propKeyValue);
-                if (*key == PropertyId{UINT16_EM_INIT}) {
+                 propKeyValue = propCursor.getNext()) {
+                auto key = propKeyValue.key.data.numeric<PropertyId>();
+                if (key == PropertyId{UINT16_EM_INIT}) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(propKeyValue);
+                auto data = propKeyValue.val.data.blob();
                 auto propType = PropertyType::UNDEFINED;
                 auto propClassId = PropertyId{0};
                 auto offset = data.retrieve(&propType, 0, sizeof(PropertyDescriptor::type));
@@ -210,7 +210,7 @@ namespace nogdb {
                 Blob::Byte nameBytes[nameLength];
                 data.retrieve(nameBytes, offset, nameLength);
                 auto propertyName = std::string(reinterpret_cast<char *>(nameBytes), nameLength);
-                auto propertyDescriptor = Schema::PropertyDescriptor{PropertyId{*key}, propType};
+                auto propertyDescriptor = Schema::PropertyDescriptor{key, propType};
                 auto ptrClassDescriptor = dbSchema->find(baseTxn, propClassId);
                 require(ptrClassDescriptor != nullptr);
                 // get indexes associated with property
@@ -218,10 +218,14 @@ namespace nogdb {
                 auto isUniqueNumeric = uint8_t{1};
                 auto indexId = IndexId{0};
                 auto classId = ClassId{0};
-                for (auto indexKeyValue = Datastore::getSetKeyCursor(indexCursor.get(), propertyDescriptor.id);
+                for (auto indexKeyValue = indexCursor.find(propertyDescriptor.id);
                      !indexKeyValue.empty();
-                     indexKeyValue = Datastore::getNextDupCursor(indexCursor.get())) {
-                    data = Datastore::getValueAsBlob(indexKeyValue);
+                     indexKeyValue = indexCursor.getNextDup()) {
+                    key = indexKeyValue.key.data.numeric<PropertyId>();
+                    if (key != propertyDescriptor.id) {
+                        break;
+                    }
+                    data = indexKeyValue.val.data.blob();
                     offset = data.retrieve(&isCompositeNumeric, 0, sizeof(isCompositeNumeric));
                     offset = data.retrieve(&isUniqueNumeric, offset, sizeof(isUniqueNumeric));
                     offset = data.retrieve(&indexId, offset, sizeof(IndexId));
@@ -241,28 +245,27 @@ namespace nogdb {
                 }
                 ++baseTxn.dbInfo.numProperty;
             }
-        } catch (Datastore::ErrorType &err) {
+        } catch (const Error &err) {
             baseTxn.rollback(*this);
             dbSchema->clear();
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
+            throw err;
         }
 
         // retrieve relations information
         try {
-            auto relationCursor = Datastore::CursorHandlerWrapper(txn, relationDBHandler);
-            for (auto relationKeyValue = Datastore::getNextCursor(relationCursor.get());
+            auto relationCursor = rtxn.openCursor(TB_RELATIONS);
+            for (auto relationKeyValue = relationCursor.getNext();
                  !relationKeyValue.empty();
-                 relationKeyValue = Datastore::getNextCursor(relationCursor.get())) {
-                auto key = Datastore::getKeyAsString(relationKeyValue);
+                 relationKeyValue = relationCursor.getNext()) {
+                auto key = relationKeyValue.key.data.string();
                 if (key == STRING_EM_INIT) {
                     continue;
                 }
-                auto data = Datastore::getValueAsBlob(relationKeyValue);
+                auto data = relationKeyValue.val.data.blob();
                 // resolve a rid of an edge from a key
                 auto sp = split(key, ':');
                 if (sp.size() != 2) {
-                    throw Error(CTX_UNKNOWN_ERR, Error::Type::CONTEXT);
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
                 }
                 auto edgeId = RecordId{
                         static_cast<ClassId>(std::stoul(std::string{sp[0]}, nullptr, 0)),
@@ -291,23 +294,9 @@ namespace nogdb {
             baseTxn.rollback(*this);
             dbRelation->clear();
             dbSchema->clear();
-            Datastore::abortTxn(txn);
             throw err;
-        } catch (Graph::ErrorType &err) {
-            baseTxn.rollback(*this);
-            dbRelation->clear();
-            dbSchema->clear();
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::GRAPH);
-        } catch (Datastore::ErrorType &err) {
-            baseTxn.rollback(*this);
-            dbRelation->clear();
-            dbSchema->clear();
-            Datastore::abortTxn(txn);
-            throw Error(err, Error::Type::DATASTORE);
         }
         // end of transaction
-        Datastore::abortTxn(txn);
     }
 
 }

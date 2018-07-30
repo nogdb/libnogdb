@@ -19,37 +19,15 @@
  *
  */
 
-#include <cstdlib>
+#include <iostream>
+#include <cassert>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include "../../include/nogdb/nogdb.h"
 
-#include "keyval.hpp"
-
-namespace nogdb {
-
-    KeyValue::KeyValue()
-            : empty_{true} {
-        key_ = MDB_val{0, nullptr};
-        value_ = MDB_val{0, nullptr};
-    }
-
-    KeyValue::KeyValue(const MDB_val &key, const MDB_val &value)
-            : empty_{false} {
-        key_ = key;
-        value_ = value;
-    }
-
-    KeyValue::KeyValue(const KeyValue &kv)
-            : empty_{kv.empty_} {
-        key_ = kv.key_;
-        value_ = kv.value_;
-    }
-
-    KeyValue &KeyValue::operator=(const KeyValue &kv) {
-        if (this != &kv) {
-            key_ = kv.key_;
-            value_ = kv.value_;
-            empty_ = kv.empty_;
-        }
-        return *this;
-    }
-
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
+
+

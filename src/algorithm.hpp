@@ -26,7 +26,7 @@
 #include <queue>
 
 #include "constant.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
@@ -136,16 +136,16 @@ namespace nogdb {
             auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
 
             if (srcStatus == RECORD_NOT_EXIST) {
-                throw Error(GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
             } else if (dstStatus == RECORD_NOT_EXIST) {
-                throw Error(GRAPH_NOEXST_DST, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
             } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
                 return {T(), std::vector<RecordDescriptor>{}};
             } else {
 
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
 
                 auto parent = std::unordered_map<RecordId, RecordDescriptor, Graph::RecordIdHash> {};
                 auto distance = std::unordered_map<RecordId, T, Graph::RecordIdHash> {};
@@ -226,7 +226,7 @@ namespace nogdb {
         inline static Result retrieve(const Txn &txn,
                                       Schema::ClassDescriptorPtr &classDescriptor,
                                       ClassPropertyInfo &classPropertyInfo,
-                                      Datastore::DBHandler &classDBHandler,
+                                      storage_engine::lmdb::Dbi &classDBHandler,
                                       const RecordId &rid,
                                       const PathFilter &pathFilter,
                                       ClassType type) {
@@ -234,11 +234,11 @@ namespace nogdb {
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(rid.first), true);
+                classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
+            auto rawData = classDBHandler.get(rid.second);
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
                 if ((*pathFilter.vertexFilter)(record)) {
                     return Result{RecordDescriptor{rid}, record};
@@ -259,7 +259,7 @@ namespace nogdb {
         inline static RecordDescriptor retrieveRdesc(const Txn &txn,
                                                      Schema::ClassDescriptorPtr &classDescriptor,
                                                      ClassPropertyInfo &classPropertyInfo,
-                                                     Datastore::DBHandler &classDBHandler,
+                                                     storage_engine::lmdb::Dbi &classDBHandler,
                                                      const RecordId &rid,
                                                      const PathFilter &pathFilter,
                                                      ClassType type) {
@@ -267,11 +267,11 @@ namespace nogdb {
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-                classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(rid.first), true);
+                classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-            auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, rid.second);
-            auto record = Parser::parseRawDataWithBasicInfo(className, rid, keyValue, classPropertyInfo);
+            auto rawData = classDBHandler.get(rid.second);
+            auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
                 if ((*pathFilter.vertexFilter)(record)) {
                     return RecordDescriptor{rid};
@@ -289,31 +289,29 @@ namespace nogdb {
             }
         }
 
-        inline static Record retrieveRecord(const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
-
+        inline static Record retrieveRecord(const Txn &txn, const RecordDescriptor &descriptor) {
+            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
             auto classDescriptor = Generic::getClassDescriptor(txn, descriptor.rid.first,
                                                                ClassType::UNDEFINED);
             auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(),
-                                                     std::to_string(descriptor.rid.first), true);
-            auto keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(),
-                                                 classDBHandler, descriptor.rid.second);
+            auto classDBHandler = dsTxnHandler->openDbi(std::to_string(descriptor.rid.first), true);
+            auto keyValue = classDBHandler.get(descriptor.rid.second);
             auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
 
             return Parser::parseRawDataWithBasicInfo(className, descriptor.rid, keyValue, classPropertyInfo);
         }
 
         inline static std::vector<RecordDescriptor>
-        getIncidentEdges(const nogdb::Txn &txn,
-                                    nogdb::Schema::ClassDescriptorPtr &classDescriptor,
-                                    nogdb::ClassPropertyInfo &classPropertyInfo,
-                                    nogdb::Datastore::DBHandler &classDBHandler,
-                                    std::vector<RecordId>
-                                    (Graph::*edgeFunc)(const BaseTxn &baseTxn, const RecordId &rid,
-                                                       const ClassId &classId),
-                                    const nogdb::RecordId &vertex,
-                                    const nogdb::PathFilter &pathFilter,
-                                    const std::vector<nogdb::ClassId> &edgeClassIds){
+        getIncidentEdges(const Txn &txn,
+                         Schema::ClassDescriptorPtr &classDescriptor,
+                         ClassPropertyInfo &classPropertyInfo,
+                         storage_engine::lmdb::Dbi &classDBHandler,
+                         std::vector<RecordId>
+                         (Graph::*edgeFunc)(const BaseTxn &baseTxn, const RecordId &rid,
+                                            const ClassId &classId),
+                         const RecordId &vertex,
+                         const PathFilter &pathFilter,
+                         const std::vector<ClassId> &edgeClassIds){
 
             auto edgeRecordDescriptors = std::vector<RecordDescriptor>{};
             if (edgeClassIds.empty()) {
@@ -347,7 +345,7 @@ namespace nogdb {
         getOutEdges(const Txn &txn,
                     Schema::ClassDescriptorPtr &classDescriptor,
                     ClassPropertyInfo &classPropertyInfo,
-                    Datastore::DBHandler &classDBHandler,
+                    storage_engine::lmdb::Dbi &classDBHandler,
                     const RecordId &vertex,
                     const PathFilter &pathFilter,
                     const std::vector<ClassId> &edgeClassIds) {

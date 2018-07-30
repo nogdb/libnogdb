@@ -19,7 +19,7 @@
  *
  */
 
-#include "runtest.h"
+#include "apitest.h"
 #include "test_prepare.h"
 
 void test_create_index() {
@@ -125,42 +125,42 @@ void test_create_invalid_index() {
         nogdb::Property::createIndex(txn, "index_test", "index_blob", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_PROPTYPE_INDEX, "CTX_INVALID_PROPTYPE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE_INDEX, "NOGDB_CTX_INVALID_PROPTYPE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text_2", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text_x", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_3", "index_text", false);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test", "index_text", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_INDEX, "NOGDB_CTX_DUPLICATE_INDEX");
     }
 
     try {
         nogdb::Property::createIndex(txn, "index_test_2", "index_text", true);
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_DUPLICATE_INDEX, "CTX_DUPLICATE_INDEX");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_INDEX, "NOGDB_CTX_DUPLICATE_INDEX");
     }
 
 }
@@ -276,54 +276,54 @@ void test_drop_invalid_index() {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
 
@@ -610,7 +610,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -618,7 +618,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -626,7 +626,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -634,7 +634,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -642,7 +642,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -650,7 +650,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -658,7 +658,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -666,7 +666,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -674,7 +674,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
 
     try {
@@ -682,7 +682,7 @@ void test_create_invalid_index_with_records() {
         assert(false);
     }
     catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_INVALID_INDEX_CONSTRAINT, "CTX_INVALID_INDEX_CONSTRAINT");
+        REQUIRE(ex, NOGDB_CTX_INVALID_INDEX_CONSTRAINT, "NOGDB_CTX_INVALID_INDEX_CONSTRAINT");
     }
     txn.rollback();
 
@@ -808,54 +808,54 @@ void test_drop_invalid_index_with_records() {
         nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text_x");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_PROPERTY, "CTX_NOEXST_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_3", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
         assert(false);
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_NOEXST_INDEX, "CTX_NOEXST_INDEX");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
     }
 
     try {
         nogdb::Property::remove(txn, "index_test_2", "index_text_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
 
     try {
         nogdb::Class::drop(txn, "index_test_2");
     } catch (const nogdb::Error &ex) {
-        REQUIRE(ex, CTX_IN_USED_PROPERTY, "CTX_IN_USED_PROPERTY");
+        REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
     }
     txn.rollback();
 
@@ -1258,33 +1258,31 @@ void test_search_by_index_non_unique_condition() {
                                                   rdesc41, rdesc42, std::numeric_limits<uint16_t>::max()/4,
                                                   rdesc31, rdesc32, std::numeric_limits<uint16_t>::max()/2,
                                                   rdesc11, rdesc12, std::numeric_limits<uint16_t>::max() - uint16_t{1});
-//TODO: fix index non unique range search problem
-//    nonUniqueIndexAdjacentConditionTester<int16_t>(ctx, "index_test", "index_smallint",
-//                                  rdesc21, rdesc22, std::numeric_limits<int16_t>::min() + int16_t{1},
-//                                  rdesc41, rdesc42, int16_t{-2},
-//                                  rdesc31, rdesc32, int16_t{0},
-//                                  rdesc11, rdesc12, std::numeric_limits<int16_t>::max() - int16_t{1});
-//    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_int_u",
-//                                          rdesc21, rdesc22, std::numeric_limits<uint32_t>::min() + uint32_t{1},
-//                                          rdesc41, rdesc42, std::numeric_limits<uint32_t>::max()/4,
-//                                          rdesc31, rdesc32, std::numeric_limits<uint32_t>::max()/2,
-//                                          rdesc11, rdesc12, std::numeric_limits<uint32_t>::max() - uint32_t{1});
-//    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_int",
-//                                  rdesc21, rdesc22, std::numeric_limits<int32_t>::min() + int32_t{1},
-//                                  rdesc41, rdesc42, int32_t{-2},
-//                                  rdesc31, rdesc32, int32_t{0},
-//                                  rdesc11, rdesc12, std::numeric_limits<int32_t>::max() - int32_t{1});
+    nonUniqueIndexAdjacentConditionTester<int16_t>(ctx, "index_test", "index_smallint",
+                                  rdesc21, rdesc22, std::numeric_limits<int16_t>::min() + int16_t{1},
+                                  rdesc41, rdesc42, int16_t{-2},
+                                  rdesc31, rdesc32, int16_t{0},
+                                  rdesc11, rdesc12, std::numeric_limits<int16_t>::max() - int16_t{1});
+    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_int_u",
+                                          rdesc21, rdesc22, std::numeric_limits<uint32_t>::min() + uint32_t{1},
+                                          rdesc41, rdesc42, std::numeric_limits<uint32_t>::max()/4,
+                                          rdesc31, rdesc32, std::numeric_limits<uint32_t>::max()/2,
+                                          rdesc11, rdesc12, std::numeric_limits<uint32_t>::max() - uint32_t{1});
+    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_int",
+                                  rdesc21, rdesc22, std::numeric_limits<int32_t>::min() + int32_t{1},
+                                  rdesc41, rdesc42, int32_t{-2},
+                                  rdesc31, rdesc32, int32_t{0},
+                                  rdesc11, rdesc12, std::numeric_limits<int32_t>::max() - int32_t{1});
     nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_bigint_u",
                                   rdesc21, rdesc22, std::numeric_limits<uint64_t>::min() + uint64_t{1},
                                   rdesc41, rdesc42, std::numeric_limits<uint64_t>::max()/4,
                                   rdesc31, rdesc32, std::numeric_limits<uint64_t>::max()/2,
                                   rdesc11, rdesc12, std::numeric_limits<uint64_t>::max() - uint64_t{1});
-//TODO: fix index non unique range search problem
-//    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_bigint",
-//                                  rdesc21, rdesc22, std::numeric_limits<int64_t>::min() + int64_t{1},
-//                                  rdesc41, rdesc42, int64_t{-2},
-//                                  rdesc31, rdesc32, int64_t{0},
-//                                  rdesc11, rdesc12, std::numeric_limits<int64_t>::max() - int64_t{1});
+    nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_bigint",
+                                  rdesc21, rdesc22, std::numeric_limits<int64_t>::min() + int64_t{1},
+                                  rdesc41, rdesc42, int64_t{-2},
+                                  rdesc31, rdesc32, int64_t{0},
+                                  rdesc11, rdesc12, std::numeric_limits<int64_t>::max() - int64_t{1});
     nonUniqueIndexAdjacentConditionTester(ctx, "index_test", "index_real",
                                   rdesc21, rdesc22, -12345.6789,
                                   rdesc41, rdesc42, -0.001,
@@ -1787,56 +1785,56 @@ void test_search_by_index_extended_class_condition() {
                          rdesc3, 1.001,
                          rdesc1, 12345.6789);
 
-    emptyIndexConditionTester<std::string>(ctx, "index_test", "index_text",
-                                      rdesc2, "0123456789",
-                                      rdesc4, "Hello, World",
-                                      rdesc3, "__lib_c++__",
-                                      rdesc1, "abcdefghijklmnopqrstuvwxyz");
-    emptyIndexConditionTester<unsigned char>(ctx, "index_test", "index_tinyint_u",
-                                             rdesc2, std::numeric_limits<uint8_t>::min() + uint8_t{1},
-                                             rdesc4, std::numeric_limits<uint8_t>::max()/4,
-                                             rdesc3, std::numeric_limits<uint8_t>::max()/2,
-                                             rdesc1, std::numeric_limits<uint8_t>::max() - uint8_t{1});
-    emptyIndexConditionTester<int8_t>(ctx, "index_test", "index_tinyint",
-                         rdesc2, std::numeric_limits<int8_t>::min() + int8_t{1},
-                         rdesc4, int8_t{-2},
-                         rdesc3, int8_t{0},
-                         rdesc1, std::numeric_limits<int8_t>::max() - int8_t{1});
-    emptyIndexConditionTester<unsigned short>(ctx, "index_test", "index_smallint_u",
-                                              rdesc2, std::numeric_limits<uint16_t>::min() + uint16_t{1},
-                                              rdesc4, std::numeric_limits<uint16_t>::max()/4,
-                                              rdesc3, std::numeric_limits<uint16_t>::max()/2,
-                                              rdesc1, std::numeric_limits<uint16_t>::max() - uint16_t{1});
-    emptyIndexConditionTester<int16_t>(ctx, "index_test", "index_smallint",
-                         rdesc2, std::numeric_limits<int16_t>::min() + int16_t{1},
-                         rdesc4, int16_t{-2},
-                         rdesc3, int16_t{0},
-                         rdesc1, std::numeric_limits<int16_t>::max() - int16_t{1});
-    emptyIndexConditionTester(ctx, "index_test", "index_int_u",
-                         rdesc2, std::numeric_limits<uint32_t>::min() + uint32_t{1},
-                         rdesc4, std::numeric_limits<uint32_t>::max()/4,
-                         rdesc3, std::numeric_limits<uint32_t>::max()/2,
-                         rdesc1, std::numeric_limits<uint32_t>::max() - uint32_t{1});
-    emptyIndexConditionTester(ctx, "index_test", "index_int",
-                         rdesc2, std::numeric_limits<int32_t>::min() + int32_t{1},
-                         rdesc4, int32_t{-2},
-                         rdesc3, int32_t{0},
-                         rdesc1, std::numeric_limits<int32_t>::max() - int32_t{1});
-    emptyIndexConditionTester(ctx, "index_test", "index_bigint_u",
-                         rdesc2, std::numeric_limits<uint64_t>::min() + uint64_t{1},
-                         rdesc4, std::numeric_limits<uint64_t>::max()/4,
-                         rdesc3, std::numeric_limits<uint64_t>::max()/2,
-                         rdesc1, std::numeric_limits<uint64_t>::max() - uint64_t{1});
-    emptyIndexConditionTester(ctx, "index_test", "index_bigint",
-                         rdesc2, std::numeric_limits<int64_t>::min() + int64_t{1},
-                         rdesc4, int64_t{-2},
-                         rdesc3, int64_t{0},
-                         rdesc1, std::numeric_limits<int64_t>::max() - int64_t{1});
-    emptyIndexConditionTester(ctx, "index_test", "index_real",
-                         rdesc2, -12345.6789,
-                         rdesc4, -0.001,
-                         rdesc3, 1.001,
-                         rdesc1, 12345.6789);
+//    emptyIndexConditionTester<std::string>(ctx, "index_test", "index_text",
+//                                      rdesc2, "0123456789",
+//                                      rdesc4, "Hello, World",
+//                                      rdesc3, "__lib_c++__",
+//                                      rdesc1, "abcdefghijklmnopqrstuvwxyz");
+//    emptyIndexConditionTester<unsigned char>(ctx, "index_test", "index_tinyint_u",
+//                                             rdesc2, std::numeric_limits<uint8_t>::min() + uint8_t{1},
+//                                             rdesc4, std::numeric_limits<uint8_t>::max()/4,
+//                                             rdesc3, std::numeric_limits<uint8_t>::max()/2,
+//                                             rdesc1, std::numeric_limits<uint8_t>::max() - uint8_t{1});
+//    emptyIndexConditionTester<int8_t>(ctx, "index_test", "index_tinyint",
+//                         rdesc2, std::numeric_limits<int8_t>::min() + int8_t{1},
+//                         rdesc4, int8_t{-2},
+//                         rdesc3, int8_t{0},
+//                         rdesc1, std::numeric_limits<int8_t>::max() - int8_t{1});
+//    emptyIndexConditionTester<unsigned short>(ctx, "index_test", "index_smallint_u",
+//                                              rdesc2, std::numeric_limits<uint16_t>::min() + uint16_t{1},
+//                                              rdesc4, std::numeric_limits<uint16_t>::max()/4,
+//                                              rdesc3, std::numeric_limits<uint16_t>::max()/2,
+//                                              rdesc1, std::numeric_limits<uint16_t>::max() - uint16_t{1});
+//    emptyIndexConditionTester<int16_t>(ctx, "index_test", "index_smallint",
+//                         rdesc2, std::numeric_limits<int16_t>::min() + int16_t{1},
+//                         rdesc4, int16_t{-2},
+//                         rdesc3, int16_t{0},
+//                         rdesc1, std::numeric_limits<int16_t>::max() - int16_t{1});
+//    emptyIndexConditionTester(ctx, "index_test", "index_int_u",
+//                         rdesc2, std::numeric_limits<uint32_t>::min() + uint32_t{1},
+//                         rdesc4, std::numeric_limits<uint32_t>::max()/4,
+//                         rdesc3, std::numeric_limits<uint32_t>::max()/2,
+//                         rdesc1, std::numeric_limits<uint32_t>::max() - uint32_t{1});
+//    emptyIndexConditionTester(ctx, "index_test", "index_int",
+//                         rdesc2, std::numeric_limits<int32_t>::min() + int32_t{1},
+//                         rdesc4, int32_t{-2},
+//                         rdesc3, int32_t{0},
+//                         rdesc1, std::numeric_limits<int32_t>::max() - int32_t{1});
+//    emptyIndexConditionTester(ctx, "index_test", "index_bigint_u",
+//                         rdesc2, std::numeric_limits<uint64_t>::min() + uint64_t{1},
+//                         rdesc4, std::numeric_limits<uint64_t>::max()/4,
+//                         rdesc3, std::numeric_limits<uint64_t>::max()/2,
+//                         rdesc1, std::numeric_limits<uint64_t>::max() - uint64_t{1});
+//    emptyIndexConditionTester(ctx, "index_test", "index_bigint",
+//                         rdesc2, std::numeric_limits<int64_t>::min() + int64_t{1},
+//                         rdesc4, int64_t{-2},
+//                         rdesc3, int64_t{0},
+//                         rdesc1, std::numeric_limits<int64_t>::max() - int64_t{1});
+//    emptyIndexConditionTester(ctx, "index_test", "index_real",
+//                         rdesc2, -12345.6789,
+//                         rdesc4, -0.001,
+//                         rdesc3, 1.001,
+//                         rdesc1, 12345.6789);
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};

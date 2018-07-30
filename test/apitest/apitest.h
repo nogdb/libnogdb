@@ -31,8 +31,8 @@
 #include <algorithm>
 #include <set>
 #include "nogdb/nogdb.h"
-#include "runtest_config.h"
-#include "runtest_utils.h"
+#include "apitest_config.h"
+#include "apitest_utils.h"
 
 extern nogdb::Context *ctx;
 

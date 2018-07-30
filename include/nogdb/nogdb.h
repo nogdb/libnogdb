@@ -292,6 +292,10 @@ namespace nogdb {
     //*************************************************************
 
     struct Traverse {
+        Traverse() = delete;
+
+        ~Traverse() noexcept = delete;
+
         static ResultSet inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                    unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 

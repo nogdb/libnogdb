@@ -24,8 +24,8 @@
 
 #include <map>
 
-#include "blob.hpp"
-#include "keyval.hpp"
+#include "datatype.hpp"
+#include "lmdb_engine.hpp"
 #include "schema.hpp"
 
 #include "nogdb_types.h"
@@ -49,11 +49,11 @@ namespace nogdb {
                                 ClassPropertyInfo& classInfo,
                                 std::map<std::string, std::tuple<PropertyType, IndexId, bool>>& indexInfos);
 
-        static Record parseRawData(const KeyValue &keyValue, const ClassPropertyInfo &classPropertyInfo);
+        static Record parseRawData(const storage_engine::lmdb::Result &rawData, const ClassPropertyInfo &classPropertyInfo);
 
         static Record parseRawDataWithBasicInfo(const std::string &className,
                                                 const RecordId& rid,
-                                                const KeyValue &keyValue,
+                                                const storage_engine::lmdb::Result &rawData,
                                                 const ClassPropertyInfo &classPropertyInfo);
 
         inline static size_t getRawDataSize(size_t size) {

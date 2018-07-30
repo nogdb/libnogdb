@@ -22,8 +22,8 @@
 #include <string.h>
 
 #include <nogdb/nogdb.h>
-#include "runtest.h"
-#include "runtest_utils.h"
+#include "apitest.h"
+#include "apitest_utils.h"
 #include "test_prepare.h"
 
 using namespace std;
@@ -58,7 +58,7 @@ void test_sql_unrecognized_token_error() {
         SQL::execute(txn, "128asyuiqwerhb;");
         assert(false);
     } catch (const Error &e) {
-        REQUIRE(e, SQL_UNRECOGNIZED_TOKEN, "SQL_UNRECOGNIZED_TOKEN");
+        REQUIRE(e, NOGDB_SQL_UNRECOGNIZED_TOKEN, "NOGDB_SQL_UNRECOGNIZED_TOKEN");
     }
     txn.commit();
 }
@@ -69,7 +69,7 @@ void test_sql_syntax_error() {
         SQL::execute(txn, "SELECT DELETE VERTEX;");
         assert(false);
     } catch (const Error &e) {
-        REQUIRE(e, SQL_SYNTAX_ERROR, "SQL_SYNTAX_ERROR");
+        REQUIRE(e, NOGDB_SQL_SYNTAX_ERROR, "NOGDB_SQL_SYNTAX_ERROR");
     }
     txn.commit();
 }
@@ -177,13 +177,13 @@ void test_sql_create_invalid_class() {
         SQL::execute(txn, "CREATE CLASS '' EXTENDS VERTEX");
         assert(false);
     } catch(const Error& ex) {
-        REQUIRE(ex, CTX_INVALID_CLASSNAME, "CTX_INVALID_CLASSNAME");
+        REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
     }
     try {
         SQL::execute(txn, "CREATE CLASS sql_class EXTENDS VERTEX");
         assert(false);
     }  catch(const Error& ex) {
-        REQUIRE(ex, CTX_DUPLICATE_CLASS, "CTX_DUPLICATE_CLASS");
+        REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
     }
     try {
         SQL::execute(txn, "DROP CLASS sql_class");
@@ -241,7 +241,7 @@ void test_sql_drop_class() {
         auto schema = Db::getSchema(txn, "sql_class");
         assert(false);
     } catch (const Error &e) {
-        assert(e.code() == CTX_NOEXST_CLASS);
+        assert(e.code() == NOGDB_CTX_NOEXST_CLASS);
     }
     txn.commit();
 }
@@ -275,14 +275,14 @@ void test_sql_drop_invalid_class() {
         SQL::execute(txn, "DROP CLASS ''");
         assert(false);
     } catch(const Error& ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     }
     try {
         SQL::execute(txn, "DROP CLASS sql_class");
         assert(false);
     } catch(const Error& ex) {
-        REQUIRE(ex, CTX_NOEXST_CLASS, "CTX_NOEXST_CLASS");
-        assert(ex.code() == CTX_NOEXST_CLASS);
+        REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+        assert(ex.code() == NOGDB_CTX_NOEXST_CLASS);
     }
     txn.commit();
 }
@@ -1289,7 +1289,7 @@ void test_sql_delete_vertex_with_rid() {
         try {
             auto record = Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -1298,12 +1298,12 @@ void test_sql_delete_vertex_with_rid() {
         try {
             auto record = Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1343,7 +1343,7 @@ void test_sql_delete_vertex_with_condition() {
         try {
             auto record = Db::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         auto record = Db::getRecord(txn, v1_1);
         assert(!record.empty());
@@ -1352,12 +1352,12 @@ void test_sql_delete_vertex_with_condition() {
         try {
             auto record = Db::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
             auto record = Db::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
-            REQUIRE(ex, CTX_NOEXST_RECORD, "CTX_NOEXST_RECORD");
+            REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
     } catch(const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

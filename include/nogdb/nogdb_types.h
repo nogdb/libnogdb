@@ -44,7 +44,7 @@ namespace boost {
 }
 
 namespace nogdb {
-    struct Datastore;
+    struct LMDBInterface;
     struct Graph;
     struct Validate;
     struct Algorithm;
@@ -71,6 +71,11 @@ namespace nogdb {
     class PathFilter;
 
     class RWSpinLock;
+
+    namespace storage_engine {
+        class LMDBEnv;
+        class LMDBTxn;
+    }
 
     namespace sql_parser {
         class Record;

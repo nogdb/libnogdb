@@ -216,7 +216,7 @@
 //  C++0x features in GCC 4.9.0 and later
 //
 #if (BOOST_LIBSTDCXX_VERSION < 40900) || !defined(BOOST_LIBSTDCXX11)
-// Although <regex> is present and compilable against, the actual implementation is not functional
+// Although <regex> is present and compilable against, the actual implementation is not apitest
 // even for the simplest patterns such as "\d" or "[0-9]". This is the case at least in gcc up to 4.8, inclusively.
 #  define BOOST_NO_CXX11_HDR_REGEX
 #endif

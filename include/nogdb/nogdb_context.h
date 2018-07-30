@@ -35,9 +35,10 @@
 //******************************************************************
 
 namespace nogdb {
+
     class Context {
     public:
-        friend struct Datastore;
+        friend struct LMDBInterface;
         friend struct Validate;
         friend struct Algorithm;
         friend struct Compare;
@@ -55,6 +56,8 @@ namespace nogdb {
         friend class Txn;
 
         Context() = default;
+
+        ~Context() noexcept;
 
         Context(const std::string &dbPath);
 
@@ -79,7 +82,7 @@ namespace nogdb {
         std::pair<TxnId, TxnId> getMinActiveTxnId() const;
 
     private:
-        std::shared_ptr<EnvHandlerPtr> envHandler;
+        std::shared_ptr<storage_engine::LMDBEnv> envHandler;
         std::shared_ptr<DBInfo> dbInfo;
         std::shared_ptr<Schema> dbSchema;
         std::shared_ptr<TxnStat> dbTxnStat;
@@ -87,6 +90,8 @@ namespace nogdb {
 
         mutable std::shared_ptr<boost::shared_mutex> dbInfoMutex;
         mutable std::shared_ptr<boost::shared_mutex> dbWriterMutex;
+
+        int lockContextFileDescriptor;
 
         void initDatabase();
     };

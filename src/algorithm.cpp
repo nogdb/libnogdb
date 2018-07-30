@@ -25,18 +25,14 @@
 #include <queue>
 #include <stack>
 
-#include "blob.hpp"
-#include "keyval.hpp"
+#include "datatype.hpp"
+#include "storage_engine.hpp"
+#include "lmdb_engine.hpp"
 #include "schema.hpp"
-#include "env_handler.hpp"
 #include "algorithm.hpp"
 
 #include "nogdb_errors.h"
 #include "nogdb_compare.h"
-
-#define RECORD_NOT_EXIST                0
-#define RECORD_NOT_EXIST_IN_MEMORY      1
-#define RECORD_EXIST                    2
 
 namespace nogdb {
 
@@ -119,7 +115,7 @@ namespace nogdb {
                                       const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -127,7 +123,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
                 auto queue = std::queue<RecordId> {};
 
@@ -185,14 +181,12 @@ namespace nogdb {
                             }
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -211,7 +205,7 @@ namespace nogdb {
                                      const PathFilter &pathFilter) {
         switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
             case RECORD_NOT_EXIST:
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
             case RECORD_NOT_EXIST_IN_MEMORY:
                 return ((minDepth == 0) && (minDepth <= maxDepth)) ?
                        std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
@@ -219,7 +213,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 auto classDescriptor = Schema::ClassDescriptorPtr{};
                 auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = Datastore::DBHandler{};
+                auto classDBHandler = storage_engine::lmdb::Dbi{};
                 try {
 
                     std::unordered_set<RecordId, Graph::RecordIdHash> visited {};
@@ -283,14 +277,12 @@ namespace nogdb {
                             --currentLevel;
                         }
                     }
-                } catch (Graph::ErrorType &err) {
-                    if (err == GRAPH_NOEXST_VERTEX) {
-                        throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+                } catch (const Error &err) {
+                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                     } else {
-                        throw Error(err, Error::Type::GRAPH);
+                        throw err;
                     }
-                } catch (Datastore::ErrorType &err) {
-                    throw Error(err, Error::Type::DATASTORE);
                 }
                 return result;
         }
@@ -305,16 +297,16 @@ namespace nogdb {
         auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
         auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
         if (srcStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_SRC, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
         } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw Error(GRAPH_NOEXST_DST, Error::Type::GRAPH);
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
         } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
             return std::vector<RecordDescriptor>{};
         } else {
             auto result = std::vector<RecordDescriptor>{};
             auto classDescriptor = Schema::ClassDescriptorPtr{};
             auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = Datastore::DBHandler{};
+            auto classDBHandler = storage_engine::lmdb::Dbi{};
             try {
                 if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                     result.emplace_back(srcVertexRecordDescriptor);
@@ -365,14 +357,12 @@ namespace nogdb {
                         }
                     }
                 }
-            } catch (Graph::ErrorType &err) {
-                if (err == GRAPH_NOEXST_VERTEX) {
-                    throw Error(GRAPH_UNKNOWN_ERR, Error::Type::GRAPH);
+            } catch (const Error &err) {
+                if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                    throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
                 } else {
-                    throw Error(err, Error::Type::GRAPH);
+                    throw err;
                 }
-            } catch (Datastore::ErrorType &err) {
-                throw Error(err, Error::Type::DATASTORE);
             }
             return result;
         }

@@ -53,7 +53,6 @@ namespace nogdb {
         ~Graph() noexcept = default;
 
         typedef boost::hash<RecordId> RecordIdHash;
-        typedef unsigned int ErrorType;
 
         template<typename T>
         using GraphElements = std::unordered_map<RecordId, std::shared_ptr<T>, RecordIdHash>;

@@ -24,8 +24,7 @@
 #include "shared_lock.hpp"
 #include "schema.hpp"
 #include "constant.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
 #include "compare.hpp"
@@ -48,31 +47,22 @@ namespace nogdb {
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
-        const PositionId *maxRecordNum = nullptr;
-        auto maxRecordNumValue = 0U;
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, EM_MAXRECNUM);
-            maxRecordNum = Datastore::getValueAsNumeric<PositionId>(keyValue);
-            maxRecordNumValue = *maxRecordNum;
-            Datastore::putRecord(dsTxnHandler, classDBHandler, maxRecordNumValue, value, true);
-            Datastore::putRecord(dsTxnHandler, classDBHandler, EM_MAXRECNUM, PositionId{maxRecordNumValue + 1});
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(EM_MAXRECNUM);
+        auto const maxRecordNum = dsResult.data.numeric<PositionId>();
+        classDBHandler.put(maxRecordNum, value, true);
+        classDBHandler.put(EM_MAXRECNUM, PositionId{maxRecordNum + 1});
 
-            // add index if applied
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::addIndex(*txn.txnBase, indexId, maxRecordNumValue, bytesValue, propertyType, isUnique);
-            }
-        } catch (const Error &err) {
-            throw err;
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+        // add index if applied
+        for (const auto &indexInfo: indexInfos) {
+            auto bytesValue = record.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::addIndex(*txn.txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
         }
-        return RecordDescriptor{classDescriptor->id, maxRecordNumValue};
+        return RecordDescriptor{classDescriptor->id, maxRecordNum};
     }
 
     void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
@@ -86,52 +76,48 @@ namespace nogdb {
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        try {
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (keyValue.empty()) {
-                throw Error(GRAPH_NOEXST_VERTEX, Error::Type::GRAPH);
-            }
-            auto existingRecord = Parser::parseRawData(keyValue, classInfo);
-            auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-            for (const auto &property: existingRecord.getAll()) {
-                // check if having any index
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty != classInfo.nameToDesc.cend()) {
-                    for (const auto &indexIter: foundProperty->second.indexInfo) {
-                        if (indexIter.second.first == classDescriptor->id) {
-                            existingIndexInfos.emplace(
-                                    property.first,
-                                    std::make_tuple(
-                                            foundProperty->second.type,
-                                            indexIter.first,
-                                            indexIter.second.second
-                                    )
-                            );
-                            break;
-                        }
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
+        }
+        auto existingRecord = Parser::parseRawData(dsResult, classInfo);
+        auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
+        for (const auto &property: existingRecord.getAll()) {
+            // check if having any index
+            auto foundProperty = classInfo.nameToDesc.find(property.first);
+            if (foundProperty != classInfo.nameToDesc.cend()) {
+                for (const auto &indexIter: foundProperty->second.indexInfo) {
+                    if (indexIter.second.first == classDescriptor->id) {
+                        existingIndexInfos.emplace(
+                                property.first,
+                                std::make_tuple(
+                                        foundProperty->second.type,
+                                        indexIter.first,
+                                        indexIter.second.second
+                                )
+                        );
+                        break;
                     }
                 }
             }
-            for (const auto &indexInfo: existingIndexInfos) {
-                auto bytesValue = existingRecord.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::addIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-            }
-
-            Datastore::putRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second, value);
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
+        for (const auto &indexInfo: existingIndexInfos) {
+            auto bytesValue = existingRecord.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+        }
+        for (const auto &indexInfo: indexInfos) {
+            auto bytesValue = record.get(indexInfo.first);
+            auto const propertyType = std::get<0>(indexInfo.second);
+            auto const indexId = std::get<1>(indexInfo.second);
+            auto const isUnique = std::get<2>(indexInfo.second);
+            Index::addIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+        }
+
+        classDBHandler.put(recordDescriptor.rid.second, value);
     }
 
     void Vertex::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -144,55 +130,51 @@ namespace nogdb {
             for (const auto &edge: txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordDescriptor.rid)) {
                 edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
             }
-        } catch (Graph::ErrorType &err) {
-            if (err != GRAPH_NOEXST_VERTEX)
-                throw Error(err, Error::Type::GRAPH);
+        } catch (const Error &err) {
+            if (err.code() != NOGDB_GRAPH_NOEXST_VERTEX)
+                throw err;
         }
         // delete edges and relations
         for (const auto &edge: edgeRecordDescriptors) {
             Edge::destroy(txn, edge);
         }
         // delete a record in a datastore
-        try {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            // delete index if existing
-            auto keyValue = Datastore::getRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-            if (!keyValue.empty()) {
-                auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-                auto record = Parser::parseRawData(keyValue, classInfo);
-                for (const auto &property: record.getAll()) {
-                    // check if having any index
-                    auto foundProperty = classInfo.nameToDesc.find(property.first);
-                    if (foundProperty != classInfo.nameToDesc.cend()) {
-                        for (const auto &indexIter: foundProperty->second.indexInfo) {
-                            if (indexIter.second.first == classDescriptor->id) {
-                                indexInfos.emplace(
-                                        property.first,
-                                        std::make_tuple(
-                                                foundProperty->second.type,
-                                                indexIter.first,
-                                                indexIter.second.second
-                                        )
-                                );
-                                break;
-                            }
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        // delete index if existing
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (!dsResult.data.empty()) {
+            auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
+            auto record = Parser::parseRawData(dsResult, classInfo);
+            for (const auto &property: record.getAll()) {
+                // check if having any index
+                auto foundProperty = classInfo.nameToDesc.find(property.first);
+                if (foundProperty != classInfo.nameToDesc.cend()) {
+                    for (const auto &indexIter: foundProperty->second.indexInfo) {
+                        if (indexIter.second.first == classDescriptor->id) {
+                            indexInfos.emplace(
+                                    property.first,
+                                    std::make_tuple(
+                                            foundProperty->second.type,
+                                            indexIter.first,
+                                            indexIter.second.second
+                                    )
+                            );
+                            break;
                         }
                     }
                 }
-                for (const auto &indexInfo: indexInfos) {
-                    auto bytesValue = record.get(indexInfo.first);
-                    auto const propertyType = std::get<0>(indexInfo.second);
-                    auto const indexId = std::get<1>(indexInfo.second);
-                    auto const isUnique = std::get<2>(indexInfo.second);
-                    Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-                }
             }
-            // delete actual record
-            Datastore::deleteRecord(dsTxnHandler, classDBHandler, recordDescriptor.rid.second);
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+            for (const auto &indexInfo: indexInfos) {
+                auto bytesValue = record.get(indexInfo.first);
+                auto const propertyType = std::get<0>(indexInfo.second);
+                auto const indexId = std::get<1>(indexInfo.second);
+                auto const isUnique = std::get<2>(indexInfo.second);
+                Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+            }
         }
+        // delete actual record
+        classDBHandler.del(recordDescriptor.rid.second);
         // update in-memory relations
         txn.txnCtx.dbRelation->deleteVertex(*txn.txnBase, recordDescriptor.rid);
     }
@@ -205,97 +187,87 @@ namespace nogdb {
         auto recordIds = std::vector<RecordId> {};
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         // remove all index records
-        try {
-            auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
-            for (const auto &property: classInfo.nameToDesc) {
-                auto &type = property.second.type;
-                auto &indexInfo = property.second.indexInfo;
-                for (const auto &indexIter: indexInfo) {
-                    if (indexIter.second.first == classDescriptor->id) {
-                        indexInfos.emplace_back(
-                                std::make_tuple(
-                                        type,
-                                        indexIter.first,
-                                        indexIter.second.second
-                                )
-                        );
-                    }
+        auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
+        for (const auto &property: classInfo.nameToDesc) {
+            auto &type = property.second.type;
+            auto &indexInfo = property.second.indexInfo;
+            for (const auto &indexIter: indexInfo) {
+                if (indexIter.second.first == classDescriptor->id) {
+                    indexInfos.emplace_back(
+                            std::make_tuple(
+                                    type,
+                                    indexIter.first,
+                                    indexIter.second.second
+                            )
+                    );
+                }
+                break;
+            }
+        }
+        for (const auto &indexInfo: indexInfos) {
+            auto const propertyType = std::get<0>(indexInfo);
+            auto const indexId = std::get<1>(indexInfo);
+            auto const isUnique = std::get<2>(indexInfo);
+            switch (propertyType) {
+                case PropertyType::UNSIGNED_TINYINT:
+                case PropertyType::UNSIGNED_SMALLINT:
+                case PropertyType::UNSIGNED_INTEGER:
+                case PropertyType::UNSIGNED_BIGINT: {
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
+                    dataIndexDBHandler.drop();
                     break;
                 }
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto const propertyType = std::get<0>(indexInfo);
-                auto const indexId = std::get<1>(indexInfo);
-                auto const isUnique = std::get<2>(indexInfo);
-                switch (propertyType) {
-                    case PropertyType::UNSIGNED_TINYINT:
-                    case PropertyType::UNSIGNED_SMALLINT:
-                    case PropertyType::UNSIGNED_INTEGER:
-                    case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), true, isUnique);
-                        Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
-                        break;
-                    }
-                    case PropertyType::TINYINT:
-                    case PropertyType::SMALLINT:
-                    case PropertyType::INTEGER:
-                    case PropertyType::BIGINT:
-                    case PropertyType::REAL: {
-                        auto dataIndexDBHandlerPositive = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, true), true, isUnique);
-                        auto dataIndexDBHandlerNegative = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId, false), true, isUnique);
-                        Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerPositive);
-                        Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandlerNegative);
-                        break;
-                    }
-                    case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = Datastore::openDbi(dsTxnHandler, Index::getIndexingName(indexId), false, isUnique);
-                        Datastore::emptyDbi(dsTxnHandler, dataIndexDBHandler);
-                        break;
-                    }
-                    default:
-                        break;
+                case PropertyType::TINYINT:
+                case PropertyType::SMALLINT:
+                case PropertyType::INTEGER:
+                case PropertyType::BIGINT:
+                case PropertyType::REAL: {
+                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
+                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
+                    dataIndexDBHandlerPositive.drop();
+                    dataIndexDBHandlerNegative.drop();
+                    break;
                 }
+                case PropertyType::TEXT: {
+                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
+                    dataIndexDBHandler.drop();
+                    break;
+                }
+                default:
+                    break;
             }
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
         // remove all records in a database
-        try {
-            auto classDBHandler = Datastore::openDbi(dsTxnHandler, std::to_string(classDescriptor->id), true);
-            auto cursorHandler = Datastore::CursorHandlerWrapper(dsTxnHandler, classDBHandler);
-            auto relationDBHandler = Datastore::openDbi(dsTxnHandler, TB_RELATIONS);
-            auto keyValue = Datastore::getNextCursor(cursorHandler.get());
-            while (!keyValue.empty()) {
-                auto key = Datastore::getKeyAsNumeric<PositionId>(keyValue);
-                if (*key != EM_MAXRECNUM) {
-                    auto recordDescriptor = RecordDescriptor{classDescriptor->id, *key};
-                    recordIds.push_back(recordDescriptor.rid);
-                    auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
-                    try {
-                        for (const auto &edge: txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordDescriptor.rid)) {
-                            edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
-                        }
-                    } catch (Graph::ErrorType &err) {
-                        if (err != GRAPH_NOEXST_VERTEX) {
-                            throw Error(err, Error::Type::GRAPH);
-                        }
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
+        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
+        for(auto keyValue = cursorHandler.getNext();
+            !keyValue.empty();
+            keyValue = cursorHandler.getNext()) {
+            auto key = keyValue.key.data.numeric<PositionId>();
+            if (key != EM_MAXRECNUM) {
+                auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
+                recordIds.push_back(recordDescriptor.rid);
+                auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
+                try {
+                    for (const auto &edge: txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordDescriptor.rid)) {
+                        edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
                     }
-                    // delete from relations
-                    for (const auto &edge: edgeRecordDescriptors) {
-                        Datastore::deleteRecord(dsTxnHandler, relationDBHandler, rid2str(edge.rid));
-                        auto edgeClassHandler = Datastore::openDbi(dsTxnHandler, std::to_string(edge.rid.first), true);
-                        Datastore::deleteRecord(dsTxnHandler, edgeClassHandler, edge.rid.second);
+                } catch (const Error &err) {
+                    if (err.code() != NOGDB_GRAPH_NOEXST_VERTEX) {
+                        throw err;
                     }
-                    // delete a record in a datastore
-                    //Datastore::deleteCursor(cursorHandler);
                 }
-                keyValue = Datastore::getNextCursor(cursorHandler.get());
+                // delete from relations
+                for (const auto &edge: edgeRecordDescriptors) {
+                    relationDBHandler.del(rid2str(edge.rid));
+                    auto edgeClassHandler = dsTxnHandler->openDbi(std::to_string(edge.rid.first), true);
+                    edgeClassHandler.del(edge.rid.second);
+                }
             }
-            // empty a database
-            Datastore::emptyDbi(dsTxnHandler, classDBHandler);
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
         }
+        // empty a database
+        classDBHandler.drop();
         // update in-memory
         for (const auto &recordId: recordIds) {
             txn.txnCtx.dbRelation->deleteVertex(*txn.txnBase, recordId);

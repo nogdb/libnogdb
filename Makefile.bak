@@ -9,20 +9,23 @@ EXTFLAGS	=
 SRCDIR		= src
 BUILDDIR	= build
 TARGETDIR	= bin
-TESTDIR	    = test
+TESTDIR	    = test/apitest
+TESTUNITDIR = test/unittest
 LIBPATH		= lib
 SRCEXT		= cpp
 SOURCES		= $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 TESTSRCS	= $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
+TESTUNITSRCS    = $(shell find $(TESTUNITDIR) -type f -name *.$(SRCEXT))
 OBJECTS		= $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 TESTOBJS	= $(patsubst $(TESTDIR)/%,$(TESTDIR)/%,$(TESTSRCS:.$(SRCEXT)=.o))
+TESTUNITOBJS    = $(patsubst $(TESTUNITDIR)/%,$(TESTUNITDIR)/%,$(TESTUNITSRCS:.$(SRCEXT)=.o))
 HEADERS		= -Iinclude -Iinclude/nogdb -I$(LIBPATH) -I.
 ANAME		= $(TARGETDIR)/libnogdb.a
 SONAME		= $(TARGETDIR)/libnogdb.so
 DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
-TESTPREFIX	?= runtest
+TESTPREFIX	?= apitest
 TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
 CCNAME      = $(shell $(CXX) --version 2> /dev/null | grep -oe 'clang')
@@ -88,20 +91,27 @@ $(SRCDIR)/sql_parser.cpp: $(SRCDIR)/sql_parser.y $(LEMONPP)
 $(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
 	$(CC) -DLEMONPLUSPLUS=1 -DTEMPLATE_EXTENSION=\".cxx\" -o $@ $(LEMONDIR)/lemon.c
 
-#test: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-test: lmdb $(ANAME) $(TESTOBJS)
+#test: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
-#test_address: lmdb $(ANAME) $(SONAME) $(TESTOBJS)
-test_address: lmdb $(ANAME) $(TESTOBJS)
+test_unit: verbose lmdb $(ANAME) $(TESTUNITOBJS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTUNITOBJS) $(ANAME) -o unittest $(LDFLAGS) -lgmock -lgtest
+	@./unittest; rm -rf test_*.db
+
+#test_address: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
+test_address: verbose lmdb $(ANAME) $(TESTOBJS)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
 #	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
+
+$(TESTUNITDIR)/%.o: $(TESTUNITDIR)/%.$(SRCEXT)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
 
 install:
 	@printf "Installing libnogdb..."
@@ -122,6 +132,7 @@ uninstall:
 clean:
 	@printf "Cleaning all executable objects and libs..."
 	@rm -f $(TESTPREFIX) $(TESTPREFIX)_debug_address
+	@rm -f unittest
 	@find * -name "*.o" -type f -exec rm -f {} \;
 	@find * -name "*.a" -type f -exec rm -f {} \;
 	@find * -name "*.so" -type f -exec rm -f {} \;

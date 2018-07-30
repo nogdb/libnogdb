@@ -21,8 +21,7 @@
 
 #include "shared_lock.hpp"
 #include "schema.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "algorithm.hpp"
 #include "generic.hpp"

@@ -381,7 +381,7 @@ Bytes Function::execute(Txn &txn, const Result &input) const {
             func = walkBothVertex;
             break;
         default:
-            throw Error(SQL_INVALID_FUNCTION_NAME, Error::Type::SQL);
+            throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_NAME);
     }
     return func(txn, input, this->args);
 }
@@ -397,7 +397,7 @@ Bytes Function::executeAggregateResult(const ResultSet &input) const {
         case Id::MIN:
 //            func = min; break;
         default:
-            throw Error(SQL_INVALID_FUNCTION_NAME, Error::Type::SQL);
+            throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_NAME);
     }
     return func(input, this->args);
 }
@@ -453,7 +453,7 @@ Bytes Function::count(const ResultSet &input, const vector<Projection> &args) {
         }
         return Bytes(result, PropertyType(nogdb::PropertyType::UNSIGNED_BIGINT));
     } else {
-        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 }
 
@@ -481,7 +481,7 @@ Bytes Function::walkInVertex(Txn &txn, const Result &input, const vector<Project
     if (args.size() == 0) {
         return Bytes(ResultSet{Edge::getDst(txn, input.descriptor)});
     } else {
-        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 }
 
@@ -503,7 +503,7 @@ Bytes Function::walkOutVertex(Txn &txn, const Result &input, const vector<Projec
     if (args.size() == 0) {
         return Bytes(ResultSet{Edge::getSrc(txn, input.descriptor)});
     } else {
-        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 }
 
@@ -529,13 +529,13 @@ Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Proje
     if (args.size() == 0) {
         return Bytes(Edge::getSrcDst(txn, input.descriptor));
     } else {
-        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 }
 
 Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &args) {
     if (args.size() != 1) {
-        throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+        throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
     }
 
     ResultSet results{};
@@ -547,7 +547,7 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
         } else if (out.empty()) {
             // no-op.
         } else {
-            throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+            throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
         }
     }
 
@@ -559,7 +559,7 @@ nogdb::ClassFilter Function::argsToClassFilter(const vector<Projection> &args) {
     ClassFilter filter{};
     for (const Projection &arg: args) {
         if (arg.type != ProjectionType::PROPERTY) {
-            throw Error(SQL_INVALID_FUNCTION_ARGS, Error::Type::SQL);
+            throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
         }
         filter.add(arg.get<string>());
     }
@@ -922,7 +922,7 @@ const nogdb::SQL::Result nogdb::SQL::execute(Txn &txn, const std::string &sql) {
         }
         if (tokenType >= TK_SPACE || n == -1) {
             if (tokenType == TK_ILLEGAL || n == -1) {
-                throw Error(SQL_UNRECOGNIZED_TOKEN, Error::Type::SQL);
+                throw NOGDB_SQL_ERROR(NOGDB_SQL_UNRECOGNIZED_TOKEN);
             }
             zSql += n;
         } else {

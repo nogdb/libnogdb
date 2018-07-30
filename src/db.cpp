@@ -23,8 +23,7 @@
 
 #include "shared_lock.hpp"
 #include "schema.hpp"
-#include "env_handler.hpp"
-#include "datastore.hpp"
+#include "lmdb_engine.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
 
@@ -35,17 +34,13 @@ namespace nogdb {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
         auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-        auto keyValue = KeyValue{};
-        try {
-            auto classDBHandler = Datastore::openDbi(txn.txnBase->getDsTxnHandler(), std::to_string(classDescriptor->id), true);
-            keyValue = Datastore::getRecord(txn.txnBase->getDsTxnHandler(), classDBHandler, recordDescriptor.rid.second);
-        } catch (Datastore::ErrorType &err) {
-            throw Error(err, Error::Type::DATASTORE);
+        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
+        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
+        if (dsResult.data.empty()) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
         }
-        if (keyValue.empty()) {
-            throw Error(CTX_NOEXST_RECORD, Error::Type::CONTEXT);
-        }
-        return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, keyValue, classPropertyInfo);
+        return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
     }
 
     const std::vector<ClassDescriptor> Db::getSchema(const Txn &txn) {

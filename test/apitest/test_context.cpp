@@ -19,7 +19,7 @@
  *
  */
 
-#include "runtest.h"
+#include "apitest.h"
 
 void assert_dbinfo(const nogdb::DBInfo &info1, const nogdb::DBInfo &info2) {
 	assert(info1.numClass == info2.numClass);
@@ -705,7 +705,7 @@ void test_locked_ctx() {
 		new nogdb::Context(DATABASE_PATH);
 		assert(false);
 	} catch(const nogdb::Error& ex) {
-		REQUIRE(ex, CTX_IS_LOCKED, "CTX_IS_LOCKED");
+		REQUIRE(ex, NOGDB_CTX_IS_LOCKED, "NOGDB_CTX_IS_LOCKED");
 	}
 
 	delete ctx;

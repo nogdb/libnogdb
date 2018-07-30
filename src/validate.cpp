@@ -30,22 +30,22 @@ namespace nogdb {
 
     void Validate::isTransactionValid(const Txn &txn) {
         if (txn.getTxnMode() == Txn::Mode::READ_ONLY) {
-            throw Error(TXN_INVALID_MODE, Error::Type::TRANSACTION);
+            throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
         }
         if (!txn.txnBase->isNotCompleted()) {
-            throw Error(TXN_COMPLETED, Error::Type::TRANSACTION);
+            throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
         }
     }
 
     void Validate::isClassNameValid(const std::string &className) {
         if (!isNameValid(className)) {
-            throw Error(CTX_INVALID_CLASSNAME, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSNAME);
         }
     }
 
     void Validate::isPropertyNameValid(const std::string &propName) {
         if (!isNameValid(propName)) {
-            throw Error(CTX_INVALID_PROPERTYNAME, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPERTYNAME);
         }
     }
 
@@ -59,7 +59,7 @@ namespace nogdb {
             case ClassType::EDGE:
                 return;
             default:
-                throw Error(CTX_INVALID_CLASSTYPE, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSTYPE);
         }
     }
 
@@ -78,21 +78,21 @@ namespace nogdb {
             case PropertyType::BLOB:
                 return;
             default:
-                throw Error(CTX_INVALID_PROPTYPE, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE);
         }
     }
 
     void Validate::isNotDuplicatedClass(const Txn &txn, const std::string &className) {
         auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, className);
         if (foundClass != nullptr) {
-            throw Error(CTX_DUPLICATE_CLASS, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
         }
     }
 
     std::shared_ptr<Schema::ClassDescriptor> Validate::isExistingClass(const Txn &txn, const std::string &className) {
         auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, className);
         if (foundClass == nullptr) {
-            throw Error(CTX_NOEXST_CLASS, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
@@ -100,7 +100,7 @@ namespace nogdb {
     std::shared_ptr<Schema::ClassDescriptor> Validate::isExistingClass(const Txn &txn, const ClassId &classId) {
         auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, classId);
         if (foundClass == nullptr) {
-            throw Error(CTX_NOEXST_CLASS, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
@@ -111,7 +111,7 @@ namespace nogdb {
         auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
         auto foundProperty = properties.find(propertyName);
         if (foundProperty == properties.cend()) {
-            throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         return foundProperty->second;
     }
@@ -126,7 +126,7 @@ namespace nogdb {
             if (auto superClassDescriptor = BaseTxn::getCurrentVersion(txn, classDescriptor->super).first.lock()) {
                 return isExistingPropertyExtend(txn, superClassDescriptor, propertyName);
             } else {
-                throw Error(CTX_NOEXST_PROPERTY, Error::Type::CONTEXT);
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
             return std::make_pair(classDescriptor->id, foundProperty->second);
@@ -139,7 +139,7 @@ namespace nogdb {
         auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
         auto foundProperty = properties.find(propertyName);
         if (foundProperty != properties.cend()) {
-            throw Error(CTX_DUPLICATE_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
         }
         if (auto superClassDescriptor = BaseTxn::getCurrentVersion(txn, classDescriptor->super).first.lock()) {
             isNotDuplicatedProperty(txn, superClassDescriptor, propertyName);
@@ -152,7 +152,7 @@ namespace nogdb {
         auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
         auto foundProperty = properties.find(propertyName);
         if (foundProperty != properties.cend()) {
-            throw Error(CTX_OVERRIDE_PROPERTY, Error::Type::CONTEXT);
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
         }
         for (const auto &subClassDescriptor: BaseTxn::getCurrentVersion(txn, classDescriptor->sub).first) {
             if (auto subClassDescriptorPtr = subClassDescriptor.lock()) {
