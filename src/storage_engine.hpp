@@ -31,9 +31,9 @@
 #include <sys/stat.h>
 
 #include "lmdb_engine.hpp"
+#include "utils.hpp"
 
 #include "nogdb/nogdb_context.h"
-#include "utils.hpp"
 
 #define DEFAULT_NOGDB_MAX_DATABASE_NUMBER   1024U
 #define DEFAULT_NOGDB_MAX_DATABASE_SIZE     1073741824UL  // 1GB
@@ -110,7 +110,7 @@ namespace nogdb {
                 return *this;
             }
 
-            lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) {
+            lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) const {
                 if (_txn.handle()) {
                     return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
                 } else {
@@ -118,12 +118,12 @@ namespace nogdb {
                 }
             }
 
-            lmdb::Cursor openCursor(const lmdb::Dbi &dbi) {
+            lmdb::Cursor openCursor(const lmdb::Dbi &dbi) const {
                 require(_txn.handle() == dbi.txn());
                 return lmdb::Cursor::open(_txn.handle(), dbi.handle());
             }
 
-            lmdb::Cursor openCursor(const std::string &dbName, bool numericKey = false, bool unique = true) {
+            lmdb::Cursor openCursor(const std::string &dbName, bool numericKey = false, bool unique = true) const {
                 return openCursor(openDbi(dbName, numericKey, unique));
             }
 

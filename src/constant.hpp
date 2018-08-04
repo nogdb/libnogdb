@@ -26,35 +26,45 @@
 
 namespace nogdb {
 
-    constexpr unsigned int MAX_VERSION_CONTROL_SIZE = 128;
-    const std::string DB_LOCK_FILE = "/.context.lock";
+    constexpr unsigned int  MAX_VERSION_CONTROL_SIZE    = 128;
+    const std::string       DB_LOCK_FILE                = "/.context.lock";
 
-    constexpr uint16_t INIT_NUM_CLASSES = 4;
-    const std::string TB_CLASSES = ".classes";
-    const std::string TB_PROPERTIES = ".properties";
-    const std::string TB_RELATIONS = ".relations";
-    const std::string TB_INDEXES = ".indexes";
+    constexpr uint16_t      INIT_NUM_CLASSES            = 5;
+    const std::string       TB_DBINFO                   = ".dbinfo";
+    const std::string       TB_CLASSES                  = ".classes";
+    const std::string       TB_PROPERTIES               = ".properties";
+    const std::string       TB_RELATIONS                = ".relations";
+    const std::string       TB_INDEXES                  = ".indexes";
 
-    const std::string TB_INDEXING_PREFIX = ".index_";
+    const std::string       TB_INDEXING_PREFIX          = ".index_";
 
-    constexpr uint16_t INIT_NUM_PROPERTIES = 5;
-    constexpr uint16_t CLASS_NAME_PROPERTY_ID = 0;
-    const std::string CLASS_NAME_PROPERTY = "@className";
-    constexpr uint16_t RECORD_ID_PROPERTY_ID = 1;
-    const std::string RECORD_ID_PROPERTY = "@recordId";
-    constexpr uint16_t DEPTH_PROPERTY_ID = 2;
-    const std::string DEPTH_PROPERTY = "@depth";
-    constexpr uint16_t VERSION_PROPERTY_ID = 3;
-    const std::string VERSION_PROPERTY = "@version";
-    constexpr uint16_t TXN_VERSION_ID = 4;
-    const std::string TXN_VERSION = "@txnVersion";
+    constexpr uint16_t      INIT_NUM_PROPERTIES         = 5;
+    constexpr uint16_t      CLASS_NAME_PROPERTY_ID      = 0;
+    const std::string       CLASS_NAME_PROPERTY         = "@className";
+    constexpr uint16_t      RECORD_ID_PROPERTY_ID       = 1;
+    const std::string       RECORD_ID_PROPERTY          = "@recordId";
+    constexpr uint16_t      DEPTH_PROPERTY_ID           = 2;
+    const std::string       DEPTH_PROPERTY              = "@depth";
+    constexpr uint16_t      VERSION_PROPERTY_ID         = 3;
+    const std::string       VERSION_PROPERTY            = "@version";
+    constexpr uint16_t      TXN_VERSION_ID              = 4;
+    const std::string       TXN_VERSION                 = "@txnVersion";
 
-    constexpr uint16_t UINT16_EM_INIT = 0;
-    const std::string STRING_EM_INIT = ".init";
-    constexpr uint32_t EM_MAXRECNUM = 0;
+    constexpr uint16_t      UINT16_EM_INIT              = 0;
+    const std::string       STRING_EM_INIT              = "#init";
+    constexpr uint32_t      EM_MAXRECNUM                = 0;
 
-    const std::string INDEX_POSITIVE_SUFFIX = "_p";
-    const std::string INDEX_NEGATIVE_SUFFIX = "_n";
+    const std::string       INDEX_POSITIVE_SUFFIX       = "_p";
+    const std::string       INDEX_NEGATIVE_SUFFIX       = "_n";
+
+    namespace adapter::metadata {
+        const std::string   MAX_CLASS_ID_KEY            = "?max_class_id";
+        const std::string   NUM_CLASS_KEY               = "?num_class_id";
+        const std::string   MAX_PROPERTY_ID_KEY         = "?max_property_id";
+        const std::string   NUM_PROPERTY_KEY            = "?num_property_id";
+        const std::string   MAX_INDEX_ID_KEY            = "?max_index_id";
+        const std::string   NUM_INDEX_KEY               = "?num_index_id";
+    }
 
 }
 

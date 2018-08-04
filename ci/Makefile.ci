@@ -2,7 +2,7 @@ CC		?= gcc
 CXX		?= g++
 AR		= ar
 CXXFLAGS	= -std=c++11
-TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option
+TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option -Wno-c++1z-extensions
 DEBUGFLAGS  ?= -ggdb
 OPTFLAGS    ?= 
 EXTFLAGS	=

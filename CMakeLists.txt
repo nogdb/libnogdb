@@ -28,6 +28,7 @@ set(COMPILE_OPTIONS
     -Wno-unused-variable
     -Wno-unknown-pragmas
     -Wno-format-extra-args
+    -Wno-c++1z-extensions
     -fPIC
     -march=native
 )
