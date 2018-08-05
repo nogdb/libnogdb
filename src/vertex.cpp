@@ -49,10 +49,10 @@ namespace nogdb {
         auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
         auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(EM_MAXRECNUM);
+        auto dsResult = classDBHandler.get(MAX_RECORD_NUM_EM);
         auto const maxRecordNum = dsResult.data.numeric<PositionId>();
         classDBHandler.put(maxRecordNum, value, true);
-        classDBHandler.put(EM_MAXRECNUM, PositionId{maxRecordNum + 1});
+        classDBHandler.put(MAX_RECORD_NUM_EM, PositionId{maxRecordNum + 1});
 
         // add index if applied
         for (const auto &indexInfo: indexInfos) {
@@ -245,7 +245,7 @@ namespace nogdb {
             !keyValue.empty();
             keyValue = cursorHandler.getNext()) {
             auto key = keyValue.key.data.numeric<PositionId>();
-            if (key != EM_MAXRECNUM) {
+            if (key != MAX_RECORD_NUM_EM) {
                 auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
                 recordIds.push_back(recordDescriptor.rid);
                 auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};

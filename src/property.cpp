@@ -199,7 +199,7 @@ namespace nogdb {
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
                         auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != EM_MAXRECNUM) {
+                        if (key != MAX_RECORD_NUM_EM) {
                             auto const positionId = key;
                             auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto bytesValue = record.get(propertyName);
@@ -233,7 +233,7 @@ namespace nogdb {
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
                         auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != EM_MAXRECNUM) {
+                        if (key != MAX_RECORD_NUM_EM) {
                             auto const positionId = key;
                             auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto bytesValue = record.get(propertyName);
@@ -289,7 +289,7 @@ namespace nogdb {
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
                         auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != EM_MAXRECNUM) {
+                        if (key != MAX_RECORD_NUM_EM) {
                             auto const positionId = key;
                             auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
                             auto value = record.get(propertyName).toText();

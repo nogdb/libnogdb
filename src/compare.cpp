@@ -363,7 +363,7 @@ namespace nogdb {
             auto keyValue = cursorHandler.getNext();
             while (!keyValue.empty()) {
                 auto key = keyValue.key.data.numeric<PositionId>();
-                if (key != EM_MAXRECNUM) {
+                if (key != MAX_RECORD_NUM_EM) {
                     auto rid = RecordId{classInfo.id, key};
                     auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
                     if (condition.comp != Condition::Comparator::IS_NULL &&
@@ -409,7 +409,7 @@ namespace nogdb {
             auto keyValue = cursorHandler.getNext();
             while (!keyValue.empty()) {
                 auto key = keyValue.key.data.numeric<PositionId>();
-                if (key != EM_MAXRECNUM) {
+                if (key != MAX_RECORD_NUM_EM) {
                     auto rid = RecordId{classInfo.id, key};
                     auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
                     if (conditions.execute(record, types)) {
@@ -776,7 +776,7 @@ namespace nogdb {
                 auto keyValue = cursorHandler.getNext();
                 while (!keyValue.empty()) {
                     auto key = keyValue.key.data.numeric<PositionId>();
-                    if (key != EM_MAXRECNUM) {
+                    if (key != MAX_RECORD_NUM_EM) {
                         auto rid = RecordId{classInfo.id, key};
                         auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
                         if ((*condition)(record)) {

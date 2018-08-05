@@ -140,10 +140,10 @@ namespace nogdb {
             auto propDBHndler = wtxn.openDbi(TB_PROPERTIES, true);
             auto indexDBHandler = wtxn.openDbi(TB_INDEXES, true, false);
             auto relationDBHandler = wtxn.openDbi(TB_RELATIONS);
-            classDBHandler.put(ClassId{UINT16_EM_INIT}, currentTime);
-            propDBHndler.put(PropertyId{UINT16_EM_INIT}, currentTime);
-//            indexDBHandler.put(PropertyId{UINT16_EM_INIT}, currentTime);
-            relationDBHandler.put(STRING_EM_INIT, currentTime);
+            classDBHandler.put(ClassId{INIT_UINT16_EM}, currentTime);
+            propDBHndler.put(PropertyId{INIT_UINT16_EM}, currentTime);
+//            indexDBHandler.put(PropertyId{INIT_UINT16_EM}, currentTime);
+            relationDBHandler.put(INIT_STRING_EM, currentTime);
             wtxn.commit();
         } catch (const Error &err) {
             wtxn.rollback();
@@ -161,7 +161,7 @@ namespace nogdb {
                  !classKeyValue.empty();
                  classKeyValue = classCursor.getNext()) {
                 auto key = classKeyValue.key.data.numeric<ClassId>();
-                if (key == ClassId{UINT16_EM_INIT}) {
+                if (key == ClassId{INIT_UINT16_EM}) {
                     continue;
                 }
                 auto data = classKeyValue.val.data.blob();
@@ -197,7 +197,7 @@ namespace nogdb {
                  !propKeyValue.empty();
                  propKeyValue = propCursor.getNext()) {
                 auto key = propKeyValue.key.data.numeric<PropertyId>();
-                if (key == PropertyId{UINT16_EM_INIT}) {
+                if (key == PropertyId{INIT_UINT16_EM}) {
                     continue;
                 }
                 auto data = propKeyValue.val.data.blob();
@@ -258,7 +258,7 @@ namespace nogdb {
                  !relationKeyValue.empty();
                  relationKeyValue = relationCursor.getNext()) {
                 auto key = relationKeyValue.key.data.string();
-                if (key == STRING_EM_INIT) {
+                if (key == INIT_STRING_EM) {
                     continue;
                 }
                 auto data = relationKeyValue.val.data.blob();

@@ -71,10 +71,10 @@ namespace nogdb {
         record.setBasicInfo(VERSION_PROPERTY, 1ULL);
 
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(EM_MAXRECNUM);
+        auto dsResult = classDBHandler.get(MAX_RECORD_NUM_EM);
         auto maxRecordNum = dsResult.data.numeric<PositionId>();
         classDBHandler.put(maxRecordNum, value, true);
-        classDBHandler.put(EM_MAXRECNUM, PositionId{maxRecordNum + 1});
+        classDBHandler.put(MAX_RECORD_NUM_EM, PositionId{maxRecordNum + 1});
 
         // add index if applied
         for (const auto &indexInfo: indexInfos) {
@@ -288,7 +288,7 @@ namespace nogdb {
         auto keyValue = cursorHandler.getNext();
         while (!keyValue.empty()) {
             auto key = keyValue.key.data.numeric<PositionId>();
-            if (key != EM_MAXRECNUM) {
+            if (key != MAX_RECORD_NUM_EM) {
                 auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
                 recordIds.push_back(recordDescriptor.rid);
                 // delete from relations

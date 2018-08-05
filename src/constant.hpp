@@ -50,21 +50,21 @@ namespace nogdb {
     constexpr uint16_t      TXN_VERSION_ID              = 4;
     const std::string       TXN_VERSION                 = "@txnVersion";
 
-    constexpr uint16_t      UINT16_EM_INIT              = 0;
-    const std::string       STRING_EM_INIT              = "#init";
-    constexpr uint32_t      EM_MAXRECNUM                = 0;
+    constexpr uint16_t      INIT_UINT16_EM              = 0;
+    const std::string       INIT_STRING_EM              = "#init";
+    constexpr uint32_t      MAX_RECORD_NUM_EM           = 0;
 
     const std::string       INDEX_POSITIVE_SUFFIX       = "_p";
     const std::string       INDEX_NEGATIVE_SUFFIX       = "_n";
 
-    namespace adapter::metadata {
-        const std::string   MAX_CLASS_ID_KEY            = "?max_class_id";
-        const std::string   NUM_CLASS_KEY               = "?num_class_id";
-        const std::string   MAX_PROPERTY_ID_KEY         = "?max_property_id";
-        const std::string   NUM_PROPERTY_KEY            = "?num_property_id";
-        const std::string   MAX_INDEX_ID_KEY            = "?max_index_id";
-        const std::string   NUM_INDEX_KEY               = "?num_index_id";
-    }
+    constexpr size_t        MAX_CLASS_NAME_LEN          = 128;
+    constexpr size_t        MAX_PROPERTY_NAME_LEN       = 128;
+    const std::string       MAX_CLASS_ID_KEY            = "?max_class_id";
+    const std::string       NUM_CLASS_KEY               = "?num_class_id";
+    const std::string       MAX_PROPERTY_ID_KEY         = "?max_property_id";
+    const std::string       NUM_PROPERTY_KEY            = "?num_property_id";
+    const std::string       MAX_INDEX_ID_KEY            = "?max_index_id";
+    const std::string       NUM_INDEX_KEY               = "?num_index_id";
 
 }
 

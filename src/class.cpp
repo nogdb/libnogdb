@@ -69,7 +69,7 @@ namespace nogdb {
             classDBHandler.put(dbInfo.maxClassId, value, true);
             // create interface for itself
             auto newClassDBHandler = dsTxnHandler->openDbi(std::to_string(dbInfo.maxClassId), true);
-            newClassDBHandler.put(EM_MAXRECNUM, PositionId{1}, true);
+            newClassDBHandler.put(MAX_RECORD_NUM_EM, PositionId{1}, true);
 
             // update in-memory schema and info
             (*txn.txnCtx.dbSchema).insert(*txn.txnBase, classDescriptor);
@@ -119,7 +119,7 @@ namespace nogdb {
             classDBHandler.put(dbInfo.maxClassId, value, true);
             // create interface for itself
             auto newClassDBHandler = dsTxnHandler->openDbi(std::to_string(dbInfo.maxClassId), true);
-            newClassDBHandler.put(EM_MAXRECNUM, PositionId{1}, true);
+            newClassDBHandler.put(MAX_RECORD_NUM_EM, PositionId{1}, true);
 
             // update in-memory schema and info
             auto superClassDescriptorPtr = txn.txnCtx.dbSchema->find(*txn.txnBase, superClassDescriptor->id);
@@ -183,7 +183,7 @@ namespace nogdb {
                 !keyValue.empty();
                 keyValue = cursorHandler.getNext()) {
                 auto key = keyValue.key.data.numeric<PositionId>();
-                if (key != EM_MAXRECNUM) {
+                if (key != MAX_RECORD_NUM_EM) {
                     auto recordId = RecordId{foundClass->id, key};
                     if (foundClass->type == ClassType::EDGE) {
                         relationDBHandler.del(rid2str(recordId));
