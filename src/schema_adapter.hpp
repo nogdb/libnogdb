@@ -311,7 +311,7 @@ namespace nogdb {
                 }
 
                 std::pair<ClassId, std::string> splitKey(const std::string& key) const {
-                    auto splitKey = split(key, KEY_SEPARATOR[0]);
+                    auto splitKey = split(key, KEY_SEPARATOR);
                     require(splitKey.size() == 2);
                     auto classId = ClassId{std::atoi(splitKey[0].c_str())};
                     auto propertyName = splitKey[1];
@@ -329,22 +329,118 @@ namespace nogdb {
 
             /**
              * Raw record format in lmdb data storage:
-             * {propertyId<uint16>} -> {id<uint16>}{isComposite<uint8>}{isUnique<uint8>}{classId<uint16>}
+             * {classId<uint16>}{propertyId<uint16>} -> {id<uint16>}{isUnique<uint8>}
              */
             struct IndexAccessInfo {
+                ClassId classId{0};
                 PropertyId propertyId{0};
                 IndexId id{0};
-                uint8_t isComposite{0};
-                uint8_t isUnique{1};
-                ClassId classId{0};
+                bool isUnique{true};
             };
 
             class IndexAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
-                //TODO
+                IndexAccess(const storage_engine::LMDBTxn * const txn)
+                        : LMDBKeyValAccess(txn, TB_INDEXES, true, true, false, false) {}
+
+                virtual ~IndexAccess() noexcept = default;
+
+                void create(const IndexAccessInfo& props) {
+                    auto indexKey = buildKey(props.classId, props.propertyId);
+                    auto result = get(indexKey);
+                    if (result.empty) {
+                        createOrUpdate(props);
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
+                    }
+                }
+
+                void remove(const ClassId& classId, const PropertyId& propertyId) {
+                    auto indexKey = buildKey(classId, propertyId);
+                    auto result = get(indexKey);
+                    if (!result.empty) {
+                        del(indexKey);
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
+                    }
+                }
+
+                IndexAccessInfo getInfo(const ClassId& classId, const PropertyId& propertyId) const {
+                    auto indexKey = buildKey(classId, propertyId);
+                    auto result = get(indexKey);
+                    if (result.empty) {
+                        return IndexAccessInfo{};
+                    } else {
+                        return parse(classId, propertyId, result.data.blob());
+                    }
+                }
+
+                std::vector<IndexAccessInfo> getInfos(const ClassId& classId) const {
+                    auto result = std::vector<IndexAccessInfo>{};
+                    auto cursorHandler = cursor();
+                    for(auto keyValue = cursorHandler.findRange(buildSearchKeyBegin(classId));
+                        !keyValue.empty();
+                        keyValue = cursorHandler.getNext()) {
+                        auto keyPair = keyValue.key.data.numeric<IndexKey>();
+                        auto classIdKey = getClassIdFromKey(keyPair);
+                        auto propertyIdKey = getPropertyIdFromKey(keyPair);
+                        if (classId != classIdKey) break;
+                        result.emplace_back(parse(classIdKey, propertyIdKey, keyValue.val.data.blob()));
+                    }
+                }
+
+            protected:
+
+                using IndexKey = uint32_t;
+
+                static IndexAccessInfo parse(const ClassId& classId, const PropertyId& propertyId, const Blob& blob) {
+                    return IndexAccessInfo{
+                            classId,
+                            propertyId,
+                            parseIndexId(blob),
+                            parseIsUnique(blob)
+                    };
+                }
+
+                static IndexId parseIndexId(const Blob& blob) {
+                    auto indexId = IndexId{};
+                    blob.retrieve(&indexId, 0, sizeof(IndexId));
+                    return indexId;
+                }
+
+                static bool parseIsUnique(const Blob& blob) {
+                    auto isUnique = uint8_t{};
+                    blob.retrieve(&isUnique, sizeof(IndexId), sizeof(uint8_t));
+                    return isUnique == 1;
+                }
+
 
             private:
-                //TODO
+
+                void createOrUpdate(const IndexAccessInfo& props) {
+                    auto totalLength = sizeof(IndexId) + sizeof(uint8_t);
+                    auto value = Blob(totalLength);
+                    value.append(&props.id, sizeof(IndexId));
+                    auto isUnique = (props.isUnique)? uint8_t{1}: uint8_t{0};
+                    value.append(&isUnique, sizeof(isUnique));
+                    put(buildKey(props.classId, props.propertyId), value);
+                }
+
+                IndexKey buildKey(const ClassId& classId, const PropertyId& propertyId) const {
+                    return classId << 16 | propertyId;
+                }
+
+                IndexKey buildSearchKeyBegin(const ClassId& classId) const {
+                    return classId << 16;
+                }
+
+                ClassId getClassIdFromKey(const IndexKey& indexKey) const {
+                    return static_cast<ClassId>(indexKey >> 16);
+                }
+
+                PropertyId getPropertyIdFromKey(const IndexKey& indexKey) const {
+                    return static_cast<PropertyId>(indexKey & 0xffff);
+                }
 
             };
 
