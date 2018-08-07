@@ -110,7 +110,6 @@ endif()
 #    ${nogdb_UNIT_TEST_LMDB}
 #    ${nogdb_UNIT_TEST_LMDB_HEADER}
 #    ${CMAKE_CURRENT_SOURCE_DIR}/include
-#    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
 #    ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
 #)
 #target_include_directories(nogdb_unittest_object

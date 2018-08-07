@@ -39,6 +39,8 @@
 
 #include "nogdb_context.h"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     Context::Context(const std::string &dbPath)
@@ -51,11 +53,11 @@ namespace nogdb {
             : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
 
     Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize) {
-        if (!fileExists(dbPath)) {
+        if (!utils::io::fileExists(dbPath)) {
             mkdir(dbPath.c_str(), 0755);
         }
         const auto lockFile = dbPath + DB_LOCK_FILE;
-        lockContextFileDescriptor = openLockFile(lockFile.c_str());
+        lockContextFileDescriptor = utils::io::openLockFile(lockFile.c_str());
         if (lockContextFileDescriptor == -1) {
             if (errno == EWOULDBLOCK || errno == EEXIST) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
@@ -84,7 +86,7 @@ namespace nogdb {
     }
 
     Context::~Context() noexcept {
-        unlockFile(lockContextFileDescriptor);
+        utils::io::unlockFile(lockContextFileDescriptor);
     }
 
     Context::Context(const Context &ctx)
@@ -131,7 +133,7 @@ namespace nogdb {
     }
 
     void Context::initDatabase() {
-        auto currentTime = std::to_string(currentTimestamp());
+        auto currentTime = std::to_string(utils::datetime::currentTimestamp());
         // perform read-write operations
         auto wtxn = storage_engine::LMDBTxn(envHandler.get(), storage_engine::lmdb::TXN_RW);
         // prepare schema for classes, properties, and relations
@@ -263,7 +265,7 @@ namespace nogdb {
                 }
                 auto data = relationKeyValue.val.data.blob();
                 // resolve a rid of an edge from a key
-                auto sp = split(key, ':');
+                auto sp = utils::string::split(key, ':');
                 if (sp.size() != 2) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
                 }

@@ -25,6 +25,8 @@
 #include "base_txn.hpp"
 #include "utils.hpp"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     void Schema::insert(BaseTxn &txn, const ClassDescriptorPtr &classDescriptor) {

@@ -36,6 +36,8 @@
 
 #define CLASS_ID_UPPER_LIMIT    (UINT16_MAX - 1)
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {

@@ -31,6 +31,7 @@
 
 using namespace std;
 using namespace nogdb::sql_parser;
+using namespace nogdb::utils::assertion;
 
 #define CLASS_DESCDRIPTOR_TEMPORARY     -2
 #define PROPERTY_DESCRIPTOR_TEMPORARY   -2

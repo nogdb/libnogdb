@@ -34,6 +34,8 @@
 #include "nogdb_errors.h"
 #include "nogdb_compare.h"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
 //*****************************************************************

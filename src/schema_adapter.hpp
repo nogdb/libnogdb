@@ -30,8 +30,8 @@
 #include <iomanip>
 #include <cstdlib>
 
-#include "storage_adapter.hpp"
 #include "constant.hpp"
+#include "storage_adapter.hpp"
 #include "dbinfo_adapter.hpp"
 
 namespace nogdb {
@@ -311,7 +311,7 @@ namespace nogdb {
                 }
 
                 std::pair<ClassId, std::string> splitKey(const std::string& key) const {
-                    auto splitKey = split(key, KEY_SEPARATOR);
+                    auto splitKey = utils::string::split(key, KEY_SEPARATOR);
                     require(splitKey.size() == 2);
                     auto classId = ClassId{std::atoi(splitKey[0].c_str())};
                     auto propertyName = splitKey[1];
@@ -444,8 +444,20 @@ namespace nogdb {
 
             };
 
+
             class SchemaAccess {
+            public:
+                SchemaAccess(const storage_engine::LMDBTxn * const txn) {}
+
+                virtual ~SchemaAccess() noexcept = delete;
+
                 //TODO
+
+            private:
+                using namespace utils::allocation;
+                LazyPointer<ClassAccess> _classAccess;
+                LazyPointer<PropertyAccess> _propertyAccess;
+                LazyPointer<IndexAccess> _indexAccess;
             };
 
         }

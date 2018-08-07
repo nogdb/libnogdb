@@ -29,6 +29,8 @@
 
 #include "nogdb_errors.h"
 
+ using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     BaseTxn::BaseTxn(Context &ctx, bool isReadWrite, bool inMemory)

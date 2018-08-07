@@ -37,6 +37,8 @@
 #include "nogdb_errors.h"
 #include "nogdb_compare.h"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     bool Compare::genericCompareFunc(const Bytes &value, PropertyType type,
@@ -299,8 +301,8 @@ namespace nogdb {
                         std::reverse(textCmpValue1.begin(), textCmpValue1.end());
                         return textValue.find(textCmpValue1) == 0;
                     case Condition::Comparator::LIKE:
-                        replaceAll(textCmpValue1, "%", "(.*)");
-                        replaceAll(textCmpValue1, "_", "(.)");
+                        utils::string::replaceAll(textCmpValue1, "%", "(.*)");
+                        utils::string::replaceAll(textCmpValue1, "_", "(.)");
                         return std::regex_match(textValue, std::regex(textCmpValue1));
                     case Condition::Comparator::REGEX: {
                         return std::regex_match(textValue, std::regex(textCmpValue1));

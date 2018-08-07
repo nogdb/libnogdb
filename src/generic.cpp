@@ -37,6 +37,8 @@
 
 #include "nogdb_errors.h"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
     Result Generic::getRecordResult(Txn &txn, const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {

@@ -26,44 +26,157 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <ctime>
+#include <sstream>
 #include <sys/time.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+
+#include "nogdb/nogdb_errors.h"
 
 namespace nogdb {
 
-    struct Profiler {
+    namespace utils {
+        // memory allocation
+        namespace allocation {
+            template<typename T>
+            class LazyPointer {
+            public:
+                LazyPointer() = default;
 
-        using Duration = std::chrono::duration<double>;
+                ~LazyPointer() noexcept {
+                    delete _ptr;
+                }
 
-        Profiler(const std::string &name_)
-                : name{name_}, start{std::chrono::high_resolution_clock::now()} {}
+                T &operator*() {
+                    if (!_ptr) {
+                        _ptr = new T;
+                    }
+                    return *_ptr;
+                }
 
-        ~Profiler() noexcept {
-            ;
-            auto d = std::chrono::high_resolution_clock::now() - start;
-            std::cout << name << ": " << std::chrono::duration_cast<Duration>(d).count() * 1000 << std::endl;
+                const T &operator*() const {
+                    return *_ptr;
+                }
+
+                T *operator->() {
+                    return &**this;
+                }
+
+                const T *operator->() const {
+                    return &**this;
+                }
+
+            private:
+                mutable T *_ptr{nullptr};
+            };
         }
 
-        std::string name;
-        std::chrono::high_resolution_clock::time_point start;
-    };
+        // profiler
+        namespace profiler {
 
 #define PROFILE_BLOCK(pbn) Profiler _pf(pbn)
 
-    unsigned long long currentTimestamp();
+            struct Profiler {
 
-    bool fileExists(const std::string &fileName);
+                using Duration = std::chrono::duration<double>;
 
-    std::vector<std::string> split(const std::string &string, char delimeter);
+                Profiler(const std::string &name_)
+                        : name{name_}, start{std::chrono::high_resolution_clock::now()} {}
 
-    void replaceAll(std::string &string, const std::string &from, const std::string &to);
+                ~Profiler() noexcept {
+                    auto d = std::chrono::high_resolution_clock::now() - start;
+                    std::cout << name << ": " << std::chrono::duration_cast<Duration>(d).count() * 1000 << std::endl;
+                }
 
-    void require(bool cmp);
+                std::string name;
+                std::chrono::high_resolution_clock::time_point start;
+            };
+        }
 
-    int mkdir(const char*, int);
+        // date & time
+        namespace datetime {
+            unsigned long long currentTimestamp() {
+                using std::chrono::duration_cast;
+                using std::chrono::milliseconds;
+                using std::chrono::system_clock;
+                return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+            }
+        }
 
-    int openLockFile(const char*);
+        // string utilities
+        namespace string {
+            std::vector<std::string> split(const std::string &string, char delimeter) {
+                auto elements = std::vector<std::string>{};
+                std::stringstream ss{};
+                ss.str(string);
+                auto subStr = std::string{};
+                while (std::getline(ss, subStr, delimeter)) {
+                    elements.push_back(subStr);
+                }
+                return elements;
+            }
 
-    int unlockFile(int);
+            void replaceAll(std::string &string, const std::string &from, const std::string &to) {
+                if (!from.empty()) {
+                    auto position = string.find(from, 0);
+                    while (position != std::string::npos) {
+                        string.replace(position, from.length(), to);
+                        position = string.find(from, position + to.length());
+                    }
+                }
+            }
+        }
+
+
+        // assertion
+        namespace assertion {
+            void require(bool cmp) {
+                if (!cmp) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INTERNAL_ERR);
+                }
+            }
+        }
+
+        namespace io {
+            bool fileExists(const std::string &fileName) {
+                struct stat fileStat;
+                return stat((char *) fileName.c_str(), &fileStat) == 0;
+            }
+
+#ifdef __MINGW32__
+            int mkdir(const char *pathname, int mode) {
+                return ::mkdir(pathname) || ::chmod(pathname, mode);
+            }
+
+            int openLockFile(const char *pathname) {
+                unlink(pathname);
+                return open(pathname, O_CREAT | O_RDONLY | O_EXCL, 0644);
+            }
+
+            int unlockFile(int fd) {
+                return close(fd);
+            }
+#else
+            int mkdir(const char *pathname, int mode) {
+                return ::mkdir(pathname, mode);
+            }
+
+            int openLockFile(const char *pathname) {
+                int lockFileDescriptor = open(pathname, O_CREAT | O_RDONLY, 0644);
+                if (flock(lockFileDescriptor, LOCK_EX | LOCK_NB) == -1) {
+                    lockFileDescriptor = -1;
+                }
+                return lockFileDescriptor;
+            }
+
+            int unlockFile(int fd) {
+                return flock(fd, LOCK_UN);
+            }
+#endif
+        }
+
+    }
 }
 
 #endif

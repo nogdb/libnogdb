@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace nogdb::sql_parser;
+using namespace nogdb::utils::assertion;
 
 #pragma mark - Helper
 

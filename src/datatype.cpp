@@ -27,6 +27,8 @@
 #include "datatype.hpp"
 #include "utils.hpp"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     namespace internal_data_type {

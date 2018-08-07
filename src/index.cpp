@@ -29,6 +29,8 @@
 
 #include "nogdb_txn.h"
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     const std::vector<Condition::Comparator>

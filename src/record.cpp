@@ -151,7 +151,7 @@ namespace nogdb {
 
     RecordId Record::getRecordId() const {
         auto ridAsString = getText(RECORD_ID_PROPERTY);
-        auto sp = split(ridAsString, ':');
+        auto sp = utils::string::split(ridAsString, ':');
         if (sp.size() != 2) {
             try {
                 auto classId = strtoul(sp[0].c_str(), nullptr, 0);

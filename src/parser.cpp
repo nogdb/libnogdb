@@ -30,7 +30,7 @@
 
 #include "nogdb_errors.h"
 
-#include <iostream>
+using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 

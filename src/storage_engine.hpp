@@ -39,6 +39,8 @@
 #define DEFAULT_NOGDB_MAX_DATABASE_SIZE     1073741824UL  // 1GB
 #define DEFAULT_NOGDB_MAX_READERS           65536U
 
+using namespace nogdb::utils::assertion;
+
 namespace nogdb {
 
     namespace storage_engine {
@@ -47,7 +49,7 @@ namespace nogdb {
         public:
 
             LMDBEnv(const std::string &dbPath, unsigned int dbNum, unsigned long dbSize, unsigned int readers) {
-                if (!fileExists(dbPath)) {
+                if (!utils::io::fileExists(dbPath)) {
                     mkdir(dbPath.c_str(), 0755);
                 }
                 _env = std::move(lmdb::Env::create(dbNum, dbSize, readers).open(dbPath));
