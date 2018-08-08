@@ -42,7 +42,7 @@ namespace nogdb {
         };
 
         struct State {
-            State() : versionId{0}, status{UNCOMMITTED_CREATE} {}
+            State() noexcept : versionId{0}, status{UNCOMMITTED_CREATE} {}
 
             State(TxnId versionId_, StatusFlag status_) : versionId{versionId_}, status{status_} {}
 
