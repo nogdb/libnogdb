@@ -48,9 +48,7 @@ namespace nogdb {
     struct Validate;
     struct Algorithm;
     struct Compare;
-    struct TxnStat;
     struct Generic;
-    struct Parser;
     struct Schema;
     struct Class;
     struct Property;
@@ -59,7 +57,9 @@ namespace nogdb {
     struct Edge;
     struct Traverse;
 
-    class EnvHandlerPtr;
+    class Parser;
+
+    class TxnStat;
 
     class BaseTxn;
 
@@ -76,6 +76,9 @@ namespace nogdb {
         class LMDBTxn;
     }
 
+    namespace parser {
+        class Parser;
+    }
     namespace sql_parser {
         class Record;
     }
@@ -116,8 +119,6 @@ namespace nogdb {
     typedef std::map<std::string, PropertyType> PropertyMapType;
 
     struct DBInfo {
-        DBInfo() = default;
-
         std::string dbPath{""};        // a path to the database folder.
         unsigned int maxDB{0};         // a maximum number of databases that can be handled.
         unsigned long maxDBSize{0};    // the largest size of a database.
@@ -223,7 +224,6 @@ namespace nogdb {
             };
 
             static T convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
-//                assert(sizeof(T) <= total_size);
                 if (delimiter) {
                     ptr += sizeof(T);
                     total_size -= sizeof(T);
@@ -244,7 +244,6 @@ namespace nogdb {
 
             static T* convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
                 if (!Converter<T>::special) {
-//                    assert(sizeof(T) <= total_size);
                     if (delimiter) {
                         const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
                         ptr += sizeof(CollectionSizeType) + size * sizeof(T);
@@ -351,14 +350,12 @@ namespace nogdb {
 
             static std::vector<T> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
                 if (!Converter<T>::special) {
-//                    assert(sizeof(T) <= total_size);
                     if (delimiter) {
                         const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, true);
                         ptr += size * sizeof(T);
                         auto bptr = reinterpret_cast<T*>(ptr - size * sizeof(T));
                         return std::vector<T> (bptr, bptr + size);
                     } else {
-//                        assert(total_size % sizeof(T) == 0);
                         auto bptr = reinterpret_cast<T*>(ptr);
                         return std::vector<T> (bptr, bptr + total_size / sizeof(T));
                     }
@@ -390,7 +387,7 @@ namespace nogdb {
             static const bool special = false;
 
             static Bytes toBytes(const std::array<T, N>& value, bool delimiter = false) {
-                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.begin(), value.end()), delimiter);
+                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.cbegin(), value.cend()), delimiter);
             }
 
             static std::array<T, N> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
@@ -405,7 +402,7 @@ namespace nogdb {
             static const bool special = true;
 
             static Bytes toBytes(const std::set<T>& value, bool delimiter = false) {
-                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.begin(), value.end()), delimiter);
+                return Converter<std::vector<T>>::toBytes(std::vector<T>(value.cbegin(), value.cend()), delimiter);
             }
 
             static std::set<T> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
@@ -423,7 +420,7 @@ namespace nogdb {
             using Key = std::vector<typename std::map<T1, T2>::value_type>;
 
             static Bytes toBytes(const std::map<T1, T2>& value, bool delimiter = false) {
-                return Converter<Key>::toBytes(Key(value.begin(), value.end()), delimiter);
+                return Converter<Key>::toBytes(Key(value.cbegin(), value.cend()), delimiter);
             }
 
             static std::map<T1, T2> convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
@@ -484,7 +481,6 @@ namespace nogdb {
         static std::string convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
             if (delimiter) {
                 const CollectionSizeType size = Converter<CollectionSizeType>::convert(ptr, total_size, delimiter);
-//                assert(size <= total_size);
                 ptr += size;
                 total_size -= size;
                 auto bptr = reinterpret_cast<char *>(ptr - size);
@@ -513,7 +509,6 @@ namespace nogdb {
 
         static Bytes convert(unsigned char * &ptr, size_t& total_size, bool delimiter = false) {
             if (delimiter) {
-//                assert(sizeof(size_t) + size <= total_size);
                 const CollectionSizeType size = Converter<CollectionSizeType >::convert(ptr, total_size, delimiter);
                 ptr += size;
                 total_size -= size;
@@ -593,13 +588,13 @@ namespace nogdb {
 
     private:
 
-        friend struct Parser;
+        friend struct parser::Parser;
         friend struct Generic;
         friend struct Algorithm;
-        friend class sql_parser::Record;
-
         friend struct Vertex;
         friend struct Edge;
+
+        friend class sql_parser::Record;
 
         Record(PropertyToBytesMap properties);
 
@@ -639,7 +634,7 @@ namespace nogdb {
         RecordDescriptor(const RecordId &rid_)
                 : rid{rid_} {}
 
-        ~RecordDescriptor() noexcept = default;
+        virtual ~RecordDescriptor() noexcept = default;
 
         RecordId rid{0, 0};
 
@@ -649,51 +644,28 @@ namespace nogdb {
         unsigned int depth{0};
     };
 
-    typedef std::map<IndexId, std::pair<ClassId, bool>> IndexInfo;
-
     struct PropertyDescriptor {
-        PropertyDescriptor() = default;
-
-        PropertyDescriptor(PropertyId id_, PropertyType type_)
-                : id{id_}, type{type_} {}
-
-        PropertyDescriptor(PropertyId id_, PropertyType type_, const IndexInfo &indexInfo_)
-                : id{id_}, type{type_}, indexInfo{indexInfo_} {}
-
-        ~PropertyDescriptor() noexcept = default;
-
         PropertyId id{0};
+        std::string name{""};
         PropertyType type{PropertyType::UNDEFINED};
-        IndexInfo indexInfo{};
     };
 
-    typedef std::map<std::string, PropertyDescriptor> ClassProperty;
-
     struct ClassDescriptor {
-        ClassDescriptor() = default;
-
-        ClassDescriptor(ClassId id_,
-                        const std::string &name_,
-                        ClassType type_,
-                        ClassProperty properties_)
-                : id{id_}, name{name_}, type{type_}, properties{properties_} {}
-
-        ClassDescriptor(ClassId id_,
-                        const std::string &name_,
-                        ClassType type_,
-                        ClassProperty properties_,
-                        const std::string &super_,
-                        const std::vector<std::string> &sub_)
-                : id{id_}, name{name_}, type{type_}, properties{properties_}, super{super_}, sub{sub_} {}
-
-        ~ClassDescriptor() noexcept = default;
-
         ClassId id{0};
         std::string name{""};
         ClassType type{ClassType::UNDEFINED};
-        ClassProperty properties{};
-        std::string super{""};
-        std::vector<std::string> sub{};
+    };
+
+    struct DBSchema {
+
+        struct IndexInfo {
+            PropertyId propertyId;
+            bool unique;
+        };
+
+        ClassDescriptor classDescriptor;
+        std::vector<PropertyDescriptor> propertyDescriptors;
+        std::vector<IndexInfo> indexInfos;
     };
 
     struct Result {
@@ -793,6 +765,12 @@ namespace nogdb {
         return !operator==(lhs, rhs);
     }
 
+}
+
+inline std::string rid2str(const RecordId &rid) {
+    std::stringstream ss{};
+    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
+    return ss.str();
 }
 
 inline std::ostream &operator<<(std::ostream &os, const nogdb::RecordId &rid) {

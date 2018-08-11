@@ -172,6 +172,9 @@ namespace nogdb {
                 PropertyType type{PropertyType::UNDEFINED};
             };
 
+            typedef std::map<std::string, PropertyAccessInfo>   PropertyNameMapInfo;
+            typedef std::map<PropertyId, PropertyAccessInfo>    PropertyIdMapInfo;
+
             constexpr char KEY_SEPARATOR = ':';
             constexpr char KEY_PADDING = ' ';
             //TODO: can we improve this const creation working faster?
@@ -254,6 +257,22 @@ namespace nogdb {
                     } else {
                         return parsePropertyId(result.data.blob());
                     }
+                }
+
+                PropertyNameMapInfo getNameMapInfo(const std::vector<PropertyAccessInfo>& propertyInfos) const {
+                    auto result = PropertyNameMapInfo{};
+                    for(const auto& property: propertyInfos) {
+                        result.emplace({property.name, property});
+                    }
+                    return result;
+                }
+
+                PropertyIdMapInfo getIdMapInfo(const std::vector<PropertyAccessInfo>& propertyInfos) const {
+                    auto result = PropertyIdMapInfo{};
+                    for(const auto& property: propertyInfos) {
+                        result.emplace({property.id, property});
+                    }
+                    return result;
                 }
 
             protected:
@@ -442,22 +461,6 @@ namespace nogdb {
                     return static_cast<PropertyId>(indexKey & 0xffff);
                 }
 
-            };
-
-
-            class SchemaAccess {
-            public:
-                SchemaAccess(const storage_engine::LMDBTxn * const txn) {}
-
-                virtual ~SchemaAccess() noexcept = delete;
-
-                //TODO
-
-            private:
-                using namespace utils::allocation;
-                LazyPointer<ClassAccess> _classAccess;
-                LazyPointer<PropertyAccess> _propertyAccess;
-                LazyPointer<IndexAccess> _indexAccess;
             };
 
         }

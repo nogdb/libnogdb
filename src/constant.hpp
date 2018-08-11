@@ -29,11 +29,12 @@ namespace nogdb {
     constexpr unsigned int  MAX_VERSION_CONTROL_SIZE    = 128;
     const std::string       DB_LOCK_FILE                = "/.context.lock";
 
-    constexpr uint16_t      INIT_NUM_CLASSES            = 5;
+    constexpr uint16_t      INIT_NUM_CLASSES            = 6;
     const std::string       TB_DBINFO                   = ".dbinfo";
     const std::string       TB_CLASSES                  = ".classes";
     const std::string       TB_PROPERTIES               = ".properties";
-    const std::string       TB_RELATIONS                = ".relations";
+    const std::string       TB_RELATIONS_IN             = ".relations#in";
+    const std::string       TB_RELATIONS_OUT            = ".relations#out";
     const std::string       TB_INDEXES                  = ".indexes";
 
     const std::string       TB_INDEXING_PREFIX          = ".index_";

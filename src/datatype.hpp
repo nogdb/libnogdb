@@ -44,20 +44,20 @@ namespace nogdb {
 
             Blob &operator=(Blob &&binaryObject) noexcept;
 
-            size_t capacity() const noexcept { return capacity_; }
+            size_t capacity() const noexcept { return _capacity; }
 
-            size_t size() const noexcept { return size_; }
+            size_t size() const noexcept { return _size; }
 
-            Byte *bytes() const noexcept { return value_; }
+            Byte *bytes() const noexcept { return _value; }
 
             Blob &append(const void *data, size_t size);
 
             size_t retrieve(void *data, size_t offset, size_t size) const;
 
         private:
-            size_t capacity_;
-            size_t size_;
-            Byte *value_;
+            size_t _capacity;
+            size_t _size;
+            Byte *_value;
         };
 
     }

@@ -37,41 +37,6 @@
 namespace nogdb {
 
     namespace utils {
-        // memory allocation
-        namespace allocation {
-            template<typename T>
-            class LazyPointer {
-            public:
-                LazyPointer() = default;
-
-                ~LazyPointer() noexcept {
-                    delete _ptr;
-                }
-
-                T &operator*() {
-                    if (!_ptr) {
-                        _ptr = new T;
-                    }
-                    return *_ptr;
-                }
-
-                const T &operator*() const {
-                    return *_ptr;
-                }
-
-                T *operator->() {
-                    return &**this;
-                }
-
-                const T *operator->() const {
-                    return &**this;
-                }
-
-            private:
-                mutable T *_ptr{nullptr};
-            };
-        }
-
         // profiler
         namespace profiler {
 

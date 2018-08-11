@@ -41,7 +41,6 @@ namespace nogdb {
         friend struct Validate;
         friend struct Algorithm;
         friend struct Compare;
-        friend struct TxnStat;
         friend struct Generic;
         friend struct Class;
         friend struct Property;
@@ -49,6 +48,8 @@ namespace nogdb {
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
+
+        friend class TxnStat;
 
         friend class BaseTxn;
 
@@ -78,21 +79,12 @@ namespace nogdb {
 
         TxnId getMaxTxnId() const;
 
-        std::pair<TxnId, TxnId> getMinActiveTxnId() const;
-
     private:
         std::shared_ptr<storage_engine::LMDBEnv> envHandler;
-        std::shared_ptr<DBInfo> dbInfo;
-        std::shared_ptr<Schema> dbSchema;
         std::shared_ptr<TxnStat> dbTxnStat;
-        std::shared_ptr<Graph> dbRelation;
-
-        mutable std::shared_ptr<boost::shared_mutex> dbInfoMutex;
-        mutable std::shared_ptr<boost::shared_mutex> dbWriterMutex;
 
         int lockContextFileDescriptor;
 
-        void initDatabase();
     };
 
 }

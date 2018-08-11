@@ -48,18 +48,19 @@ namespace nogdb {
 
                 virtual ~LMDBKeyValAccess() noexcept = default;
 
-                LMDBKeyValAccess(LMDBKeyValAccess&& other) noexcept {
-                    using std::swap;
-                    swap(_dbi, other._dbi);
+                LMDBKeyValAccess(LMDBKeyValAccess&& other) noexcept
+                    : _txn{nullptr} {
+                    *this = std::move(other);
                 }
 
                 LMDBKeyValAccess& operator=(LMDBKeyValAccess&& other) noexcept {
                     if (this != &other) {
-                        using std::swap;
-                        swap(_dbi, other._dbi);
+                        *this = std::move(other);
                     }
                     return *this;
                 }
+
+            protected:
 
                 template<typename K, typename V>
                 void put(const K& key, const V& val) {
@@ -76,6 +77,11 @@ namespace nogdb {
                     _dbi.del(key);
                 }
 
+                template<typename K, typename V>
+                void del(const K& key, const V& val) {
+                    _dbi.del(key, val);
+                };
+
                 void drop(const bool del = false) {
                     _dbi.drop(del);
                 }
@@ -85,7 +91,7 @@ namespace nogdb {
                 }
 
             private:
-                LMDBTxn *_txn;
+                const LMDBTxn *_txn;
                 lmdb::Dbi _dbi{};
                 bool _append{false};
                 bool _overwrite{true};

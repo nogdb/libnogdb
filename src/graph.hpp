@@ -38,7 +38,7 @@
 #include "boost/functional/hash.hpp"
 #include "multiversion_hashmap.hpp"
 #include "concurrent.hpp"
-#include "txn_object.hpp"
+#include "txn_stat.hpp"
 
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
@@ -51,43 +51,6 @@ namespace nogdb {
         Graph() = default;
 
         ~Graph() noexcept = default;
-
-        typedef boost::hash<RecordId> RecordIdHash;
-
-        template<typename T>
-        using GraphElements = std::unordered_map<RecordId, std::shared_ptr<T>, RecordIdHash>;
-
-        template<typename T>
-        using ConcurrentGraphElements = ConcurrentHashMap<GraphElements<T>, RecordId, T>;
-
-        struct Edge;
-
-        struct Vertex : public TxnObject {
-            Vertex(RecordId rid_)
-                    : TxnObject{}, rid{rid_} {};
-            const RecordId rid;
-
-            TwoLevelMultiVersionHashMap<ClassId, PositionId, std::weak_ptr<Edge>> in{};
-            TwoLevelMultiVersionHashMap<ClassId, PositionId, std::weak_ptr<Edge>> out{};
-        };
-
-        struct Edge : public TxnObject {
-            Edge(RecordId rid_, const std::weak_ptr<Vertex> source_, const std::weak_ptr<Vertex> target_)
-                    : TxnObject{}, rid{rid_} {
-                source.addLatestVersion(source_);
-                target.addLatestVersion(target_);
-            }
-
-            const RecordId rid;
-
-            VersionControl<std::weak_ptr<Vertex>> source{};
-            VersionControl<std::weak_ptr<Vertex>> target{};
-        };
-
-        ConcurrentGraphElements<Vertex> vertices{};
-        ConcurrentGraphElements<Edge> edges{};
-        ConcurrentDeleteQueue<RecordId> deletedVertices;
-        ConcurrentDeleteQueue<RecordId> deletedEdges;
 
         // return false if there is an existing vertex in a graph, otherwise, true
         bool createVertex(BaseTxn &txn, const RecordId &rid);
@@ -144,12 +107,6 @@ namespace nogdb {
             forceDeleteVertices(deletedVertices.pop_front(versionId));
         }
     };
-
-    inline std::string rid2str(const RecordId &rid) {
-        std::stringstream ss{};
-        ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
-        return ss.str();
-    }
 
 }
 

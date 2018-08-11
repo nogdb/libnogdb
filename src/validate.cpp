@@ -50,7 +50,7 @@ namespace nogdb {
     }
 
     bool Validate::isNameValid(const std::string &name) {
-        return std::regex_match(name, std::regex("^[A-Za-z_@][A-Za-z0-9_]*$"));
+        return std::regex_match(name, std::regex("^[A-Za-z_][A-Za-z0-9_]*$"));
     }
 
     void Validate::isClassTypeValid(const ClassType &type) {

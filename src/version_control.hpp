@@ -26,7 +26,7 @@
 #include <utility>
 
 #include "constant.hpp"
-#include "txn_object.hpp"
+#include "txn_stat.hpp"
 #include "spinlock.hpp"
 
 namespace nogdb {

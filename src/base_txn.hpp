@@ -26,7 +26,7 @@
 
 #include "storage_engine.hpp"
 #include "lmdb_engine.hpp"
-#include "txn_object.hpp"
+#include "txn_stat.hpp"
 #include "graph.hpp"
 #include "schema.hpp"
 #include "spinlock.hpp"
@@ -37,7 +37,7 @@
 
 namespace nogdb {
 
-    struct TxnStat;
+    class TxnStat;
 
     class BaseTxn {
     public:
