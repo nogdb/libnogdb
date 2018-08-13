@@ -174,9 +174,9 @@ namespace nogdb {
 
                         for (const auto &edge: edgeRecordDescriptors) {
                             if (vertexFunc != nullptr) {
-                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid), pathFilter);
+                                addUniqueVertex(((*txn._txnCtx.dbRelation).*vertexFunc)(*(txn._txnBase), edge.rid), pathFilter);
                             } else {
-                                auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
+                                auto vertices = txn._txnCtx.dbRelation->getVertexSrcDst(*(txn._txnBase), edge.rid);
                                 addUniqueVertex(vertices.first != vertexId ? vertices.first : vertices.second, pathFilter);
                             }
                         }
@@ -260,9 +260,9 @@ namespace nogdb {
 
                                     RecordId nextVertex;
                                     if (vertexFunc != nullptr) {
-                                        nextVertex = ((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid);
+                                        nextVertex = ((*txn._txnCtx.dbRelation).*vertexFunc)(*(txn._txnBase), edge.rid);
                                     } else {
-                                        auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
+                                        auto vertices = txn._txnCtx.dbRelation->getVertexSrcDst(*(txn._txnBase), edge.rid);
                                         nextVertex = (vertices.first != vertex ? vertices.first : vertices.second);
                                     }
 
@@ -324,7 +324,7 @@ namespace nogdb {
                                                                             classDBHandler, vertex, pathFilter, edgeClassIds);
 
                         for (const auto &edge: edgeRecordDescriptors) {
-                            auto nextVertex = txn.txnCtx.dbRelation->getVertexDst(*(txn.txnBase), edge.rid);
+                            auto nextVertex = txn._txnCtx.dbRelation->getVertexDst(*(txn._txnBase), edge.rid);
                             if (visited.find(nextVertex) == visited.cend()) {
                                 auto tmpRdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
                                                 retrieveRdesc(txn, classDescriptor, classPropertyInfo,

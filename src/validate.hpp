@@ -23,7 +23,7 @@
 #define __VALIDATE_HPP_INCLUDED_
 
 #include "schema.hpp"
-#include "base_txn.hpp"
+#include "schema_adapter.hpp"
 
 #include "nogdb_errors.h"
 #include "nogdb_context.h"
@@ -38,6 +38,8 @@ namespace nogdb {
 
         static void isTransactionValid(const Txn &txn);
 
+        static void isClassIdMaxReach(const Txn& txn);
+
         static void isClassNameValid(const std::string &className);
 
         static void isPropertyNameValid(const std::string &propName);
@@ -50,26 +52,19 @@ namespace nogdb {
 
         static void isNotDuplicatedClass(const Txn &txn, const std::string &className);
 
-        static std::shared_ptr<Schema::ClassDescriptor> isExistingClass(const Txn &txn, const std::string &className);
+        static adapter::schema::ClassAccessInfo isExistingClass(const Txn &txn, const std::string &className);
 
-        static std::shared_ptr<Schema::ClassDescriptor> isExistingClass(const Txn &txn, const ClassId &classId);
+        static adapter::schema::ClassAccessInfo isExistingClass(const Txn &txn, const ClassId &classId);
 
-        static void isNotDuplicatedProperty(const BaseTxn &txn,
-                                            const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                            const std::string &propertyName);
+        static void isNotDuplicatedProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
 
-        static Schema::PropertyDescriptor isExistingProperty(const BaseTxn &txn,
-                                                             const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                                             const std::string &propertyName);
+        static adapter::schema::PropertyAccessInfo
+        isExistingProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
 
-        static std::pair<ClassId, Schema::PropertyDescriptor>
-        isExistingPropertyExtend(const BaseTxn &txn,
-                                 const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                 const std::string &propertyName);
+        static adapter::schema::PropertyAccessInfo
+        isExistingPropertyExtend(const Txn &txn, const ClassId& classId, const std::string &propertyName);
 
-        static void isNotOverridenProperty(const BaseTxn &txn,
-                                           const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                           const std::string &propertyName);
+        static void isNotOverridenProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
     };
 }
 

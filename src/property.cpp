@@ -45,7 +45,7 @@ namespace nogdb {
         Validate::isPropertyNameValid(propertyName);
         Validate::isPropertyTypeValid(type);
 
-        auto &dbInfo = txn.txnBase->dbInfo;
+        auto &dbInfo = txn._txnBase->dbInfo;
         if (dbInfo.maxPropertyId >= UINT16_MAX) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
@@ -54,11 +54,11 @@ namespace nogdb {
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        Validate::isNotDuplicatedProperty(*txn.txnBase, foundClass, propertyName);
-        Validate::isNotOverridenProperty(*txn.txnBase, foundClass, propertyName);
+        Validate::isNotDuplicatedProperty(*txn._txnBase, foundClass, propertyName);
+        Validate::isNotOverridenProperty(*txn._txnBase, foundClass, propertyName);
 
         auto propertyDescriptor = Schema::PropertyDescriptor{dbInfo.maxPropertyId, type};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
             auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             auto totalLength = sizeof(type) + sizeof(ClassId) + propertyName.length();
@@ -69,7 +69,7 @@ namespace nogdb {
             propDBHandler.put(dbInfo.maxPropertyId, value);
 
             // update in-memory schema and info
-            txn.txnCtx.dbSchema->addProperty(*txn.txnBase, foundClass->id, propertyName, propertyDescriptor);
+            txn._txnCtx.dbSchema->addProperty(*txn._txnBase, foundClass->id, propertyName, propertyDescriptor);
             ++dbInfo.numProperty;
         } catch (const Error &err) {
             throw err;
@@ -93,11 +93,11 @@ namespace nogdb {
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundOldProperty = Validate::isExistingProperty(*txn.txnBase, foundClass, oldPropertyName);
-        Validate::isNotDuplicatedProperty(*txn.txnBase, foundClass, newPropertyName);
-        Validate::isNotOverridenProperty(*txn.txnBase, foundClass, newPropertyName);
+        auto foundOldProperty = Validate::isExistingProperty(*txn._txnBase, foundClass, oldPropertyName);
+        Validate::isNotDuplicatedProperty(*txn._txnBase, foundClass, newPropertyName);
+        Validate::isNotOverridenProperty(*txn._txnBase, foundClass, newPropertyName);
 
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
             auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             auto type = foundOldProperty.type;
@@ -109,7 +109,7 @@ namespace nogdb {
             propDBHandler.put(foundOldProperty.id, value);
 
             // update in-memory schema
-            txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundClass->id, oldPropertyName, newPropertyName);
+            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundClass->id, oldPropertyName, newPropertyName);
         } catch (const Error &err) {
             throw err;
         } catch (...) {
@@ -124,21 +124,21 @@ namespace nogdb {
         Validate::isTransactionValid(txn);
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundProperty = Validate::isExistingProperty(*txn.txnBase, foundClass, propertyName);
+        auto foundProperty = Validate::isExistingProperty(*txn._txnBase, foundClass, propertyName);
 
         // check if all index tables associated with the column have bee removed beforehand
         if (!foundProperty.indexInfo.empty()) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
         }
 
-        auto &dbInfo = txn.txnBase->dbInfo;
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto &dbInfo = txn._txnBase->dbInfo;
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
             auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
             propDBHandler.del(foundProperty.id);
 
             // update in-memory schema
-            txn.txnCtx.dbSchema->deleteProperty(*txn.txnBase, foundClass->id, propertyName);
+            txn._txnCtx.dbSchema->deleteProperty(*txn._txnBase, foundClass->id, propertyName);
             // update in-memory database info
             --dbInfo.numProperty;
         } catch (const Error &err) {
@@ -154,7 +154,7 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
 
-        auto &dbInfo = txn.txnBase->dbInfo;
+        auto &dbInfo = txn._txnBase->dbInfo;
         if (dbInfo.maxIndexId >= UINT32_MAX) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         } else {
@@ -163,7 +163,7 @@ namespace nogdb {
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto result = Validate::isExistingPropertyExtend(*txn.txnBase, foundClass, propertyName);
+        auto result = Validate::isExistingPropertyExtend(*txn._txnBase, foundClass, propertyName);
         auto foundPropertyBasedClassId = result.first;
         auto foundProperty = result.second;
 
@@ -176,7 +176,7 @@ namespace nogdb {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
         }
 
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
             auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
             auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
@@ -194,7 +194,7 @@ namespace nogdb {
                 case PropertyType::UNSIGNED_INTEGER:
                 case PropertyType::UNSIGNED_BIGINT: {
                     auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), true, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
+                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
                     auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
@@ -228,7 +228,7 @@ namespace nogdb {
                 case PropertyType::REAL: {
                     auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, true), true, isUnique);
                     auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, false), true, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
+                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
                     auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
@@ -284,7 +284,7 @@ namespace nogdb {
                 }
                 case PropertyType::TEXT: {
                     auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), false, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, foundClass);
+                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
                     auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
                     auto keyValue = cursorHandler.getNext();
                     while (!keyValue.empty()) {
@@ -309,7 +309,7 @@ namespace nogdb {
 
             // update in-memory database schema and info
             foundProperty.indexInfo.emplace(foundClass->id, std::make_pair(dbInfo.maxIndexId, isUnique));
-            txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
+            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
             ++dbInfo.numIndex;
         } catch (const Error &err) {
             if (err.code() == MDB_KEYEXIST) {
@@ -330,7 +330,7 @@ namespace nogdb {
 
         // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto result = Validate::isExistingPropertyExtend(*txn.txnBase, foundClass, propertyName);
+        auto result = Validate::isExistingPropertyExtend(*txn._txnBase, foundClass, propertyName);
         auto foundPropertyBasedClassId = result.first;
         auto foundProperty = result.second;
 
@@ -340,8 +340,8 @@ namespace nogdb {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
         }
 
-        auto &dbInfo = txn.txnBase->dbInfo;
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto &dbInfo = txn._txnBase->dbInfo;
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
             auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
             auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
@@ -388,7 +388,7 @@ namespace nogdb {
 
             // update in-memory schema
             foundProperty.indexInfo.erase(foundClass->id);
-            txn.txnCtx.dbSchema->updateProperty(*txn.txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
+            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
             // update in-memory database info
             --dbInfo.numIndex;
         } catch (const Error &err) {

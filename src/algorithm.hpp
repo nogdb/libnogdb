@@ -184,7 +184,7 @@ namespace nogdb {
                                                                         classDBHandler, vertex, pathFilter, edgeClassIds);
 
                     for (const auto &edge : edgeRecordDescriptors) {
-                        auto nextVertex = txn.txnCtx.dbRelation->getVertexDst(*(txn.txnBase), edge.rid);
+                        auto nextVertex = txn._txnCtx.dbRelation->getVertexDst(*(txn._txnBase), edge.rid);
                         auto tmpRdesc = pathFilter.isEnable() ?
                                         retrieveRdesc(txn, classDescriptor, classPropertyInfo,
                                                       classDBHandler, nextVertex, pathFilter, ClassType::VERTEX) :
@@ -210,7 +210,7 @@ namespace nogdb {
 
                 std::vector<RecordDescriptor> result {dstId};
                 for (RecordId vertex = dstId; vertex != srcId;) {
-                    vertex = txn.txnCtx.dbRelation->getVertexSrc(*(txn.txnBase), parent.at(vertex).rid);
+                    vertex = txn._txnCtx.dbRelation->getVertexSrc(*(txn._txnBase), parent.at(vertex).rid);
                     result.emplace_back(vertex);
                 }
 
@@ -230,13 +230,13 @@ namespace nogdb {
                                       const RecordId &rid,
                                       const PathFilter &pathFilter,
                                       ClassType type) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
-                classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+                classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                 classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
             auto rawData = classDBHandler.get(rid.second);
             auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
@@ -263,13 +263,13 @@ namespace nogdb {
                                                      const RecordId &rid,
                                                      const PathFilter &pathFilter,
                                                      ClassType type) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
                 classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
-                classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+                classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                 classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
             auto rawData = classDBHandler.get(rid.second);
             auto record = Parser::parseRawDataWithBasicInfo(className, rid, rawData, classPropertyInfo);
             if (pathFilter.isSetVertex() && type == ClassType::VERTEX) {
@@ -290,13 +290,13 @@ namespace nogdb {
         }
 
         inline static Record retrieveRecord(const Txn &txn, const RecordDescriptor &descriptor) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             auto classDescriptor = Generic::getClassDescriptor(txn, descriptor.rid.first,
                                                                ClassType::UNDEFINED);
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
             auto classDBHandler = dsTxnHandler->openDbi(std::to_string(descriptor.rid.first), true);
             auto keyValue = classDBHandler.get(descriptor.rid.second);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
 
             return Parser::parseRawDataWithBasicInfo(className, descriptor.rid, keyValue, classPropertyInfo);
         }
@@ -315,7 +315,7 @@ namespace nogdb {
 
             auto edgeRecordDescriptors = std::vector<RecordDescriptor>{};
             if (edgeClassIds.empty()) {
-                for (const auto &edge: ((*txn.txnCtx.dbRelation).*edgeFunc)(*(txn.txnBase), vertex, 0)) {
+                for (const auto &edge: ((*txn._txnCtx.dbRelation).*edgeFunc)(*(txn._txnBase), vertex, 0)) {
                     auto tmpRdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
                                     retrieveRdesc(txn, classDescriptor, classPropertyInfo,
                                                   classDBHandler, edge, pathFilter, ClassType::EDGE) :
@@ -326,7 +326,7 @@ namespace nogdb {
                 }
             } else {
                 for (const auto &edgeId: edgeClassIds) {
-                    for (const auto &edge: ((*txn.txnCtx.dbRelation).*edgeFunc)(*(txn.txnBase), vertex, edgeId)) {
+                    for (const auto &edge: ((*txn._txnCtx.dbRelation).*edgeFunc)(*(txn._txnBase), vertex, edgeId)) {
                         auto tmpRdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
                                         retrieveRdesc(txn, classDescriptor, classPropertyInfo,
                                                       classDBHandler, edge, pathFilter, ClassType::EDGE) :
@@ -353,7 +353,7 @@ namespace nogdb {
             std::vector<RecordDescriptor> edgeRecordDescriptors {};
 
             if (edgeClassIds.empty()) {
-                for (const auto &edge: txn.txnCtx.dbRelation->getEdgeOut(*(txn.txnBase), vertex, 0)) {
+                for (const auto &edge: txn._txnCtx.dbRelation->getEdgeOut(*(txn._txnBase), vertex, 0)) {
                     auto tmpRdesc = pathFilter.isEnable() ?
                                     retrieveRdesc(txn, classDescriptor, classPropertyInfo,
                                                   classDBHandler, edge, pathFilter, ClassType::EDGE) :
@@ -364,7 +364,7 @@ namespace nogdb {
                 }
             } else {
                 for (const auto &edgeId: edgeClassIds) {
-                    for (const auto &edge: txn.txnCtx.dbRelation->getEdgeOut(*(txn.txnBase), vertex, edgeId)) {
+                    for (const auto &edge: txn._txnCtx.dbRelation->getEdgeOut(*(txn._txnBase), vertex, edgeId)) {
                         auto tmpRdesc = pathFilter.isEnable() ?
                                         retrieveRdesc(txn, classDescriptor, classPropertyInfo,
                                                       classDBHandler, edge, pathFilter, ClassType::EDGE) :

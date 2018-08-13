@@ -24,9 +24,12 @@
 
 #include <string>
 #include <cstdlib>
+#include <unordered_map>
+#include <nogdb_txn.h>
 
-#include "storage_adapter.hpp"
 #include "constant.hpp"
+#include "storage_adapter.hpp"
+#include "datarecord_adapter.hpp"
 
 namespace nogdb {
 
@@ -50,6 +53,8 @@ namespace nogdb {
 
             class RelationAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
+                RelationAccess() = default;
+
                 RelationAccess(const storage_engine::LMDBTxn * const txn, const Direction& direction)
                         : LMDBKeyValAccess(txn, (direction == Direction::IN)? TB_RELATIONS_IN: TB_RELATIONS_OUT,
                                            true, false, false, false),
@@ -148,6 +153,64 @@ namespace nogdb {
                     auto positionId = PositionId{std::strtoul(splitKey[1].c_str(), nullptr, 0)};
                     return RecordId{classId, positionId};
                 };
+
+            };
+
+            class RelationHelper {
+            public:
+                RelationHelper() = default;
+
+                RelationHelper(const Txn* txn)
+                        : _txn{txn},
+                          _inRel{RelationAccess{_txn->_txnBase, Direction::IN}},
+                          _outRel{RelationAccess{_txn->_txnBase, Direction::OUT}} {}
+
+                virtual ~RelationHelper() noexcept = default;
+
+                void removeRel(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid) {
+                    _inRel.remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
+                    _outRel.remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+                }
+
+                void removeRelFromVertex(const RecordId& rid) {
+                    // source
+                    for(const auto& relInfo: _inRel.getInfos(rid)) {
+                        auto edgeDataRecord = _edgeDataRecordCache.get(relInfo.edgeId.first, [&](){
+                            return datarecord::DataRecord(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+                        });
+                        try {
+                            edgeDataRecord.remove(relInfo.edgeId.second);
+                        } catch (const Error & err){
+                            if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
+                                throw err;
+                            }
+                        }
+                        _outRel.remove(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+                    }
+                    _inRel.remove(rid);
+                    // destination
+                    for(const auto& relInfo: _outRel.getInfos(rid)) {
+                        auto edgeDataRecord = _edgeDataRecordCache.get(relInfo.edgeId.first, [&](){
+                            return datarecord::DataRecord(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+                        });
+                        try {
+                            edgeDataRecord.remove(relInfo.edgeId.second);
+                        } catch (const Error & err){
+                            if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
+                                throw err;
+                            }
+                        }
+                        _inRel.remove(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+                    }
+                    _outRel.remove(rid);
+                }
+
+            private:
+                const Txn *_txn;
+                RelationAccess _inRel;
+                RelationAccess _outRel;
+
+                utils::caching::UnorderedCache<ClassId, datarecord::DataRecord> _edgeDataRecordCache{};
 
             };
 

@@ -43,10 +43,10 @@ namespace nogdb {
     Result Generic::getRecordResult(Txn &txn, const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
         auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
         record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
         return Result{recordDescriptor, record};
@@ -55,11 +55,11 @@ namespace nogdb {
     ResultSet Generic::getRecordFromRdesc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto result = ResultSet{};
         auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+        auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
         auto record = Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
         record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor.depth);
         result.emplace_back(Result{recordDescriptor, record});
@@ -69,12 +69,12 @@ namespace nogdb {
     ResultSet
     Generic::getMultipleRecordFromRdesc(const Txn &txn, const std::vector<RecordDescriptor> &recordDescriptors) {
         auto result = ResultSet{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         if (!recordDescriptors.empty()) {
             auto classId = recordDescriptors.cbegin()->rid.first;
             auto classDescriptor = getClassDescriptor(txn, classId, ClassType::UNDEFINED);
-            auto classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
-            auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+            auto classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
+            auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
             auto classDBHandler = dsTxnHandler->openDbi( std::to_string(classId), true);
             for (const auto &recordDescriptor: recordDescriptors) {
                 auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
@@ -87,7 +87,7 @@ namespace nogdb {
 
     ResultSet Generic::getRecordFromClassInfo(const Txn &txn, const ClassInfo &classInfo) {
         auto result = ResultSet{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
         auto keyValue = cursorHandler.getNext();
         while (!keyValue.empty()) {
@@ -104,7 +104,7 @@ namespace nogdb {
 
     std::vector<RecordDescriptor> Generic::getRdescFromClassInfo(Txn &txn, const ClassInfo &classInfo) {
         auto result = std::vector<RecordDescriptor>{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
         auto keyValue = cursorHandler.getNext();
         while (!keyValue.empty()) {
@@ -138,7 +138,7 @@ namespace nogdb {
                 return ResultSet{};
             default:
                 auto result = ResultSet{};
-                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+                auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
@@ -147,21 +147,21 @@ namespace nogdb {
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
-                            classPropertyInfo = getClassMapProperty(*txn.txnBase, classDescriptor);
+                            classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi( std::to_string(edge.first), true);
-                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                            className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
                         }
                         auto dsResult = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, dsResult, classPropertyInfo);
                         result.push_back(Result{RecordDescriptor{edge}, record});
                     };
                     if (edgeClassIds.empty()) {
-                        for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
+                        for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, 0)) {
                             retrieve(result, edge);
                         }
                     } else {
                         for (const auto &edgeId: edgeClassIds) {
-                            for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, edgeId)) {
+                            for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, edgeId)) {
                                 retrieve(result, edge);
                             }
                         }
@@ -192,12 +192,12 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 try {
                     if (edgeClassIds.empty()) {
-                        for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
+                        for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, 0)) {
                             result.emplace_back(RecordDescriptor{edge});
                         }
                     } else {
                         for (const auto &edgeId: edgeClassIds) {
-                            for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, edgeId)) {
+                            for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, edgeId)) {
                                 result.emplace_back(RecordDescriptor{edge});
                             }
                         }
@@ -214,10 +214,10 @@ namespace nogdb {
     }
 
     uint8_t Generic::checkIfRecordExist(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        if (txn.txnCtx.dbRelation->lookupVertex(*(txn.txnBase), recordDescriptor.rid)) {
+        if (txn._txnCtx.dbRelation->lookupVertex(*(txn._txnBase), recordDescriptor.rid)) {
             return RECORD_EXIST;
         } else {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
             auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
             return (dsResult.data.empty()) ? RECORD_NOT_EXIST : RECORD_NOT_EXIST_IN_MEMORY;
@@ -281,7 +281,7 @@ namespace nogdb {
                 }
             }
             // check inheritance before return
-            return getClassExtend(*txn.txnBase, setOfClassDescriptors);
+            return getClassExtend(*txn._txnBase, setOfClassDescriptors);
         }
         return std::set<Schema::ClassDescriptorPtr>{};
     }
@@ -296,7 +296,7 @@ namespace nogdb {
                 }
             }
             // check inheritance before return
-            return getClassExtend(*txn.txnBase, setOfClassDescriptors);
+            return getClassExtend(*txn._txnBase, setOfClassDescriptors);
         }
         return std::set<Schema::ClassDescriptorPtr>{};
     }

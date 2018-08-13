@@ -27,6 +27,7 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
+#include <unorderd_map>
 #include <sstream>
 #include <sys/time.h>
 #include <sys/file.h>
@@ -37,6 +38,36 @@
 namespace nogdb {
 
     namespace utils {
+        // unordered_map cache
+        namespace caching {
+
+            template<typename K, typename V>
+            class UnorderedCache {
+            public:
+                UnorderedCache() = default;
+
+                virtual ~UnorderedCache() noexcept = default;
+
+                V get(const K& key, V (*callback)()) const {
+                    auto found = _underlying.find(key);
+                    if (found != _underlying.cend()) {
+                        return found->second;
+                    } else {
+                        auto value = callback();
+                        _underlying.emplace({key, value});
+                        return value;
+                    }
+                }
+
+                void set(const K& key, const V& val) {
+                    _underlying[key] = val;
+                }
+
+            private:
+                mutable std::unordered_map<K, V> _underlying{};
+            };
+        }
+
         // profiler
         namespace profiler {
 

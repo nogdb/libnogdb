@@ -135,17 +135,15 @@ namespace nogdb {
                 return Record(properties);
             }
 
-            static std::pair<RecordId, RecordId>
-            parseRawDataVertexSrcDst(const storage_engine::lmdb::Result &rawData) {
-                require(rawData.data.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
+            static std::pair<RecordId, RecordId> parseRawDataVertexSrcDst(const Blob &blob) {
+                require(blob.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
                 auto srcVertexRid = RecordId{};
                 auto dstVertexRid = RecordId{};
                 auto offset = size_t{0};
-                auto value = rawData.data.blob();
-                offset = value.retrieve(&srcVertexRid.first, offset, sizeof(ClassId));
-                offset = value.retrieve(&srcVertexRid.second, offset, sizeof(PositionId));
-                offset = value.retrieve(&dstVertexRid.first, offset, sizeof(ClassId));
-                value.retrieve(&dstVertexRid.first, offset, sizeof(PositionId));
+                offset = blob.retrieve(&srcVertexRid.first, offset, sizeof(ClassId));
+                offset = blob.retrieve(&srcVertexRid.second, offset, sizeof(PositionId));
+                offset = blob.retrieve(&dstVertexRid.first, offset, sizeof(ClassId));
+                blob.retrieve(&dstVertexRid.first, offset, sizeof(PositionId));
                 return std::make_pair(srcVertexRid, dstVertexRid);
             }
 

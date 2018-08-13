@@ -53,6 +53,8 @@ namespace nogdb {
 
             class ClassAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
+                ClassAccess() = default;
+
                 ClassAccess(const storage_engine::LMDBTxn * const txn)
                         : LMDBKeyValAccess(txn, TB_CLASSES, true, true, false, true) {}
 
@@ -62,6 +64,7 @@ namespace nogdb {
                     auto result = get(props.name);
                     if (result.empty) {
                         createOrUpdate(props);
+                        _classCache.emplace(props.id, props);
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
                     }
@@ -80,6 +83,8 @@ namespace nogdb {
                     auto result = get(className);
                     if (!result.empty) {
                         del(className);
+                        auto classId = parseClassId(result.data.blob());
+                        _classCache.erase(classId);
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
                     }
@@ -109,6 +114,24 @@ namespace nogdb {
                     }
                 }
 
+                ClassAccessInfo getInfo(const ClassId& classId) const {
+                    auto foundClassId = _classCache.find(classId);
+                    if (foundClassId != _classCache.cend()) {
+                        return foundClassId->second;
+                    } else {
+                        auto cursorHandler = cursor();
+                        for (auto keyValue = cursorHandler.getNext();
+                             !keyValue.empty();
+                             keyValue = cursorHandler.getNext()) {
+                            auto classIdValue = parseClassId(keyValue.val.data.blob());
+                            if (classId != classIdValue) continue;
+                            auto key = keyValue.key.data.string();
+                            return parse(key, keyValue.val.data.blob());
+                        }
+                        return ClassAccessInfo{};
+                    }
+                }
+
                 ClassId getId(const std::string& className) const {
                     auto result = get(className);
                     if (result.empty) {
@@ -116,6 +139,53 @@ namespace nogdb {
                     } else {
                         return parseClassId(result.data.blob());
                     }
+                }
+
+                ClassId getSuperClassId(const ClassId& classId) const {
+                    auto foundClassId = _classCache.find(classId);
+                    if (foundClassId != _classCache.cend()) {
+                        return foundClassId->second.superClassId;
+                    } else {
+                        auto cursorHandler = cursor();
+                        for (auto keyValue = cursorHandler.getNext();
+                             !keyValue.empty();
+                             keyValue = cursorHandler.getNext()) {
+                            auto classIdValue = parseClassId(keyValue.val.data.blob());
+                            if (classId != classIdValue) continue;
+                            auto key = keyValue.key.data.string();
+                            return parseSuperClassId(keyValue.val.data.blob());
+                        }
+                        return ClassId{};
+                    }
+                }
+
+                std::set<ClassId> getSubClassIds(const ClassId& classId) const {
+                    //TODO: can we improve the performance for this?
+                    auto result = std::set<ClassId>{};
+                    auto cursorHandler = cursor();
+                    for (auto keyValue = cursorHandler.getNext();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
+                        auto superClassIdValue = parseSuperClassId(keyValue.val.data.blob());
+                        if (classId != superClassIdValue) continue;
+                        result.insert(parseClassId(keyValue.val.data.blob()));
+                    }
+                    return result;
+                }
+
+                std::vector<ClassAccessInfo> getSubClassInfos(const ClassId& classId) const {
+                    //TODO: can we improve the performance for this?
+                    auto result = std::vector<ClassAccessInfo>{};
+                    auto cursorHandler = cursor();
+                    for (auto keyValue = cursorHandler.getNext();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
+                        auto superClassIdValue = parseSuperClassId(keyValue.val.data.blob());
+                        if (classId != superClassIdValue) continue;
+                        auto key = keyValue.key.data.string();
+                        result.emplace_back(parse(key, keyValue.val.data.blob()));
+                    }
+                    return result;
                 }
 
             protected:
@@ -150,6 +220,8 @@ namespace nogdb {
 
             private:
 
+                mutable std::unordered_map<ClassId, ClassAccessInfo> _classCache{};
+
                 void createOrUpdate(const ClassAccessInfo& props) {
                     auto totalLength = 2 * sizeof(ClassId) + sizeof(props.type);
                     auto value = Blob(totalLength);
@@ -182,6 +254,8 @@ namespace nogdb {
 
             class PropertyAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
+                PropertyAccess() = default;
+
                 PropertyAccess(const storage_engine::LMDBTxn * const txn)
                         : LMDBKeyValAccess(txn, TB_PROPERTIES, false, true, false, false) {}
 
@@ -359,6 +433,8 @@ namespace nogdb {
 
             class IndexAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
+                IndexAccess() = default;
+
                 IndexAccess(const storage_engine::LMDBTxn * const txn)
                         : LMDBKeyValAccess(txn, TB_INDEXES, true, true, false, false) {}
 

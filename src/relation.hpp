@@ -40,7 +40,7 @@ namespace nogdb {
             ~GraphInterface() noexcept = default;
 
             void addVertex(const RecordId& rid, const Record& record) {
-                auto dsHandler = openRecordDb(rid);
+
             }
 
             void addEdge(const RecordId& rid, const RecordDescriptor& src, const RecordDescriptor& dst, const Record& record) {

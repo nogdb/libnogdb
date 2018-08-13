@@ -135,7 +135,7 @@ namespace nogdb {
         template<typename T>
         static std::vector<RecordDescriptor>
         getLess(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value, bool includeEqual = false) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (value < 0) {
                 auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
@@ -152,7 +152,7 @@ namespace nogdb {
         template<typename T>
         static std::vector<RecordDescriptor>
         getEqual(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (value < 0) {
                 auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return exactMatchIndex(cursorHandlerNegative, classId, value);
@@ -166,7 +166,7 @@ namespace nogdb {
         static std::vector<RecordDescriptor>
         getGreater(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value,
                    bool includeEqual = false) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (value < 0) {
                 auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
                 auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
@@ -184,7 +184,7 @@ namespace nogdb {
         static std::vector<RecordDescriptor> getBetween(const Txn &txn, ClassId classId, IndexId indexId,
                                                         bool isUnique, T lowerBound, T upperBound,
                                                         const std::pair<bool, bool> &isIncludeBound) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (lowerBound < 0 && upperBound < 0) {
                 auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
                 return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);

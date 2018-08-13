@@ -32,9 +32,9 @@
 namespace nogdb {
     Record Db::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
+        auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
         if (dsResult.data.empty()) {
@@ -45,9 +45,9 @@ namespace nogdb {
 
     const std::vector<ClassDescriptor> Db::getSchema(const Txn &txn) {
         auto result = std::vector<ClassDescriptor>{};
-        for (const auto &c: txn.txnCtx.dbSchema->getNameToDescMapping(*txn.txnBase)) {
+        for (const auto &c: txn._txnCtx.dbSchema->getNameToDescMapping(*txn._txnBase)) {
             if (auto cPtr = c.second.lock()) {
-                result.push_back(cPtr->transform(*txn.txnBase));
+                result.push_back(cPtr->transform(*txn._txnBase));
             }
         }
         return result;
@@ -55,21 +55,21 @@ namespace nogdb {
 
     const ClassDescriptor Db::getSchema(const Txn &txn, const std::string &className) {
         auto foundClass = Validate::isExistingClass(txn, className);
-        return foundClass->transform(*txn.txnBase);
+        return foundClass->transform(*txn._txnBase);
     }
 
     const ClassDescriptor Db::getSchema(const Txn &txn, const ClassId &classId) {
         auto foundClass = Validate::isExistingClass(txn, classId);
-        return foundClass->transform(*txn.txnBase);
+        return foundClass->transform(*txn._txnBase);
     }
 
     const DBInfo Db::getDbInfo(const Txn &txn) {
-        auto ctx = txn.txnCtx;
-        if (txn.txnMode == Txn::Mode::READ_ONLY) {
+        auto ctx = txn._txnCtx;
+        if (txn._txnMode == Txn::Mode::READ_ONLY) {
             ReadLock<boost::shared_mutex> _(*ctx.dbInfoMutex);
             return *ctx.dbInfo;
         } else {
-            return txn.txnBase->dbInfo;
+            return txn._txnBase->dbInfo;
         }
     }
 

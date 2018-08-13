@@ -431,7 +431,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:
@@ -473,7 +473,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:
@@ -515,7 +515,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:
@@ -558,7 +558,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:
@@ -600,7 +600,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:
@@ -646,7 +646,7 @@ namespace nogdb {
         auto &indexId = std::get<0>(indexPropertyType);
         auto &isUnique = std::get<1>(indexPropertyType);
         auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         switch (propertyType) {
             case PropertyType::UNSIGNED_TINYINT:
             case PropertyType::UNSIGNED_SMALLINT:

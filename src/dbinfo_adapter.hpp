@@ -33,6 +33,8 @@ namespace nogdb {
 
             class DBInfoAccess : public storage_engine::adapter::LMDBKeyValAccess {
             public:
+                DBInfoAccess() = default;
+
                 DBInfoAccess(const storage_engine::LMDBTxn* txn)
                       : LMDBKeyValAccess(txn, TB_DBINFO) {}
 

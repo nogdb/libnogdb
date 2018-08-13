@@ -26,23 +26,73 @@
 #include "schema_adapter.hpp"
 
 namespace nogdb {
-    namespace datarecord {
 
-        class DataRecord : public storage_engine::adapter::LMDBKeyValAccess {
-        public:
-            DataRecord(const storage_engine::LMDBTxn *const txn, const ClassId& classId, const ClassType& classType)
-                    : _classId{classId},
-                      _classType{classType},
-                      LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) {}
+    namespace adapter {
 
-            virtual ~DataRecord() noexcept = default;
+        namespace datarecord {
 
-        private:
-            ClassId _classId{};
-            ClassType _classType{ClassType::UNDEFINED};
+            class DataRecord : public storage_engine::adapter::LMDBKeyValAccess {
+            public:
+                DataRecord(const storage_engine::LMDBTxn *const txn, const ClassId &classId, const ClassType &classType)
+                        : _classId{classId},
+                          _classType{classType},
+                          LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) {}
 
-        };
+                virtual ~DataRecord() noexcept = default;
 
+                void init() {
+                    put(MAX_RECORD_NUM_EM, PositionId{1});
+                }
+
+                void insert(const Blob &blob) {
+                    auto result = get(MAX_RECORD_NUM_EM);
+                    require(!result.empty);
+                    auto posid = result.data.numeric<PositionId>();
+                    put(posid, blob);
+                    put(MAX_RECORD_NUM_EM, posid + PositionId{1});
+                }
+
+                void update(const PositionId &posid, const Blob &blob) {
+                    auto result = get(posid);
+                    if (!result.empty) {
+                        put(posid, blob);
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
+                    }
+                }
+
+                void remove(const PositionId &posid) {
+                    auto result = get(posid);
+                    if (!result.empty) {
+                        del(posid);
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
+                    }
+                }
+
+                void destroy() {
+                    drop(true);
+                }
+
+                Blob getBlob(const PositionId &posid) {
+                    auto result = get(posid);
+                    if (!result.empty) {
+                        return result.data.blob();
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
+                    }
+                }
+
+                storage_engine::lmdb::Cursor getCursor() const {
+                    return cursor();
+                }
+
+            private:
+                ClassId _classId{};
+                ClassType _classType{ClassType::UNDEFINED};
+            };
+
+        }
     }
 }
 

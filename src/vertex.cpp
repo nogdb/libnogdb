@@ -46,8 +46,8 @@ namespace nogdb {
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         auto dsResult = classDBHandler.get(MAX_RECORD_NUM_EM);
         auto const maxRecordNum = dsResult.data.numeric<PositionId>();
@@ -60,7 +60,7 @@ namespace nogdb {
             auto const propertyType = std::get<0>(indexInfo.second);
             auto const indexId = std::get<1>(indexInfo.second);
             auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn.txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
+            Index::addIndex(*txn._txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
         }
         return RecordDescriptor{classDescriptor->id, maxRecordNum};
     }
@@ -74,8 +74,8 @@ namespace nogdb {
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn.txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
         if (dsResult.data.empty()) {
@@ -107,14 +107,14 @@ namespace nogdb {
             auto const propertyType = std::get<0>(indexInfo.second);
             auto const indexId = std::get<1>(indexInfo.second);
             auto const isUnique = std::get<2>(indexInfo.second);
-            Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+            Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
         }
         for (const auto &indexInfo: indexInfos) {
             auto bytesValue = record.get(indexInfo.first);
             auto const propertyType = std::get<0>(indexInfo.second);
             auto const indexId = std::get<1>(indexInfo.second);
             auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+            Index::addIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
         }
 
         classDBHandler.put(recordDescriptor.rid.second, value);
@@ -124,10 +124,10 @@ namespace nogdb {
         // transaction validations
         Validate::isTransactionValid(txn);
         auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
         try {
-            for (const auto &edge: txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordDescriptor.rid)) {
+            for (const auto &edge: txn._txnCtx.dbRelation->getEdgeInOut(*txn._txnBase, recordDescriptor.rid)) {
                 edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
             }
         } catch (const Error &err) {
@@ -139,7 +139,7 @@ namespace nogdb {
             Edge::destroy(txn, edge);
         }
         // delete a record in a datastore
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         // delete index if existing
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
@@ -170,22 +170,22 @@ namespace nogdb {
                 auto const propertyType = std::get<0>(indexInfo.second);
                 auto const indexId = std::get<1>(indexInfo.second);
                 auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn.txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
+                Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
             }
         }
         // delete actual record
         classDBHandler.del(recordDescriptor.rid.second);
         // update in-memory relations
-        txn.txnCtx.dbRelation->deleteVertex(*txn.txnBase, recordDescriptor.rid);
+        txn._txnCtx.dbRelation->deleteVertex(*txn._txnBase, recordDescriptor.rid);
     }
 
     void Vertex::destroy(Txn &txn, const std::string &className) {
         // transaction validations
         Validate::isTransactionValid(txn);
         auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto recordIds = std::vector<RecordId> {};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         // remove all index records
         auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
         for (const auto &property: classInfo.nameToDesc) {
@@ -250,7 +250,7 @@ namespace nogdb {
                 recordIds.push_back(recordDescriptor.rid);
                 auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
                 try {
-                    for (const auto &edge: txn.txnCtx.dbRelation->getEdgeInOut(*txn.txnBase, recordDescriptor.rid)) {
+                    for (const auto &edge: txn._txnCtx.dbRelation->getEdgeInOut(*txn._txnBase, recordDescriptor.rid)) {
                         edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
                     }
                 } catch (const Error &err) {
@@ -270,7 +270,7 @@ namespace nogdb {
         classDBHandler.drop();
         // update in-memory
         for (const auto &recordId: recordIds) {
-            txn.txnCtx.dbRelation->deleteVertex(*txn.txnBase, recordId);
+            txn._txnCtx.dbRelation->deleteVertex(*txn._txnBase, recordId);
         }
     }
 
@@ -278,7 +278,7 @@ namespace nogdb {
         auto result = ResultSet{};
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, ClassType::VERTEX);
         for (const auto &classDescriptor: classDescriptors) {
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
             auto classInfo = ClassInfo{classDescriptor->id, className, classPropertyInfo};
             auto partial = Generic::getRecordFromClassInfo(txn, classInfo);
             result.insert(result.end(), partial.cbegin(), partial.cend());
@@ -290,7 +290,7 @@ namespace nogdb {
         auto result = ResultSetCursor{txn};
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, ClassType::VERTEX);
         for (const auto &classDescriptor: classDescriptors) {
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
             auto classInfo = ClassInfo{classDescriptor->id, className, classPropertyInfo};
             auto metadata = Generic::getRdescFromClassInfo(txn, classInfo);
             result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

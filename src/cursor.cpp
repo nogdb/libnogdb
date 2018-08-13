@@ -163,7 +163,7 @@ namespace nogdb {
         auto findCacheClassInfo = classPropertyInfos->find(classId);
         if (findCacheClassInfo == classPropertyInfos->cend()) {
             auto classDescriptor = Generic::getClassDescriptor(txn, classId, ClassType::UNDEFINED);
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
             classPropertyInfos->emplace(classId, classPropertyInfo);
             return classPropertyInfo;
         } else {

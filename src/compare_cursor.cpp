@@ -46,7 +46,7 @@ namespace nogdb {
     Compare::getRdescCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos, const Condition &condition,
                                PropertyType type) {
         auto result = std::vector<RecordDescriptor>{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         for (const auto &classInfo: classInfos) {
             auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
             auto keyValue = cursorHandler.getNext();
@@ -93,7 +93,7 @@ namespace nogdb {
                                     const MultiCondition &conditions,
                                     const PropertyMapType &types) {
         auto result = std::vector<RecordDescriptor>{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         for (const auto &classInfo: classInfos) {
             auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
             auto keyValue = cursorHandler.getNext();
@@ -124,7 +124,7 @@ namespace nogdb {
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
-                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+                auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
@@ -161,9 +161,9 @@ namespace nogdb {
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
-                            classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+                            classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
-                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                            className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
@@ -172,12 +172,12 @@ namespace nogdb {
                         }
                     };
                     if (edgeClassIds.empty()) {
-                        for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
+                        for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, 0)) {
                             retrieve(result, edge);
                         }
                     } else {
                         for (const auto &edgeId: edgeClassIds) {
-                            for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, edgeId)) {
+                            for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, edgeId)) {
                                 retrieve(result, edge);
                             }
                         }
@@ -206,7 +206,7 @@ namespace nogdb {
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
-                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+                auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
@@ -215,9 +215,9 @@ namespace nogdb {
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
-                            classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+                            classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
-                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                            className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
@@ -226,12 +226,12 @@ namespace nogdb {
                         }
                     };
                     if (edgeClassIds.empty()) {
-                        for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
+                        for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, 0)) {
                             retrieve(result, edge);
                         }
                     } else {
                         for (const auto &edgeId: edgeClassIds) {
-                            for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, edgeId)) {
+                            for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, edgeId)) {
                                 retrieve(result, edge);
                             }
                         }
@@ -252,7 +252,7 @@ namespace nogdb {
                                    const Condition &condition, bool searchIndexOnly) {
         auto propertyType = PropertyType::UNDEFINED;
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-        auto classInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, classDescriptors);
+        auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
         for (const auto &classInfo: classInfos) {
             auto propertyInfo = classInfo.propertyInfo.nameToDesc.find(condition.propName);
             if (propertyInfo != classInfo.propertyInfo.nameToDesc.cend()) {
@@ -271,7 +271,7 @@ namespace nogdb {
         //TODO: temporary fix indexing errors
 //        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
 //                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//            return BaseTxn::getCurrentVersion(*txn._txnBase, ptr->name).first == className;
 //        });
 //        auto &classId = (*foundClassId)->id;
 //        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
@@ -299,7 +299,7 @@ namespace nogdb {
         require(!conditionPropertyTypes.empty());
 
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-        auto classInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, classDescriptors);
+        auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
         auto numOfUndefPropertyType = conditionPropertyTypes.size();
         for (const auto &classInfo: classInfos) {
             for (auto &property: conditionPropertyTypes) {
@@ -322,7 +322,7 @@ namespace nogdb {
         //TODO: temporary fix indexing errors
 //        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
 //                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-//            return BaseTxn::getCurrentVersion(*txn.txnBase, ptr->name).first == className;
+//            return BaseTxn::getCurrentVersion(*txn._txnBase, ptr->name).first == className;
 //        });
 //        auto &classId = (*foundClassId)->id;
 //        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
@@ -367,14 +367,14 @@ namespace nogdb {
 
         auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, classFilter.getClassName(), ClassType::EDGE);
         if (!edgeClassDescriptors.empty()) {
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
-            auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
+            auto edgeClassIds = ((*txn._txnCtx.dbRelation).*func2)(*txn._txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             if (!validateProperty(edgeClassInfos, condition.propName)) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
@@ -425,14 +425,14 @@ namespace nogdb {
 
         auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, classFilter.getClassName(), ClassType::EDGE);
         if (!edgeClassDescriptors.empty()) {
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
-            auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
+            auto edgeClassIds = ((*txn._txnCtx.dbRelation).*func2)(*txn._txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             if (!validateAndResolveProperties(edgeClassInfos, conditionPropertyTypes)) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
@@ -448,7 +448,7 @@ namespace nogdb {
     Compare::getRdescCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos,
                                bool (*condition)(const Record &record)) {
         auto result = std::vector<RecordDescriptor>{};
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         for (const auto &classInfo: classInfos) {
             auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
             auto keyValue = cursorHandler.getNext();
@@ -471,7 +471,7 @@ namespace nogdb {
     Compare::compareConditionRdesc(const Txn &txn, const std::string &className, ClassType type,
                                    bool (*condition)(const Record &)) {
         auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-        auto classInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, classDescriptors);
+        auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
         return getRdescCondition(txn, classInfos, condition);
     }
 
@@ -488,7 +488,7 @@ namespace nogdb {
                 return std::vector<RecordDescriptor>{};
             default:
                 auto result = std::vector<RecordDescriptor>{};
-                auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
+                auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
                 try {
                     auto classDescriptor = Schema::ClassDescriptorPtr{};
                     auto classPropertyInfo = ClassPropertyInfo{};
@@ -497,9 +497,9 @@ namespace nogdb {
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
                             classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
-                            classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
+                            classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
-                            className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
+                            className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
                         }
                         auto keyValue = classDBHandler.get(edge.second);
                         auto record = Parser::parseRawDataWithBasicInfo(className, edge, keyValue, classPropertyInfo);
@@ -508,12 +508,12 @@ namespace nogdb {
                         }
                     };
                     if (edgeClassIds.empty()) {
-                        for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, 0)) {
+                        for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, 0)) {
                             retrieve(result, edge);
                         }
                     } else {
                         for (const auto &edgeId: edgeClassIds) {
-                            for (const auto &edge: ((*txn.txnCtx.dbRelation).*func)(*txn.txnBase, recordDescriptor.rid, edgeId)) {
+                            for (const auto &edge: ((*txn._txnCtx.dbRelation).*func)(*txn._txnBase, recordDescriptor.rid, edgeId)) {
                                 retrieve(result, edge);
                             }
                         }
@@ -540,14 +540,14 @@ namespace nogdb {
         auto edgeClassIds = std::vector<ClassId>{};
         auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, classFilter.getClassName(), ClassType::EDGE);
         if (!edgeClassDescriptors.empty()) {
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             for (const auto &classInfo: edgeClassInfos) {
                 edgeClassIds.push_back(classInfo.id);
             }
         } else {
-            auto edgeClassIds = ((*txn.txnCtx.dbRelation).*func2)(*txn.txnBase, recordDescriptor.rid);
+            auto edgeClassIds = ((*txn._txnCtx.dbRelation).*func2)(*txn._txnBase, recordDescriptor.rid);
             auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, edgeClassIds, ClassType::EDGE);
-            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn.txnBase, edgeClassDescriptors);
+            auto edgeClassInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, edgeClassDescriptors);
             for (const auto &classInfo: edgeClassInfos) {
                 edgeClassIds.push_back(classInfo.id);
             }

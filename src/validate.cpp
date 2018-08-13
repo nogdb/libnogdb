@@ -26,14 +26,22 @@
 
 #include "nogdb_txn.h"
 
+#define CLASS_ID_UPPER_LIMIT    (UINT16_MAX - 1)
+
 namespace nogdb {
 
     void Validate::isTransactionValid(const Txn &txn) {
         if (txn.getTxnMode() == Txn::Mode::READ_ONLY) {
             throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
         }
-        if (!txn.txnBase->isNotCompleted()) {
+        if (txn.isCompleted()) {
             throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
+        }
+    }
+
+    void Validate::isClassIdMaxReach(const Txn &txn) {
+        if ((txn._dbInfo.getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         }
     }
 
@@ -83,80 +91,71 @@ namespace nogdb {
     }
 
     void Validate::isNotDuplicatedClass(const Txn &txn, const std::string &className) {
-        auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, className);
-        if (foundClass != nullptr) {
+        auto foundClass = txn._class.getId(className);
+        if (foundClass != ClassId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
         }
     }
 
-    std::shared_ptr<Schema::ClassDescriptor> Validate::isExistingClass(const Txn &txn, const std::string &className) {
-        auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, className);
-        if (foundClass == nullptr) {
+    adapter::schema::ClassAccessInfo Validate::isExistingClass(const Txn &txn, const std::string &className) {
+        auto foundClass = txn._class.getInfo(className);
+        if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
 
-    std::shared_ptr<Schema::ClassDescriptor> Validate::isExistingClass(const Txn &txn, const ClassId &classId) {
-        auto foundClass = txn.txnCtx.dbSchema->find(*txn.txnBase, classId);
-        if (foundClass == nullptr) {
+    adapter::schema::ClassAccessInfo Validate::isExistingClass(const Txn &txn, const ClassId &classId) {
+        auto foundClass = txn._class.getInfo(classId);
+        if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
 
-    Schema::PropertyDescriptor Validate::isExistingProperty(const BaseTxn &txn,
-                                                            const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                                            const std::string &propertyName) {
-        auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
-        auto foundProperty = properties.find(propertyName);
-        if (foundProperty == properties.cend()) {
+    adapter::schema::PropertyAccessInfo
+    Validate::isExistingProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
+        auto foundProperty = txn._property.getInfo(classId, propertyName);
+        if (foundProperty.type == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        return foundProperty->second;
+        return foundProperty;
     }
 
-    std::pair<ClassId, Schema::PropertyDescriptor>
-    Validate::isExistingPropertyExtend(const BaseTxn &txn,
-                                       const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                       const std::string &propertyName) {
-        auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
-        auto foundProperty = properties.find(propertyName);
-        if (foundProperty == properties.cend()) {
-            if (auto superClassDescriptor = BaseTxn::getCurrentVersion(txn, classDescriptor->super).first.lock()) {
-                return isExistingPropertyExtend(txn, superClassDescriptor, propertyName);
+    adapter::schema::PropertyAccessInfo
+    Validate::isExistingPropertyExtend(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
+        auto foundProperty = txn._property.getInfo(classId, propertyName);
+        if (foundProperty.type == PropertyType::UNDEFINED) {
+            auto superClassId = txn._class.getSuperClassId(classId);
+            if (superClassId != ClassId{}) {
+                return isExistingPropertyExtend(txn, classId, propertyName);
             } else {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
         } else {
-            return std::make_pair(classDescriptor->id, foundProperty->second);
+            return foundProperty;
         }
     }
 
-    void Validate::isNotDuplicatedProperty(const BaseTxn &txn,
-                                           const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                           const std::string &propertyName) {
-        auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
-        auto foundProperty = properties.find(propertyName);
-        if (foundProperty != properties.cend()) {
+    void Validate::isNotDuplicatedProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
+        auto foundProperty = txn._property.getId(classId, propertyName);
+        if (foundProperty != PropertyId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
         }
-        if (auto superClassDescriptor = BaseTxn::getCurrentVersion(txn, classDescriptor->super).first.lock()) {
-            isNotDuplicatedProperty(txn, superClassDescriptor, propertyName);
+        auto superClassId = txn._class.getSuperClassId(classId);
+        if (superClassId != ClassId{}) {
+            isNotDuplicatedProperty(txn, superClassId, propertyName);
         }
     }
 
-    void Validate::isNotOverridenProperty(const BaseTxn &txn,
-                                          const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                          const std::string &propertyName) {
-        auto properties = BaseTxn::getCurrentVersion(txn, classDescriptor->properties).first;
-        auto foundProperty = properties.find(propertyName);
-        if (foundProperty != properties.cend()) {
+    void Validate::isNotOverridenProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
+        auto foundProperty = txn._property.getId(classId, propertyName);
+        if (foundProperty != PropertyId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
         }
-        for (const auto &subClassDescriptor: BaseTxn::getCurrentVersion(txn, classDescriptor->sub).first) {
-            if (auto subClassDescriptorPtr = subClassDescriptor.lock()) {
-                isNotOverridenProperty(txn, subClassDescriptorPtr, propertyName);
+        for (const auto &subClassId: txn._class.getSubClassIds(classId)) {
+            if (subClassId != ClassId{}) {
+                isNotOverridenProperty(txn, subClassId, propertyName);
             }
         }
     }

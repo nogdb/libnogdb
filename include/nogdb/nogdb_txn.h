@@ -23,10 +23,27 @@
 #define __NOGDB_TXN_H_INCLUDED_
 
 #include "nogdb_context.h"
+#include "../../src/relation_adapter.hpp"
 
 namespace nogdb {
 
-    class BaseTxn;
+    namespace storage_engine {
+        class LMDBTxn;
+    }
+
+    namespace adapter {
+        namespace metadata {
+            class DBInfoAccess;
+        }
+        namespace schema {
+            class ClassAccess;
+            class PropertyAccess;
+            class IndexAccess;
+        }
+        namespace relation {
+            class RelationHelper;
+        }
+    }
 
     class Txn {
     public:
@@ -44,17 +61,13 @@ namespace nogdb {
 
         friend class ResultSetCursor;
 
-        enum Mode {
-            READ_ONLY, READ_WRITE
-        };
+        friend class adapter::relation::RelationHelper;
+
+        enum Mode { READ_ONLY, READ_WRITE };
 
         Txn(Context &ctx, Mode mode);
 
         ~Txn() noexcept;
-
-        Txn(const Txn &txn);
-
-        Txn &operator=(const Txn &txn);
 
         Txn(Txn &&txn) noexcept;
 
@@ -64,17 +77,25 @@ namespace nogdb {
 
         void rollback() noexcept;
 
-        TxnId getTxnId() const;
+        TxnId getTxnId() const { return _txnId; }
 
-        TxnId getVersionId() const;
+        TxnId getVersionId() const { return _versionId; }
 
-        Mode getTxnMode() const { return txnMode; }
+        Mode getTxnMode() const { return _txnMode; }
+
+        bool isCompleted() const { return _completed; }
 
     private:
-        Context &txnCtx;
-        Mode txnMode;
-        std::shared_ptr<BaseTxn> txnBase;
-
+        Context &_txnCtx;
+        storage_engine::LMDBTxn *_txnBase;
+        adapter::metadata::DBInfoAccess _dbInfo;
+        adapter::schema::ClassAccess _class;
+        adapter::schema::PropertyAccess _property;
+        adapter::schema::IndexAccess _index;
+        Mode _txnMode;
+        TxnId _txnId;
+        TxnId _versionId;
+        bool _completed; // throw error if working with isCompleted = true
     };
 
 }
