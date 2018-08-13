@@ -27,7 +27,6 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
-#include <unorderd_map>
 #include <sstream>
 #include <sys/time.h>
 #include <sys/file.h>
@@ -41,8 +40,8 @@ namespace nogdb {
         // unordered_map cache
         namespace caching {
 
-            template<typename K, typename V>
-            class UnorderedCache {
+            template<typename K, typename V, template<typename, typename> class Container>
+            class GenericCache {
             public:
                 UnorderedCache() = default;
 
@@ -64,7 +63,7 @@ namespace nogdb {
                 }
 
             private:
-                mutable std::unordered_map<K, V> _underlying{};
+                mutable Container<K, V> _underlying{};
             };
         }
 

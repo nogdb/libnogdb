@@ -210,7 +210,10 @@ namespace nogdb {
                 RelationAccess _inRel;
                 RelationAccess _outRel;
 
-                utils::caching::UnorderedCache<ClassId, datarecord::DataRecord> _edgeDataRecordCache{};
+                utils::caching::GenericCache<
+                        ClassId,
+                        datarecord::DataRecord,
+                        std::unordered_map> _edgeDataRecordCache{};
 
             };
 
