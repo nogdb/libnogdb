@@ -112,6 +112,7 @@ set(APITEST_COMPILE_OPTIONS
     -Wno-unused-but-set-variable
     -Wno-unknown-warning-option
     -fPIC
+    -march=native
 )
 
 set(APITEST_PATH "test/apitest/apitest.cpp")
