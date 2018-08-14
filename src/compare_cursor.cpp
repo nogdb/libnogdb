@@ -21,7 +21,6 @@
 
 #include <vector>
 
-#include "shared_lock.hpp"
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
 #include "graph.hpp"
@@ -160,7 +159,7 @@ namespace nogdb {
                     };
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
-                            classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
+                            classDescriptor = Generic::getClassInfo(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
@@ -214,7 +213,7 @@ namespace nogdb {
                     auto className = std::string{};
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
-                            classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
+                            classDescriptor = Generic::getClassInfo(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
@@ -343,7 +342,7 @@ namespace nogdb {
                                        std::vector<ClassId>
                                        (Graph::*func2)(const BaseTxn &baseTxn, const RecordId &rid),
                                        const Condition &condition, const ClassFilter &classFilter) {
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto propertyType = PropertyType::UNDEFINED;
         auto edgeClassIds = std::vector<ClassId>{};
         auto validateProperty = [&](const std::vector<ClassInfo> &classInfos, const std::string &propName) {
@@ -399,7 +398,7 @@ namespace nogdb {
         }
         require(!conditionPropertyTypes.empty());
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = std::vector<ClassId> {};
         auto validateAndResolveProperties = [&](const std::vector<ClassInfo> &classInfos,
                                                 PropertyMapType &propertyTypes) {
@@ -496,7 +495,7 @@ namespace nogdb {
                     auto className = std::string{};
                     auto retrieve = [&](std::vector<RecordDescriptor> &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
-                            classDescriptor = Generic::getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
+                            classDescriptor = Generic::getClassInfo(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi(std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
@@ -536,7 +535,7 @@ namespace nogdb {
                                        std::vector<ClassId>
                                        (Graph::*func2)(const BaseTxn &baseTxn, const RecordId &rid),
                                        bool (*condition)(const Record &), const ClassFilter &classFilter) {
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = std::vector<ClassId>{};
         auto edgeClassDescriptors = Generic::getMultipleClassDescriptor(txn, classFilter.getClassName(), ClassType::EDGE);
         if (!edgeClassDescriptors.empty()) {

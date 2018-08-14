@@ -27,6 +27,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <functional>
 #include <iomanip>
 #include <cstdlib>
 
@@ -60,11 +61,23 @@ namespace nogdb {
 
                 virtual ~ClassAccess() noexcept = default;
 
+                ClassAccess(ClassAccess&& other) noexcept {
+                    *this = std::move(other);
+                }
+
+                ClassAccess& operator=(ClassAccess&& other) noexcept {
+                    if (this != &other) {
+                        using std::swap;
+                        swap(_classCache, other._classCache);
+                    }
+                    return *this;
+                }
+
                 void create(const ClassAccessInfo& props) {
                     auto result = get(props.name);
                     if (result.empty) {
                         createOrUpdate(props);
-                        _classCache.emplace(props.id, props);
+                        _classCache.set(props.id, props);
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
                     }
@@ -74,6 +87,7 @@ namespace nogdb {
                     auto result = get(props.name);
                     if (!result.empty) {
                         createOrUpdate(props);
+                        _classCache.set(props.id, props);
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
                     }
@@ -84,7 +98,7 @@ namespace nogdb {
                     if (!result.empty) {
                         del(className);
                         auto classId = parseClassId(result.data.blob());
-                        _classCache.erase(classId);
+                        _classCache.unset(classId);
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
                     }
@@ -96,7 +110,10 @@ namespace nogdb {
                         auto newResult = get(newName);
                         if (newResult.empty) {
                             del(oldName);
-                            put(newName, result.data.blob());
+                            auto blob = result.data.blob();
+                            put(newName, blob);
+                            auto info = parse(newName, blob);
+                            _classCache.set(info.id, info);
                         } else {
                             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
                         }
@@ -115,10 +132,7 @@ namespace nogdb {
                 }
 
                 ClassAccessInfo getInfo(const ClassId& classId) const {
-                    auto foundClassId = _classCache.find(classId);
-                    if (foundClassId != _classCache.cend()) {
-                        return foundClassId->second;
-                    } else {
+                    std::function<ClassAccessInfo(void)> callback = [&]() {
                         auto cursorHandler = cursor();
                         for (auto keyValue = cursorHandler.getNext();
                              !keyValue.empty();
@@ -129,7 +143,20 @@ namespace nogdb {
                             return parse(key, keyValue.val.data.blob());
                         }
                         return ClassAccessInfo{};
+                    };
+                    return _classCache.get(classId, callback);
+                }
+
+                std::vector<ClassAccessInfo> getAllInfos() const {
+                    auto result = std::vector<ClassAccessInfo>{};
+                    auto cursorHandler = cursor();
+                    for (auto keyValue = cursorHandler.getNext();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
+                        auto info = parse(keyValue.key.data.string(), keyValue.val.data.blob());
+                        result.emplace_back(info);
                     }
+                    return result;
                 }
 
                 ClassId getId(const std::string& className) const {
@@ -142,21 +169,7 @@ namespace nogdb {
                 }
 
                 ClassId getSuperClassId(const ClassId& classId) const {
-                    auto foundClassId = _classCache.find(classId);
-                    if (foundClassId != _classCache.cend()) {
-                        return foundClassId->second.superClassId;
-                    } else {
-                        auto cursorHandler = cursor();
-                        for (auto keyValue = cursorHandler.getNext();
-                             !keyValue.empty();
-                             keyValue = cursorHandler.getNext()) {
-                            auto classIdValue = parseClassId(keyValue.val.data.blob());
-                            if (classId != classIdValue) continue;
-                            auto key = keyValue.key.data.string();
-                            return parseSuperClassId(keyValue.val.data.blob());
-                        }
-                        return ClassId{};
-                    }
+                    return getInfo(classId).superClassId;
                 }
 
                 std::set<ClassId> getSubClassIds(const ClassId& classId) const {
@@ -203,7 +216,6 @@ namespace nogdb {
                     auto classId = ClassId{};
                     blob.retrieve(&classId, 0, sizeof(classId));
                     return classId;
-
                 }
 
                 static ClassId parseSuperClassId(const Blob& blob) {
@@ -220,7 +232,8 @@ namespace nogdb {
 
             private:
 
-                mutable std::unordered_map<ClassId, ClassAccessInfo> _classCache{};
+                using InternalCache = utils::caching::UnorderedCache<ClassId, ClassAccessInfo>;
+                InternalCache _classCache{};
 
                 void createOrUpdate(const ClassAccessInfo& props) {
                     auto totalLength = 2 * sizeof(ClassId) + sizeof(props.type);
@@ -260,6 +273,18 @@ namespace nogdb {
                         : LMDBKeyValAccess(txn, TB_PROPERTIES, false, true, false, false) {}
 
                 virtual ~PropertyAccess() noexcept = default;
+
+                PropertyAccess(PropertyAccess&& other) noexcept {
+                    *this = std::move(other);
+                }
+
+                PropertyAccess& operator=(PropertyAccess&& other) noexcept {
+                    if (this != &other) {
+                        using std::swap;
+                        swap(*this, other);
+                    }
+                    return *this;
+                }
 
                 void create(const PropertyAccessInfo& props) {
                     auto propertyKey = buildKey(props.classId, props.name);
@@ -333,18 +358,18 @@ namespace nogdb {
                     }
                 }
 
-                PropertyNameMapInfo getNameMapInfo(const std::vector<PropertyAccessInfo>& propertyInfos) const {
+                PropertyNameMapInfo getNameMapInfo(const ClassId& classId) const {
                     auto result = PropertyNameMapInfo{};
-                    for(const auto& property: propertyInfos) {
-                        result.emplace({property.name, property});
+                    for(const auto& property: getInfos(classId)) {
+                        result[property.name] = property;
                     }
                     return result;
                 }
 
-                PropertyIdMapInfo getIdMapInfo(const std::vector<PropertyAccessInfo>& propertyInfos) const {
+                PropertyIdMapInfo getIdMapInfo(const ClassId& classId) const {
                     auto result = PropertyIdMapInfo{};
-                    for(const auto& property: propertyInfos) {
-                        result.emplace({property.id, property});
+                    for(const auto& property: getInfos(classId)) {
+                        result[property.id] = property;
                     }
                     return result;
                 }
@@ -439,6 +464,18 @@ namespace nogdb {
                         : LMDBKeyValAccess(txn, TB_INDEXES, true, true, false, false) {}
 
                 virtual ~IndexAccess() noexcept = default;
+
+                IndexAccess(IndexAccess&& other) noexcept {
+                    *this = std::move(other);
+                }
+
+                IndexAccess& operator=(IndexAccess&& other) noexcept {
+                    if (this != &other) {
+                        using std::swap;
+                        swap(*this, other);
+                    }
+                    return *this;
+                }
 
                 void create(const IndexAccessInfo& props) {
                     auto indexKey = buildKey(props.classId, props.propertyId);

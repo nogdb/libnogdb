@@ -271,20 +271,20 @@ namespace nogdb {
     //*  NogDB database operations.                               *
     //*************************************************************
 
-    struct Db {
-        Db() = delete;
+    struct DB {
+        DB() = delete;
 
-        ~Db() noexcept = delete;
+        ~DB() noexcept = delete;
 
         static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static const std::vector<ClassDescriptor> getSchema(const Txn &txn);
+        static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
 
-        static const ClassDescriptor getSchema(const Txn &txn, const std::string &className);
+        static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor& classDescriptor);
 
-        static const ClassDescriptor getSchema(const Txn &txn, const ClassId &classId);
+        static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
 
-        static const DBInfo getDbInfo(const Txn &txn);
+        static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
     };
 
     //*************************************************************
@@ -354,8 +354,8 @@ namespace nogdb {
                                          const CostFuncType &costFunction,
                                          const PathFilter &pathFilter,
                                          const ClassFilter &classFilter = ClassFilter{}) {
-            Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
             auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
             return Algorithm::dijkstraShortestPath<CostFuncType, T, CompareT>(
                     txn, srcVertexRecordDescriptor,
@@ -434,8 +434,8 @@ namespace nogdb {
                                                                 const CostFuncType &costFunction,
                                                                 const PathFilter &pathFilter,
                                                                 const ClassFilter &classFilter = ClassFilter{}) {
-            Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+            Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
             auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
             auto result = ResultSetCursor{txn};
             auto metadata = Algorithm::dijkstraShortestPathRdesc<CostFuncType, T, CompareT>(

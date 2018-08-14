@@ -33,12 +33,26 @@ namespace nogdb {
 
             class DataRecord : public storage_engine::adapter::LMDBKeyValAccess {
             public:
-                DataRecord(const storage_engine::LMDBTxn *const txn, const ClassId &classId, const ClassType &classType)
-                        : _classId{classId},
-                          _classType{classType},
-                          LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) {}
+                DataRecord(const storage_engine::LMDBTxn *const txn,
+                           const ClassId &classId,
+                           const ClassType &classType = ClassType::UNDEFINED)
+                          : _classId{classId},
+                            _classType{classType},
+                            LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) {}
 
                 virtual ~DataRecord() noexcept = default;
+
+                DataRecord(DataRecord&& other) noexcept {
+                    *this = std::move(other);
+                }
+
+                DataRecord& operator=(DataRecord&& other) noexcept {
+                    if (this != &other) {
+                        using std::swap;
+                        swap(*this, other);
+                    }
+                    return *this;
+                }
 
                 void init() {
                     put(MAX_RECORD_NUM_EM, PositionId{1});
@@ -78,6 +92,15 @@ namespace nogdb {
                     auto result = get(posid);
                     if (!result.empty) {
                         return result.data.blob();
+                    } else {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
+                    }
+                }
+
+                storage_engine::lmdb::Result getResult(const PositionId &posid) {
+                    auto result = get(posid);
+                    if (!result.empty) {
+                        return result;
                     } else {
                         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
                     }

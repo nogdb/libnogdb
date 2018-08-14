@@ -24,375 +24,967 @@
 
 #include <iostream> // for debugging
 #include <vector>
-#include <tuple>
+#include <unordered_set>
 #include <type_traits>
 
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
-#include "base_txn.hpp"
+#include "schema_adapter.hpp"
+#include "index_adapter.hpp"
+#include "datarecord_adapter.hpp"
 
 #include "nogdb_types.h"
 #include "nogdb_txn.h"
 #include "nogdb_compare.h"
 
+#define UNIQUE_FLAG(_unique)                        (_unique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE
+#define INDEX_POSITIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
+#define INDEX_NEGATIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_NEGATIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
+#define INDEX_STRING_UNIQUE(_unique)                INDEX_TYPE_POSITIVE | INDEX_TYPE_STRING | UNIQUE_FLAG(_unique)
+
 namespace nogdb {
-    struct Index {
-        Index() = delete;
 
-        ~Index() noexcept = delete;
+    namespace index {
 
-        typedef std::tuple<IndexId, bool, PropertyType> IndexPropertyType;
+        using namespace adapter::schema;
 
-        static void addIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                             PropertyType type, bool isUnique);
+        typedef std::map<PropertyId, IndexAccessInfo> PropertyIdMapIndex;
 
-        static void deleteIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                                PropertyType type, bool isUnique);
+        class IndexInterface {
+        public:
 
-        template<typename T>
-        static void deleteIndexCursor(const storage_engine::lmdb::Cursor& cursorHandler, PositionId positionId, const T& value) {
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.template numeric<T>();
-                if (key == value) {
-                    auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
-                    if (positionId == valueAsPositionId) {
-                        cursorHandler.del();
+            IndexInterface(const Txn* txn): _txn{txn} {}
+
+            virtual ~IndexInterface() noexcept = default;
+
+            void create(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const ClassType& classType) {
+                auto propertyIdMapInfo = _txn->_property.getIdMapInfo(indexInfo.classId);
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        auto indexAccess = openIndexRecordPositive(indexInfo);
+                        auto cursorHandler = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType).getCursor();
+                        for(auto keyValue = cursorHandler.getNext();
+                            !keyValue.empty();
+                            keyValue = cursorHandler.getNext()) {
+                            auto const positionId = keyValue.key.data.numeric<PositionId>();
+                            if (positionId == MAX_RECORD_NUM_EM) continue;
+                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                            auto bytesValue = record.get(propertyInfo.name);
+                            if (!bytesValue.empty()) {
+                                auto indexRecord = Blob(sizeof(PositionId));
+                                indexRecord.append(&positionId, sizeof(PositionId));
+                                if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord);
+                                } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord);
+                                } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toIntU()), indexRecord);
+                                } else {
+                                    indexAccess.create(bytesValue.toBigIntU(), indexRecord);
+                                }
+                            }
+                        }
                         break;
                     }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        inline static void
-        deleteIndexCursor(const storage_engine::lmdb::Cursor& cursorHandler, PositionId positionId, const std::string &value) {
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (value == key) {
-                    auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
-                    if (positionId == valueAsPositionId) {
-                        cursorHandler.del();
+                    case PropertyType::TINYINT:
+                    case PropertyType::SMALLINT:
+                    case PropertyType::INTEGER:
+                    case PropertyType::BIGINT:
+                    case PropertyType::REAL: {
+                        auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+                        auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+                        auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
+                        for(auto keyValue = cursorHandler.getNext();
+                            !keyValue.empty();
+                            keyValue = cursorHandler.getNext()) {
+                            auto const positionId = keyValue.key.data.numeric<PositionId>();
+                            if (positionId == MAX_RECORD_NUM_EM) continue;
+                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                            auto bytesValue = record.get(propertyInfo.name);
+                            if (!bytesValue.empty()) {
+                                auto indexRecord = Blob(sizeof(PositionId));
+                                indexRecord.append(&positionId, sizeof(PositionId));
+                                if (propertyInfo.type == PropertyType::TINYINT) {
+                                    auto value = static_cast<int64_t>(bytesValue.toTinyInt());
+                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
+                                    else indexNegativeAccess.create(value, indexRecord);
+                                } else if (propertyInfo.type == PropertyType::SMALLINT) {
+                                    auto value = static_cast<int64_t>(bytesValue.toSmallInt());
+                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
+                                    else indexNegativeAccess.create(value, indexRecord);
+                                } else if (propertyInfo.type == PropertyType::INTEGER) {
+                                    auto value = static_cast<int64_t>(bytesValue.toInt());
+                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
+                                    else indexNegativeAccess.create(value, indexRecord);
+                                } else if (propertyInfo.type == PropertyType::REAL) {
+                                    auto value = bytesValue.toReal();
+                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
+                                    else indexNegativeAccess.create(value, indexRecord);
+                                } else {
+                                    auto value = bytesValue.toBigInt();
+                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
+                                    else indexNegativeAccess.create(value, indexRecord);
+                                }
+                            }
+                        }
                         break;
                     }
-                } else {
-                    break;
+                    case PropertyType::TEXT: {
+                        auto indexAccess = openIndexRecordString(indexInfo);
+                        auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
+                        for(auto keyValue = cursorHandler.getNext();
+                            !keyValue.empty();
+                            keyValue = cursorHandler.getNext()) {
+                            auto const positionId = keyValue.key.data.numeric<PositionId>();
+                            if (positionId == MAX_RECORD_NUM_EM) continue;
+                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                            auto value = record.get(propertyInfo.name).toText();
+                            if (!value.empty()) {
+                                auto indexRecord = Blob(sizeof(PositionId));
+                                indexRecord.append(&positionId, sizeof(PositionId));
+                                indexAccess.create(value, indexRecord);
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
-        }
 
-        inline static std::string getIndexingName(IndexId indexId) {
-            return TB_INDEXING_PREFIX + std::to_string(indexId);
-        }
-
-        inline static std::string getIndexingName(IndexId indexId, bool isPositive) {
-            return getIndexingName(indexId) + ((isPositive)? INDEX_POSITIVE_SUFFIX: INDEX_NEGATIVE_SUFFIX);
-        }
-
-        static std::pair<IndexPropertyType, bool>
-        hasIndex(ClassId classId, const ClassInfo &classInfo, const Condition &condition);
-
-        static std::pair<std::map<std::string, IndexPropertyType>, bool>
-        hasIndex(ClassId classId, const ClassInfo &classInfo, const MultiCondition &conditions);
-
-        static std::vector<RecordDescriptor> getIndexRecord(const Txn &txn,
-                                                            ClassId classId,
-                                                            IndexPropertyType indexPropertyType,
-                                                            const Condition &condition,
-                                                            bool isNegative = false);
-
-        static std::vector<RecordDescriptor> getIndexRecord(const Txn &txn, ClassId classId,
-                                                            const std::map<std::string, IndexPropertyType> &indexPropertyTypes,
-                                                            const MultiCondition &conditions);
-
-        static std::vector<RecordDescriptor>
-        getLessEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getLess(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getGreaterEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType,
-                        const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getGreater(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor> getBetween(const Txn &txn,
-                                                        ClassId classId,
-                                                        const IndexPropertyType &indexPropertyType,
-                                                        const Bytes &lowerBound,
-                                                        const Bytes &upperBound,
-                                                        const std::pair<bool, bool> &isIncludeBound);
-
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getLess(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value, bool includeEqual = false) {
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
-                auto negativeResult = fullScanIndex(cursorHandlerNegative, classId);
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
-            }
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getEqual(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value) {
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return exactMatchIndex(cursorHandlerNegative, classId, value);
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return exactMatchIndex(cursorHandlerPositive, classId, value);
-            }
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getGreater(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value,
-                   bool includeEqual = false) {
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = fullScanIndex(cursorHandlerPositive, classId);
-                auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return forwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
-            }
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> getBetween(const Txn &txn, ClassId classId, IndexId indexId,
-                                                        bool isUnique, T lowerBound, T upperBound,
-                                                        const std::pair<bool, bool> &isIncludeBound) {
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            if (lowerBound < 0 && upperBound < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);
-            } else if (lowerBound < 0 && upperBound >= 0) {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId,
-                                                         static_cast<T>(0), upperBound,
-                                                         true, {true, isIncludeBound.second});
-                auto negativeResult = betweenSearchIndex(cursorHandlerNegative, classId,
-                                                         lowerBound, static_cast<T>(0),
-                                                         false, {isIncludeBound.first, true});
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, true, isIncludeBound);
-            }
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId, const T &value) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.template numeric<T>();
-                if (key == value) {
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                } else {
-                    break;
+            void drop(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo) {
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        openIndexRecordPositive(indexInfo).destroy();
+                        break;
+                    }
+                    case PropertyType::TINYINT:
+                    case PropertyType::SMALLINT:
+                    case PropertyType::INTEGER:
+                    case PropertyType::BIGINT:
+                    case PropertyType::REAL: {
+                        openIndexRecordPositive(indexInfo).destroy();
+                        openIndexRecordNegative(indexInfo).destroy();
+                        break;
+                    }
+                    case PropertyType::TEXT: {
+                        openIndexRecordString(indexInfo).destroy();
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
-            return result;
-        };
 
-        inline static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId, const std::string &value) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (key == value) {
+            void remove(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+                        const PositionId& posId, const Bytes &value) {
+                if (!value.empty()) {
+                    switch (propertyInfo.type) {
+                        case PropertyType::UNSIGNED_TINYINT:
+                        case PropertyType::UNSIGNED_SMALLINT:
+                        case PropertyType::UNSIGNED_INTEGER:
+                        case PropertyType::UNSIGNED_BIGINT: {
+                            auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                            if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toTinyIntU()));
+                            } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toSmallIntU()));
+                            } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toIntU()));
+                            } else {
+                                removeByCursor(indexAccessCursor, posId, value.toBigIntU());
+                            }
+                            break;
+                        }
+                        case PropertyType::TINYINT:
+                        case PropertyType::SMALLINT:
+                        case PropertyType::INTEGER:
+                        case PropertyType::BIGINT:
+                        case PropertyType::REAL: {
+                            if (propertyInfo.type == PropertyType::TINYINT) {
+                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt()));
+                            } else if (propertyInfo.type == PropertyType::SMALLINT) {
+                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt()));
+                            } else if (propertyInfo.type == PropertyType::INTEGER) {
+                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt()));
+                            } else if (propertyInfo.type == PropertyType::REAL) {
+                                removeByCursorWithSignNumeric(indexInfo, posId, value.toReal());
+                            } else {
+                                removeByCursorWithSignNumeric(indexInfo, posId, value.toBigInt());
+                            }
+                            break;
+                        }
+                        case PropertyType::TEXT: {
+                            auto indexAccessCursor = openIndexRecordString(indexInfo).getCursor();
+                            auto stringValue = value.toText();
+                            if (!stringValue.empty()) {
+                                removeByCursor(indexAccessCursor, posId, stringValue);
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            std::pair<bool, IndexAccessInfo>
+            hasIndex(const ClassAccessInfo &classInfo, const Condition &condition) const {
+                if (isValidComparator(condition)) {
+                    // check if NOT is not used for EQUAL
+                    if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
+                        return std::make_pair(false, IndexAccessInfo{});
+                    }
+                    auto schema = schema::SchemaInterface(_txn);
+                    auto propertyNameMapInfo = schema.getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+                    auto foundProperty = propertyNameMapInfo.find(condition.propName);
+                    if (foundProperty != propertyNameMapInfo.cend()) {
+                        auto indexInfo = _txn->_index->getInfo(classInfo.id, foundProperty->second.id);
+                        return std::make_pair(indexInfo.id != IndexId{}, indexInfo);
+                    }
+                }
+                return std::make_pair(false, IndexAccessInfo{});
+            }
+
+            std::pair<bool, PropertyIdMapIndex>
+            hasIndex(const ClassAccessInfo &classInfo, const MultiCondition &conditions) const {
+                auto isFoundAll = true;
+                auto result = PropertyIdMapIndex{};
+                auto conditionPropNames = std::unordered_set<std::string>{};
+                for (const auto &condition: conditions.conditions) {
+                    if (auto conditionPtr = condition.lock()) {
+                        auto propertyName = conditionPtr->getCondition().propName;
+                        if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
+                            conditionPropNames.emplace(propertyName);
+                            auto searchIndexResult = hasIndex(classInfo, conditionPtr->getCondition());
+                            if (searchIndexResult.first) {
+                                auto propertyId = _txn->_property->getId(classInfo.id, propertyName);
+                                result.emplace(propertyId, searchIndexResult.second);
+                            } else {
+                                isFoundAll = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        isFoundAll = false;
+                        break;
+                    }
+                }
+                return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
+            }
+
+            std::vector<RecordDescriptor>
+            getRecord(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+                      const Condition &condition, bool isNegative) const {
+                auto isApplyNegative = condition.isNegative ^isNegative;
+                switch (condition.comp) {
+                    case Condition::Comparator::EQUAL: {
+                        if (!isApplyNegative) {
+                            auto result = getEqual(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+                            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+                            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                            sortByRdesc(lessResult);
+                            return lessResult;
+                        }
+                    }
+                    case Condition::Comparator::LESS_EQUAL: {
+                        if (!isApplyNegative) {
+                            auto result = getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto result = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        }
+                    }
+                    case Condition::Comparator::LESS: {
+                        if (!isApplyNegative) {
+                            auto result = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto result = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        }
+                    }
+                    case Condition::Comparator::GREATER_EQUAL: {
+                        if (!isApplyNegative) {
+                            auto result = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto result = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        }
+                    }
+                    case Condition::Comparator::GREATER: {
+                        if (!isApplyNegative) {
+                            auto result = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto result = getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+                            sortByRdesc(result);
+                            return result;
+                        }
+                    }
+                    case Condition::Comparator::BETWEEN_NO_BOUND: {
+                        if (!isApplyNegative) {
+                            auto result = getBetween(propertyInfo, indexInfo,
+                                                     condition.valueSet[0], condition.valueSet[1], {false, false});
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+                            auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+                            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                            sortByRdesc(lessResult);
+                            return lessResult;
+                        }
+                    }
+                    case Condition::Comparator::BETWEEN: {
+                        if (!isApplyNegative) {
+                            auto result = getBetween(propertyInfo, indexInfo,
+                                                     condition.valueSet[0], condition.valueSet[1], {true, true});
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+                            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+                            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                            sortByRdesc(lessResult);
+                            return lessResult;
+                        }
+                    }
+                    case Condition::Comparator::BETWEEN_NO_UPPER: {
+                        if (!isApplyNegative) {
+                            auto result = getBetween(propertyInfo, indexInfo,
+                                                     condition.valueSet[0], condition.valueSet[1], {true, false});
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+                            auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+                            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                            sortByRdesc(lessResult);
+                            return lessResult;
+                        }
+                    }
+                    case Condition::Comparator::BETWEEN_NO_LOWER: {
+                        if (!isApplyNegative) {
+                            auto result = getBetween(propertyInfo, indexInfo,
+                                                     condition.valueSet[0], condition.valueSet[1], {false, true});
+                            sortByRdesc(result);
+                            return result;
+                        } else {
+                            auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+                            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+                            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+                            sortByRdesc(lessResult);
+                            return lessResult;
+                        }
+                    }
+                    default:
+                        break;
+                }
+                return std::vector<RecordDescriptor>{};
+            }
+
+            std::vector<RecordDescriptor>
+            getRecord(const PropertyNameMapInfo& propertyInfos,
+                      const PropertyIdMapIndex& propertyIndexInfo,
+                      const MultiCondition &conditions) const {
+                return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false);
+            }
+
+        protected:
+
+            const std::vector<Condition::Comparator> validComparators {
+                    Condition::Comparator::EQUAL,
+                    Condition::Comparator::BETWEEN_NO_BOUND,
+                    Condition::Comparator::BETWEEN,
+                    Condition::Comparator::BETWEEN_NO_UPPER,
+                    Condition::Comparator::BETWEEN_NO_LOWER,
+                    Condition::Comparator::LESS_EQUAL,
+                    Condition::Comparator::LESS,
+                    Condition::Comparator::GREATER_EQUAL,
+                    Condition::Comparator::GREATER
+            };
+
+        private:
+
+            const Txn *_txn;
+
+            adapter::index::IndexRecord openIndexRecordPositive(const IndexAccessInfo& indexInfo) const {
+                auto indexFlags = INDEX_POSITIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+                auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int)indexFlags};
+                return std::move(indexAccess);
+            }
+
+            adapter::index::IndexRecord openIndexRecordNegative(const IndexAccessInfo& indexInfo) const {
+                auto indexFlags = INDEX_NEGATIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+                auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int)indexFlags};
+                return std::move(indexAccess);
+            }
+
+            adapter::index::IndexRecord openIndexRecordString(const IndexAccessInfo& indexInfo) const {
+                auto indexFlags = INDEX_STRING_UNIQUE(indexInfo.isUnique);
+                auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int)indexFlags};
+                return std::move(indexAccess);
+            }
+
+            template <typename T>
+            void removeByCursor(const storage_engine::lmdb::Cursor& cursorHandler,
+                                PositionId positionId, const T& value) {
+                for (auto keyValue = cursorHandler.find(value);
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
+                    auto key = keyValue.key.data.template numeric<T>();
+                    if (key == value) {
+                        auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
+                        if (positionId == valueAsPositionId) {
+                            cursorHandler.del();
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            void removeByCursor(const storage_engine::lmdb::Cursor& cursorHandler,
+                                PositionId positionId, const std::string &value) {
+                for (auto keyValue = cursorHandler.find(value);
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
+                    auto key = keyValue.key.data.string();
+                    if (value == key) {
+                        auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
+                        if (positionId == valueAsPositionId) {
+                            cursorHandler.del();
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            template<typename T>
+            void removeByCursorWithSignNumeric(const IndexAccessInfo& indexInfo, const PositionId& posId, const T& numValue) {
+                auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                (numValue < 0) ? removeByCursor(indexNegativeAccessCursor, posId, numValue)
+                               : removeByCursor(indexPositiveAccessCursor, posId, numValue);
+            }
+
+            inline static bool cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+                return lhs.rid < rhs.rid;
+            };
+
+            inline static void sortByRdesc(std::vector<RecordDescriptor>& recordDescriptors) {
+                std::sort(recordDescriptors.begin(), recordDescriptors.end(), cmpRecordDescriptor);
+            };
+
+            inline bool isValidComparator(const Condition& condition) const {
+                return std::find(validComparators.cbegin(), validComparators.cend(), condition.comp) != validComparators.cend();
+            }
+
+            std::vector<RecordDescriptor>
+            getRecordFromMultiCondition(const PropertyNameMapInfo& propertyInfos,
+                                        const PropertyIdMapIndex& propertyIndexInfo,
+                                        const MultiCondition::CompositeNode *compositeNode,
+                                        bool isParentNegative) const {
+                auto &opt = compositeNode->getOperator();
+                auto &rightNode = compositeNode->getRightNode();
+                auto &leftNode = compositeNode->getLeftNode();
+                auto isApplyNegative = compositeNode->getIsNegative() ^isParentNegative;
+                auto result = std::vector<RecordDescriptor>{};
+                auto rightNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, rightNode, isApplyNegative);
+                auto leftNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, leftNode, isApplyNegative);
+                if ((opt == MultiCondition::Operator::AND && !isApplyNegative) ||
+                    (opt == MultiCondition::Operator::OR && isApplyNegative)) {
+                    // AND action
+                    std::set_intersection(rightNodeResult.begin(), rightNodeResult.end(),
+                                          leftNodeResult.begin(), leftNodeResult.end(),
+                                          std::back_inserter(result), cmpRecordDescriptor);
+                } else {
+                    // OR action
+                    std::set_union(rightNodeResult.begin(), rightNodeResult.end(),
+                                   leftNodeResult.begin(), leftNodeResult.end(),
+                                   std::back_inserter(result), cmpRecordDescriptor);
+                }
+                return result;
+            };
+
+            std::vector<RecordDescriptor>
+            getMultiConditionResult(const PropertyNameMapInfo& propertyInfos,
+                                    const PropertyIdMapIndex& propertyIndexInfo,
+                                    const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
+                                    bool isNegative) const {
+                if (!exprNode->checkIfCondition()) {
+                    auto compositeNodePtr = (MultiCondition::CompositeNode *) exprNode.get();
+                    return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, compositeNodePtr, isNegative);
+                } else {
+                    auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode.get();
+                    auto &condition = conditionNodePtr->getCondition();
+                    auto foundProperty = propertyInfos.find(condition.propName);
+                    require(foundProperty != propertyInfos.cend());
+                    auto &propertyInfo = foundProperty->second;
+                    auto foundIndexInfo = propertyIndexInfo.find(propertyInfo.id);
+                    require(foundIndexInfo != propertyIndexInfo.cend());
+                    return getRecord(propertyInfo, foundIndexInfo->second, condition, isNegative);
+                }
+            };
+
+            std::vector<RecordDescriptor>
+            getLessOrEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value) const {
+                return getLessCommon(propertyInfo, indexInfo, value, true);
+            }
+
+            std::vector<RecordDescriptor>
+            getLessThan(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value) const {
+                return getLessCommon(propertyInfo, indexInfo, value, false);
+            }
+
+            std::vector<RecordDescriptor>
+            getEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value) const {
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                        if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()));
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()));
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()));
+                        } else {
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU());
+                        }
+                    }
+                    case PropertyType::TINYINT:
+                        return getEqualNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo);
+                    case PropertyType::SMALLINT:
+                        return getEqualNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo);
+                    case PropertyType::INTEGER:
+                        return getEqualNumeric(static_cast<int64_t>(value.toInt()), indexInfo);
+                    case PropertyType::BIGINT:
+                        return getEqualNumeric(value.toBigInt(), indexInfo);
+                    case PropertyType::REAL:
+                        return getEqualNumeric(value.toReal(), indexInfo);
+                    case PropertyType::TEXT: {
+                        return exactMatchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText());
+                    }
+                    default:
+                        break;
+                }
+                return std::vector<RecordDescriptor>{};
+            }
+
+            std::vector<RecordDescriptor>
+            getGreaterOrEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value) const {
+                return getGreaterCommon(propertyInfo, indexInfo, value, true);
+            }
+
+            std::vector<RecordDescriptor>
+            getGreaterThan(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value) const {
+                return getGreaterCommon(propertyInfo, indexInfo, value, false);
+            }
+
+            std::vector<RecordDescriptor>
+            getBetween(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+                       const Bytes &lowerBound, const Bytes &upperBound, const std::pair<bool, bool> &isIncludeBound) const {
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                        if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                                      static_cast<uint64_t>(lowerBound.toTinyIntU()),
+                                                      static_cast<uint64_t>(upperBound.toTinyIntU()),
+                                                      true, isIncludeBound);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                                      static_cast<uint64_t>(lowerBound.toSmallIntU()),
+                                                      static_cast<uint64_t>(upperBound.toSmallIntU()),
+                                                      true, isIncludeBound);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                                      static_cast<uint64_t>(lowerBound.toIntU()),
+                                                      static_cast<uint64_t>(upperBound.toIntU()),
+                                                      true, isIncludeBound);
+                        } else {
+                            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                                      lowerBound.toBigIntU(), upperBound.toBigIntU(),
+                                                      true, isIncludeBound);
+                        }
+                    }
+                    case PropertyType::TINYINT:
+                        return getBetweenNumeric(static_cast<int64_t>(lowerBound.toTinyInt()),
+                                                 static_cast<int64_t>(upperBound.toTinyInt()),
+                                                 indexInfo, isIncludeBound);
+                    case PropertyType::SMALLINT:
+                        return getBetweenNumeric(static_cast<int64_t>(lowerBound.toSmallInt()),
+                                                 static_cast<int64_t>(upperBound.toSmallInt()),
+                                                 indexInfo, isIncludeBound);
+                    case PropertyType::INTEGER:
+                        return getBetweenNumeric(static_cast<int64_t>(lowerBound.toInt()),
+                                                 static_cast<int64_t>(upperBound.toInt()),
+                                                 indexInfo, isIncludeBound);
+                    case PropertyType::BIGINT:
+                        return getBetweenNumeric(lowerBound.toBigInt(), upperBound.toBigInt(), indexInfo, isIncludeBound);
+                    case PropertyType::REAL:
+                        return getBetweenNumeric(lowerBound.toReal(), upperBound.toReal(), indexInfo, isIncludeBound);
+                    case PropertyType::TEXT: {
+                        return betweenSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId,
+                                                  lowerBound.toText(), upperBound.toText(), isIncludeBound);
+                    }
+                    default:
+                        break;
+                }
+                return std::vector<RecordDescriptor>{};
+            }
+
+            std::vector<RecordDescriptor>
+            getLessCommon(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value, bool isEqual) const {
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                        if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), true, isEqual);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), true, isEqual);
+                        } else {
+                            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), true, isEqual);
+                        }
+                    }
+                    case PropertyType::TINYINT:
+                        return getLessNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo, isEqual);
+                    case PropertyType::SMALLINT:
+                        return getLessNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo, isEqual);
+                    case PropertyType::INTEGER:
+                        return getLessNumeric(static_cast<int64_t>(value.toInt()), indexInfo, isEqual);
+                    case PropertyType::BIGINT:
+                        return getLessNumeric(value.toBigInt(), indexInfo, isEqual);
+                    case PropertyType::REAL:
+                        return getLessNumeric(value.toReal(), indexInfo, isEqual);
+                    case PropertyType::TEXT: {
+                        return backwardSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), true, isEqual);
+                    }
+                    default:
+                        break;
+                }
+            }
+
+            std::vector<RecordDescriptor>
+            getGreaterCommon(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const Bytes &value, bool isEqual) const {
+                switch (propertyInfo.type) {
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::UNSIGNED_BIGINT: {
+                        auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                        if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+                            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), true, isEqual);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+                            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
+                        } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+                            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), true, isEqual);
+                        } else {
+                            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), true, isEqual);
+                        }
+                    }
+                    case PropertyType::TINYINT:
+                        return getGreaterNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo, isEqual);
+                    case PropertyType::SMALLINT:
+                        return getGreaterNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo, isEqual);
+                    case PropertyType::INTEGER:
+                        return getGreaterNumeric(static_cast<int64_t>(value.toInt()), indexInfo, isEqual);
+                    case PropertyType::BIGINT:
+                        return getGreaterNumeric(value.toBigInt(), indexInfo, isEqual);
+                    case PropertyType::REAL:
+                        return getGreaterNumeric(value.toReal(), indexInfo, isEqual);
+                    case PropertyType::TEXT: {
+                        return forwardSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), isEqual);
+                    }
+                    default:
+                        break;
+                }
+                return std::vector<RecordDescriptor>{};
+            }
+
+            template<typename T>
+            std::vector<RecordDescriptor>
+            getLessNumeric(const T &value, const IndexAccessInfo &indexInfo, bool includeEqual = false) const {
+                if (value < 0) {
+                    auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                    return backwardSearchIndex(indexAccessCursor, indexInfo.classId, value, false, includeEqual);
+                } else {
+                    auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                    auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                    auto positiveResult = backwardSearchIndex(indexPositiveAccessCursor, indexInfo.classId, value, true, includeEqual);
+                    auto negativeResult = fullScanIndex(indexNegativeAccessCursor, indexInfo.classId);
+                    positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+                    return positiveResult;
+                }
+            };
+
+            template<typename T>
+            std::vector<RecordDescriptor>
+            getEqualNumeric(const T &value, const IndexAccessInfo &indexInfo) const {
+                auto indexAccess = (value < 0)? openIndexRecordNegative(indexInfo): openIndexRecordPositive(indexInfo);
+                return exactMatchIndex(indexAccess.getCursor(), indexInfo.classId, value);
+            };
+
+            template<typename T>
+            std::vector<RecordDescriptor>
+            getGreaterNumeric(const T &value, const IndexAccessInfo &indexInfo, bool includeEqual = false) const {
+                if (value < 0) {
+                    auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                    auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                    auto positiveResult = fullScanIndex(indexPositiveAccessCursor, indexInfo.classId);
+                    auto negativeResult = forwardSearchIndex(indexNegativeAccessCursor, indexInfo.classId, value, false, includeEqual);
+                    positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+                    return positiveResult;
+                } else {
+                    auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                    return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value, true, includeEqual);
+                }
+            };
+
+            template<typename T>
+            std::vector<RecordDescriptor>
+            getBetweenNumeric(const T &lowerBound, const T &upperBound,
+                              const IndexAccessInfo &indexInfo, const std::pair<bool, bool> &isIncludeBound) const {
+                if (lowerBound < 0 && upperBound < 0) {
+                    auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                    return betweenSearchIndex(indexAccessCursor, indexInfo.classId, lowerBound, upperBound, false, isIncludeBound);
+                } else if (lowerBound < 0 && upperBound >= 0) {
+                    auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                    auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                    auto positiveResult = betweenSearchIndex(indexPositiveAccessCursor, indexInfo.classId,
+                                                             static_cast<T>(0), upperBound,
+                                                             true, {true, isIncludeBound.second});
+                    auto negativeResult = betweenSearchIndex(indexNegativeAccessCursor, indexInfo.classId,
+                                                             lowerBound, static_cast<T>(0),
+                                                             false, {isIncludeBound.first, true});
+                    positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+                    return positiveResult;
+                } else {
+                    auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                    return betweenSearchIndex(indexAccessCursor, indexInfo.classId, lowerBound, upperBound, true, isIncludeBound);
+                }
+            };
+
+            template<typename T>
+            static std::vector<RecordDescriptor>
+            backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
+                                const T &value, bool positive, bool isInclude = false) {
+                auto result = std::vector<RecordDescriptor>{};
+                if (!std::is_same<T, double>::value || positive) {
+                    if (isInclude) {
+                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
+                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                    }
+                    cursorHandler.findRange(value);
+                    for (auto keyValue = cursorHandler.getPrev();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getPrev()) {
+                        auto key = keyValue.key.data.template numeric<T>();
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    }
+                } else {
+                    for (auto keyValue = cursorHandler.findRange(value);
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
+                        if (!isInclude) {
+                            auto key = keyValue.key.data.template numeric<T>();
+                            if (key == value) continue;
+                            else isInclude = true;
+                        }
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    }
+                }
+                return result;
+            };
+
+            template<typename T>
+            static std::vector<RecordDescriptor>
+            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId, const T &value) {
+                auto result = std::vector<RecordDescriptor>{};
+                for (auto keyValue = cursorHandler.find(value);
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
+                    auto key = keyValue.key.data.template numeric<T>();
+                    if (key == value) {
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    } else {
+                        break;
+                    }
+                }
+                return result;
+            };
+
+            static std::vector<RecordDescriptor>
+            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId, const std::string &value) {
+                auto result = std::vector<RecordDescriptor>{};
+                for (auto keyValue = cursorHandler.find(value);
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
+                    auto key = keyValue.key.data.string();
+                    if (key == value) {
+                        auto positionId = keyValue.val.data.numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    } else {
+                        break;
+                    }
+                }
+                return result;
+            };
+
+            static std::vector<RecordDescriptor>
+            fullScanIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId) {
+                auto result = std::vector<RecordDescriptor>{};
+                for (auto keyValue = cursorHandler.getNext();
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
                     auto positionId = keyValue.val.data.numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
+                }
+                return result;
+            };
+
+            template<typename T>
+            static std::vector<RecordDescriptor>
+            forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
+                               const T &value, bool positive, bool isInclude = false) {
+                auto result = std::vector<RecordDescriptor>{};
+                if (!std::is_same<T, double>::value || positive) {
+                    for (auto keyValue = cursorHandler.findRange(value);
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
+                        if (!isInclude) {
+                            auto key = keyValue.key.data.template numeric<T>();
+                            if (key == value) continue;
+                            else isInclude = true;
+                        }
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    }
                 } else {
-                    break;
+                    if (isInclude) {
+                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
+                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                    }
+                    cursorHandler.findRange(value);
+                    for (auto keyValue = cursorHandler.getPrev();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getPrev()) {
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    }
                 }
-            }
-            return result;
-        };
+                return result;
+            };
 
-        inline static std::vector<RecordDescriptor> fullScanIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.getNext();
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                 ClassId classId, const T &value, bool positive,
-                                                                 bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || positive) {
-                if (isInclude) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(value);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.template numeric<T>();
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            } else {
+            static std::vector<RecordDescriptor>
+            forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
+                               const std::string &value, bool isInclude = false) {
+                auto result = std::vector<RecordDescriptor>{};
                 for (auto keyValue = cursorHandler.findRange(value);
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
                     if (!isInclude) {
-                        auto key = keyValue.key.data.template numeric<T>();
+                        auto key = keyValue.key.data.string();
                         if (key == value) continue;
                         else isInclude = true;
                     }
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
+                    auto positionId = keyValue.val.data.numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
-            }
-            return result;
-        };
+                return result;
+            };
 
-        template<typename T>
-        static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                ClassId classId, const T &value, bool positive,
-                                                                bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || positive) {
-                for (auto keyValue = cursorHandler.findRange(value);
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
-                    if (!isInclude) {
+            template<typename T>
+            static std::vector<RecordDescriptor>
+            betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
+                               const T &lower, const T &upper, bool isLowerPositive,
+                               const std::pair<bool, bool> &isIncludeBound) {
+                auto result = std::vector<RecordDescriptor>{};
+                if (!std::is_same<T, double>::value || isLowerPositive) {
+                    for (auto keyValue = cursorHandler.findRange(lower);
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getNext()) {
                         auto key = keyValue.key.data.template numeric<T>();
-                        if (key == value) continue;
-                        else isInclude = true;
+                        if (!isIncludeBound.first && key == lower) continue;
+                        else if ((!isIncludeBound.second && key == upper) || key > upper) break;
+                        auto positionId = keyValue.val.data.template numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
                     }
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
+                } else {
+                    if (isIncludeBound.first) {
+                        auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
+                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                    }
+                    cursorHandler.findRange(lower);
+                    for (auto keyValue = cursorHandler.getPrev();
+                         !keyValue.empty();
+                         keyValue = cursorHandler.getPrev()) {
+                        auto key = keyValue.key.data.numeric<T>();
+                        if ((!isIncludeBound.second && key == upper) || key > upper) break;
+                        auto positionId = keyValue.val.data.numeric<PositionId>();
+                        result.emplace_back(RecordDescriptor{classId, positionId});
+                    }
                 }
-            } else {
-                if (isInclude) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(value);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            }
-            return result;
-        };
+                return result;
+            };
 
-        inline static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                       ClassId classId, const std::string &value,
-                                                                       bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.findRange(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                if (!isInclude) {
-                    auto key = keyValue.key.data.string();
-                    if (key == value) continue;
-                    else isInclude = true;
-                }
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                ClassId classId,
-                                                                const T &lower,
-                                                                const T &upper,
-                                                                bool isLowerPositive,
-                                                                const std::pair<bool, bool> &isIncludeBound) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || isLowerPositive) {
+            static std::vector<RecordDescriptor>
+            betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
+                               const std::string &lower, const std::string &upper,
+                               const std::pair<bool, bool> &isIncludeBound) {
+                auto result = std::vector<RecordDescriptor>{};
                 for (auto keyValue = cursorHandler.findRange(lower);
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
-                    auto key = keyValue.key.data.template numeric<T>();
-                    if (!isIncludeBound.first && key == lower) continue;
-                    else if ((!isIncludeBound.second && key == upper) || key > upper) break;
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            } else {
-                if (isIncludeBound.first) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(lower);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.numeric<T>();
-                    if ((!isIncludeBound.second && key == upper) || key > upper) break;
+                    auto key = keyValue.key.data.string();
+                    if (!isIncludeBound.first && (key == lower)) continue;
+                    if ((!isIncludeBound.second && (key == upper)) || (key > upper)) break;
                     auto positionId = keyValue.val.data.numeric<PositionId>();
                     result.emplace_back(RecordDescriptor{classId, positionId});
                 }
-            }
-            return result;
+                return result;
+            };
+
         };
 
-        inline static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                       ClassId classId,
-                                                                       const std::string &lower,
-                                                                       const std::string &upper,
-                                                                       const std::pair<bool, bool> &isIncludeBound) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.findRange(lower);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (!isIncludeBound.first && (key == lower)) continue;
-                if ((!isIncludeBound.second && (key == upper)) || (key > upper)) break;
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        static const std::vector<Condition::Comparator> validComparators;
-
-    };
+    }
 
 }
 

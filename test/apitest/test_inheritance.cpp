@@ -23,7 +23,7 @@
 
 void assert_class(const nogdb::Txn &txn, const std::string &className, const std::string &superClassName,
                   size_t sizeOfSubClasses, size_t sizeOfProperties) {
-    auto res = nogdb::Db::getSchema(txn, className);
+    auto res = nogdb::DB::getSchema(txn, className);
     assert(res.super == superClassName);
     assert(res.sub.size() == sizeOfSubClasses);
     assert(res.properties.size() == sizeOfProperties);
@@ -204,9 +204,9 @@ void test_create_class_extend() {
     }
 
     try {
-        auto res = nogdb::Db::getSchema(txn, "infras");
+        auto res = nogdb::DB::getSchema(txn, "infras");
         assert(res.type == nogdb::ClassType::VERTEX);
-        res = nogdb::Db::getSchema(txn, "intra");
+        res = nogdb::DB::getSchema(txn, "intra");
         assert(res.type == nogdb::ClassType::EDGE);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -408,7 +408,7 @@ void test_alter_property_extend() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Property::alter(txn, "employees", "name", "title");
-        auto res = nogdb::Db::getSchema(txn, "systems");
+        auto res = nogdb::DB::getSchema(txn, "systems");
         assert(res.properties.find("name") == res.properties.cend());
         assert(res.properties.find("title") != res.properties.cend());
         txn.commit();
@@ -420,7 +420,7 @@ void test_alter_property_extend() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Property::alter(txn, "employees", "title", "name");
-        auto res = nogdb::Db::getSchema(txn, "infras");
+        auto res = nogdb::DB::getSchema(txn, "infras");
         assert(res.properties.find("name") != res.properties.cend());
         assert(res.properties.find("title") == res.properties.cend());
         txn.commit();

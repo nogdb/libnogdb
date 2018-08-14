@@ -18,8 +18,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#include "shared_lock.hpp"
+ 
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
 #include "graph.hpp"
@@ -35,7 +34,7 @@ namespace nogdb {
                                   unsigned int minDepth,
                                   unsigned int maxDepth,
                                   const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -53,7 +52,7 @@ namespace nogdb {
                                   unsigned int maxDepth,
                                   const PathFilter &pathFilter,
                                   const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -70,7 +69,7 @@ namespace nogdb {
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
                                               const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -91,7 +90,7 @@ namespace nogdb {
                                               unsigned int maxDepth,
                                               const PathFilter &pathFilter,
                                               const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -112,7 +111,7 @@ namespace nogdb {
                                    unsigned int minDepth,
                                    unsigned int maxDepth,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -130,7 +129,7 @@ namespace nogdb {
                                    unsigned int maxDepth,
                                    const PathFilter &pathFilter,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -147,7 +146,7 @@ namespace nogdb {
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -169,7 +168,7 @@ namespace nogdb {
                                                unsigned int maxDepth,
                                                const PathFilter &pathFilter,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -189,7 +188,7 @@ namespace nogdb {
                                    unsigned int minDepth,
                                    unsigned int maxDepth,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -207,7 +206,7 @@ namespace nogdb {
                                    unsigned int maxDepth,
                                    const PathFilter &pathFilter,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
@@ -224,7 +223,7 @@ namespace nogdb {
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -245,7 +244,7 @@ namespace nogdb {
                                                unsigned int maxDepth,
                                                const PathFilter &pathFilter,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
@@ -265,7 +264,7 @@ namespace nogdb {
                                   unsigned int minDepth,
                                   unsigned int maxDepth,
                                   const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -283,7 +282,7 @@ namespace nogdb {
                                   unsigned int maxDepth,
                                   const PathFilter &pathFilter,
                                   const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -300,7 +299,7 @@ namespace nogdb {
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
                                               const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -321,7 +320,7 @@ namespace nogdb {
                                               unsigned int maxDepth,
                                               const PathFilter &pathFilter,
                                               const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -341,7 +340,7 @@ namespace nogdb {
                                    unsigned int minDepth,
                                    unsigned int maxDepth,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -359,7 +358,7 @@ namespace nogdb {
                                    unsigned int maxDepth,
                                    const PathFilter &pathFilter,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -376,7 +375,7 @@ namespace nogdb {
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -397,7 +396,7 @@ namespace nogdb {
                                                unsigned int maxDepth,
                                                const PathFilter &pathFilter,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -417,7 +416,7 @@ namespace nogdb {
                                    unsigned int minDepth,
                                    unsigned int maxDepth,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -435,7 +434,7 @@ namespace nogdb {
                                    unsigned int maxDepth,
                                    const PathFilter &pathFilter,
                                    const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::depthFirstSearch(txn,
                                            recordDescriptor,
@@ -452,7 +451,7 @@ namespace nogdb {
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -473,7 +472,7 @@ namespace nogdb {
                                                unsigned int maxDepth,
                                                const PathFilter &pathFilter,
                                                const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::depthFirstSearchRdesc(txn,
@@ -492,8 +491,8 @@ namespace nogdb {
                                      const RecordDescriptor &srcVertexRecordDescriptor,
                                      const RecordDescriptor &dstVertexRecordDescriptor,
                                      const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
                                           PathFilter{});
@@ -504,8 +503,8 @@ namespace nogdb {
                                      const RecordDescriptor &dstVertexRecordDescriptor,
                                      const PathFilter &pathFilter,
                                      const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
                                           pathFilter);
@@ -515,8 +514,8 @@ namespace nogdb {
                                                  const RecordDescriptor &srcVertexRecordDescriptor,
                                                  const RecordDescriptor &dstVertexRecordDescriptor,
                                                  const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
@@ -530,8 +529,8 @@ namespace nogdb {
                                                  const RecordDescriptor &dstVertexRecordDescriptor,
                                                  const PathFilter &pathFilter,
                                                  const ClassFilter &classFilter) {
-        Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,

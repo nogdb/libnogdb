@@ -23,9 +23,8 @@
 #define __COMPARE_HPP_INCLUDED_
 
 #include "schema.hpp"
-#include "base_txn.hpp"
-
 #include "graph.hpp"
+
 #include "nogdb_types.h"
 #include "nogdb_compare.h"
 

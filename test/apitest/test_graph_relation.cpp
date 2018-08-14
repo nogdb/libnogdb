@@ -274,7 +274,7 @@ void test_get_edge_in_more() {
 
     try {
         auto get_class_name = [&](const nogdb::RecordDescriptor &rdesc) {
-            auto class_desc = nogdb::Db::getSchema(txn, rdesc.rid.first);
+            auto class_desc = nogdb::DB::getSchema(txn, rdesc.rid.first);
             return class_desc.name;
         };
         for (const auto &res: nogdb::Vertex::get(txn, "subjects")) {

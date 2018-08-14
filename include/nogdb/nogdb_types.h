@@ -52,7 +52,7 @@ namespace nogdb {
     struct Schema;
     struct Class;
     struct Property;
-    struct Db;
+    struct DB;
     struct Vertex;
     struct Edge;
     struct Traverse;
@@ -117,18 +117,6 @@ namespace nogdb {
     typedef uint64_t TxnId;
     typedef uint32_t IndexId;
     typedef std::map<std::string, PropertyType> PropertyMapType;
-
-    struct DBInfo {
-        std::string dbPath{""};        // a path to the database folder.
-        unsigned int maxDB{0};         // a maximum number of databases that can be handled.
-        unsigned long maxDBSize{0};    // the largest size of a database.
-        PropertyId maxPropertyId{0};   // the largest property number(id) in the entire database.
-        PropertyId numProperty{0};     // a number of properties in the database.
-        ClassId maxClassId{0};         // the largest class number(id) in the entire database.
-        ClassId numClass{0};           // a number of classes in the database.
-        IndexId maxIndexId{0};         // the largest index number(id) in the entire database.
-        IndexId numIndex{0};           // a number of indexes in the database.
-    };
 
     class Txn;
 
@@ -648,11 +636,13 @@ namespace nogdb {
         PropertyId id{0};
         std::string name{""};
         PropertyType type{PropertyType::UNDEFINED};
+        bool inherited{false};
     };
 
     struct ClassDescriptor {
         ClassId id{0};
         std::string name{""};
+        ClassId base{0};
         ClassType type{ClassType::UNDEFINED};
     };
 

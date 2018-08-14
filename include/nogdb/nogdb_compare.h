@@ -35,14 +35,20 @@
 
 namespace nogdb {
 
+    namespace index {
+        class IndexInterface;
+    }
+
     class MultiCondition;
 
     class Condition {
     private:
+        friend struct Compare;
+
         friend class MultiCondition;
 
-        friend struct Compare;
-        friend struct Index;
+        friend class index::IndexInterface;
+
         enum class Comparator {
             IS_NULL,
             NOT_NULL,
@@ -62,6 +68,7 @@ namespace nogdb {
             BETWEEN_NO_LOWER,
             BETWEEN_NO_BOUND
         };
+
     public:
         Condition(const std::string &propName_);
 
@@ -256,10 +263,11 @@ namespace nogdb {
         class ConditionNode;
 
     public:
+        friend struct Compare;
+
         friend class Condition;
 
-        friend struct Compare;
-        friend struct Index;
+        friend class index::IndexInterface;
 
         MultiCondition() = delete;
 

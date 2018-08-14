@@ -23,7 +23,6 @@
 #define __NOGDB_TXN_H_INCLUDED_
 
 #include "nogdb_context.h"
-#include "../../src/relation_adapter.hpp"
 
 namespace nogdb {
 
@@ -40,9 +39,18 @@ namespace nogdb {
             class PropertyAccess;
             class IndexAccess;
         }
-        namespace relation {
-            class RelationHelper;
-        }
+    }
+
+    namespace relation {
+        class GraphInterface;
+    }
+
+    namespace index {
+        class IndexInterface;
+    }
+
+    namespace schema {
+        class SchemaInterface;
     }
 
     class Txn {
@@ -50,7 +58,7 @@ namespace nogdb {
         friend struct Compare;
         friend struct Algorithm;
         friend struct Generic;
-        friend struct Db;
+        friend struct DB;
         friend struct Validate;
         friend struct Class;
         friend struct Property;
@@ -61,7 +69,11 @@ namespace nogdb {
 
         friend class ResultSetCursor;
 
-        friend class adapter::relation::RelationHelper;
+        friend class relation::GraphInterface;
+
+        friend class index::IndexInterface;
+
+        friend class schema::SchemaInterface;
 
         enum Mode { READ_ONLY, READ_WRITE };
 
@@ -77,10 +89,6 @@ namespace nogdb {
 
         void rollback() noexcept;
 
-        TxnId getTxnId() const { return _txnId; }
-
-        TxnId getVersionId() const { return _versionId; }
-
         Mode getTxnMode() const { return _txnMode; }
 
         bool isCompleted() const { return _completed; }
@@ -88,13 +96,11 @@ namespace nogdb {
     private:
         Context &_txnCtx;
         storage_engine::LMDBTxn *_txnBase;
-        adapter::metadata::DBInfoAccess _dbInfo;
-        adapter::schema::ClassAccess _class;
-        adapter::schema::PropertyAccess _property;
-        adapter::schema::IndexAccess _index;
+        adapter::metadata::DBInfoAccess *_dbInfo;
+        adapter::schema::ClassAccess *_class;
+        adapter::schema::PropertyAccess *_property;
+        adapter::schema::IndexAccess *_index;
         Mode _txnMode;
-        TxnId _txnId;
-        TxnId _versionId;
         bool _completed; // throw error if working with isCompleted = true
     };
 

@@ -31,7 +31,6 @@
 
 #include "schema.hpp"
 #include "graph.hpp"
-#include "base_txn.hpp"
 #include "validate.hpp"
 
 #include "nogdb_context.h"
@@ -49,11 +48,11 @@ namespace nogdb {
         ~Generic() noexcept = delete;
 
         template<typename T>
-        static Schema::ClassDescriptorPtr
-        getClassDescriptor(const Txn &txn, const T &className, ClassType type) {
-            auto foundClass = Validate::isExistingClass(txn, className);
+        static adapter::schema::ClassAccessInfo
+        getClassInfo(const Txn &txn, const T &classSearchKey, ClassType type = ClassType::UNDEFINED) {
+            auto foundClass = Validate::isExistingClass(txn, classSearchKey);
             if (type != ClassType::UNDEFINED) {
-                if (foundClass->type != type) {
+                if (foundClass.type != type) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
                 }
             }

@@ -22,12 +22,12 @@
 #include <iostream> // for debugging
 #include <memory>
 
-#include "shared_lock.hpp"
-#include "schema.hpp"
 #include "constant.hpp"
 #include "storage_engine.hpp"
 #include "lmdb_engine.hpp"
 #include "datarecord_adapter.hpp"
+#include "relation.hpp"
+#include "schema.hpp"
 #include "generic.hpp"
 #include "validate.hpp"
 #include "utils.hpp"
@@ -46,16 +46,16 @@ namespace nogdb {
         Validate::isClassTypeValid(type);
         Validate::isNotDuplicatedClass(txn, className);
         try {
-            auto classId = txn._dbInfo.getMaxClassId() + ClassId{1};
+            auto classId = txn._dbinfo->getMaxClassId() + ClassId{1};
             auto classProps = adapter::schema::ClassAccessInfo{className, classId, ClassId{0}, type};
-            txn._class.create(classProps);
+            txn._class->create(classProps);
             adapter::datarecord::DataRecord(txn._txnBase, classId, type).init();
-            txn._dbInfo.setMaxClassId(classId);
-            txn._dbInfo.setNumClassId(txn._dbInfo.getNumClassId() + ClassId{1});
-            return ClassDescriptor{classProps.id, className, type};
+            txn._dbinfo->setMaxClassId(classId);
+            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() + ClassId{1});
+            return ClassDescriptor{classProps.id, className, ClassId{0}, type};
         } catch (const Error &err) {
             txn.rollback();
-            throw err;
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
             txn.rollback();
             std::rethrow_exception(std::current_exception());
@@ -69,17 +69,17 @@ namespace nogdb {
         Validate::isClassNameValid(superClass);
         Validate::isNotDuplicatedClass(txn, className);
         try {
-            auto superClassInfo = txn._class.getInfo(superClass);
-            auto classId = txn._dbInfo.getMaxClassId() + ClassId{1};
+            auto superClassInfo = txn._class->getInfo(superClass);
+            auto classId = txn._dbinfo->getMaxClassId() + ClassId{1};
             auto classProps = adapter::schema::ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type};
-            txn._class.create(classProps);
+            txn._class->create(classProps);
             adapter::datarecord::DataRecord(txn._txnBase, classId, superClassInfo.type).init();
-            txn._dbInfo.setMaxClassId(classId);
-            txn._dbInfo.setNumClassId(txn._dbInfo.getNumClassId() + ClassId{1});
-            return ClassDescriptor{classProps.id, className, superClassInfo.type};
+            txn._dbinfo->setMaxClassId(classId);
+            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() + ClassId{1});
+            return ClassDescriptor{classProps.id, className, superClassInfo.id, superClassInfo.type};
         } catch (const Error &err) {
             txn.rollback();
-            throw err;
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
             txn.rollback();
             std::rethrow_exception(std::current_exception());
@@ -89,22 +89,22 @@ namespace nogdb {
     void Class::drop(Txn &txn, const std::string &className) {
         Validate::isTransactionValid(txn);
         auto foundClass = Validate::isExistingClass(txn, className);
-        try {
-            // retrieve relevant properties information
-            auto propertyInfos = txn._property.getInfos(foundClass.id);
-            for (const auto &property: propertyInfos) {
-                // check if all index tables associated with the column have been removed beforehand
-                auto foundIndex = txn._index.getInfo(foundClass.id, property.id);
-                if (foundIndex.id != IndexId{0}) {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
-                }
+        // retrieve relevant properties information
+        auto propertyInfos = txn._property->getInfos(foundClass.id);
+        for (const auto &property: propertyInfos) {
+            // check if all index tables associated with the column have been removed beforehand
+            auto foundIndex = txn._index->getInfo(foundClass.id, property.id);
+            if (foundIndex.id != IndexId{0}) {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
             }
+        }
+        try {
             auto rids = std::vector<RecordId>{};
             // delete class from schema
-            txn._class.remove(className);
+            txn._class->remove(className);
             // delete properties from schema
             for (const auto &property : propertyInfos) {
-                txn._property.remove(property.classId, property.name);
+                txn._property->remove(property.classId, property.name);
                 //TODO: implement existing index deletion if needed
             }
             // delete all associated relations
@@ -116,7 +116,7 @@ namespace nogdb {
                 auto key = keyValue.key.data.numeric<PositionId>();
                 if (key == MAX_RECORD_NUM_EM) continue;
                 auto recordId = RecordId{foundClass.id, key};
-                auto relation = adapter::relation::RelationHelper(&txn);
+                auto relation = relation::GraphInterface(&txn);
                 if (foundClass.type == ClassType::EDGE) {
                     auto vertices = parser::Parser::parseRawDataVertexSrcDst(keyValue.val.data.blob());
                     relation.removeRel(recordId, vertices.first, vertices.second);
@@ -127,8 +127,8 @@ namespace nogdb {
             // drop the actual table
             table.destroy();
             // update a superclass of subclasses if existing
-            for (const auto &subClassInfo: txn._class.getSubClassInfos(foundClass.id)) {
-                txn._class.update(
+            for (const auto &subClassInfo: txn._class->getSubClassInfos(foundClass.id)) {
+                txn._class->update(
                         adapter::schema::ClassAccessInfo{
                             subClassInfo.name,
                             subClassInfo.id,
@@ -137,11 +137,11 @@ namespace nogdb {
                         });
             }
             // update database info
-            txn._dbInfo.setNumClassId(txn._dbInfo.getNumClassId() - ClassId{1});
-            txn._dbInfo.setNumPropertyId(txn._dbInfo.getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
+            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() - ClassId{1});
+            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
         } catch (const Error &err) {
             txn.rollback();
-            throw err;
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
             txn.rollback();
             std::rethrow_exception(std::current_exception());
@@ -154,16 +154,10 @@ namespace nogdb {
         Validate::isNotDuplicatedClass(txn, newClassName);
         auto foundClass = Validate::isExistingClass(txn, oldClassName);
         try {
-            txn._class.update(
-                    adapter::schema::ClassAccessInfo{
-                        newClassName,
-                        foundClass.id,
-                        foundClass.superClassId,
-                        foundClass.type
-                    });
+            txn._class->alterClassName(oldClassName, newClassName);
         } catch (const Error &err) {
             txn.rollback();
-            throw err;
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
             txn.rollback();
             std::rethrow_exception(std::current_exception());

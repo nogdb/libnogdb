@@ -27,11 +27,8 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 
-#include "shared_lock.hpp"
 #include "utils.hpp"
 #include "constant.hpp"
-#include "spinlock.hpp"
-#include "base_txn.hpp"
 #include "storage_engine.hpp"
 #include "graph.hpp"
 #include "validate.hpp"
@@ -52,61 +49,30 @@ namespace nogdb {
     Context::Context(const std::string &dbPath, unsigned long maxDbSize)
             : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
 
-    Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize) {
+    Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize)
+            : _dbPath{dbPath}, _maxDB{maxDbNum}, _maxDBSize{maxDbSize} {
         if (!utils::io::fileExists(dbPath)) {
             mkdir(dbPath.c_str(), 0755);
         }
-        const auto lockFile = dbPath + DB_LOCK_FILE;
-        lockContextFileDescriptor = utils::io::openLockFile(lockFile.c_str());
-        if (lockContextFileDescriptor == -1) {
-            if (errno == EWOULDBLOCK || errno == EEXIST) {
-                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IS_LOCKED);
-            } else {
-                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
-            }
-        } else {
-            envHandler = std::make_shared<storage_engine::LMDBEnv>(
-                    dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS
-            );
-            dbTxnStat = std::make_shared<TxnStat>();
-        }
+        _envHandler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
     }
 
     Context::~Context() noexcept {
-        utils::io::unlockFile(lockContextFileDescriptor);
-    }
-
-    Context::Context(const Context &ctx)
-            : envHandler{ctx.envHandler},
-              dbTxnStat{ctx.dbTxnStat} {};
-
-    Context &Context::operator=(const Context &ctx) {
-        if (this != &ctx) {
-            auto tmp(ctx);
-            using std::swap;
-            swap(tmp, *this);
+        if (_envHandler) {
+            delete _envHandler;
+            _envHandler = nullptr;
         }
-        return *this;
     }
-
     Context::Context(Context &&ctx) noexcept
-            : envHandler{std::move(ctx.envHandler)},
-              dbTxnStat{std::move(ctx.dbTxnStat)} {}
+            : _envHandler{std::move(ctx._envHandler)} {}
 
     Context &Context::operator=(Context &&ctx) noexcept {
         if (this != &ctx) {
-            envHandler = std::move(ctx.envHandler);
-            dbTxnStat = std::move(ctx.dbTxnStat);
+            delete _envHandler;
+            _envHandler = ctx._envHandler;
+            ctx._envHandler = nullptr;
         }
         return *this;
-    }
-
-    TxnId Context::getMaxVersionId() const {
-        return dbTxnStat->getMaxVersionId();
-    }
-
-    TxnId Context::getMaxTxnId() const {
-        return dbTxnStat->getMaxTxnId();
     }
 
 }

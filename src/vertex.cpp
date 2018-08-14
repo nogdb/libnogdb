@@ -21,7 +21,6 @@
 
 #include <tuple>
 
-#include "shared_lock.hpp"
 #include "schema.hpp"
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
@@ -43,7 +42,7 @@ namespace nogdb {
         record.setBasicInfo(TXN_VERSION, txn.getVersionId());
         record.setBasicInfo(VERSION_PROPERTY, 1ULL);
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
@@ -71,7 +70,7 @@ namespace nogdb {
 
         record.updateVersion(txn);
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
@@ -123,7 +122,7 @@ namespace nogdb {
     void Vertex::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
         // transaction validations
         Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
         try {
@@ -182,7 +181,7 @@ namespace nogdb {
     void Vertex::destroy(Txn &txn, const std::string &className) {
         // transaction validations
         Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::VERTEX);
         auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto recordIds = std::vector<RecordId> {};
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
@@ -302,7 +301,7 @@ namespace nogdb {
                                 const RecordDescriptor &recordDescriptor,
                                 const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
     }
@@ -311,7 +310,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
     }
@@ -320,7 +319,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
     }
@@ -329,7 +328,7 @@ namespace nogdb {
                                             const RecordDescriptor &recordDescriptor,
                                             const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
@@ -341,7 +340,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
@@ -353,7 +352,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
         // basic class verification
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
         auto result = ResultSetCursor{txn};
         auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);

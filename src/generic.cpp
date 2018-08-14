@@ -42,7 +42,7 @@ using namespace nogdb::utils::assertion;
 namespace nogdb {
     Result Generic::getRecordResult(Txn &txn, const ClassPropertyInfo &classPropertyInfo,
                                     const RecordDescriptor &recordDescriptor) {
-        auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
+        auto classDescriptor = getClassInfo(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
@@ -54,7 +54,7 @@ namespace nogdb {
 
     ResultSet Generic::getRecordFromRdesc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         auto result = ResultSet{};
-        auto classDescriptor = getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
+        auto classDescriptor = getClassInfo(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
         auto classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(recordDescriptor.rid.first), true);
@@ -72,7 +72,7 @@ namespace nogdb {
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         if (!recordDescriptors.empty()) {
             auto classId = recordDescriptors.cbegin()->rid.first;
-            auto classDescriptor = getClassDescriptor(txn, classId, ClassType::UNDEFINED);
+            auto classDescriptor = getClassInfo(txn, classId, ClassType::UNDEFINED);
             auto classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
             auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
             auto classDBHandler = dsTxnHandler->openDbi( std::to_string(classId), true);
@@ -146,7 +146,7 @@ namespace nogdb {
                     auto className = std::string{};
                     auto retrieve = [&](ResultSet &result, const RecordId &edge) {
                         if (classDescriptor == nullptr || classDescriptor->id != edge.first) {
-                            classDescriptor = getClassDescriptor(txn, edge.first, ClassType::UNDEFINED);
+                            classDescriptor = getClassInfo(txn, edge.first, ClassType::UNDEFINED);
                             classPropertyInfo = getClassMapProperty(*txn._txnBase, classDescriptor);
                             classDBHandler = dsTxnHandler->openDbi( std::to_string(edge.first), true);
                             className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
@@ -277,7 +277,7 @@ namespace nogdb {
         if (!classIds.empty()) {
             for (const auto &classId: classIds) {
                 if (classId > 0) {
-                    setOfClassDescriptors.insert(getClassDescriptor(txn, classId, type));
+                    setOfClassDescriptors.insert(getClassInfo(txn, classId, type));
                 }
             }
             // check inheritance before return
@@ -292,7 +292,7 @@ namespace nogdb {
         if (!className.empty()) {
             for (const auto &name: className) {
                 if (name.length() > 0) {
-                    setOfClassDescriptors.insert(getClassDescriptor(txn, name, type));
+                    setOfClassDescriptors.insert(getClassInfo(txn, name, type));
                 }
             }
             // check inheritance before return

@@ -30,23 +30,23 @@ void test_schema_txn_create_class_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_1");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.id == cdesc.id);
         assert(res.name == cdesc.name);
 
         try {
-            nogdb::Db::getSchema(txnRo1, "test_1");
+            nogdb::DB::getSchema(txnRo1, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_1");
+            nogdb::DB::getSchema(txnRo2, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_1");
+            nogdb::DB::getSchema(txnRo3, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -56,27 +56,27 @@ void test_schema_txn_create_class_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_1");
+        res = nogdb::DB::getSchema(txnRw2, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.id == cdesc.id);
         assert(res.name == cdesc.name);
-        res = nogdb::Db::getSchema(txnRo4, "test_1");
+        res = nogdb::DB::getSchema(txnRo4, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.id == cdesc.id);
         assert(res.name == cdesc.name);
 
         try {
-            nogdb::Db::getSchema(txnRo1, "test_1");
+            nogdb::DB::getSchema(txnRo1, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_1");
+            nogdb::DB::getSchema(txnRo2, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_1");
+            nogdb::DB::getSchema(txnRo3, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -97,7 +97,7 @@ void test_schema_txn_create_class_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_2");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.id == cdesc.id);
         assert(res.name == cdesc.name);
@@ -108,27 +108,27 @@ void test_schema_txn_create_class_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         try {
-            nogdb::Db::getSchema(txnRw2, "test_2");
+            nogdb::DB::getSchema(txnRw2, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo4, "test_2");
+            nogdb::DB::getSchema(txnRo4, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_2");
+            nogdb::DB::getSchema(txnRo1, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_2");
+            nogdb::DB::getSchema(txnRo2, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_2");
+            nogdb::DB::getSchema(txnRo3, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -150,16 +150,16 @@ void test_schema_txn_drop_class_commit() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_1");
+            nogdb::DB::getSchema(txnRw1, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        auto res = nogdb::Db::getSchema(txnRo1, "test_1");
+        auto res = nogdb::DB::getSchema(txnRo1, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo2, "test_1");
+        res = nogdb::DB::getSchema(txnRo2, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo3, "test_1");
+        res = nogdb::DB::getSchema(txnRo3, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         txnRw1.commit();
@@ -168,20 +168,20 @@ void test_schema_txn_drop_class_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         try {
-            nogdb::Db::getSchema(txnRo4, "test_1");
+            nogdb::DB::getSchema(txnRo4, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw2, "test_1");
+            nogdb::DB::getSchema(txnRw2, "test_1");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo1, "test_1");
+        res = nogdb::DB::getSchema(txnRo1, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo2, "test_1");
+        res = nogdb::DB::getSchema(txnRo2, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo3, "test_1");
+        res = nogdb::DB::getSchema(txnRo3, "test_1");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
     } catch (const nogdb::Error &ex) {
@@ -209,7 +209,7 @@ void test_schema_txn_drop_class_rollback() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_2");
+            nogdb::DB::getSchema(txnRw1, "test_2");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -219,15 +219,15 @@ void test_schema_txn_drop_class_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        auto res = nogdb::Db::getSchema(txnRo4, "test_2");
+        auto res = nogdb::DB::getSchema(txnRo4, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRw2, "test_2");
+        res = nogdb::DB::getSchema(txnRw2, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo1, "test_2");
+        res = nogdb::DB::getSchema(txnRo1, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo2, "test_2");
+        res = nogdb::DB::getSchema(txnRo2, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
-        res = nogdb::Db::getSchema(txnRo3, "test_2");
+        res = nogdb::DB::getSchema(txnRo3, "test_2");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
     } catch (const nogdb::Error &ex) {
@@ -255,33 +255,33 @@ void test_schema_txn_alter_class_commit() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_3");
+            nogdb::DB::getSchema(txnRw1, "test_3");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        auto res = nogdb::Db::getSchema(txnRw1, "test_4");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_4");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         try {
-            nogdb::Db::getSchema(txnRo1, "test_4");
+            nogdb::DB::getSchema(txnRo1, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo1, "test_3");
+        res = nogdb::DB::getSchema(txnRo1, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_4");
+            nogdb::DB::getSchema(txnRo2, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo2, "test_3");
+        res = nogdb::DB::getSchema(txnRo2, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_4");
+            nogdb::DB::getSchema(txnRo3, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo3, "test_3");
+        res = nogdb::DB::getSchema(txnRo3, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         txnRw1.commit();
@@ -290,40 +290,40 @@ void test_schema_txn_alter_class_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         try {
-            nogdb::Db::getSchema(txnRo4, "test_3");
+            nogdb::DB::getSchema(txnRo4, "test_3");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo4, "test_4");
+        res = nogdb::DB::getSchema(txnRo4, "test_4");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRw2, "test_3");
+            nogdb::DB::getSchema(txnRw2, "test_3");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRw2, "test_4");
+        res = nogdb::DB::getSchema(txnRw2, "test_4");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         try {
-            nogdb::Db::getSchema(txnRo1, "test_4");
+            nogdb::DB::getSchema(txnRo1, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo1, "test_3");
+        res = nogdb::DB::getSchema(txnRo1, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_4");
+            nogdb::DB::getSchema(txnRo2, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo2, "test_3");
+        res = nogdb::DB::getSchema(txnRo2, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_4");
+            nogdb::DB::getSchema(txnRo3, "test_4");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo3, "test_3");
+        res = nogdb::DB::getSchema(txnRo3, "test_3");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
     } catch (const nogdb::Error &ex) {
@@ -351,11 +351,11 @@ void test_schema_txn_alter_class_rollback() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_5");
+            nogdb::DB::getSchema(txnRw1, "test_5");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        auto res = nogdb::Db::getSchema(txnRw1, "test_6");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_6");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         txnRw1.rollback();
@@ -364,40 +364,40 @@ void test_schema_txn_alter_class_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         try {
-            nogdb::Db::getSchema(txnRo4, "test_6");
+            nogdb::DB::getSchema(txnRo4, "test_6");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo4, "test_5");
+        res = nogdb::DB::getSchema(txnRo4, "test_5");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRw2, "test_6");
+            nogdb::DB::getSchema(txnRw2, "test_6");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRw2, "test_5");
+        res = nogdb::DB::getSchema(txnRw2, "test_5");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
         try {
-            nogdb::Db::getSchema(txnRo1, "test_6");
+            nogdb::DB::getSchema(txnRo1, "test_6");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo1, "test_5");
+        res = nogdb::DB::getSchema(txnRo1, "test_5");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_6");
+            nogdb::DB::getSchema(txnRo2, "test_6");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo2, "test_5");
+        res = nogdb::DB::getSchema(txnRo2, "test_5");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_6");
+            nogdb::DB::getSchema(txnRo3, "test_6");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRo3, "test_5");
+        res = nogdb::DB::getSchema(txnRo3, "test_5");
         assert(res.id != nogdb::ClassDescriptor{}.id);
 
     } catch (const nogdb::Error &ex) {
@@ -430,18 +430,18 @@ void test_schema_txn_create_class_extend_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_10");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_10");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRw1, "test_11");
+        res = nogdb::DB::getSchema(txnRw1, "test_11");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 1);
-        res = nogdb::Db::getSchema(txnRw1, "test_12");
+        res = nogdb::DB::getSchema(txnRw1, "test_12");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 0);
-        res = nogdb::Db::getSchema(txnRw1, "test_13");
+        res = nogdb::DB::getSchema(txnRw1, "test_13");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_11");
         assert(res.sub.size() == 0);
@@ -451,56 +451,56 @@ void test_schema_txn_create_class_extend_commit() {
         nogdb::Vertex::create(txnRw1, "test_12", nogdb::Record{}.set("prop0", 1).set("prop2", 1));
         nogdb::Vertex::create(txnRw1, "test_13", nogdb::Record{}.set("prop0", 1).set("prop3", 1));
 
-        res = nogdb::Db::getSchema(txnRo1, "test_10");
+        res = nogdb::DB::getSchema(txnRo1, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo1, "test_11");
+            nogdb::DB::getSchema(txnRo1, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_12");
+            nogdb::DB::getSchema(txnRo1, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_13");
+            nogdb::DB::getSchema(txnRo1, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo2, "test_10");
+        res = nogdb::DB::getSchema(txnRo2, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_11");
+            nogdb::DB::getSchema(txnRo2, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_12");
+            nogdb::DB::getSchema(txnRo2, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_13");
+            nogdb::DB::getSchema(txnRo2, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo3, "test_10");
+        res = nogdb::DB::getSchema(txnRo3, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_11");
+            nogdb::DB::getSchema(txnRo3, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_12");
+            nogdb::DB::getSchema(txnRo3, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_13");
+            nogdb::DB::getSchema(txnRo3, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -510,18 +510,18 @@ void test_schema_txn_create_class_extend_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_10");
+        res = nogdb::DB::getSchema(txnRw2, "test_10");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRw2, "test_11");
+        res = nogdb::DB::getSchema(txnRw2, "test_11");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 1);
-        res = nogdb::Db::getSchema(txnRw2, "test_12");
+        res = nogdb::DB::getSchema(txnRw2, "test_12");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 0);
-        res = nogdb::Db::getSchema(txnRw2, "test_13");
+        res = nogdb::DB::getSchema(txnRw2, "test_13");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_11");
         assert(res.sub.size() == 0);
@@ -531,72 +531,72 @@ void test_schema_txn_create_class_extend_commit() {
         nogdb::Vertex::create(txnRw2, "test_12", nogdb::Record{}.set("prop0", 1).set("prop2", 1));
         nogdb::Vertex::create(txnRw2, "test_13", nogdb::Record{}.set("prop0", 1).set("prop3", 1));
 
-        res = nogdb::Db::getSchema(txnRo4, "test_10");
+        res = nogdb::DB::getSchema(txnRo4, "test_10");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo4, "test_11");
+        res = nogdb::DB::getSchema(txnRo4, "test_11");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 1);
-        res = nogdb::Db::getSchema(txnRo4, "test_12");
+        res = nogdb::DB::getSchema(txnRo4, "test_12");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_10");
         assert(res.sub.size() == 0);
-        res = nogdb::Db::getSchema(txnRo4, "test_13");
+        res = nogdb::DB::getSchema(txnRo4, "test_13");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_11");
         assert(res.sub.size() == 0);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_10");
+        res = nogdb::DB::getSchema(txnRo1, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo1, "test_11");
+            nogdb::DB::getSchema(txnRo1, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_12");
+            nogdb::DB::getSchema(txnRo1, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_13");
+            nogdb::DB::getSchema(txnRo1, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo2, "test_10");
+        res = nogdb::DB::getSchema(txnRo2, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_11");
+            nogdb::DB::getSchema(txnRo2, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_12");
+            nogdb::DB::getSchema(txnRo2, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_13");
+            nogdb::DB::getSchema(txnRo2, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo3, "test_10");
+        res = nogdb::DB::getSchema(txnRo3, "test_10");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_11");
+            nogdb::DB::getSchema(txnRo3, "test_11");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_12");
+            nogdb::DB::getSchema(txnRo3, "test_12");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_13");
+            nogdb::DB::getSchema(txnRo3, "test_13");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -631,18 +631,18 @@ void test_schema_txn_create_class_extend_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_20");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_20");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRw1, "test_21");
+        res = nogdb::DB::getSchema(txnRw1, "test_21");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_20");
         assert(res.sub.size() == 1);
-        res = nogdb::Db::getSchema(txnRw1, "test_22");
+        res = nogdb::DB::getSchema(txnRw1, "test_22");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_20");
         assert(res.sub.size() == 0);
-        res = nogdb::Db::getSchema(txnRw1, "test_23");
+        res = nogdb::DB::getSchema(txnRw1, "test_23");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_21");
         assert(res.sub.size() == 0);
@@ -658,110 +658,110 @@ void test_schema_txn_create_class_extend_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
-        res = nogdb::Db::getSchema(txnRw2, "test_20");
+        res = nogdb::DB::getSchema(txnRw2, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRw2, "test_21");
+            nogdb::DB::getSchema(txnRw2, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw2, "test_22");
+            nogdb::DB::getSchema(txnRw2, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw2, "test_23");
+            nogdb::DB::getSchema(txnRw2, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo4, "test_20");
+        res = nogdb::DB::getSchema(txnRo4, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo4, "test_21");
+            nogdb::DB::getSchema(txnRo4, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo4, "test_22");
+            nogdb::DB::getSchema(txnRo4, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo4, "test_23");
+            nogdb::DB::getSchema(txnRo4, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo1, "test_20");
+        res = nogdb::DB::getSchema(txnRo1, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo1, "test_21");
+            nogdb::DB::getSchema(txnRo1, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_22");
+            nogdb::DB::getSchema(txnRo1, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_23");
+            nogdb::DB::getSchema(txnRo1, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo1, "test_20");
+        res = nogdb::DB::getSchema(txnRo1, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo1, "test_21");
+            nogdb::DB::getSchema(txnRo1, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_22");
+            nogdb::DB::getSchema(txnRo1, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo1, "test_23");
+            nogdb::DB::getSchema(txnRo1, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo2, "test_20");
+        res = nogdb::DB::getSchema(txnRo2, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo2, "test_21");
+            nogdb::DB::getSchema(txnRo2, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_22");
+            nogdb::DB::getSchema(txnRo2, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo2, "test_23");
+            nogdb::DB::getSchema(txnRo2, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
 
-        res = nogdb::Db::getSchema(txnRo3, "test_20");
+        res = nogdb::DB::getSchema(txnRo3, "test_20");
         assert(res.sub.size() == 0);
         try {
-            nogdb::Db::getSchema(txnRo3, "test_21");
+            nogdb::DB::getSchema(txnRo3, "test_21");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_22");
+            nogdb::DB::getSchema(txnRo3, "test_22");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRo3, "test_23");
+            nogdb::DB::getSchema(txnRo3, "test_23");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
@@ -799,51 +799,51 @@ void test_schema_txn_drop_class_extend_commit() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_31");
+            nogdb::DB::getSchema(txnRw1, "test_31");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw1, "test_32");
+            nogdb::DB::getSchema(txnRw1, "test_32");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        auto res = nogdb::Db::getSchema(txnRw1, "test_30");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_30");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRw1, "test_33");
+        res = nogdb::DB::getSchema(txnRw1, "test_33");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_30");
 
-        res = nogdb::Db::getSchema(txnRo1, "test_30");
+        res = nogdb::DB::getSchema(txnRo1, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo1, "test_31");
+        res = nogdb::DB::getSchema(txnRo1, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo1, "test_32");
+        res = nogdb::DB::getSchema(txnRo1, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo1, "test_33");
+        res = nogdb::DB::getSchema(txnRo1, "test_33");
         assert(res.super == "test_31");
 
-        res = nogdb::Db::getSchema(txnRo2, "test_30");
+        res = nogdb::DB::getSchema(txnRo2, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo2, "test_31");
+        res = nogdb::DB::getSchema(txnRo2, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo2, "test_32");
+        res = nogdb::DB::getSchema(txnRo2, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo2, "test_33");
+        res = nogdb::DB::getSchema(txnRo2, "test_33");
         assert(res.super == "test_31");
 
-        res = nogdb::Db::getSchema(txnRo3, "test_30");
+        res = nogdb::DB::getSchema(txnRo3, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo3, "test_31");
+        res = nogdb::DB::getSchema(txnRo3, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo3, "test_32");
+        res = nogdb::DB::getSchema(txnRo3, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo3, "test_33");
+        res = nogdb::DB::getSchema(txnRo3, "test_33");
         assert(res.super == "test_31");
 
         txnRw1.commit();
@@ -852,59 +852,59 @@ void test_schema_txn_drop_class_extend_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         try {
-            nogdb::Db::getSchema(txnRw2, "test_31");
+            nogdb::DB::getSchema(txnRw2, "test_31");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw2, "test_32");
+            nogdb::DB::getSchema(txnRw2, "test_32");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        res = nogdb::Db::getSchema(txnRw2, "test_30");
+        res = nogdb::DB::getSchema(txnRw2, "test_30");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRw2, "test_33");
+        res = nogdb::DB::getSchema(txnRw2, "test_33");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_30");
 
-        res = nogdb::Db::getSchema(txnRo4, "test_30");
+        res = nogdb::DB::getSchema(txnRo4, "test_30");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo4, "test_33");
+        res = nogdb::DB::getSchema(txnRo4, "test_33");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_30");
 
-        res = nogdb::Db::getSchema(txnRo1, "test_30");
+        res = nogdb::DB::getSchema(txnRo1, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo1, "test_31");
+        res = nogdb::DB::getSchema(txnRo1, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo1, "test_32");
+        res = nogdb::DB::getSchema(txnRo1, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo1, "test_33");
+        res = nogdb::DB::getSchema(txnRo1, "test_33");
         assert(res.super == "test_31");
 
-        res = nogdb::Db::getSchema(txnRo2, "test_30");
+        res = nogdb::DB::getSchema(txnRo2, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo2, "test_31");
+        res = nogdb::DB::getSchema(txnRo2, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo2, "test_32");
+        res = nogdb::DB::getSchema(txnRo2, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo2, "test_33");
+        res = nogdb::DB::getSchema(txnRo2, "test_33");
         assert(res.super == "test_31");
 
-        res = nogdb::Db::getSchema(txnRo3, "test_30");
+        res = nogdb::DB::getSchema(txnRo3, "test_30");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo3, "test_31");
+        res = nogdb::DB::getSchema(txnRo3, "test_31");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_33");
-        res = nogdb::Db::getSchema(txnRo3, "test_32");
+        res = nogdb::DB::getSchema(txnRo3, "test_32");
         assert(res.super == "test_30");
-        res = nogdb::Db::getSchema(txnRo3, "test_33");
+        res = nogdb::DB::getSchema(txnRo3, "test_33");
         assert(res.super == "test_31");
 
     } catch (const nogdb::Error &ex) {
@@ -940,20 +940,20 @@ void test_schema_txn_drop_class_extend_rollback() {
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
         try {
-            nogdb::Db::getSchema(txnRw1, "test_41");
+            nogdb::DB::getSchema(txnRw1, "test_41");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
         try {
-            nogdb::Db::getSchema(txnRw1, "test_42");
+            nogdb::DB::getSchema(txnRw1, "test_42");
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
         }
-        auto res = nogdb::Db::getSchema(txnRw1, "test_40");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_40");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRw1, "test_43");
+        res = nogdb::DB::getSchema(txnRw1, "test_43");
         assert(res.id != nogdb::ClassDescriptor{}.id);
         assert(res.super == "test_40");
 
@@ -962,54 +962,54 @@ void test_schema_txn_drop_class_extend_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_40");
+        res = nogdb::DB::getSchema(txnRw2, "test_40");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRw2, "test_41");
+        res = nogdb::DB::getSchema(txnRw2, "test_41");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRw2, "test_42");
+        res = nogdb::DB::getSchema(txnRw2, "test_42");
         assert(res.super == "test_40");
-        res = nogdb::Db::getSchema(txnRw2, "test_43");
+        res = nogdb::DB::getSchema(txnRw2, "test_43");
         assert(res.super == "test_41");
 
-        res = nogdb::Db::getSchema(txnRo4, "test_40");
+        res = nogdb::DB::getSchema(txnRo4, "test_40");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo4, "test_41");
+        res = nogdb::DB::getSchema(txnRo4, "test_41");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRo4, "test_42");
+        res = nogdb::DB::getSchema(txnRo4, "test_42");
         assert(res.super == "test_40");
-        res = nogdb::Db::getSchema(txnRo4, "test_43");
+        res = nogdb::DB::getSchema(txnRo4, "test_43");
         assert(res.super == "test_41");
 
-        res = nogdb::Db::getSchema(txnRo1, "test_40");
+        res = nogdb::DB::getSchema(txnRo1, "test_40");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo1, "test_41");
+        res = nogdb::DB::getSchema(txnRo1, "test_41");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRo1, "test_42");
+        res = nogdb::DB::getSchema(txnRo1, "test_42");
         assert(res.super == "test_40");
-        res = nogdb::Db::getSchema(txnRo1, "test_43");
+        res = nogdb::DB::getSchema(txnRo1, "test_43");
         assert(res.super == "test_41");
 
-        res = nogdb::Db::getSchema(txnRo2, "test_40");
+        res = nogdb::DB::getSchema(txnRo2, "test_40");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo2, "test_41");
+        res = nogdb::DB::getSchema(txnRo2, "test_41");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRo2, "test_42");
+        res = nogdb::DB::getSchema(txnRo2, "test_42");
         assert(res.super == "test_40");
-        res = nogdb::Db::getSchema(txnRo2, "test_43");
+        res = nogdb::DB::getSchema(txnRo2, "test_43");
         assert(res.super == "test_41");
 
-        res = nogdb::Db::getSchema(txnRo3, "test_40");
+        res = nogdb::DB::getSchema(txnRo3, "test_40");
         assert(res.sub.size() == 2);
-        res = nogdb::Db::getSchema(txnRo3, "test_41");
+        res = nogdb::DB::getSchema(txnRo3, "test_41");
         assert(res.sub.size() == 1);
         assert(res.sub[0] == "test_43");
-        res = nogdb::Db::getSchema(txnRo3, "test_42");
+        res = nogdb::DB::getSchema(txnRo3, "test_42");
         assert(res.super == "test_40");
-        res = nogdb::Db::getSchema(txnRo3, "test_43");
+        res = nogdb::DB::getSchema(txnRo3, "test_43");
         assert(res.super == "test_41");
 
     } catch (const nogdb::Error &ex) {
@@ -1036,15 +1036,15 @@ void test_schema_txn_add_property_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_100");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_100");
         assert(res.properties.find("prop1") != res.properties.cend());
         nogdb::Vertex::create(txnRw1, "test_100", nogdb::Record{}.set("prop1", 1));
 
-        res = nogdb::Db::getSchema(txnRo1, "test_100");
+        res = nogdb::DB::getSchema(txnRo1, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_100");
+        res = nogdb::DB::getSchema(txnRo2, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_100");
+        res = nogdb::DB::getSchema(txnRo3, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
 
         txnRw1.commit();
@@ -1053,18 +1053,18 @@ void test_schema_txn_add_property_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
-        res = nogdb::Db::getSchema(txnRw2, "test_100");
+        res = nogdb::DB::getSchema(txnRw2, "test_100");
         assert(res.properties.find("prop1") != res.properties.cend());
         nogdb::Vertex::create(txnRw2, "test_100", nogdb::Record{}.set("prop1", 2));
 
-        res = nogdb::Db::getSchema(txnRo4, "test_100");
+        res = nogdb::DB::getSchema(txnRo4, "test_100");
         assert(res.properties.find("prop1") != res.properties.cend());
 
-        res = nogdb::Db::getSchema(txnRo1, "test_100");
+        res = nogdb::DB::getSchema(txnRo1, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_100");
+        res = nogdb::DB::getSchema(txnRo2, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_100");
+        res = nogdb::DB::getSchema(txnRo3, "test_100");
         assert(res.properties.find("prop1") == res.properties.cend());
 
     } catch (const nogdb::Error &ex) {
@@ -1091,15 +1091,15 @@ void test_schema_txn_add_property_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_101");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_101");
         assert(res.properties.find("prop1") != res.properties.cend());
         nogdb::Vertex::create(txnRw1, "test_101", nogdb::Record{}.set("prop1", 1));
 
-        res = nogdb::Db::getSchema(txnRo1, "test_101");
+        res = nogdb::DB::getSchema(txnRo1, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_101");
+        res = nogdb::DB::getSchema(txnRo2, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_101");
+        res = nogdb::DB::getSchema(txnRo3, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
 
         txnRw1.rollback();
@@ -1108,9 +1108,9 @@ void test_schema_txn_add_property_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
-        res = nogdb::Db::getSchema(txnRo4, "test_101");
+        res = nogdb::DB::getSchema(txnRo4, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRw2, "test_101");
+        res = nogdb::DB::getSchema(txnRw2, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
         try {
             nogdb::Vertex::create(txnRw2, "test_101", nogdb::Record{}.set("prop1", 2));
@@ -1119,11 +1119,11 @@ void test_schema_txn_add_property_rollback() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo1, "test_101");
+        res = nogdb::DB::getSchema(txnRo1, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_101");
+        res = nogdb::DB::getSchema(txnRo2, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_101");
+        res = nogdb::DB::getSchema(txnRo3, "test_101");
         assert(res.properties.find("prop1") == res.properties.cend());
 
     } catch (const nogdb::Error &ex) {
@@ -1151,7 +1151,7 @@ void test_schema_txn_drop_property_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_102");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_102");
         assert(res.properties.find("prop1") == res.properties.cend());
         try {
             nogdb::Vertex::create(txnRw1, "test_102", nogdb::Record{}.set("prop1", "hi"));
@@ -1160,11 +1160,11 @@ void test_schema_txn_drop_property_commit() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo1, "test_102");
+        res = nogdb::DB::getSchema(txnRo1, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_102");
+        res = nogdb::DB::getSchema(txnRo2, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_102");
+        res = nogdb::DB::getSchema(txnRo3, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
 
         txnRw1.commit();
@@ -1172,7 +1172,7 @@ void test_schema_txn_drop_property_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_102");
+        res = nogdb::DB::getSchema(txnRw2, "test_102");
         assert(res.properties.find("prop1") == res.properties.cend());
         try {
             nogdb::Vertex::create(txnRw2, "test_102", nogdb::Record{}.set("prop1", "world"));
@@ -1181,14 +1181,14 @@ void test_schema_txn_drop_property_commit() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo4, "test_102");
+        res = nogdb::DB::getSchema(txnRo4, "test_102");
         assert(res.properties.find("prop1") == res.properties.cend());
 
-        res = nogdb::Db::getSchema(txnRo1, "test_102");
+        res = nogdb::DB::getSchema(txnRo1, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_102");
+        res = nogdb::DB::getSchema(txnRo2, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_102");
+        res = nogdb::DB::getSchema(txnRo3, "test_102");
         assert(res.properties.find("prop1") != res.properties.cend());
 
     } catch (const nogdb::Error &ex) {
@@ -1216,7 +1216,7 @@ void test_schema_txn_drop_property_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_103");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_103");
         assert(res.properties.find("prop1") == res.properties.cend());
         try {
             nogdb::Vertex::create(txnRw1, "test_103", nogdb::Record{}.set("prop1", "hi"));
@@ -1230,18 +1230,18 @@ void test_schema_txn_drop_property_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_103");
+        res = nogdb::DB::getSchema(txnRw2, "test_103");
         assert(res.properties.find("prop1") != res.properties.cend());
         nogdb::Vertex::create(txnRw2, "test_103", nogdb::Record{}.set("prop1", "world"));
 
-        res = nogdb::Db::getSchema(txnRo4, "test_103");
+        res = nogdb::DB::getSchema(txnRo4, "test_103");
         assert(res.properties.find("prop1") != res.properties.cend());
 
-        res = nogdb::Db::getSchema(txnRo1, "test_103");
+        res = nogdb::DB::getSchema(txnRo1, "test_103");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_103");
+        res = nogdb::DB::getSchema(txnRo2, "test_103");
         assert(res.properties.find("prop1") != res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_103");
+        res = nogdb::DB::getSchema(txnRo3, "test_103");
         assert(res.properties.find("prop1") != res.properties.cend());
 
     } catch (const nogdb::Error &ex) {
@@ -1269,7 +1269,7 @@ void test_schema_txn_alter_property_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_104");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_104");
         assert(res.properties.find("prop1") == res.properties.cend());
         assert(res.properties.find("prop11") != res.properties.cend());
         nogdb::Vertex::create(txnRw1, "test_104", nogdb::Record{}.set("prop11", 1));
@@ -1280,13 +1280,13 @@ void test_schema_txn_alter_property_commit() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo1, "test_104");
+        res = nogdb::DB::getSchema(txnRo1, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_104");
+        res = nogdb::DB::getSchema(txnRo2, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_104");
+        res = nogdb::DB::getSchema(txnRo3, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
 
@@ -1295,7 +1295,7 @@ void test_schema_txn_alter_property_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_104");
+        res = nogdb::DB::getSchema(txnRw2, "test_104");
         assert(res.properties.find("prop1") == res.properties.cend());
         assert(res.properties.find("prop11") != res.properties.cend());
         nogdb::Vertex::create(txnRw2, "test_104", nogdb::Record{}.set("prop11", 1));
@@ -1306,17 +1306,17 @@ void test_schema_txn_alter_property_commit() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo4, "test_104");
+        res = nogdb::DB::getSchema(txnRo4, "test_104");
         assert(res.properties.find("prop1") == res.properties.cend());
         assert(res.properties.find("prop11") != res.properties.cend());
 
-        res = nogdb::Db::getSchema(txnRo1, "test_104");
+        res = nogdb::DB::getSchema(txnRo1, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_104");
+        res = nogdb::DB::getSchema(txnRo2, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_104");
+        res = nogdb::DB::getSchema(txnRo3, "test_104");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
 
@@ -1345,7 +1345,7 @@ void test_schema_txn_alter_property_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_105");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_105");
         assert(res.properties.find("prop1") == res.properties.cend());
         assert(res.properties.find("prop11") != res.properties.cend());
         nogdb::Vertex::create(txnRw1, "test_105", nogdb::Record{}.set("prop11", 1));
@@ -1361,7 +1361,7 @@ void test_schema_txn_alter_property_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw2, "test_105");
+        res = nogdb::DB::getSchema(txnRw2, "test_105");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
         nogdb::Vertex::create(txnRw2, "test_105", nogdb::Record{}.set("prop1", 1));
@@ -1372,17 +1372,17 @@ void test_schema_txn_alter_property_rollback() {
             REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
         }
 
-        res = nogdb::Db::getSchema(txnRo4, "test_105");
+        res = nogdb::DB::getSchema(txnRo4, "test_105");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
 
-        res = nogdb::Db::getSchema(txnRo1, "test_105");
+        res = nogdb::DB::getSchema(txnRo1, "test_105");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo2, "test_105");
+        res = nogdb::DB::getSchema(txnRo2, "test_105");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
-        res = nogdb::Db::getSchema(txnRo3, "test_105");
+        res = nogdb::DB::getSchema(txnRo3, "test_105");
         assert(res.properties.find("prop1") != res.properties.cend());
         assert(res.properties.find("prop11") == res.properties.cend());
 
@@ -1411,14 +1411,14 @@ void test_schema_txn_create_index_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_106");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_106");
+        res = nogdb::DB::getSchema(txnRo1, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo2, "test_106");
+        res = nogdb::DB::getSchema(txnRo2, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo3, "test_106");
+        res = nogdb::DB::getSchema(txnRo3, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
         txnRw1.commit();
@@ -1426,16 +1426,16 @@ void test_schema_txn_create_index_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw1, "test_106");
+        res = nogdb::DB::getSchema(txnRw1, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo4, "test_106");
+        res = nogdb::DB::getSchema(txnRo4, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_106");
+        res = nogdb::DB::getSchema(txnRo1, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo2, "test_106");
+        res = nogdb::DB::getSchema(txnRo2, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo3, "test_106");
+        res = nogdb::DB::getSchema(txnRo3, "test_106");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
     } catch (const nogdb::Error &ex) {
@@ -1463,7 +1463,7 @@ void test_schema_txn_create_index_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_107");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
         txnRw1.rollback();
@@ -1471,16 +1471,16 @@ void test_schema_txn_create_index_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw1, "test_107");
+        res = nogdb::DB::getSchema(txnRw1, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo4, "test_107");
+        res = nogdb::DB::getSchema(txnRo4, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_107");
+        res = nogdb::DB::getSchema(txnRo1, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo2, "test_107");
+        res = nogdb::DB::getSchema(txnRo2, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo3, "test_107");
+        res = nogdb::DB::getSchema(txnRo3, "test_107");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
     } catch (const nogdb::Error &ex) {
@@ -1509,14 +1509,14 @@ void test_schema_txn_drop_index_commit() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_108");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_108");
+        res = nogdb::DB::getSchema(txnRo1, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo2, "test_108");
+        res = nogdb::DB::getSchema(txnRo2, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo3, "test_108");
+        res = nogdb::DB::getSchema(txnRo3, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
         txnRw1.commit();
@@ -1524,16 +1524,16 @@ void test_schema_txn_drop_index_commit() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw1, "test_108");
+        res = nogdb::DB::getSchema(txnRw1, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
-        res = nogdb::Db::getSchema(txnRo4, "test_108");
+        res = nogdb::DB::getSchema(txnRo4, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_108");
+        res = nogdb::DB::getSchema(txnRo1, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo2, "test_108");
+        res = nogdb::DB::getSchema(txnRo2, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo3, "test_108");
+        res = nogdb::DB::getSchema(txnRo3, "test_108");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
     } catch (const nogdb::Error &ex) {
@@ -1562,7 +1562,7 @@ void test_schema_txn_drop_index_rollback() {
 
         nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
-        auto res = nogdb::Db::getSchema(txnRw1, "test_109");
+        auto res = nogdb::DB::getSchema(txnRw1, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
 
         txnRw1.rollback();
@@ -1570,16 +1570,16 @@ void test_schema_txn_drop_index_rollback() {
         nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-        res = nogdb::Db::getSchema(txnRw1, "test_109");
+        res = nogdb::DB::getSchema(txnRw1, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo4, "test_109");
+        res = nogdb::DB::getSchema(txnRo4, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
-        res = nogdb::Db::getSchema(txnRo1, "test_109");
+        res = nogdb::DB::getSchema(txnRo1, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo2, "test_109");
+        res = nogdb::DB::getSchema(txnRo2, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
-        res = nogdb::Db::getSchema(txnRo3, "test_109");
+        res = nogdb::DB::getSchema(txnRo3, "test_109");
         assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
 
     } catch (const nogdb::Error &ex) {
@@ -1612,13 +1612,13 @@ void test_schema_txn_create_class_multiversion_commit() {
 
         auto verify_result0 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_1");
+                nogdb::DB::getSchema(txn, "test_mv_1");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_2");
+                nogdb::DB::getSchema(txn, "test_mv_2");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -1627,19 +1627,19 @@ void test_schema_txn_create_class_multiversion_commit() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_2");
+                nogdb::DB::getSchema(txn, "test_mv_2");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_1");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_1");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_1");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_1");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_2");
+            res = nogdb::DB::getSchema(txn, "test_mv_2");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -1680,13 +1680,13 @@ void test_schema_txn_create_class_multiversion_rollback() {
 
         auto verify_result0 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_3");
+                nogdb::DB::getSchema(txn, "test_mv_3");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_4");
+                nogdb::DB::getSchema(txn, "test_mv_4");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -1695,12 +1695,12 @@ void test_schema_txn_create_class_multiversion_rollback() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_4");
+                nogdb::DB::getSchema(txn, "test_mv_4");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_3");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_3");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -1741,13 +1741,13 @@ void test_schema_txn_drop_class_multiversion_commit() {
 
         auto verify_result2 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_1");
+                nogdb::DB::getSchema(txn, "test_mv_1");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_2");
+                nogdb::DB::getSchema(txn, "test_mv_2");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -1756,19 +1756,19 @@ void test_schema_txn_drop_class_multiversion_commit() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_2");
+                nogdb::DB::getSchema(txn, "test_mv_2");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_1");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_1");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_1");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_1");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_2");
+            res = nogdb::DB::getSchema(txn, "test_mv_2");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -1817,20 +1817,20 @@ void test_schema_txn_drop_class_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_3");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_3");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_4");
+            res = nogdb::DB::getSchema(txn, "test_mv_4");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_3");
+                nogdb::DB::getSchema(txn, "test_mv_3");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_4");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_4");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -1882,19 +1882,19 @@ void test_schema_txn_alter_class_multiversion_commit() {
 
         auto verify_result0 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_55");
+                nogdb::DB::getSchema(txn, "test_mv_55");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_66");
+                nogdb::DB::getSchema(txn, "test_mv_66");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_555");
+                nogdb::DB::getSchema(txn, "test_mv_555");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -1903,25 +1903,25 @@ void test_schema_txn_alter_class_multiversion_commit() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_66");
+                nogdb::DB::getSchema(txn, "test_mv_66");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_555");
+                nogdb::DB::getSchema(txn, "test_mv_555");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_55");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_55");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_555");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_555");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_66");
+            res = nogdb::DB::getSchema(txn, "test_mv_66");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -1973,19 +1973,19 @@ void test_schema_txn_alter_class_multiversion_rollback() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_77");
+                nogdb::DB::getSchema(txn, "test_mv_77");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_88");
+                nogdb::DB::getSchema(txn, "test_mv_88");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_777");
+                nogdb::DB::getSchema(txn, "test_mv_777");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -1994,18 +1994,18 @@ void test_schema_txn_alter_class_multiversion_rollback() {
 
         auto verify_result0 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_88");
+                nogdb::DB::getSchema(txn, "test_mv_88");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_777");
+                nogdb::DB::getSchema(txn, "test_mv_777");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_77");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_77");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
 
@@ -2059,23 +2059,23 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_100");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_100");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 0);
             try {
-                nogdb::Db::getSchema(txn, "test_mv_101");
+                nogdb::DB::getSchema(txn, "test_mv_101");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_102");
+                nogdb::DB::getSchema(txn, "test_mv_102");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_103");
+                nogdb::DB::getSchema(txn, "test_mv_103");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -2084,15 +2084,15 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_103");
+                nogdb::DB::getSchema(txn, "test_mv_103");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_101");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_101");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_100");
-            res = nogdb::Db::getSchema(txn, "test_mv_102");
+            res = nogdb::DB::getSchema(txn, "test_mv_102");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_100");
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2102,17 +2102,17 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_100");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_100");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 2);
-            res = nogdb::Db::getSchema(txn, "test_mv_101");
+            res = nogdb::DB::getSchema(txn, "test_mv_101");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_100");
             assert(res.sub.size() == 1);
-            res = nogdb::Db::getSchema(txn, "test_mv_102");
+            res = nogdb::DB::getSchema(txn, "test_mv_102");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_100");
-            res = nogdb::Db::getSchema(txn, "test_mv_103");
+            res = nogdb::DB::getSchema(txn, "test_mv_103");
             assert(res.super == "test_mv_101");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2173,23 +2173,23 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_200");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_200");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 0);
             try {
-                nogdb::Db::getSchema(txn, "test_mv_201");
+                nogdb::DB::getSchema(txn, "test_mv_201");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_202");
+                nogdb::DB::getSchema(txn, "test_mv_202");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_203");
+                nogdb::DB::getSchema(txn, "test_mv_203");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -2198,15 +2198,15 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_203");
+                nogdb::DB::getSchema(txn, "test_mv_203");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_201");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_201");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_200");
-            res = nogdb::Db::getSchema(txn, "test_mv_202");
+            res = nogdb::DB::getSchema(txn, "test_mv_202");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_200");
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2267,20 +2267,20 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_300");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_300");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 1);
-            res = nogdb::Db::getSchema(txn, "test_mv_303");
+            res = nogdb::DB::getSchema(txn, "test_mv_303");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_300");
             try {
-                nogdb::Db::getSchema(txn, "test_mv_301");
+                nogdb::DB::getSchema(txn, "test_mv_301");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
             try {
-                nogdb::Db::getSchema(txn, "test_mv_302");
+                nogdb::DB::getSchema(txn, "test_mv_302");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -2289,35 +2289,35 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_301");
+                nogdb::DB::getSchema(txn, "test_mv_301");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_300");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_300");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 2);
             assert(res.sub[0] == "test_mv_302" || res.sub[0] == "test_mv_303");
             assert(res.sub[1] == "test_mv_302" || res.sub[1] == "test_mv_303");
-            res = nogdb::Db::getSchema(txn, "test_mv_302");
+            res = nogdb::DB::getSchema(txn, "test_mv_302");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_303");
+            res = nogdb::DB::getSchema(txn, "test_mv_303");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_300");
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_300");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_300");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 2);
-            res = nogdb::Db::getSchema(txn, "test_mv_301");
+            res = nogdb::DB::getSchema(txn, "test_mv_301");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_300");
             assert(res.sub.size() == 1);
-            res = nogdb::Db::getSchema(txn, "test_mv_302");
+            res = nogdb::DB::getSchema(txn, "test_mv_302");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_300");
-            res = nogdb::Db::getSchema(txn, "test_mv_303");
+            res = nogdb::DB::getSchema(txn, "test_mv_303");
             assert(res.super == "test_mv_301");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
@@ -2375,35 +2375,35 @@ void test_schema_txn_drop_class_extend_multiversion_rollback() {
 
         auto verify_result1 = [](nogdb::Txn &txn) {
             try {
-                nogdb::Db::getSchema(txn, "test_mv_401");
+                nogdb::DB::getSchema(txn, "test_mv_401");
                 assert(false);
             } catch (const nogdb::Error &ex) {
                 REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
             }
-            auto res = nogdb::Db::getSchema(txn, "test_mv_400");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_400");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 2);
             assert(res.sub[0] == "test_mv_402" || res.sub[0] == "test_mv_403");
             assert(res.sub[1] == "test_mv_402" || res.sub[1] == "test_mv_403");
-            res = nogdb::Db::getSchema(txn, "test_mv_402");
+            res = nogdb::DB::getSchema(txn, "test_mv_402");
             assert(res.id != nogdb::ClassDescriptor{}.id);
-            res = nogdb::Db::getSchema(txn, "test_mv_403");
+            res = nogdb::DB::getSchema(txn, "test_mv_403");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_400");
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_400");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_400");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.sub.size() == 2);
-            res = nogdb::Db::getSchema(txn, "test_mv_401");
+            res = nogdb::DB::getSchema(txn, "test_mv_401");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_400");
             assert(res.sub.size() == 1);
-            res = nogdb::Db::getSchema(txn, "test_mv_402");
+            res = nogdb::DB::getSchema(txn, "test_mv_402");
             assert(res.id != nogdb::ClassDescriptor{}.id);
             assert(res.super == "test_mv_400");
-            res = nogdb::Db::getSchema(txn, "test_mv_403");
+            res = nogdb::DB::getSchema(txn, "test_mv_403");
             assert(res.super == "test_mv_401");
             assert(res.id != nogdb::ClassDescriptor{}.id);
         };
@@ -2453,7 +2453,7 @@ void test_schema_txn_add_property_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_10");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_10");
             assert(res.properties.find("prop1") == res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2473,7 +2473,7 @@ void test_schema_txn_add_property_multiversion_commit() {
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_10");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_10");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2488,7 +2488,7 @@ void test_schema_txn_add_property_multiversion_commit() {
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_10");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_10");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") != res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2542,7 +2542,7 @@ void test_schema_txn_add_property_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_20");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_20");
             assert(res.properties.find("prop1") == res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2562,7 +2562,7 @@ void test_schema_txn_add_property_multiversion_rollback() {
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_20");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_20");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2623,7 +2623,7 @@ void test_schema_txn_drop_property_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_30");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_30");
             assert(res.properties.find("prop1") == res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2643,7 +2643,7 @@ void test_schema_txn_drop_property_multiversion_commit() {
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_30");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_30");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2658,7 +2658,7 @@ void test_schema_txn_drop_property_multiversion_commit() {
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_30");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_30");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") != res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2714,7 +2714,7 @@ void test_schema_txn_drop_property_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_40");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_40");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") == res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2729,7 +2729,7 @@ void test_schema_txn_drop_property_multiversion_rollback() {
         };
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_40");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_40");
             assert(res.properties.find("prop1") != res.properties.cend());
             assert(res.properties.find("prop2") != res.properties.cend());
             if (txn.getTxnMode() == nogdb::Txn::Mode::READ_WRITE) {
@@ -2786,7 +2786,7 @@ void test_schema_txn_alter_property_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_50");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_50");
             assert(res.properties.find("prop11") == res.properties.cend());
             assert(res.properties.find("prop22") == res.properties.cend());
             assert(res.properties.find("prop111") == res.properties.cend());
@@ -2813,7 +2813,7 @@ void test_schema_txn_alter_property_multiversion_commit() {
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_50");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_50");
             assert(res.properties.find("prop11") != res.properties.cend());
             assert(res.properties.find("prop22") == res.properties.cend());
             assert(res.properties.find("prop111") == res.properties.cend());
@@ -2835,7 +2835,7 @@ void test_schema_txn_alter_property_multiversion_commit() {
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_50");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_50");
             assert(res.properties.find("prop11") == res.properties.cend());
             assert(res.properties.find("prop22") != res.properties.cend());
             assert(res.properties.find("prop111") != res.properties.cend());
@@ -2894,7 +2894,7 @@ void test_schema_txn_alter_property_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_60");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_60");
             assert(res.properties.find("prop11") == res.properties.cend());
             assert(res.properties.find("prop22") == res.properties.cend());
             assert(res.properties.find("prop111") == res.properties.cend());
@@ -2921,7 +2921,7 @@ void test_schema_txn_alter_property_multiversion_rollback() {
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_60");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_60");
             assert(res.properties.find("prop11") != res.properties.cend());
             assert(res.properties.find("prop22") == res.properties.cend());
             assert(res.properties.find("prop111") == res.properties.cend());
@@ -2989,19 +2989,19 @@ void test_schema_txn_create_index_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_70");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_70");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 0);
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_70");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_70");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 0);
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_70");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_70");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 1);
         };
@@ -3053,13 +3053,13 @@ void test_schema_txn_create_index_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_80");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_80");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 0);
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_80");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_80");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 0);
         };
@@ -3113,19 +3113,19 @@ void test_schema_txn_drop_index_multiversion_commit() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_90");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_90");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 1);
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_90");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_90");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 1);
         };
 
         auto verify_result2 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_90");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_90");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 0);
         };
@@ -3179,13 +3179,13 @@ void test_schema_txn_drop_index_multiversion_rollback() {
         nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
         auto verify_result0 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_91");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_91");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 1);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 1);
         };
 
         auto verify_result1 = [](nogdb::Txn &txn) {
-            auto res = nogdb::Db::getSchema(txn, "test_mv_91");
+            auto res = nogdb::DB::getSchema(txn, "test_mv_91");
             assert(res.properties.find("prop1")->second.indexInfo.size() == 0);
             assert(res.properties.find("prop2")->second.indexInfo.size() == 1);
         };

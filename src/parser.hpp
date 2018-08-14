@@ -154,7 +154,6 @@ namespace nogdb {
                 return parseRawData(rawData, propertyInfos)
                         .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
                         .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
-                        .setBasicInfoIfNotExists(VERSION_PROPERTY, 1LL)
                         .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
             }
 
@@ -185,8 +184,6 @@ namespace nogdb {
                 } else {
                     // create properties as a raw data for a class
                     auto value = Blob(dataSize);
-                    buildRawData(value, TXN_VERSION_ID, record.get(TXN_VERSION));
-                    buildRawData(value, VERSION_PROPERTY_ID, record.get(VERSION_PROPERTY));
                     for (const auto &property: properties) {
                         auto propertyId = static_cast<PropertyId>(property.second.id);
                         auto rawData = record.get(property.first);

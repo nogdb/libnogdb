@@ -50,7 +50,7 @@ inline void init() {
 }
 
 inline void showSchema(const nogdb::Txn &txn) {
-    auto info = nogdb::Db::getDbInfo(txn);
+    auto info = nogdb::DB::getDBInfo(txn);
     std::cout << "db_path = " << info.dbPath << "\n"
               << "max_db = " << info.maxDB << "\n"
               << "max_db_size = " << info.maxDBSize << "\n"
@@ -60,7 +60,7 @@ inline void showSchema(const nogdb::Txn &txn) {
               << "max_property_id = " << info.maxPropertyId << "\n";
     auto schema = std::vector<nogdb::ClassDescriptor>{};
     try {
-        schema = nogdb::Db::getSchema(txn);
+        schema = nogdb::DB::getSchema(txn);
     } catch (const nogdb::Error &ex) {
         std::cout << "Error: " << ex.what() << std::endl;
         assert(0);

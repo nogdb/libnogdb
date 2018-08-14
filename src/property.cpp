@@ -21,13 +21,12 @@
 
 #include <memory>
 
-#include "shared_lock.hpp"
 #include "constant.hpp"
-#include "base_txn.hpp"
 #include "lmdb_engine.hpp"
+#include "index_adapter.hpp"
+#include "index.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
-#include "index.hpp"
 #include "generic.hpp"
 #include "parser.hpp"
 
@@ -39,363 +38,122 @@ namespace nogdb {
                                            const std::string &className,
                                            const std::string &propertyName,
                                            PropertyType type) {
-        // transaction validations
         Validate::isTransactionValid(txn);
-        // basic validations
         Validate::isPropertyNameValid(propertyName);
         Validate::isPropertyTypeValid(type);
-
-        auto &dbInfo = txn._txnBase->dbInfo;
-        if (dbInfo.maxPropertyId >= UINT16_MAX) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
-        } else {
-            ++dbInfo.maxPropertyId;
-        }
-
-        // schema validations
+        Validate::isPropertyIdMaxReach(txn);
         auto foundClass = Validate::isExistingClass(txn, className);
-        Validate::isNotDuplicatedProperty(*txn._txnBase, foundClass, propertyName);
-        Validate::isNotOverridenProperty(*txn._txnBase, foundClass, propertyName);
-
-        auto propertyDescriptor = Schema::PropertyDescriptor{dbInfo.maxPropertyId, type};
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
+        Validate::isNotDuplicatedProperty(txn, foundClass.id, propertyName);
+        Validate::isNotOverridenProperty(txn, foundClass.id, propertyName);
         try {
-            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
-            auto totalLength = sizeof(type) + sizeof(ClassId) + propertyName.length();
-            auto value = Blob(totalLength);
-            value.append(&type, sizeof(type));
-            value.append(&foundClass->id, sizeof(ClassId));
-            value.append(propertyName.c_str(), propertyName.length());
-            propDBHandler.put(dbInfo.maxPropertyId, value);
-
-            // update in-memory schema and info
-            txn._txnCtx.dbSchema->addProperty(*txn._txnBase, foundClass->id, propertyName, propertyDescriptor);
-            ++dbInfo.numProperty;
+            auto propertyId = txn._dbinfo->getMaxPropertyId() + PropertyId{1};
+            auto propertyProps = adapter::schema::PropertyAccessInfo{foundClass.id, propertyName, propertyId, type};
+            txn._property->create(propertyProps);
+            txn._dbinfo->setMaxPropertyId(propertyId);
+            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() + PropertyId{1});
+            return PropertyDescriptor{propertyProps.id, propertyName, type, false};
         } catch (const Error &err) {
-            throw err;
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
-            // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
-            // other than errors from datastore due to failures in updating in-memory schema or database info
+            txn.rollback();
             std::rethrow_exception(std::current_exception());
         }
-
-        return propertyDescriptor.transform();
     }
 
     void Property::alter(Txn &txn,
                          const std::string &className,
                          const std::string &oldPropertyName,
                          const std::string &newPropertyName) {
-        // transaction validations
         Validate::isTransactionValid(txn);
-        // basic validation
         Validate::isPropertyNameValid(newPropertyName);
-
-        // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundOldProperty = Validate::isExistingProperty(*txn._txnBase, foundClass, oldPropertyName);
-        Validate::isNotDuplicatedProperty(*txn._txnBase, foundClass, newPropertyName);
-        Validate::isNotOverridenProperty(*txn._txnBase, foundClass, newPropertyName);
-
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
+        auto foundOldProperty = Validate::isExistingProperty(txn, foundClass.id, oldPropertyName);
+        Validate::isNotDuplicatedProperty(txn, foundClass.id, newPropertyName);
+        Validate::isNotOverridenProperty(txn, foundClass.id, newPropertyName);
         try {
-            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
-            auto type = foundOldProperty.type;
-            auto totalLength = sizeof(type) + sizeof(ClassId) + newPropertyName.length();
-            auto value = Blob(totalLength);
-            value.append(&type, sizeof(decltype(type)));
-            value.append(&foundClass->id, sizeof(ClassId));
-            value.append(newPropertyName.c_str(), newPropertyName.length());
-            propDBHandler.put(foundOldProperty.id, value);
-
-            // update in-memory schema
-            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundClass->id, oldPropertyName, newPropertyName);
+            txn._property->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
         } catch (const Error &err) {
-            throw err;
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
-            // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
-            // other than errors from datastore due to failures in updating in-memory schema or database info
+            txn.rollback();
             std::rethrow_exception(std::current_exception());
         }
     }
 
     void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
-        // transaction validations
         Validate::isTransactionValid(txn);
-        // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundProperty = Validate::isExistingProperty(*txn._txnBase, foundClass, propertyName);
-
+        auto foundProperty = Validate::isExistingProperty(txn, foundClass.id, propertyName);
         // check if all index tables associated with the column have bee removed beforehand
-        if (!foundProperty.indexInfo.empty()) {
+        auto foundIndex = txn._index->getInfo(foundClass.id, foundProperty.id);
+        if (foundIndex.id != IndexId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
         }
-
-        auto &dbInfo = txn._txnBase->dbInfo;
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
-            auto propDBHandler = dsTxnHandler->openDbi(TB_PROPERTIES, true);
-            propDBHandler.del(foundProperty.id);
-
-            // update in-memory schema
-            txn._txnCtx.dbSchema->deleteProperty(*txn._txnBase, foundClass->id, propertyName);
-            // update in-memory database info
-            --dbInfo.numProperty;
+            txn._property->remove(foundClass.id, propertyName);
+            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() - PropertyId{1});
         } catch (const Error &err) {
-            throw err;
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
-            // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
-            // other than errors from datastore due to failures in updating in-memory schema or database info
+            txn.rollback();
             std::rethrow_exception(std::current_exception());
         }
     }
 
     void Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
-        // transaction validations
         Validate::isTransactionValid(txn);
-
-        auto &dbInfo = txn._txnBase->dbInfo;
-        if (dbInfo.maxIndexId >= UINT32_MAX) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
-        } else {
-            ++dbInfo.maxIndexId;
-        }
-
-        // schema validations
+        Validate::isIndexIdMaxReach(txn);
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto result = Validate::isExistingPropertyExtend(*txn._txnBase, foundClass, propertyName);
-        auto foundPropertyBasedClassId = result.first;
-        auto foundProperty = result.second;
-
-        // index validations
+        auto foundProperty = Validate::isExistingPropertyExtend(txn, foundClass.id, propertyName);
         if (foundProperty.type == PropertyType::BLOB || foundProperty.type == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE_INDEX);
         }
-        auto indexInfo = foundProperty.indexInfo.find(foundClass->id);
-        if (indexInfo != foundProperty.indexInfo.cend()) {
+        auto indexInfo = txn._index->getInfo(foundClass.id, foundProperty.id);
+        if (indexInfo.id != IndexId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
         }
-
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
-            auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
-            auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
-            auto isCompositeNumeric = uint8_t{0}; //TODO: change it when a composite index is available
-            auto isUniqueNumeric = (isUnique) ? uint8_t{1} : uint8_t{0};
-            auto valueIndex = Blob(totalLength);
-            valueIndex.append(&isCompositeNumeric, sizeof(isCompositeNumeric));
-            valueIndex.append(&isUniqueNumeric, sizeof(isUniqueNumeric));
-            valueIndex.append(&dbInfo.maxIndexId, sizeof(IndexId));
-            valueIndex.append(&foundClass->id, sizeof(ClassId));
-            indexDBHandler.put(foundProperty.id, valueIndex);
-            switch (foundProperty.type) {
-                case PropertyType::UNSIGNED_TINYINT:
-                case PropertyType::UNSIGNED_SMALLINT:
-                case PropertyType::UNSIGNED_INTEGER:
-                case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), true, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
-                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
-                    auto keyValue = cursorHandler.getNext();
-                    while (!keyValue.empty()) {
-                        auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != MAX_RECORD_NUM_EM) {
-                            auto const positionId = key;
-                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
-                            auto bytesValue = record.get(propertyName);
-                            if (!bytesValue.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                if (foundProperty.type == PropertyType::UNSIGNED_TINYINT) {
-                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord, false, !isUnique);
-                                } else if (foundProperty.type == PropertyType::UNSIGNED_SMALLINT) {
-                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord, false, !isUnique);
-                                } else if (foundProperty.type == PropertyType::UNSIGNED_INTEGER) {
-                                    dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toIntU()), indexRecord, false, !isUnique);
-                                } else {
-                                    dataIndexDBHandler.put(bytesValue.toBigIntU(), indexRecord, false, !isUnique);
-                                }
-                            }
-                        }
-                        keyValue = cursorHandler.getNext();
-                    }
-                    break;
-                }
-                case PropertyType::TINYINT:
-                case PropertyType::SMALLINT:
-                case PropertyType::INTEGER:
-                case PropertyType::BIGINT:
-                case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId, false), true, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
-                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
-                    auto keyValue = cursorHandler.getNext();
-                    while (!keyValue.empty()) {
-                        auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != MAX_RECORD_NUM_EM) {
-                            auto const positionId = key;
-                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
-                            auto bytesValue = record.get(propertyName);
-                            if (!bytesValue.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                if (foundProperty.type == PropertyType::TINYINT) {
-                                    auto value = static_cast<int64_t>(bytesValue.toTinyInt());
-                                    if (value >= 0) {
-                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                                    } else {
-                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                                    }
-                                } else if (foundProperty.type == PropertyType::SMALLINT) {
-                                    auto value = static_cast<int64_t>(bytesValue.toSmallInt());
-                                    if (value >= 0) {
-                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                                    } else {
-                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                                    }
-                                } else if (foundProperty.type == PropertyType::INTEGER) {
-                                    auto value = static_cast<int64_t>(bytesValue.toInt());
-                                    if (value >= 0) {
-                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                                    } else {
-                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                                    }
-                                } else if (foundProperty.type == PropertyType::REAL) {
-                                    auto value = bytesValue.toReal();
-                                    if (value >= 0) {
-                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                                    } else {
-                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                                    }
-                                } else {
-                                    auto value = bytesValue.toBigInt();
-                                    if (value >= 0) {
-                                        dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                                    } else {
-                                        dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                                    }
-                                }
-                            }
-                        }
-                        keyValue = cursorHandler.getNext();
-                    }
-                    break;
-                }
-                case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(dbInfo.maxIndexId), false, isUnique);
-                    auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, foundClass);
-                    auto cursorHandler = dsTxnHandler->openCursor(std::to_string(foundClass->id), true);
-                    auto keyValue = cursorHandler.getNext();
-                    while (!keyValue.empty()) {
-                        auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key != MAX_RECORD_NUM_EM) {
-                            auto const positionId = key;
-                            auto const record = Parser::parseRawData(keyValue.val, classPropertyInfo);
-                            auto value = record.get(propertyName).toText();
-                            if (!value.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                dataIndexDBHandler.put(value, indexRecord, false, !isUnique);
-                            }
-                        }
-                        keyValue = cursorHandler.getNext();
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-
-            // update in-memory database schema and info
-            foundProperty.indexInfo.emplace(foundClass->id, std::make_pair(dbInfo.maxIndexId, isUnique));
-            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
-            ++dbInfo.numIndex;
+            auto indexId = txn._dbinfo->getMaxIndexId() + IndexId{1};
+            auto indexProps = adapter::schema::IndexAccessInfo{foundClass.id, foundProperty.id, indexId, isUnique};
+            txn._index->create(indexProps);
+            auto indexHelper = index::IndexInterface(&txn);
+            indexHelper.create(foundProperty, indexProps, foundClass.type);
+            txn._dbinfo->setMaxIndexId(indexId);
+            txn._dbinfo->setNumIndexId(txn._dbinfo->getNumIndexId() + IndexId{1});
         } catch (const Error &err) {
             if (err.code() == MDB_KEYEXIST) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
             } else {
-                throw err;
+                txn.rollback();
+                throw NOGDB_FATAL_ERROR(err);
             }
         } catch (...) {
-            // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
-            // other than errors from datastore due to failures in updating in-memory schema or database info
+            txn.rollback();
             std::rethrow_exception(std::current_exception());
         }
     }
 
     void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
-        // transaction validations
         Validate::isTransactionValid(txn);
-
-        // schema validations
         auto foundClass = Validate::isExistingClass(txn, className);
-        auto result = Validate::isExistingPropertyExtend(*txn._txnBase, foundClass, propertyName);
-        auto foundPropertyBasedClassId = result.first;
-        auto foundProperty = result.second;
-
-        // index validations
-        auto indexInfo = foundProperty.indexInfo.find(foundClass->id);
-        if (indexInfo == foundProperty.indexInfo.cend()) {
+        auto foundProperty = Validate::isExistingPropertyExtend(txn, foundClass.id, propertyName);
+        auto indexInfo = txn._index->getInfo(foundClass.id, foundProperty.id);
+        if (indexInfo.id == IndexId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
         }
-
-        auto &dbInfo = txn._txnBase->dbInfo;
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         try {
-            auto indexDBHandler = dsTxnHandler->openDbi(TB_INDEXES, true, false);
-            auto totalLength = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(IndexId) + sizeof(ClassId);
-            auto isCompositeNumeric = uint8_t{0}; //TODO: change it when a composite index is available
-            auto isUnique = indexInfo->second.second;
-            auto isUniqueNumeric = (isUnique) ? uint8_t{1} : uint8_t{0};
-            auto indexId = indexInfo->second.first;
-            auto value = Blob(totalLength);
-            value.append(&isCompositeNumeric, sizeof(isCompositeNumeric));
-            value.append(&isUniqueNumeric, sizeof(isUniqueNumeric));
-            value.append(&indexId, sizeof(IndexId));
-            value.append(&foundClass->id, sizeof(ClassId));
-            // delete metadata from index mapping table
-            indexDBHandler.del(foundProperty.id, value);
-            // drop the actual index data table
-            switch (foundProperty.type) {
-                case PropertyType::UNSIGNED_TINYINT:
-                case PropertyType::UNSIGNED_SMALLINT:
-                case PropertyType::UNSIGNED_INTEGER:
-                case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
-                    dataIndexDBHandler.drop(true);
-                    break;
-                }
-                case PropertyType::TINYINT:
-                case PropertyType::SMALLINT:
-                case PropertyType::INTEGER:
-                case PropertyType::BIGINT:
-                case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
-                    dataIndexDBHandlerPositive.drop(true);
-                    dataIndexDBHandlerNegative.drop(true);
-                    break;
-                }
-                case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
-                    dataIndexDBHandler.drop(true);
-                    break;
-                }
-                default:
-                    break;
-            }
-
-            // update in-memory schema
-            foundProperty.indexInfo.erase(foundClass->id);
-            txn._txnCtx.dbSchema->updateProperty(*txn._txnBase, foundPropertyBasedClassId, propertyName, foundProperty);
-            // update in-memory database info
-            --dbInfo.numIndex;
+            txn._index->remove(foundClass.id, foundProperty.id);
+            auto indexHelper = index::IndexInterface(&txn);
+            indexHelper.drop(foundProperty, indexInfo);
+            txn._dbinfo->setNumIndexId(txn._dbinfo->getNumIndexId() - IndexId{1});
         } catch (const Error &err) {
-            throw err;
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
-            // NOTE: too risky since this may cause undefined behaviour after throwing any exceptions
-            // other than errors from datastore due to failures in updating in-memory schema or database info
+            txn.rollback();
             std::rethrow_exception(std::current_exception());
         }
     }

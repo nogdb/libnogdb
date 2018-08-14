@@ -232,7 +232,7 @@ namespace nogdb {
                                       ClassType type) {
             auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
-                classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
+                classDescriptor = Generic::getClassInfo(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                 classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
@@ -265,7 +265,7 @@ namespace nogdb {
                                                      ClassType type) {
             auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
             if (classDescriptor == nullptr || classDescriptor->id != rid.first) {
-                classDescriptor = Generic::getClassDescriptor(txn, rid.first, ClassType::UNDEFINED);
+                classDescriptor = Generic::getClassInfo(txn, rid.first, ClassType::UNDEFINED);
                 classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
                 classDBHandler = dsTxnHandler->openDbi(std::to_string(rid.first), true);
             }
@@ -291,8 +291,8 @@ namespace nogdb {
 
         inline static Record retrieveRecord(const Txn &txn, const RecordDescriptor &descriptor) {
             auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            auto classDescriptor = Generic::getClassDescriptor(txn, descriptor.rid.first,
-                                                               ClassType::UNDEFINED);
+            auto classDescriptor = Generic::getClassInfo(txn, descriptor.rid.first,
+                                                         ClassType::UNDEFINED);
             auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
             auto classDBHandler = dsTxnHandler->openDbi(std::to_string(descriptor.rid.first), true);
             auto keyValue = classDBHandler.get(descriptor.rid.second);

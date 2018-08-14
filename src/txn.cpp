@@ -21,11 +21,10 @@
 
 #include <iostream> // for debugging
 
-#include "shared_lock.hpp"
-#include "graph.hpp"
 #include "lmdb_engine.hpp"
 #include "dbinfo_adapter.hpp"
 #include "schema_adapter.hpp"
+#include "graph.hpp"
 
 #include "nogdb_txn.h"
 
@@ -34,25 +33,21 @@ namespace nogdb {
     Txn::Txn(Context &ctx, Mode mode)
             : _txnCtx{ctx},
               _txnMode{mode},
-              _txnId{ctx.dbTxnStat->fetchAddMaxTxnId()},
-//              _txnId{(mode == READ_WRITE)? 0: ctx.dbTxnStat->fetchAddMaxTxnId()},
               _completed{false} {
         try {
-            _versionId = (mode == READ_WRITE)? ctx.getMaxVersionId() + 1: ctx.dbTxnStat->getMaxVersionId();
-            if (_versionId == std::numeric_limits<TxnId>::max()) {
-                throw NOGDB_TXN_ERROR(NOGDB_TXN_VERSION_MAXREACH);
-            }
             _txnBase = new storage_engine::LMDBTxn(
-                    ctx.envHandler.get(),
+                    ctx._envHandler.get(),
                     (mode == READ_WRITE)? storage_engine::lmdb::TXN_RW: storage_engine::lmdb::TXN_RO
             );
-            _dbInfo = adapter::metadata::DBInfoAccess{_txnBase};
-            _class = adapter::schema::ClassAccess{_txnBase};
-            _property = adapter::schema::PropertyAccess{_txnBase};
-            _index = adapter::schema::IndexAccess{_txnBase};
+            _dbInfo = new adapter::metadata::DBInfoAccess{_txnBase};
+            _class = new adapter::schema::ClassAccess{_txnBase};
+            _property = new adapter::schema::PropertyAccess{_txnBase};
+            _index = new adapter::schema::IndexAccess{_txnBase};
         } catch (const Error &err) {
-            throw err;
+            try { rollback(); } catch (...) {}
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
+            try { rollback(); } catch (...) {}
             std::rethrow_exception(std::current_exception());
         }
     }
@@ -60,6 +55,22 @@ namespace nogdb {
     Txn::~Txn() noexcept {
         if (_txnBase) {
             try { rollback(); } catch (...) {}
+        }
+        if (_dbInfo) {
+            delete _dbInfo;
+            _dbInfo = nullptr;
+        }
+        if (_class) {
+            delete _class;
+            _class = nullptr;
+        }
+        if (_property) {
+            delete _property;
+            _property = nullptr;
+        }
+        if (_index) {
+            delete _index;
+            _index = nullptr;
         }
     }
 
@@ -71,17 +82,19 @@ namespace nogdb {
     Txn &Txn::operator=(Txn &&txn) noexcept {
         if (this != &txn) {
             delete _txnBase;
-            _txnCtx = txn._txnCtx;
+            _txnCtx = std::move(txn._txnCtx);
             _txnMode = txn._txnMode;
-            _txnId = txn._txnId;
-            _versionId = txn._versionId;
             _txnBase = txn._txnBase;
             _completed = txn._completed;
-            _dbInfo = std::move(txn._dbInfo);
-            _class = std::move(txn._class);
-            _property = std::move(txn._property);
-            _index = std::move(txn._index);
+            _dbInfo = txn._dbInfo;
+            _class = txn._class;
+            _property = txn._property;
+            _index = txn._index;
             txn._txnBase = nullptr;
+            txn._dbInfo = nullptr;
+            txn._class = nullptr;
+            txn._property = nullptr;
+            txn._index = nullptr;
             txn._completed = true;
         }
         return *this;
@@ -91,14 +104,13 @@ namespace nogdb {
         try {
             _txnBase->commit();
             delete _txnBase;
-            _txnCtx.dbTxnStat->fetchAddMaxVersionId();
             _txnBase = nullptr;
             _completed = true;
         } catch (const Error &err) {
-            rollback();
-            throw err;
+            try { rollback(); } catch (...) {}
+            throw NOGDB_FATAL_ERROR(err);
         } catch (...) {
-            rollback();
+            try { rollback(); } catch (...) {}
             std::rethrow_exception(std::current_exception());
         }
     }

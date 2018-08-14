@@ -21,58 +21,82 @@
 
 #include <cstring>
 
-#include "shared_lock.hpp"
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
+#include "datarecord_adapter.hpp"
 #include "parser.hpp"
 #include "generic.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
-    Record Db::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-        auto className = BaseTxn::getCurrentVersion(*txn._txnBase, classDescriptor->name).first;
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-        }
-        return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
+    Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+        auto classInfo = Generic::getClassInfo(txn, recordDescriptor.rid.first);
+        auto result = adapter::datarecord::DataRecord(txn._txnBase, recordDescriptor.rid.first, classInfo.type)
+                .getResult(recordDescriptor.rid.second);
+        auto propertyInfos = txn._property->getIdMapInfo(classInfo.id);
+        return parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos);
     }
 
-    const std::vector<ClassDescriptor> Db::getSchema(const Txn &txn) {
+    const std::vector<ClassDescriptor> DB::getClasses(const Txn &txn) {
         auto result = std::vector<ClassDescriptor>{};
-        for (const auto &c: txn._txnCtx.dbSchema->getNameToDescMapping(*txn._txnBase)) {
-            if (auto cPtr = c.second.lock()) {
-                result.push_back(cPtr->transform(*txn._txnBase));
-            }
+        for (const auto &classInfo: txn._class->getAllInfos()) {
+            result.emplace_back(
+                    ClassDescriptor{
+                        classInfo.id,
+                        classInfo.name,
+                        classInfo.superClassId,
+                        classInfo.type
+                    });
         }
         return result;
     }
 
-    const ClassDescriptor Db::getSchema(const Txn &txn, const std::string &className) {
-        auto foundClass = Validate::isExistingClass(txn, className);
-        return foundClass->transform(*txn._txnBase);
-    }
-
-    const ClassDescriptor Db::getSchema(const Txn &txn, const ClassId &classId) {
-        auto foundClass = Validate::isExistingClass(txn, classId);
-        return foundClass->transform(*txn._txnBase);
-    }
-
-    const DBInfo Db::getDbInfo(const Txn &txn) {
-        auto ctx = txn._txnCtx;
-        if (txn._txnMode == Txn::Mode::READ_ONLY) {
-            ReadLock<boost::shared_mutex> _(*ctx.dbInfoMutex);
-            return *ctx.dbInfo;
-        } else {
-            return txn._txnBase->dbInfo;
+    const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor& classDescriptor) {
+        auto result = std::vector<PropertyDescriptor>{};
+        auto foundClass = Validate::isExistingClass(txn, classDescriptor.id);
+        // native properties
+        for(const auto& property: Generic::getNativePropertyInfo(txn, foundClass.id)) {
+            result.emplace_back(
+                    PropertyDescriptor{
+                       property.id,
+                       property.name,
+                       property.type,
+                       false
+                    });
         }
+        // inherited properties
+        for(const auto& property: Generic::getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
+            result.emplace_back(
+                    PropertyDescriptor{
+                        property.id,
+                        property.name,
+                        property.type,
+                        true
+                    });
+        }
+        return result;
     }
 
+    const ClassDescriptor DB::getClass(const Txn &txn, const std::string &className) {
+        auto classInfo = txn._class->getInfo(className);
+        return ClassDescriptor{
+            classInfo.id,
+            classInfo.name,
+            classInfo.superClassId,
+            classInfo.type
+        };
+    }
+
+    const ClassDescriptor DB::getClass(const Txn &txn, const ClassId &classId) {
+        auto classInfo = txn._class->getInfo(classId);
+        return ClassDescriptor{
+            classInfo.id,
+            classInfo.name,
+            classInfo.superClassId,
+            classInfo.type
+        };
+    }
 }
 
 

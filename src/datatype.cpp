@@ -98,6 +98,13 @@ namespace nogdb {
             return offset + size;
         }
 
+        Blob Blob::operator+(const Blob &suffix) const {
+            auto capacity = _capacity + suffix._capacity;
+            auto blob = Blob{_value, capacity};
+            blob.append(suffix._value, suffix._size);
+            return blob;
+        }
+
     }
 
 }

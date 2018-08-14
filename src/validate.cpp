@@ -23,6 +23,7 @@
 #include <regex>
 
 #include "validate.hpp"
+#include "datarecord_adapter.hpp"
 
 #include "nogdb_txn.h"
 
@@ -40,7 +41,19 @@ namespace nogdb {
     }
 
     void Validate::isClassIdMaxReach(const Txn &txn) {
-        if ((txn._dbInfo.getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+        if ((txn._dbinfo->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+        }
+    }
+
+    void Validate::isPropertyIdMaxReach(const Txn& txn) {
+        if ((txn._dbinfo->getMaxPropertyId() >= UINT16_MAX)) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+        }
+    }
+
+    void Validate::isIndexIdMaxReach(const Txn& txn) {
+        if ((txn._dbinfo->getMaxIndexId() >= UINT32_MAX)) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
         }
     }
@@ -91,14 +104,14 @@ namespace nogdb {
     }
 
     void Validate::isNotDuplicatedClass(const Txn &txn, const std::string &className) {
-        auto foundClass = txn._class.getId(className);
+        auto foundClass = txn._class->getId(className);
         if (foundClass != ClassId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
         }
     }
 
     adapter::schema::ClassAccessInfo Validate::isExistingClass(const Txn &txn, const std::string &className) {
-        auto foundClass = txn._class.getInfo(className);
+        auto foundClass = txn._class->getInfo(className);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
@@ -106,7 +119,7 @@ namespace nogdb {
     }
 
     adapter::schema::ClassAccessInfo Validate::isExistingClass(const Txn &txn, const ClassId &classId) {
-        auto foundClass = txn._class.getInfo(classId);
+        auto foundClass = txn._class->getInfo(classId);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
@@ -115,7 +128,7 @@ namespace nogdb {
 
     adapter::schema::PropertyAccessInfo
     Validate::isExistingProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
-        auto foundProperty = txn._property.getInfo(classId, propertyName);
+        auto foundProperty = txn._property->getInfo(classId, propertyName);
         if (foundProperty.type == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
@@ -124,9 +137,9 @@ namespace nogdb {
 
     adapter::schema::PropertyAccessInfo
     Validate::isExistingPropertyExtend(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
-        auto foundProperty = txn._property.getInfo(classId, propertyName);
+        auto foundProperty = txn._property->getInfo(classId, propertyName);
         if (foundProperty.type == PropertyType::UNDEFINED) {
-            auto superClassId = txn._class.getSuperClassId(classId);
+            auto superClassId = txn._class->getSuperClassId(classId);
             if (superClassId != ClassId{}) {
                 return isExistingPropertyExtend(txn, classId, propertyName);
             } else {
@@ -138,24 +151,52 @@ namespace nogdb {
     }
 
     void Validate::isNotDuplicatedProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
-        auto foundProperty = txn._property.getId(classId, propertyName);
+        auto foundProperty = txn._property->getId(classId, propertyName);
         if (foundProperty != PropertyId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
         }
-        auto superClassId = txn._class.getSuperClassId(classId);
+        auto superClassId = txn._class->getSuperClassId(classId);
         if (superClassId != ClassId{}) {
             isNotDuplicatedProperty(txn, superClassId, propertyName);
         }
     }
 
     void Validate::isNotOverridenProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName) {
-        auto foundProperty = txn._property.getId(classId, propertyName);
+        auto foundProperty = txn._property->getId(classId, propertyName);
         if (foundProperty != PropertyId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
         }
-        for (const auto &subClassId: txn._class.getSubClassIds(classId)) {
+        for (const auto &subClassId: txn._class->getSubClassIds(classId)) {
             if (subClassId != ClassId{}) {
                 isNotOverridenProperty(txn, subClassId, propertyName);
+            }
+        }
+    }
+
+    void Validate::isExistingSrcVertex(const Txn& txn, const RecordDescriptor& vertex) {
+        auto foundClass = isExistingClass(txn, vertex.rid.first);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, foundClass.id, ClassType::VERTEX);
+        try {
+            vertexDataRecord.getBlob(vertex.rid.second);
+        } catch (const Error& error) {
+            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
+            } else {
+                throw NOGDB_FATAL_ERROR(error);
+            }
+        }
+    }
+
+    void Validate::isExistingDstVertex(const Txn& txn, const RecordDescriptor& vertex) {
+        auto foundClass = isExistingClass(txn, vertex.rid.first);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, foundClass.id, ClassType::VERTEX);
+        try {
+            vertexDataRecord.getBlob(vertex.rid.second);
+        } catch (const Error& error) {
+            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
+            } else {
+                throw NOGDB_FATAL_ERROR(error);
             }
         }
     }

@@ -30,13 +30,13 @@ void test_get_set_empty_value() {
         nogdb::Record r_blank_name{};
         r_blank_name.set("name", "");
         auto rdesc1 = nogdb::Vertex::create(txn, "persons", r_blank_name);
-        auto r1 = nogdb::Db::getRecord(txn, rdesc1);
+        auto r1 = nogdb::DB::getRecord(txn, rdesc1);
         assert(r1.get("name").toText() == "");
         assert(r1.get("name").toText() == "\0");
         assert(r1.get("name").empty());
 
         auto rdesc2 = nogdb::Vertex::create(txn, "persons");
-        auto r2 = nogdb::Db::getRecord(txn, rdesc2);
+        auto r2 = nogdb::DB::getRecord(txn, rdesc2);
         assert(r2.empty() == true);
     } catch (const nogdb::Error &ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -61,7 +61,7 @@ void test_get_invalid_record() {
         nogdb::Vertex::destroy(txn, rdesc1);
 
         try {
-            auto res = nogdb::Db::getRecord(txn, rdesc1);
+            auto res = nogdb::DB::getRecord(txn, rdesc1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
@@ -75,7 +75,7 @@ void test_get_invalid_record() {
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
-        auto res = nogdb::Db::getRecord(txn, tmp);
+        auto res = nogdb::DB::getRecord(txn, tmp);
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
@@ -194,21 +194,21 @@ void test_delete_vertex_with_edges() {
         nogdb::Vertex::destroy(txn, v2_1);
 
         try {
-            auto record = nogdb::Db::getRecord(txn, v2_1);
+            auto record = nogdb::DB::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
-        auto record = nogdb::Db::getRecord(txn, v1_1);
+        auto record = nogdb::DB::getRecord(txn, v1_1);
         assert(!record.empty());
-        record = nogdb::Db::getRecord(txn, v1_2);
+        record = nogdb::DB::getRecord(txn, v1_2);
         assert(!record.empty());
         try {
-            auto record = nogdb::Db::getRecord(txn, e1);
+            auto record = nogdb::DB::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
-            auto record = nogdb::Db::getRecord(txn, e2);
+            auto record = nogdb::DB::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
@@ -253,21 +253,21 @@ void test_delete_all_vertices_with_edges() {
         nogdb::Vertex::destroy(txn, v2_1);
 
         try {
-            auto record = nogdb::Db::getRecord(txn, v2_1);
+            auto record = nogdb::DB::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
-        auto record = nogdb::Db::getRecord(txn, v1_1);
+        auto record = nogdb::DB::getRecord(txn, v1_1);
         assert(!record.empty());
-        record = nogdb::Db::getRecord(txn, v1_2);
+        record = nogdb::DB::getRecord(txn, v1_2);
         assert(!record.empty());
         try {
-            auto record = nogdb::Db::getRecord(txn, e1);
+            auto record = nogdb::DB::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
-            auto record = nogdb::Db::getRecord(txn, e2);
+            auto record = nogdb::DB::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
@@ -528,7 +528,7 @@ void test_drop_class_with_relations() {
 
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
-        auto res = nogdb::Db::getSchema(txn, "myvertex1");
+        auto res = nogdb::DB::getSchema(txn, "myvertex1");
         assert(false);
     } catch (const nogdb::Error &ex) {
         txn.rollback();
@@ -564,13 +564,13 @@ void test_drop_and_find_extended_class() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Class::drop(txn, "vertex2");
 
-        auto res = nogdb::Db::getSchema(txn, "vertex1");
+        auto res = nogdb::DB::getSchema(txn, "vertex1");
         assert(res.sub.size() == 2);
         assert(res.sub[0] == "vertex3" || res.sub[0] == "vertex4");
         assert(res.sub[1] == "vertex3" || res.sub[1] == "vertex4");
-        res = nogdb::Db::getSchema(txn, "vertex3");
+        res = nogdb::DB::getSchema(txn, "vertex3");
         assert(res.super == "vertex1");
-        res = nogdb::Db::getSchema(txn, "vertex4");
+        res = nogdb::DB::getSchema(txn, "vertex4");
         assert(res.super == "vertex1");
         txn.commit();
     } catch (const nogdb::Error &ex) {

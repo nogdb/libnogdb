@@ -1030,12 +1030,12 @@ void dropIndex(nogdb::Txn&              txn,
 ** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
 ** `NOGDB_CTX_NOEXST_INDEX` - An index does not exist on a specified class and property.
 
-== Database Operations - `nogdb::Db`
+== Database Operations - `nogdb::DB`
 
 === GET DB INFO
 [source,cpp]
 ------------
-const nogdb::DBInfo getDbInfo(const nogdb::Txn& txn)
+const nogdb::DBInfo getDBInfo(const nogdb::Txn& txn)
 ------------
 * Description:
 ** To retrieve a database (metadata) information.

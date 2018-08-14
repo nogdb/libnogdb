@@ -64,7 +64,7 @@ void Context::createClass(const Token &tName, const Token &tExtend, bool checkIf
         this->result = SQL::Result(new ClassDescriptor(move(result)));
     } catch (const Error &e) {
         if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_CLASS) {
-            result = Db::getSchema(this->txn, name);
+            result = DB::getSchema(this->txn, name);
             this->rc = SQL_OK;
             this->result = SQL::Result(new ClassDescriptor(move(result)));
         } else {
@@ -162,7 +162,7 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
         this->result = SQL::Result(new PropertyDescriptor(move(result)));
     } catch (const Error &e) {
         if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_PROPERTY) {
-            result = Db::getSchema(this->txn, tClassName.toString()).properties.at(tPropName.toString());
+            result = DB::getSchema(this->txn, tClassName.toString()).properties.at(tPropName.toString());
             this->rc = SQL_OK;
             this->result = SQL::Result(new PropertyDescriptor(move(result)));
         } else {
@@ -280,7 +280,7 @@ void Context::update(const UpdateArgs &args) {
             for (const auto &prop: args.prop.getAll()) {
                 r.set(prop.first, prop.second);
             }
-            ClassType type = Db::getSchema(this->txn, target.descriptor.rid.first).type;
+            ClassType type = DB::getSchema(this->txn, target.descriptor.rid.first).type;
             switch (type) {
                 case ClassType::VERTEX:
                     Vertex::update(this->txn, target.descriptor, r);
@@ -511,7 +511,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
 ResultSet Context::select(const RecordDescriptorSet &rids) {
     ResultSet result{};
     for (RecordDescriptor rid: rids) {
-        nogdb::Record r = nogdb::Db::getRecord(this->txn, rid);
+        nogdb::Record r = nogdb::DB::getRecord(this->txn, rid);
         auto res = Result(move(rid), move(r));
         result.push_back(move(res));
     }
@@ -774,13 +774,13 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
 }
 
 nogdb::ClassType Context::findClassType(Txn &txn, const string &className) {
-    auto classD = Db::getSchema(txn, className);
+    auto classD = DB::getSchema(txn, className);
     return classD.type;
 }
 
 nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID) {
     if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
-        const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
+        const ClassProperty &classProp = DB::getSchema(txn, classID).properties;
         PropertyMapType map{
             { CLASS_NAME_PROPERTY, PropertyType::TEXT },
             { RECORD_ID_PROPERTY, PropertyType::TEXT },
@@ -814,7 +814,7 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
             mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
             mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
             mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
-            const ClassProperty &classProp = Db::getSchema(txn, classID).properties;
+            const ClassProperty &classProp = DB::getSchema(txn, classID).properties;
             for (const auto &p: classProp) {
                 mapProp[p.first] = p.second.type;
             }

@@ -27,6 +27,9 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
+#include <memory>
+#include <unordered_map>
+#include <functional>
 #include <sstream>
 #include <sys/time.h>
 #include <sys/file.h>
@@ -40,14 +43,14 @@ namespace nogdb {
         // unordered_map cache
         namespace caching {
 
-            template<typename K, typename V, template<typename, typename> class Container>
-            class GenericCache {
+            template<typename K, typename V>
+            class UnorderedCache {
             public:
                 UnorderedCache() = default;
 
                 virtual ~UnorderedCache() noexcept = default;
 
-                V get(const K& key, V (*callback)()) const {
+                V get(const K& key, std::function<V(void)> callback) const {
                     auto found = _underlying.find(key);
                     if (found != _underlying.cend()) {
                         return found->second;
@@ -62,8 +65,12 @@ namespace nogdb {
                     _underlying[key] = val;
                 }
 
+                void unset(const K& key) {
+                    _underlying.erase(key);
+                }
+
             private:
-                mutable Container<K, V> _underlying{};
+                mutable std::unordered_map<K, V> _underlying{};
             };
         }
 

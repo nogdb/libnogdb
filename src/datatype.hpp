@@ -54,6 +54,8 @@ namespace nogdb {
 
             size_t retrieve(void *data, size_t offset, size_t size) const;
 
+            Blob operator+(const Blob& suffix) const;
+
         private:
             size_t _capacity;
             size_t _size;

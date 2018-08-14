@@ -378,7 +378,7 @@ void test_update_vertex() {
         r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
         auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
 
-        auto record = nogdb::Db::getRecord(txn, rdesc1);
+        auto record = nogdb::DB::getRecord(txn, rdesc1);
         assert(record.get("title").toText() == "Lion King");
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);

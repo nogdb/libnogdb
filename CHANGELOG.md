@@ -2,7 +2,7 @@
 ## v0.12.0-beta [2018-??-??]
 * General changes:
   * Adding a prefix `NOGDB_` for all NogDB exception code.
-  * `nogdb::Db::getRecord(...)` now throws an exception `NOGDB_CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
+  * `nogdb::DB::getRecord(...)` now throws an exception `NOGDB_CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
 * New features:
   * Implementing a feature request [#37](https://github.com/nogdb/nogdb/issues/37). Collections such as `std::pair`, `std::array`, `std::vector`, `std::map`, `std::set` can now be parsed to `nogdb::Bytes`, which allows users to store them in record, through static API function `nogdb::Bytes nogdb::Bytes::toBytes<T>(const T&)`.
 * Implemented enhancements:
@@ -60,7 +60,7 @@
 
 ## v0.9.0-alpha [2018-01-10]
 * General changes:
-  * All `nogdb::Db::getSchema` functions have been modified to support `nogdb::Context` as a parameter instead of `nogdb::Txn` in order to decrease a number of instructions when getting database schema (no transactions required).
+  * All `nogdb::DB::getSchema` functions have been modified to support `nogdb::Context` as a parameter instead of `nogdb::Txn` in order to decrease a number of instructions when getting database schema (no transactions required).
   * A member function of `nogdb::Bytes` - `getBytes()` has been renamed to `getRaw()`.
   * Vertex and edge functions for creating multiple records at once have been removed in order to reduce the use of STL containers in function signature.
   * A function parameter `const std::string& className` (and also `const std::set<std::string>& className`) in all function signatures related to record retrieval have been removed in order to reduce the use of STL containers in function signature and make function APIs much simpler.
@@ -86,7 +86,7 @@
 * Implemented enhancements:
   * An implementation of `RecordIdHash` has been represented as `boost::hash<RecordId>` due to a better performance while only relevant boost header files are included in the lib directory under the project. 
 * Fixed bugs:
-  * There was no mutex locks in `getDbInfo()` which may cause concurrency problem. The concurrency control on database information can be done by an implementation of a mutex over `nogdb::DBInfo` in a database context together with a transaction.
+  * There was no mutex locks in `getDBInfo()` which may cause concurrency problem. The concurrency control on database information can be done by an implementation of a mutex over `nogdb::DBInfo` in a database context together with a transaction.
   * `nogdb::Context` cannot be initiated as rvalue by using moving constructor or assigned as rvalue by using move assignment correctly. This has been fixed by completing the rule of five in `nogdb::Context`.
 
 ## v0.7.0-alpha [2017-08-12]

@@ -55,7 +55,11 @@ namespace nogdb {
 
                 LMDBKeyValAccess& operator=(LMDBKeyValAccess&& other) noexcept {
                     if (this != &other) {
-                        *this = std::move(other);
+                        _txn = other._txn;
+                        _dbi = std::move(other._dbi);
+                        _append = other._append;
+                        _overwrite = other._overwrite;
+                        other._txn = nullptr;
                     }
                     return *this;
                 }

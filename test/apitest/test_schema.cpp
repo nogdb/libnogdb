@@ -25,7 +25,7 @@ void test_create_class() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-        auto schema = nogdb::Db::getSchema(txn, "files");
+        auto schema = nogdb::DB::getSchema(txn, "files");
         assert(schema.name == "files");
         txn.commit();
     } catch (const nogdb::Error &ex) {
@@ -81,7 +81,7 @@ void test_alter_class() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto cdesc = nogdb::Db::getSchema(txn, "files");
+        auto cdesc = nogdb::DB::getSchema(txn, "files");
         assert(cdesc.name == "files");
         txn.commit();
 
@@ -90,7 +90,7 @@ void test_alter_class() {
         txn.commit();
 
         txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        cdesc = nogdb::Db::getSchema(txn, "file");
+        cdesc = nogdb::DB::getSchema(txn, "file");
         assert(cdesc.name == "file");
         assert(cdesc.properties.at("prop1").type == nogdb::PropertyType::INTEGER);
         assert(cdesc.properties.at("prop2").type == nogdb::PropertyType::TEXT);
@@ -277,7 +277,7 @@ void test_add_property() {
     }
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "files");
+        auto schema = nogdb::DB::getSchema(txn, "files");
         assert(schema.name == "files");
         assert(schema.properties.find("filename") != schema.properties.end());
         assert(schema.properties.find("filesize") != schema.properties.end());
@@ -357,7 +357,7 @@ void test_add_invalid_property() {
     }
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "files");
+        auto schema = nogdb::DB::getSchema(txn, "files");
         assert(schema.name == "files");
         assert(schema.properties.find("filename") != schema.properties.end());
         assert(schema.properties.find("filesize") != schema.properties.end());
@@ -441,7 +441,7 @@ void test_alter_property() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "links");
+        auto schema = nogdb::DB::getSchema(txn, "links");
         assert(schema.name == "links");
         assert(schema.properties.find("type") != schema.properties.end());
         assert(schema.properties.find("comments") != schema.properties.end());

@@ -45,7 +45,7 @@ void test_create_index() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
@@ -94,13 +94,13 @@ void test_create_index_extended_class() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 2);
             }
         }
-        schema = nogdb::Db::getSchema(txn, "index_test_2");
+        schema = nogdb::DB::getSchema(txn, "index_test_2");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_text_2" || property.first == "index_int_2") {
@@ -186,13 +186,13 @@ void test_drop_index() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-        schema = nogdb::Db::getSchema(txn, "index_test_2");
+        schema = nogdb::DB::getSchema(txn, "index_test_2");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
@@ -216,13 +216,13 @@ void test_drop_index_extended_class() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-        schema = nogdb::Db::getSchema(txn, "index_test_2");
+        schema = nogdb::DB::getSchema(txn, "index_test_2");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_int_2") {
@@ -257,10 +257,10 @@ void test_drop_index_extended_class() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test").properties) {
             assert(property.second.indexInfo.size() == 0);
         }
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_text_2")
                 assert(property.second.indexInfo.size() == 0);
         }
@@ -418,7 +418,7 @@ void test_create_index_with_records() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
@@ -530,12 +530,12 @@ void test_create_index_extended_class_with_records() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test").properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 2);
             }
         }
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_text_2" || property.first == "index_int_2") {
                     assert(property.second.indexInfo.size() == 1);
@@ -718,13 +718,13 @@ void test_drop_index_with_records() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-        schema = nogdb::Db::getSchema(txn, "index_test_2");
+        schema = nogdb::DB::getSchema(txn, "index_test_2");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
@@ -748,13 +748,13 @@ void test_drop_index_extended_class_with_records() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        auto schema = nogdb::Db::getSchema(txn, "index_test");
+        auto schema = nogdb::DB::getSchema(txn, "index_test");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 assert(property.second.indexInfo.size() == 1);
             }
         }
-        schema = nogdb::Db::getSchema(txn, "index_test_2");
+        schema = nogdb::DB::getSchema(txn, "index_test_2");
         for (const auto &property: schema.properties) {
             if (property.first != "index_blob") {
                 if (property.first == "index_int_2") {
@@ -789,10 +789,10 @@ void test_drop_index_extended_class_with_records() {
 
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test").properties) {
             assert(property.second.indexInfo.size() == 0);
         }
-        for (const auto &property: nogdb::Db::getSchema(txn, "index_test_2").properties) {
+        for (const auto &property: nogdb::DB::getSchema(txn, "index_test_2").properties) {
             if (property.first != "index_text_2")
                 assert(property.second.indexInfo.size() == 0);
         }

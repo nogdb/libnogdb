@@ -4595,7 +4595,7 @@ void test_shortest_path_dijkstra() {
 
         // traverse by distance
         auto costFunctionDistance = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) -> int {
-            const nogdb::Record &record = nogdb::Db::getRecord(txn, descriptor);
+            const nogdb::Record &record = nogdb::DB::getRecord(txn, descriptor);
             return record.getIntU("distance");
         };
 
@@ -4605,7 +4605,7 @@ void test_shortest_path_dijkstra() {
         assertSize(res2.second, 4);
 
         auto costFunctionDistanceOffset = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
-            const nogdb::Record &record = nogdb::Db::getRecord(txn, descriptor);
+            const nogdb::Record &record = nogdb::DB::getRecord(txn, descriptor);
             return record.getIntU("distance") + 20;
         };
 

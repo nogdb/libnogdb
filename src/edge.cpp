@@ -21,10 +21,11 @@
 
 #include <tuple>
 
-#include "shared_lock.hpp"
 #include "schema.hpp"
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
+#include "datarecord_adapter.hpp"
+#include "index_adapter.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
 #include "compare.hpp"
@@ -40,41 +41,33 @@ namespace nogdb {
                                         const RecordDescriptor &srcVertexRecordDescriptor,
                                         const RecordDescriptor &dstVertexRecordDescriptor,
                                         const Record &record) {
-        // transaction validations
         Validate::isTransactionValid(txn);
+        Validate::isExistingSrcVertex(txn, srcVertexRecordDescriptor);
+        Validate::isExistingDstVertex(txn, dstVertexRecordDescriptor);
+        auto edgeClassInfo = Generic::getClassInfo(txn, className, ClassType::EDGE);
+        try {
+            auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+            auto propertyInfo = Generic::getPropertyNameMapInfo(txn, edgeClassInfo.id, edgeClassInfo.superClassId);
+            auto vertices = parser::Parser::parseVertexSrcDst(srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
+            auto value = parser::Parser::parseRecord(record, propertyInfo);
+            edgeDataRecord.insert(vertices + value);
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::EDGE);
-        auto srcVertexDescriptor = Generic::getClassDescriptor(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto dstVertexDescriptor = Generic::getClassDescriptor(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto classInfo = ClassPropertyInfo{};
-        auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-
-        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(srcVertexRecordDescriptor.rid.first), true);
-        auto srcKeyValue = srcDBHandler.get(srcVertexRecordDescriptor.rid.second);
-        if (srcKeyValue.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
+            // add index if applied
+            auto indexHelper = index::IndexInterface(&txn);
+            for(const auto& property: propertyInfo) {
+                auto propertyName = property.first;
+                auto bytes = record.get(propertyName);
+                if (bytes.empty()) continue;
+                auto propertyId = property.second.id;
+                auto indexInfo = txn._index->getInfo(edgeClassInfo.id, propertyId);
+                if (indexInfo.id != IndexId{}) {
+                    indexHelper.insert();
+                }
+            }
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-        auto dstDBHandler = dsTxnHandler->openDbi(std::to_string(dstVertexRecordDescriptor.rid.first), true);
-        auto dstKeyValue = dstDBHandler.get(dstVertexRecordDescriptor.rid.second);
-        if (dstKeyValue.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-        }
-
-        // update src and dst version
-        Vertex::update(txn, srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor.rid));
-        Vertex::update(txn, dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor.rid));
-
-        // set version
-        record.setBasicInfo(TXN_VERSION, txn.getVersionId());
-        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
-
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(MAX_RECORD_NUM_EM);
-        auto maxRecordNum = dsResult.data.numeric<PositionId>();
-        classDBHandler.put(maxRecordNum, value, true);
-        classDBHandler.put(MAX_RECORD_NUM_EM, PositionId{maxRecordNum + 1});
 
         // add index if applied
         for (const auto &indexInfo: indexInfos) {
@@ -107,7 +100,7 @@ namespace nogdb {
 
         record.updateVersion(txn);
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = ClassPropertyInfo{};
         auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
         auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
@@ -174,7 +167,7 @@ namespace nogdb {
             // do nothing
         }
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
         auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
 
@@ -224,7 +217,7 @@ namespace nogdb {
     void Edge::destroy(Txn &txn, const std::string &className) {
         // transaction validations
         Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassDescriptor(txn, className, ClassType::EDGE);
+        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::EDGE);
         auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
         auto recordIds = std::vector<RecordId> {};
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
@@ -334,15 +327,15 @@ namespace nogdb {
 
         // update new source
         try {
-            Record newSrcRecord = Db::getRecord(txn, newSrcVertexRecordDescriptor);
+            Record newSrcRecord = DB::getRecord(txn, newSrcVertexRecordDescriptor);
             Vertex::update(txn, newSrcVertexRecordDescriptor, newSrcRecord);
         } catch (const Error &err) {
             // do nothing
         }
 
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto vertexDescriptor = Generic::getClassDescriptor(txn, newSrcVertexRecordDescriptor.rid.first,
-                                                            ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        auto vertexDescriptor = Generic::getClassInfo(txn, newSrcVertexRecordDescriptor.rid.first,
+                                                      ClassType::VERTEX);
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
@@ -378,8 +371,8 @@ namespace nogdb {
                          const RecordDescriptor &newDstVertexDescriptor) {
         // transaction validations
         Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto vertexDescriptor = Generic::getClassDescriptor(txn, newDstVertexDescriptor.rid.first, ClassType::VERTEX);
+        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        auto vertexDescriptor = Generic::getClassInfo(txn, newDstVertexDescriptor.rid.first, ClassType::VERTEX);
         auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
         auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
         auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
@@ -437,30 +430,30 @@ namespace nogdb {
     }
 
     Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
 
         auto vertex = txn._txnCtx.dbRelation->getVertexSrc(*txn._txnBase, recordDescriptor.rid);
         auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
-        return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
+        return Result{vertexRecordDescriptor, DB::getRecord(txn, vertexRecordDescriptor)};
     }
 
     Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
 
         auto vertex = txn._txnCtx.dbRelation->getVertexDst(*txn._txnBase, recordDescriptor.rid);
         auto vertexRecordDescriptor = RecordDescriptor{vertex.first, vertex.second};
-        return Result{vertexRecordDescriptor, Db::getRecord(txn, vertexRecordDescriptor)};
+        return Result{vertexRecordDescriptor, DB::getRecord(txn, vertexRecordDescriptor)};
     }
 
     ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::EDGE);
+        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
 
         auto vertices = txn._txnCtx.dbRelation->getVertexSrcDst(*txn._txnBase, recordDescriptor.rid);
         auto srcVertexRecordDescriptor = RecordDescriptor{vertices.first.first, vertices.first.second};
         auto dstVertexRecordDescriptor = RecordDescriptor{vertices.second.first, vertices.second.second};
         return ResultSet{
-                Result{srcVertexRecordDescriptor, Db::getRecord(txn, srcVertexRecordDescriptor)},
-                Result{dstVertexRecordDescriptor, Db::getRecord(txn, dstVertexRecordDescriptor)}
+                Result{srcVertexRecordDescriptor, DB::getRecord(txn, srcVertexRecordDescriptor)},
+                Result{dstVertexRecordDescriptor, DB::getRecord(txn, dstVertexRecordDescriptor)}
         };
     }
 

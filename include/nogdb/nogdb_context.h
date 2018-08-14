@@ -44,7 +44,7 @@ namespace nogdb {
         friend struct Generic;
         friend struct Class;
         friend struct Property;
-        friend struct Db;
+        friend struct DB;
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
@@ -67,24 +67,21 @@ namespace nogdb {
 
         Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
 
-        Context(const Context &ctx);
-
-        Context &operator=(const Context &ctx);
-
         Context(Context &&ctx) noexcept;
 
         Context &operator=(Context &&ctx) noexcept;
 
-        TxnId getMaxVersionId() const;
+        std::string getDBPath() const { return _dbPath; }
 
-        TxnId getMaxTxnId() const;
+        unsigned int getMaxDB() const { return _maxDB; }
+
+        unsigned long getMaxDBSize() const { return _maxDBSize; }
 
     private:
-        std::shared_ptr<storage_engine::LMDBEnv> envHandler;
-        std::shared_ptr<TxnStat> dbTxnStat;
-
-        int lockContextFileDescriptor;
-
+        std::string _dbPath{};
+        unsigned int _maxDB{};
+        unsigned long _maxDBSize{};
+        std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
     };
 
 }

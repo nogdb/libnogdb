@@ -83,7 +83,7 @@ void test_sql_create_class() {
         // check result.
         assert(result.type() == SQL::Result::CLASS_DESCRIPTOR);
         assert(result.get<ClassDescriptor>().name == "sql_class");
-        ClassDescriptor schema = Db::getSchema(txn, "sql_class");
+        ClassDescriptor schema = DB::getSchema(txn, "sql_class");
         assert(schema.name == "sql_class");
     } catch(const Error& e) {
         std::cout << "\nError: " << e.what() << std::endl;
@@ -111,7 +111,7 @@ void test_sql_create_class_if_not_exists() {
     // test exists case.
     try {
         SQL::execute(txn, "CREATE CLASS sql_class IF NOT EXISTS EXTENDS VERTEX");
-        auto schema = Db::getSchema(txn, "sql_class");
+        auto schema = DB::getSchema(txn, "sql_class");
         assert(schema.name == "sql_class");
     } catch (const Error &e) {
         std::cout << "\nError: " << e.what() << std::endl;
@@ -146,7 +146,7 @@ void test_sql_create_class_extend() {
 
     // check result
     try {
-        auto res = Db::getSchema(txn, "sql_class_sub");
+        auto res = DB::getSchema(txn, "sql_class_sub");
         assert(res.type == ClassType::VERTEX);
         assert(res.properties.find("prop1") != res.properties.end());
         assert(res.properties.find("prop2") != res.properties.end());
@@ -209,7 +209,7 @@ void test_sql_alter_class_name() {
     // test alter NAME
     try {
         SQL::execute(txn, "ALTER CLASS sql_class NAME 'sql_class2'");
-        auto res = Db::getSchema(txn, "sql_class2");
+        auto res = DB::getSchema(txn, "sql_class2");
         assert(res.name == "sql_class2");
         assert(res.properties.at("prop1").type == PropertyType::INTEGER);
         assert(res.properties.at("prop2").type == PropertyType::TEXT);
@@ -238,7 +238,7 @@ void test_sql_drop_class() {
 
     // check result.
     try {
-        auto schema = Db::getSchema(txn, "sql_class");
+        auto schema = DB::getSchema(txn, "sql_class");
         assert(false);
     } catch (const Error &e) {
         assert(e.code() == NOGDB_CTX_NOEXST_CLASS);
@@ -305,7 +305,7 @@ void test_sql_add_property() {
         assert(false);
     }
     try {
-        auto schema = Db::getSchema(txn, "sql_class");
+        auto schema = DB::getSchema(txn, "sql_class");
         assert(schema.name == "sql_class");
         assert(schema.properties.find("prop1") != schema.properties.end());
         assert(schema.properties.find("prop2") != schema.properties.end());
@@ -338,7 +338,7 @@ void test_sql_alter_property() {
     }
 
     try {
-        auto schema = Db::getSchema(txn, "links");
+        auto schema = DB::getSchema(txn, "links");
         assert(schema.name == "links");
         assert(schema.properties.find("type") != schema.properties.end());
         assert(schema.properties.find("comments") != schema.properties.end());
@@ -362,7 +362,7 @@ void test_sql_delete_property() {
     try {
         SQL::execute(txn, "DROP PROPERTY sql_class.prop2");
 
-        auto schema = Db::getSchema(txn, "sql_class");
+        auto schema = DB::getSchema(txn, "sql_class");
         assert(schema.name == "sql_class");
         assert(schema.properties.find("prop2") == schema.properties.end());
     } catch(const Error& ex) {
@@ -1203,7 +1203,7 @@ void test_sql_update_vertex_with_rid() {
         r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
         Vertex::create(txn, "books", r);
 
-        auto record = Db::getRecord(txn, rdesc1);
+        auto record = DB::getRecord(txn, rdesc1);
         assert(record.get("title").toText() == "Lion King");
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
@@ -1238,7 +1238,7 @@ void test_sql_update_vertex_with_condition() {
         r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
         Vertex::create(txn, "books", r);
 
-        auto record = Db::getRecord(txn, rdesc1);
+        auto record = DB::getRecord(txn, rdesc1);
         assert(record.get("title").toText() == "Lion King");
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
@@ -1287,21 +1287,21 @@ void test_sql_delete_vertex_with_rid() {
         assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
         try {
-            auto record = Db::getRecord(txn, v2_1);
+            auto record = DB::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
-        auto record = Db::getRecord(txn, v1_1);
+        auto record = DB::getRecord(txn, v1_1);
         assert(!record.empty());
-        record = Db::getRecord(txn, v1_2);
+        record = DB::getRecord(txn, v1_2);
         assert(!record.empty());
         try {
-            auto record = Db::getRecord(txn, e1);
+            auto record = DB::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
-            auto record = Db::getRecord(txn, e2);
+            auto record = DB::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
@@ -1341,21 +1341,21 @@ void test_sql_delete_vertex_with_condition() {
         assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
         try {
-            auto record = Db::getRecord(txn, v2_1);
+            auto record = DB::getRecord(txn, v2_1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
-        auto record = Db::getRecord(txn, v1_1);
+        auto record = DB::getRecord(txn, v1_1);
         assert(!record.empty());
-        record = Db::getRecord(txn, v1_2);
+        record = DB::getRecord(txn, v1_2);
         assert(!record.empty());
         try {
-            auto record = Db::getRecord(txn, e1);
+            auto record = DB::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
         try {
-            auto record = Db::getRecord(txn, e2);
+            auto record = DB::getRecord(txn, e2);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }
@@ -1385,7 +1385,7 @@ void test_sql_delete_edge_with_rid() {
         r3.set("time_used", 365U);
         auto e1 = Edge::create(txn, "authors", v1, v2, r3);
 
-        auto record = Db::getRecord(txn, e1);
+        auto record = DB::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
         auto result = SQL::execute(txn, "DELETE EDGE " + to_string(e1));
@@ -1422,7 +1422,7 @@ void test_sql_delete_edge_with_condition() {
         r3.set("time_used", 365U);
         auto e1 = Edge::create(txn, "authors", v1, v2, r3);
 
-        auto record = Db::getRecord(txn, e1);
+        auto record = DB::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
         auto result = SQL::execute(txn, "DELETE EDGE authors FROM (SELECT FROM books WHERE title='Harry Potter') TO (SELECT FROM persons WHERE name='J.K. Rowlings') WHERE time_used=365");
@@ -1619,7 +1619,7 @@ void test_sql_create_index() {
     try {
         SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p");
         assert(result.type() == result.NO_RESULT);
-        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        auto propD = DB::getSchema(txn, "V").properties.at("p");
         assert(propD.indexInfo.size() == 1);
         assert(propD.indexInfo.begin()->second.second == false);
     } catch (const Error &e) {
@@ -1641,7 +1641,7 @@ void test_sql_create_index_unique() {
     try {
         SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p UNIQUE");
         assert(result.type() == result.NO_RESULT);
-        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        auto propD = DB::getSchema(txn, "V").properties.at("p");
         assert(propD.indexInfo.size() == 1);
         assert(propD.indexInfo.begin()->second.second == true);
     } catch (const Error &e) {
@@ -1664,7 +1664,7 @@ void test_sql_drop_index() {
     try {
         SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
         assert(result.type() == result.NO_RESULT);
-        auto propD = Db::getSchema(txn, "V").properties.at("p");
+        auto propD = DB::getSchema(txn, "V").properties.at("p");
         assert(propD.indexInfo.size() == 0);
     } catch (const Error &e) {
         cout << "\nError: " << e.what() << endl;

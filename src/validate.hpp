@@ -40,6 +40,10 @@ namespace nogdb {
 
         static void isClassIdMaxReach(const Txn& txn);
 
+        static void isPropertyIdMaxReach(const Txn& txn);
+
+        static void isIndexIdMaxReach(const Txn& txn);
+
         static void isClassNameValid(const std::string &className);
 
         static void isPropertyNameValid(const std::string &propName);
@@ -65,6 +69,10 @@ namespace nogdb {
         isExistingPropertyExtend(const Txn &txn, const ClassId& classId, const std::string &propertyName);
 
         static void isNotOverridenProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
+
+        static void isExistingSrcVertex(const Txn& txn, const RecordDescriptor& vertex);
+
+        static void isExistingDstVertex(const Txn& txn, const RecordDescriptor& vertex);
     };
 }
 

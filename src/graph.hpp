@@ -35,11 +35,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "boost/functional/hash.hpp"
-#include "multiversion_hashmap.hpp"
-#include "concurrent.hpp"
-#include "txn_stat.hpp"
-
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
 

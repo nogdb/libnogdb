@@ -54,7 +54,7 @@ void test_create_edges() {
         r.set("time_used", 180U);
         nogdb::Edge::create(txn, "authors", v1_1, v2, r);
 
-        auto v1 = nogdb::Db::getRecord(txn, v1_1);
+        auto v1 = nogdb::DB::getRecord(txn, v1_1);
         assert(v1.getVersion() == 2ULL);
 
         txn.commit();
@@ -681,7 +681,7 @@ void test_update_edge() {
         auto rec_person = nogdb::Vertex::get(txn, "persons")[0].record;
         assert(rec_person.getVersion() == 1ULL);
 
-        auto record = nogdb::Db::getRecord(txn, e1);
+        auto record = nogdb::DB::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
         r3.set("time_used", 400U);
@@ -1083,7 +1083,7 @@ void test_delete_edge() {
     try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
         auto e1 = nogdb::Edge::get(txn, "authors")[0].descriptor;
-        auto record = nogdb::Db::getRecord(txn, e1);
+        auto record = nogdb::DB::getRecord(txn, e1);
         assert(record.get("time_used").toIntU() == 365U);
 
         nogdb::Edge::destroy(txn, e1);
@@ -1144,7 +1144,7 @@ void test_update_version() {
             auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
             for (int j = 0; j < E; ++j) {
-                nogdb::Record r3 = nogdb::Db::getRecord(txn, edge[j]);
+                nogdb::Record r3 = nogdb::DB::getRecord(txn, edge[j]);
                 assert(r3.getVersion() == 1ULL + j);
                 r3.set("time_used", 365U + j + E);
                 assert(r3.getVersion() == 2ULL + j);
@@ -1296,7 +1296,7 @@ void test_get_invalid_edge() {
         nogdb::Edge::destroy(txn, e1);
 
         try {
-            auto res = nogdb::Db::getRecord(txn, e1);
+            auto res = nogdb::DB::getRecord(txn, e1);
         } catch (const nogdb::Error &ex) {
             REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
         }

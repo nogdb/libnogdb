@@ -22,6 +22,7 @@
 #ifndef __NOGDB_ERR_H_INCLUDED_
 #define __NOGDB_ERR_H_INCLUDED_
 
+#include <string>
 #include <exception>
 #include "lmdb/lmdb.h"
 
@@ -41,7 +42,6 @@
 
 #define NOGDB_TXN_INVALID_MODE                  0xa00
 #define NOGDB_TXN_COMPLETED                     0xa01
-#define NOGDB_TXN_VERSION_MAXREACH              0xa02
 #define NOGDB_TXN_UNKNOWN_ERR                   0xfff
 
 #define NOGDB_CTX_INVALID_CLASSTYPE             0x1000
@@ -97,7 +97,8 @@ namespace nogdb {
          * Constructor
          */
         Error(const int code, const std::string& func, const std::string& file, const int line) noexcept
-                : runtime_error{func + " in " + file + ":" + std::to_string(line)}, _code{code} {}
+                : _code{code}, _func{func}, _file{file}, _line{line},
+                  runtime_error{func + " in " + file + ":" + std::to_string(line)} {}
 
         virtual int code() const noexcept {
             return _code;
@@ -113,7 +114,9 @@ namespace nogdb {
 
     protected:
         const int _code;
-
+        const std::string _func{};
+        const std::string _file{};
+        const int _line;
     };
 
     /**
@@ -232,8 +235,6 @@ namespace nogdb {
                     return "NOGDB_TXN_INVALID_MODE: An operation couldn't be executed due to an invalid transaction mode";
                 case NOGDB_TXN_COMPLETED:
                     return "NOGDB_TXN_COMPLETED: An operation couldn't be executed due to a completed transaction";
-                case NOGDB_TXN_VERSION_MAXREACH:
-                    return "NOGDB_TXN_VERSION_MAXREACH: The transaction version has been reached the maximum value";
                 case NOGDB_TXN_UNKNOWN_ERR:
                 default:
                     return "NOGDB_TXN_UNKNOWN_ERR: Unknown";
@@ -287,12 +288,28 @@ namespace nogdb {
         }
     };
 
+    /**
+     * NogDB Fatal error definition
+     */
+    class FatalError : public Error {
+    public:
+        explicit FatalError(const Error& error) : _error{&error}, Error{error} {}
+
+        virtual const char *what() const noexcept {
+            return "(FATAL)" + std::string{_error->what()};
+        }
+
+    private:
+        const Error * const _error;
+    };
+
 #define NOGDB_ERROR(error)              nogdb::Error(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_STORAGE_ERROR(error)      nogdb::StorageError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_GRAPH_ERROR(error)        nogdb::GraphError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_CONTEXT_ERROR(error)      nogdb::ContextError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_TXN_ERROR(error)          nogdb::TxnError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_SQL_ERROR(error)          nogdb::SQLError(error,__FUNCTION__, __FILE__,__LINE__)
+#define NOGDB_FATAL_ERROR(error)        nogdb::FatalError(error)
 
 }
 

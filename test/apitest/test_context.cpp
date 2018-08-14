@@ -59,8 +59,8 @@ void assert_schema(const std::vector<nogdb::ClassDescriptor>& sc1, const std::ve
 void assert_ctx(const nogdb::Context &ctx1, const nogdb::Context &ctx2) {
 	auto txn1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
 	auto txn2 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-	auto info1 = nogdb::Db::getDbInfo(txn1);
-	auto info2 = nogdb::Db::getDbInfo(txn2);
+	auto info1 = nogdb::DB::getDBInfo(txn1);
+	auto info2 = nogdb::DB::getDBInfo(txn2);
 	assert_dbinfo(info1, info2);
 }
 
@@ -111,8 +111,8 @@ void test_ctx_copy_v2() {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
 		nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
 		nogdb::Property::add(txn, "files", "property", nogdb::PropertyType::TEXT);
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 		//show_schema(ctx, txn);
 		txn.commit();
 	} catch (const nogdb::Error &ex) {
@@ -127,8 +127,8 @@ void test_ctx_copy_v2() {
         nogdb::Context tmp1 = nogdb::Context(DATABASE_PATH);
         try {
             auto txn = nogdb::Txn{tmp1, nogdb::Txn::Mode::READ_ONLY};
-            auto schema_r = nogdb::Db::getSchema(txn);
-            auto info_r = nogdb::Db::getDbInfo(txn);
+            auto schema_r = nogdb::DB::getSchema(txn);
+            auto info_r = nogdb::DB::getDBInfo(txn);
 			//show_schema(&tmp1, txn);
             txn.rollback();
             assert_dbinfo(info, info_r);
@@ -143,8 +143,8 @@ void test_ctx_copy_v2() {
         tmp2 = std::move(tmp1);
         try {
             auto txn = nogdb::Txn{tmp2, nogdb::Txn::Mode::READ_ONLY};
-            auto schema_r = nogdb::Db::getSchema(txn);
-            auto info_r = nogdb::Db::getDbInfo(txn);
+            auto schema_r = nogdb::DB::getSchema(txn);
+            auto info_r = nogdb::DB::getDBInfo(txn);
             txn.rollback();
             assert_dbinfo(info, info_r);
             assert_schema(schema, schema_r);
@@ -177,8 +177,8 @@ void test_reopen_ctx() {
 		nogdb::Class::create(txn, "folders", nogdb::ClassType::VERTEX);
 		nogdb::Property::add(txn, "folders", "property1", nogdb::PropertyType::BLOB);
 		nogdb::Property::add(txn, "folders", "property2", nogdb::PropertyType::BIGINT);
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 		txn.commit();
 	}  catch(const nogdb::Error& ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
@@ -198,8 +198,8 @@ void test_reopen_ctx() {
 	auto info_r = nogdb::DBInfo{};
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		txn.rollback();
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
@@ -246,8 +246,8 @@ void test_reopen_ctx_v2() {
 		nogdb::Vertex::create(txn, "test1", r);
 		r.set("property1", 42.42).set("property2", 15LL).set("property3", nogdb::Bytes{myobject{42U, 42424242424242ULL, 42.42}});
 		nogdb::Vertex::create(txn, "test2", r);
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 		txn.commit();
 	}  catch(const nogdb::Error& ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
@@ -267,8 +267,8 @@ void test_reopen_ctx_v2() {
 	auto info_r = nogdb::DBInfo{};
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
 
@@ -333,8 +333,8 @@ void test_reopen_ctx_v3() {
 		tmp = v2;
 		auto e = nogdb::Edge::create(txn, "test3", v1, v2, r2);
 
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 		txn.commit();
 	}  catch(const nogdb::Error& ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
@@ -354,8 +354,8 @@ void test_reopen_ctx_v3() {
 	auto info_r = nogdb::DBInfo{};
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
 
@@ -433,8 +433,8 @@ void test_reopen_ctx_v4() {
 		tmp = v2;
 		auto e = nogdb::Edge::create(txn, "test3", v1, v2, r2);
 
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 
 		txn.commit();
 	}  catch(const nogdb::Error& ex) {
@@ -455,16 +455,16 @@ void test_reopen_ctx_v4() {
 
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
 
 		nogdb::Class::alter(txn, "test1", "test01");
 		nogdb::Property::alter(txn, "test2", "property1", "property01");
 
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		txn.commit();
 	} catch(const nogdb::Error& ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
@@ -484,17 +484,17 @@ void test_reopen_ctx_v4() {
 
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-		schema_rr = nogdb::Db::getSchema(txn);
-		info_rr = nogdb::Db::getDbInfo(txn);
+		schema_rr = nogdb::DB::getSchema(txn);
+		info_rr = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info_rr, info_r);
 		assert_schema(schema_rr, schema_r);
 
-		auto cdesc = nogdb::Db::getSchema(txn, "test01");
+		auto cdesc = nogdb::DB::getSchema(txn, "test01");
 		assert(cdesc.id == t1.id);
 		assert(cdesc.type == t1.type);
 		assert(cdesc.properties.size() == 2);
 
-		auto pdesc = nogdb::Db::getSchema(txn, "test2").properties.at("property01");
+		auto pdesc = nogdb::DB::getSchema(txn, "test2").properties.at("property01");
 		assert(pdesc.id == p1.id);
 		assert(pdesc.type == p1.type);
 
@@ -541,8 +541,8 @@ void test_reopen_ctx_v5() {
 		nogdb::Edge::create(txn, "edge2", v1, v2, nogdb::Record{}.set("prop1", 100).set("prop2", "world"));
 		nogdb::Edge::create(txn, "edge3", v2, v1, nogdb::Record{}.set("prop1", 200).set("prop3", -41.42));
 
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
 		txn.commit();
 	} catch(const nogdb::Error& ex) {
 		std::cout << "\nError: " << ex.what() << std::endl;
@@ -562,8 +562,8 @@ void test_reopen_ctx_v5() {
 
 	try {
 		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
 
@@ -610,27 +610,27 @@ void test_reopen_ctx_v6() {
 		nogdb::Property::createIndex(txn, "index_edge2", "prop1", false);
 		nogdb::Property::createIndex(txn, "index_edge2", "prop2", true);
 
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_vertex1").properties) {
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_vertex1").properties) {
 			if (property.first == "prop1")
 				assert(property.second.indexInfo.size() == 2);
 			else
 				assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_vertex2").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_vertex2").properties) {
 			if (property.first == "prop1")
 				assert(property.second.indexInfo.size() == 2);
 			else
 				assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_edge1").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_edge1").properties) {
 			if (property.first == "prop1")
 				assert(property.second.indexInfo.size() == 2);
 			else
 				assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_edge2").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_edge2").properties) {
 			if (property.first == "prop1")
 				assert(property.second.indexInfo.size() == 2);
 			else
@@ -655,26 +655,26 @@ void test_reopen_ctx_v6() {
 
 	try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
 
 		nogdb::Property::dropIndex(txn, "index_vertex2", "prop1");
 		nogdb::Property::dropIndex(txn, "index_edge2", "prop1");
 
-		schema = nogdb::Db::getSchema(txn);
-		info = nogdb::Db::getDbInfo(txn);
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_vertex1").properties) {
+		schema = nogdb::DB::getSchema(txn);
+		info = nogdb::DB::getDBInfo(txn);
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_vertex1").properties) {
 			assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_vertex2").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_vertex2").properties) {
 			assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_edge1").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_edge1").properties) {
 			assert(property.second.indexInfo.size() == 1);
 		}
-		for(const auto& property: nogdb::Db::getSchema(txn, "index_edge2").properties) {
+		for(const auto& property: nogdb::DB::getSchema(txn, "index_edge2").properties) {
 			assert(property.second.indexInfo.size() == 1);
 		}
         txn.commit();
@@ -688,8 +688,8 @@ void test_reopen_ctx_v6() {
 	try {
 		ctx = new nogdb::Context(DATABASE_PATH);
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-		schema_r = nogdb::Db::getSchema(txn);
-		info_r = nogdb::Db::getDbInfo(txn);
+		schema_r = nogdb::DB::getSchema(txn);
+		info_r = nogdb::DB::getDBInfo(txn);
 		assert_dbinfo(info, info_r);
 		assert_schema(schema, schema_r);
         txn.rollback();
