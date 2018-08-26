@@ -21,15 +21,15 @@
 
 #include <tuple>
 
-#include "schema.hpp"
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
 #include "datarecord_adapter.hpp"
 #include "index_adapter.hpp"
-#include "graph.hpp"
 #include "parser.hpp"
 #include "compare.hpp"
+#include "schema.hpp"
 #include "index.hpp"
+#include "relation.hpp"
 #include "generic.hpp"
 
 #include "nogdb.h"
@@ -41,115 +41,100 @@ namespace nogdb {
                                         const RecordDescriptor &srcVertexRecordDescriptor,
                                         const RecordDescriptor &dstVertexRecordDescriptor,
                                         const Record &record) {
-        Validate::isTransactionValid(txn);
-        Validate::isExistingSrcVertex(txn, srcVertexRecordDescriptor);
-        Validate::isExistingDstVertex(txn, dstVertexRecordDescriptor);
-        auto edgeClassInfo = Generic::getClassInfo(txn, className, ClassType::EDGE);
-        try {
-            auto schemaHelper = schema::SchemaInterface(&txn);
-            auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-            auto propertyInfo = schemaHelper.getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-            auto vertices = parser::Parser::parseVertexSrcDst(srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
-            auto value = parser::Parser::parseRecord(record, propertyInfo);
-            edgeDataRecord.insert(vertices + value);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isExistingSrcVertex(srcVertexRecordDescriptor)
+        . isExistingDstVertex(dstVertexRecordDescriptor);
 
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        try {
+            auto recordDescriptor = txn._iGraph->addEdge(
+                    edgeClassInfo,
+                    propertyNameMapInfo,
+                    srcVertexRecordDescriptor,
+                    dstVertexRecordDescriptor,
+                    record
+            );
             // add index if applied
-            auto indexHelper = index::IndexInterface(&txn);
-            for(const auto& property: propertyInfo) {
-                auto propertyName = property.first;
-                auto bytes = record.get(propertyName);
-                if (bytes.empty()) continue;
-                auto propertyId = property.second.id;
-                auto indexInfo = txn._index->getInfo(edgeClassInfo.id, propertyId);
-                if (indexInfo.id != IndexId{}) {
-                    indexHelper.insert();
+            for(const auto& property: record.getAll()) {
+                if (property.second.empty()) continue;
+                auto foundProperty = propertyNameMapInfo.find(property.first);
+                if (foundProperty == propertyNameMapInfo.cend()) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+                } else {
+                    auto indexInfo = txn._index->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+                    if (indexInfo.id != IndexId{}) {
+                        txn._iIndex->insert(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
+                    }
                 }
             }
+            return recordDescriptor;
         } catch (const Error& error) {
             txn.rollback();
             throw NOGDB_FATAL_ERROR(error);
         }
-
-        // add index if applied
-        for (const auto &indexInfo: indexInfos) {
-            auto bytesValue = record.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn._txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
-        }
-
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        auto edgeRecord = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-        edgeRecord.append(&srcVertexRecordDescriptor.rid.first, sizeof(ClassId));
-        edgeRecord.append(&srcVertexRecordDescriptor.rid.second, sizeof(PositionId));
-        edgeRecord.append(&dstVertexRecordDescriptor.rid.first, sizeof(ClassId));
-        edgeRecord.append(&dstVertexRecordDescriptor.rid.second, sizeof(PositionId));
-        auto key = RecordId{classDescriptor->id, maxRecordNum};
-        relationDBHandler.put(rid2str(key), edgeRecord);
-
-        // update in-memory relations
-        txn._txnCtx.dbRelation->createEdge(*txn._txnBase, key, srcVertexRecordDescriptor.rid,
-                                          dstVertexRecordDescriptor.rid);
-
-        return RecordDescriptor{classDescriptor->id, maxRecordNum};
     }
 
     void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
-        record.updateVersion(txn);
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto existingRecord = edgeDataRecord.getResult(recordDescriptor.rid.second);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        try {
+            auto srcDstVertex = parser::Parser::parseRawDataVertexSrcDst(existingRecord.data.blob());
+            auto newBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+            auto oldData = parser::Parser::parseRawData(existingRecord, propertyIdMapInfo, true);
 
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto classInfo = ClassPropertyInfo{};
-        auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
+            //TODO: handle old source code below
 
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto keyValue = classDBHandler.get(recordDescriptor.rid.second);
-        if (keyValue.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-        }
-        auto existingRecord = Parser::parseRawData(keyValue, classInfo);
-        auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        for (const auto &property: existingRecord.getAll()) {
-            // check if having any index
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty != classInfo.nameToDesc.cend()) {
-                for (const auto &indexIter: foundProperty->second.indexInfo) {
-                    if (indexIter.second.first == classDescriptor->id) {
-                        existingIndexInfos.emplace(
-                                property.first,
-                                std::make_tuple(
-                                        foundProperty->second.type,
-                                        indexIter.first,
-                                        indexIter.second.second
-                                )
-                        );
-                        break;
+            auto existingRecord = Parser::parseRawData(keyValue, classInfo);
+            auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
+            for (const auto &property: existingRecord.getAll()) {
+                // check if having any index
+                auto foundProperty = classInfo.nameToDesc.find(property.first);
+                if (foundProperty != classInfo.nameToDesc.cend()) {
+                    for (const auto &indexIter: foundProperty->second.indexInfo) {
+                        if (indexIter.second.first == classDescriptor->id) {
+                            existingIndexInfos.emplace(
+                                    property.first,
+                                    std::make_tuple(
+                                            foundProperty->second.type,
+                                            indexIter.first,
+                                            indexIter.second.second
+                                    )
+                            );
+                            break;
+                        }
                     }
                 }
             }
-        }
-        for (const auto &indexInfo: existingIndexInfos) {
-            auto bytesValue = existingRecord.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
-                               isUnique);
-        }
-        for (const auto &indexInfo: indexInfos) {
-            auto bytesValue = record.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-        }
+            for (const auto &indexInfo: existingIndexInfos) {
+                auto bytesValue = existingRecord.get(indexInfo.first);
+                auto const propertyType = std::get<0>(indexInfo.second);
+                auto const indexId = std::get<1>(indexInfo.second);
+                auto const isUnique = std::get<2>(indexInfo.second);
+                Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
+                                   isUnique);
+            }
+            for (const auto &indexInfo: indexInfos) {
+                auto bytesValue = record.get(indexInfo.first);
+                auto const propertyType = std::get<0>(indexInfo.second);
+                auto const indexId = std::get<1>(indexInfo.second);
+                auto const isUnique = std::get<2>(indexInfo.second);
+                Index::addIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
+                                isUnique);
+            }
 
-        classDBHandler.put(recordDescriptor.rid.second, value);
+            classDBHandler.put(recordDescriptor.rid.second, value);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
+        }
     }
 
     void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {

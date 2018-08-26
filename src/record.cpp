@@ -169,11 +169,6 @@ namespace nogdb {
         return getIntU(DEPTH_PROPERTY);
     }
 
-    uint64_t Record::getVersion() const {
-        const auto it = basicProperties.find(VERSION_PROPERTY);
-        return (it == basicProperties.cend() ? 0ULL : it->second.toBigIntU());
-    }
-
     void Record::unset(const std::string &propName) {
         (isBasicInfo(propName) ? basicProperties : properties).erase(propName);
     }
@@ -200,14 +195,6 @@ namespace nogdb {
                 ++it;
             }
         }
-    }
-
-    const Record &Record::updateVersion(const Txn& txn) const {
-        if (basicProperties.find(TXN_VERSION) == basicProperties.end() || getBigIntU(TXN_VERSION) != txn.getVersionId()) {
-            setBasicInfo(TXN_VERSION, txn.getVersionId());
-            setBasicInfo(VERSION_PROPERTY, getVersion() + 1ULL);
-        }
-        return *this;
     }
 
 }

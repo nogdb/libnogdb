@@ -58,12 +58,13 @@ namespace nogdb {
                     put(MAX_RECORD_NUM_EM, PositionId{1});
                 }
 
-                void insert(const Blob &blob) {
+                PositionId insert(const Blob &blob) {
                     auto result = get(MAX_RECORD_NUM_EM);
                     require(!result.empty);
                     auto posid = result.data.numeric<PositionId>();
                     put(posid, blob);
                     put(MAX_RECORD_NUM_EM, posid + PositionId{1});
+                    return posid;
                 }
 
                 void update(const PositionId &posid, const Blob &blob) {

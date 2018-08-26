@@ -24,7 +24,9 @@
 #include "lmdb_engine.hpp"
 #include "dbinfo_adapter.hpp"
 #include "schema_adapter.hpp"
-#include "graph.hpp"
+#include "schema.hpp"
+#include "index.hpp"
+#include "relation.hpp"
 
 #include "nogdb_txn.h"
 
@@ -43,6 +45,9 @@ namespace nogdb {
             _class = new adapter::schema::ClassAccess{_txnBase};
             _property = new adapter::schema::PropertyAccess{_txnBase};
             _index = new adapter::schema::IndexAccess{_txnBase};
+            _iSchema = new schema::SchemaInterface(this);
+            _iIndex = new index::IndexInterface(this);
+            _iGraph = new relation::GraphInterface(this);
         } catch (const Error &err) {
             try { rollback(); } catch (...) {}
             throw NOGDB_FATAL_ERROR(err);
@@ -72,6 +77,18 @@ namespace nogdb {
             delete _index;
             _index = nullptr;
         }
+        if (_iSchema) {
+            delete _iSchema;
+            _iSchema = nullptr;
+        }
+        if (_iIndex) {
+            delete _iIndex;
+            _iIndex = nullptr;
+        }
+        if (_iGraph) {
+            delete _iGraph;
+            _iGraph = nullptr;
+        }
     }
 
     Txn::Txn(Txn &&txn) noexcept
@@ -90,11 +107,17 @@ namespace nogdb {
             _class = txn._class;
             _property = txn._property;
             _index = txn._index;
+            _iSchema = txn._iSchema;
+            _iIndex = txn._iIndex;
+            _iGraph = txn._iGraph;
             txn._txnBase = nullptr;
             txn._dbInfo = nullptr;
             txn._class = nullptr;
             txn._property = nullptr;
             txn._index = nullptr;
+            txn._iSchema = nullptr;
+            txn._iIndex = nullptr;
+            txn._iGraph = nullptr;
             txn._completed = true;
         }
         return *this;

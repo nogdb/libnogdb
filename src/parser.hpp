@@ -34,7 +34,9 @@
 #include "schema_adapter.hpp"
 
 namespace nogdb {
+
     namespace parser {
+
         constexpr size_t UINT8_BITS_COUNT = 8 * sizeof(uint8_t);
         constexpr size_t UINT16_BITS_COUNT = 8 * sizeof(uint16_t);
         constexpr size_t UINT32_BITS_COUNT = 8 * sizeof(uint32_t);

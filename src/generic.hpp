@@ -47,18 +47,6 @@ namespace nogdb {
 
         ~Generic() noexcept = delete;
 
-        template<typename T>
-        static adapter::schema::ClassAccessInfo
-        getClassInfo(const Txn &txn, const T &classSearchKey, ClassType type = ClassType::UNDEFINED) {
-            auto foundClass = Validate::isExistingClass(txn, classSearchKey);
-            if (type != ClassType::UNDEFINED) {
-                if (foundClass.type != type) {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
-                }
-            }
-            return foundClass;
-        }
-
         static Result getRecordResult(Txn &txn,
                                       const ClassPropertyInfo &classPropertyInfo,
                                       const RecordDescriptor &recordDescriptor);

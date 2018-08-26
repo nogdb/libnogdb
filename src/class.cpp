@@ -28,30 +28,35 @@
 #include "datarecord_adapter.hpp"
 #include "relation.hpp"
 #include "schema.hpp"
+#include "parser.hpp"
 #include "generic.hpp"
 #include "validate.hpp"
 #include "utils.hpp"
 
 #include "nogdb.h"
-#include "parser.hpp"
 
 using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
+    using namespace adapter::schema;
+    using namespace adapter::datarecord;
+
     const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {
-        Validate::isTransactionValid(txn);
-        Validate::isClassIdMaxReach(txn);
-        Validate::isClassNameValid(className);
-        Validate::isClassTypeValid(type);
-        Validate::isNotDuplicatedClass(txn, className);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isClassIdMaxReach()
+        . isClassNameValid(className)
+        . isClassTypeValid(type)
+        . isNotDuplicatedClass(className);
+
         try {
-            auto classId = txn._dbinfo->getMaxClassId() + ClassId{1};
-            auto classProps = adapter::schema::ClassAccessInfo{className, classId, ClassId{0}, type};
+            auto classId = txn._dbInfo->getMaxClassId() + ClassId{1};
+            auto classProps = ClassAccessInfo{className, classId, ClassId{0}, type};
             txn._class->create(classProps);
-            adapter::datarecord::DataRecord(txn._txnBase, classId, type).init();
-            txn._dbinfo->setMaxClassId(classId);
-            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() + ClassId{1});
+            DataRecord(txn._txnBase, classId, type).init();
+            txn._dbInfo->setMaxClassId(classId);
+            txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
             return ClassDescriptor{classProps.id, className, ClassId{0}, type};
         } catch (const Error &err) {
             txn.rollback();
@@ -63,19 +68,21 @@ namespace nogdb {
     }
 
     const ClassDescriptor Class::createExtend(Txn &txn, const std::string &className, const std::string &superClass) {
-        Validate::isTransactionValid(txn);
-        Validate::isClassIdMaxReach(txn);
-        Validate::isClassNameValid(className);
-        Validate::isClassNameValid(superClass);
-        Validate::isNotDuplicatedClass(txn, className);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isClassIdMaxReach()
+        . isClassNameValid(className)
+        . isClassNameValid(superClass)
+        . isNotDuplicatedClass(className);
+
+        auto superClassInfo = txn._iSchema->getExistingClass(superClass);
         try {
-            auto superClassInfo = txn._class->getInfo(superClass);
-            auto classId = txn._dbinfo->getMaxClassId() + ClassId{1};
-            auto classProps = adapter::schema::ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type};
+            auto classId = txn._dbInfo->getMaxClassId() + ClassId{1};
+            auto classProps = ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type};
             txn._class->create(classProps);
-            adapter::datarecord::DataRecord(txn._txnBase, classId, superClassInfo.type).init();
-            txn._dbinfo->setMaxClassId(classId);
-            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() + ClassId{1});
+            DataRecord(txn._txnBase, classId, superClassInfo.type).init();
+            txn._dbInfo->setMaxClassId(classId);
+            txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
             return ClassDescriptor{classProps.id, className, superClassInfo.id, superClassInfo.type};
         } catch (const Error &err) {
             txn.rollback();
@@ -87,8 +94,10 @@ namespace nogdb {
     }
 
     void Class::drop(Txn &txn, const std::string &className) {
-        Validate::isTransactionValid(txn);
-        auto foundClass = Validate::isExistingClass(txn, className);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
         // retrieve relevant properties information
         auto propertyInfos = txn._property->getInfos(foundClass.id);
         for (const auto &property: propertyInfos) {
@@ -108,7 +117,7 @@ namespace nogdb {
                 //TODO: implement existing index deletion if needed
             }
             // delete all associated relations
-            auto table = adapter::datarecord::DataRecord(txn._txnBase, foundClass.id, foundClass.type);
+            auto table = DataRecord(txn._txnBase, foundClass.id, foundClass.type);
             auto cursorHandler = table.getCursor();
             for(auto keyValue = cursorHandler.getNext();
                 !keyValue.empty();
@@ -116,12 +125,11 @@ namespace nogdb {
                 auto key = keyValue.key.data.numeric<PositionId>();
                 if (key == MAX_RECORD_NUM_EM) continue;
                 auto recordId = RecordId{foundClass.id, key};
-                auto relation = relation::GraphInterface(&txn);
                 if (foundClass.type == ClassType::EDGE) {
                     auto vertices = parser::Parser::parseRawDataVertexSrcDst(keyValue.val.data.blob());
-                    relation.removeRel(recordId, vertices.first, vertices.second);
+                    txn._iGraph->removeRel(recordId, vertices.first, vertices.second);
                 } else {
-                    relation.removeRelFromVertex(recordId);
+                    txn._iGraph->removeRelFromVertex(recordId);
                 }
             }
             // drop the actual table
@@ -129,7 +137,7 @@ namespace nogdb {
             // update a superclass of subclasses if existing
             for (const auto &subClassInfo: txn._class->getSubClassInfos(foundClass.id)) {
                 txn._class->update(
-                        adapter::schema::ClassAccessInfo{
+                        ClassAccessInfo{
                             subClassInfo.name,
                             subClassInfo.id,
                             foundClass.superClassId,
@@ -137,8 +145,8 @@ namespace nogdb {
                         });
             }
             // update database info
-            txn._dbinfo->setNumClassId(txn._dbinfo->getNumClassId() - ClassId{1});
-            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
+            txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() - ClassId{1});
+            txn._dbInfo->setNumPropertyId(txn._dbInfo->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
         } catch (const Error &err) {
             txn.rollback();
             throw NOGDB_FATAL_ERROR(err);
@@ -149,10 +157,12 @@ namespace nogdb {
     }
 
     void Class::alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
-        Validate::isTransactionValid(txn);
-        Validate::isClassNameValid(newClassName);
-        Validate::isNotDuplicatedClass(txn, newClassName);
-        auto foundClass = Validate::isExistingClass(txn, oldClassName);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isClassNameValid(newClassName)
+        . isNotDuplicatedClass(newClassName);
+
+        auto foundClass = txn._iSchema->getExistingClass(oldClassName);
         try {
             txn._class->alterClassName(oldClassName, newClassName);
         } catch (const Error &err) {

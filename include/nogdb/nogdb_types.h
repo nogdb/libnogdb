@@ -610,7 +610,6 @@ namespace nogdb {
             return *this;
         };
 
-        const Record &updateVersion(const Txn &txn) const;
     };
 
     struct RecordDescriptor {

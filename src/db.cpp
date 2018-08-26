@@ -19,7 +19,7 @@
  *
  */
 
-#include <cstring>
+#include <vector>
 
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
@@ -31,7 +31,7 @@
 
 namespace nogdb {
     Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        auto classInfo = Generic::getClassInfo(txn, recordDescriptor.rid.first);
+        auto classInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first);
         auto result = adapter::datarecord::DataRecord(txn._txnBase, recordDescriptor.rid.first, classInfo.type)
                 .getResult(recordDescriptor.rid.second);
         auto propertyInfos = txn._property->getIdMapInfo(classInfo.id);
@@ -54,10 +54,9 @@ namespace nogdb {
 
     const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor& classDescriptor) {
         auto result = std::vector<PropertyDescriptor>{};
-        auto foundClass = Validate::isExistingClass(txn, classDescriptor.id);
-        auto schemaHelper = schema::SchemaInterface(&txn);
+        auto foundClass = txn._iSchema->getExistingClass(classDescriptor.id);
         // native properties
-        for(const auto& property: schemaHelper.getNativePropertyInfo(txn, foundClass.id)) {
+        for(const auto& property: txn._iSchema->getNativePropertyInfo(txn, foundClass.id)) {
             result.emplace_back(
                     PropertyDescriptor{
                        property.id,
@@ -67,7 +66,7 @@ namespace nogdb {
                     });
         }
         // inherited properties
-        for(const auto& property: schemaHelper.getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
+        for(const auto& property: txn._iSchema->getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
             result.emplace_back(
                     PropertyDescriptor{
                         property.id,

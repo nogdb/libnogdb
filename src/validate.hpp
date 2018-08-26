@@ -28,52 +28,169 @@
 #include "nogdb_errors.h"
 #include "nogdb_context.h"
 #include "nogdb_types.h"
-#include "nogdb_txn.h"
+#include "nogdb_txn->h"
+
+#define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
 
 namespace nogdb {
-    struct Validate {
-        Validate() = delete;
 
-        ~Validate() noexcept = delete;
+    namespace validate {
 
-        static void isTransactionValid(const Txn &txn);
+        using namespace adapter::schema;
+        
+        class Validator {
+        public:
+            Validator(const Txn *txn): _txn{txn} {}
 
-        static void isClassIdMaxReach(const Txn& txn);
+            virtual ~Validator() noexcept = default;
 
-        static void isPropertyIdMaxReach(const Txn& txn);
+            Validator& isTransactionValid() {
+                if (_txn->getTxnMode() == Txn::Mode::READ_ONLY) {
+                    throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
+                }
+                if (_txn->isCompleted()) {
+                    throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
+                }
+                return *this;
+            }
 
-        static void isIndexIdMaxReach(const Txn& txn);
+            Validator& isClassIdMaxReach() {
+                if ((_txn->_dbinfo->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+                }
+                return *this;
+            }
 
-        static void isClassNameValid(const std::string &className);
+            Validator& isPropertyIdMaxReach() {
+                if ((_txn->_dbinfo->getMaxPropertyId() >= UINT16_MAX)) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+                }
+                return *this;
+            }
 
-        static void isPropertyNameValid(const std::string &propName);
+            Validator& isIndexIdMaxReach() {
+                if ((_txn->_dbinfo->getMaxIndexId() >= UINT32_MAX)) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+                }
+                return *this;
+            }
 
-        static bool isNameValid(const std::string& name);
+            Validator& isClassNameValid(const std::string &className) {
+                if (!isNameValid(className)) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSNAME);
+                }
+                return *this;
+            }
 
-        static void isClassTypeValid(const ClassType &type);
+            Validator& isPropertyNameValid(const std::string &propName) {
+                if (!isNameValid(propName)) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPERTYNAME);
+                }
+                return *this;
+            }
 
-        static void isPropertyTypeValid(const PropertyType &type);
+            Validator& isClassTypeValid(const ClassType &type) {
+                switch (type) {
+                    case ClassType::VERTEX:
+                    case ClassType::EDGE:
+                        return *this;
+                    default:
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSTYPE);
+                }
+            }
 
-        static void isNotDuplicatedClass(const Txn &txn, const std::string &className);
+            Validator& isPropertyTypeValid(const PropertyType &type) {
+                switch (type) {
+                    case PropertyType::TINYINT:
+                    case PropertyType::UNSIGNED_TINYINT:
+                    case PropertyType::SMALLINT:
+                    case PropertyType::UNSIGNED_SMALLINT:
+                    case PropertyType::INTEGER:
+                    case PropertyType::UNSIGNED_INTEGER:
+                    case PropertyType::BIGINT:
+                    case PropertyType::UNSIGNED_BIGINT:
+                    case PropertyType::TEXT:
+                    case PropertyType::REAL:
+                    case PropertyType::BLOB:
+                        return *this;
+                    default:
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE);
+                }
+            }
 
-        static adapter::schema::ClassAccessInfo isExistingClass(const Txn &txn, const std::string &className);
+            Validator& isNotDuplicatedClass(const std::string &className) {
+                auto foundClass = _txn->_class->getId(className);
+                if (foundClass != ClassId{}) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
+                }
+                return *this;
+            }
 
-        static adapter::schema::ClassAccessInfo isExistingClass(const Txn &txn, const ClassId &classId);
+            Validator& isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName) {
+                auto foundProperty = _txn->_property->getId(classId, propertyName);
+                if (foundProperty != PropertyId{}) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
+                }
+                auto superClassId = txn._class->getSuperClassId(classId);
+                if (superClassId != ClassId{}) {
+                    isNotDuplicatedProperty(txn, superClassId, propertyName);
+                }
+                return *this;
+            }
 
-        static void isNotDuplicatedProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
+            Validator& isNotOverridenProperty(const ClassId &classId, const std::string &propertyName) {
+                auto foundProperty = _txn->_property->getId(classId, propertyName);
+                if (foundProperty != PropertyId{}) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
+                }
+                for (const auto &subClassId: _txn->_class->getSubClassIds(classId)) {
+                    if (subClassId != ClassId{}) {
+                        isNotOverridenProperty(txn, subClassId, propertyName);
+                    }
+                }
+                return *this;
+            }
 
-        static adapter::schema::PropertyAccessInfo
-        isExistingProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
+            Validator& isExistingSrcVertex(const RecordDescriptor &vertex) {
+                auto foundClass = isExistingClass(_txn, vertex.rid.first);
+                auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+                try {
+                    vertexDataRecord.getBlob(vertex.rid.second);
+                } catch (const Error &error) {
+                    if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
+                    } else {
+                        throw NOGDB_FATAL_ERROR(error);
+                    }
+                }
+                return *this;
+            }
 
-        static adapter::schema::PropertyAccessInfo
-        isExistingPropertyExtend(const Txn &txn, const ClassId& classId, const std::string &propertyName);
+            Validator& isExistingDstVertex(const RecordDescriptor &vertex) {
+                auto foundClass = isExistingClass(_txn, vertex.rid.first);
+                auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+                try {
+                    vertexDataRecord.getBlob(vertex.rid.second);
+                } catch (const Error &error) {
+                    if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
+                    } else {
+                        throw NOGDB_FATAL_ERROR(error);
+                    }
+                }
+                return *this;
+            }
 
-        static void isNotOverridenProperty(const Txn &txn, const ClassId& classId, const std::string &propertyName);
+        private:
 
-        static void isExistingSrcVertex(const Txn& txn, const RecordDescriptor& vertex);
+            const Txn *_txn;
 
-        static void isExistingDstVertex(const Txn& txn, const RecordDescriptor& vertex);
-    };
+            inline static bool isNameValid(const std::string &name) {
+                return std::regex_match(name, std::regex("^[A-Za-z_][A-Za-z0-9_]*$"));
+            }
+
+        };
+    }
 }
 
 #endif

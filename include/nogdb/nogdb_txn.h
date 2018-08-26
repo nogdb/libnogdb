@@ -53,19 +53,23 @@ namespace nogdb {
         class SchemaInterface;
     }
 
+    namespace validate {
+        class Validator;
+    }
+
     class Txn {
     public:
         friend struct Compare;
         friend struct Algorithm;
         friend struct Generic;
         friend struct DB;
-        friend struct Validate;
         friend struct Class;
         friend struct Property;
-        friend struct Index;
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
+
+        friend class validate::Validator;
 
         friend class ResultSetCursor;
 
@@ -100,6 +104,10 @@ namespace nogdb {
         adapter::schema::ClassAccess *_class;
         adapter::schema::PropertyAccess *_property;
         adapter::schema::IndexAccess *_index;
+        schema::SchemaInterface *_iSchema;
+        index::IndexInterface *_iIndex;
+        relation::GraphInterface *_iGraph;
+
         Mode _txnMode;
         bool _completed; // throw error if working with isCompleted = true
     };

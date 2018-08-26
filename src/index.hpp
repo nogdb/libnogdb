@@ -58,7 +58,7 @@ namespace nogdb {
 
             virtual ~IndexInterface() noexcept = default;
 
-            void create(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const ClassType& classType) {
+            void initialize(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const ClassType& classType) {
                 switch (propertyInfo.type) {
                     case PropertyType::UNSIGNED_TINYINT:
                         createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
@@ -215,8 +215,7 @@ namespace nogdb {
                     if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
                         return std::make_pair(false, IndexAccessInfo{});
                     }
-                    auto schemaHelper = schema::SchemaInterface(_txn);
-                    auto propertyNameMapInfo = schemaHelper.getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+                    auto propertyNameMapInfo = _txn->_iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
                     auto foundProperty = propertyNameMapInfo.find(condition.propName);
                     if (foundProperty != propertyNameMapInfo.cend()) {
                         auto indexInfo = _txn->_index->getInfo(classInfo.id, foundProperty->second.id);

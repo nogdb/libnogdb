@@ -29,11 +29,13 @@
 #include "relation_adapter.hpp"
 #include "datarecord_adapter.hpp"
 #include "utils.hpp"
+#include "parser.hpp"
 
 namespace nogdb {
 
     namespace relation {
 
+        using namespace adapter::schema;
         using namespace adapter::relation;
         using namespace adapter::datarecord;
 
@@ -59,9 +61,28 @@ namespace nogdb {
 //
 //            }
 //
-//            void addEdge(const RecordId& rid, const RecordDescriptor& src, const RecordDescriptor& dst, const Record& record) {
-//
-//            }
+            RecordDescriptor addEdge(const ClassAccessInfo& classInfo,
+                                     const PropertyNameMapInfo& propertyNameMapInfo,
+                                     const RecordDescriptor& srcVertex,
+                                     const RecordDescriptor& dstVertex,
+                                     const Record& record) {
+                auto edgeDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, ClassType::EDGE);
+                auto vertexBlob = parser::Parser::parseVertexSrcDst(srcVertex.rid, dstVertex.rid);
+                auto valueBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+                auto positionId = edgeDataRecord.insert(vertexBlob + valueBlob);
+                auto recordDescriptor = RecordDescriptor{classInfo.id, positionId};
+                _outRel->create(RelationAccessInfo{
+                        srcVertex.rid,
+                        recordDescriptor,
+                        dstVertex.rid
+                });
+                _inRel->create(RelationAccessInfo{
+                    dstVertex.rid,
+                    recordDescriptor,
+                    srcVertex.rid
+                });
+                return RecordDescriptor{classInfo.id, positionId};
+            }
 
             void removeRel(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid) {
                 _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});

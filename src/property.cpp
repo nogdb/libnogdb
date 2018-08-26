@@ -34,23 +34,29 @@
 
 namespace nogdb {
 
+    using namespace adapter::schema;
+
     const PropertyDescriptor Property::add(Txn &txn,
                                            const std::string &className,
                                            const std::string &propertyName,
                                            PropertyType type) {
-        Validate::isTransactionValid(txn);
-        Validate::isPropertyNameValid(propertyName);
-        Validate::isPropertyTypeValid(type);
-        Validate::isPropertyIdMaxReach(txn);
-        auto foundClass = Validate::isExistingClass(txn, className);
-        Validate::isNotDuplicatedProperty(txn, foundClass.id, propertyName);
-        Validate::isNotOverridenProperty(txn, foundClass.id, propertyName);
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
+
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid(txn)
+        . isPropertyNameValid(propertyName)
+        . isPropertyTypeValid(type)
+        . isPropertyIdMaxReach(txn)
+        . isNotDuplicatedProperty(foundClass.id, propertyName)
+        . isNotOverridenProperty(foundClass.id, propertyName);
+
         try {
-            auto propertyId = txn._dbinfo->getMaxPropertyId() + PropertyId{1};
-            auto propertyProps = adapter::schema::PropertyAccessInfo{foundClass.id, propertyName, propertyId, type};
+            auto propertyId = txn._dbInfo->getMaxPropertyId() + PropertyId{1};
+            auto propertyProps = PropertyAccessInfo{foundClass.id, propertyName, propertyId, type};
             txn._property->create(propertyProps);
-            txn._dbinfo->setMaxPropertyId(propertyId);
-            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() + PropertyId{1});
+            txn._dbInfo->setMaxPropertyId(propertyId);
+            txn._dbInfo->setNumPropertyId(txn._dbInfo->getNumPropertyId() + PropertyId{1});
             return PropertyDescriptor{propertyProps.id, propertyName, type, false};
         } catch (const Error &err) {
             txn.rollback();
@@ -65,12 +71,16 @@ namespace nogdb {
                          const std::string &className,
                          const std::string &oldPropertyName,
                          const std::string &newPropertyName) {
-        Validate::isTransactionValid(txn);
-        Validate::isPropertyNameValid(newPropertyName);
-        auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundOldProperty = Validate::isExistingProperty(txn, foundClass.id, oldPropertyName);
-        Validate::isNotDuplicatedProperty(txn, foundClass.id, newPropertyName);
-        Validate::isNotOverridenProperty(txn, foundClass.id, newPropertyName);
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
+
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isPropertyNameValid(newPropertyName)
+        . isNotDuplicatedProperty(foundClass.id, newPropertyName)
+        . isNotOverridenProperty(foundClass.id, newPropertyName);
+
+        auto foundOldProperty = txn._iSchema->getExistingProperty(foundClass.id, oldPropertyName);
         try {
             txn._property->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
         } catch (const Error &err) {
@@ -83,9 +93,11 @@ namespace nogdb {
     }
 
     void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
-        Validate::isTransactionValid(txn);
-        auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundProperty = Validate::isExistingProperty(txn, foundClass.id, propertyName);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
+        auto foundProperty = txn._iSchema->getExistingProperty(foundClass.id, propertyName);
         // check if all index tables associated with the column have bee removed beforehand
         auto foundIndex = txn._index->getInfo(foundClass.id, foundProperty.id);
         if (foundIndex.id != IndexId{}) {
@@ -93,7 +105,7 @@ namespace nogdb {
         }
         try {
             txn._property->remove(foundClass.id, propertyName);
-            txn._dbinfo->setNumPropertyId(txn._dbinfo->getNumPropertyId() - PropertyId{1});
+            txn._dbInfo->setNumPropertyId(txn._dbInfo->getNumPropertyId() - PropertyId{1});
         } catch (const Error &err) {
             txn.rollback();
             throw NOGDB_FATAL_ERROR(err);
@@ -104,10 +116,12 @@ namespace nogdb {
     }
 
     void Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
-        Validate::isTransactionValid(txn);
-        Validate::isIndexIdMaxReach(txn);
-        auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundProperty = Validate::isExistingPropertyExtend(txn, foundClass.id, propertyName);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isIndexIdMaxReach();
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
+        auto foundProperty = txn._iSchema->getExistingPropertyExtend(foundClass.id, propertyName);
         if (foundProperty.type == PropertyType::BLOB || foundProperty.type == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE_INDEX);
         }
@@ -116,13 +130,14 @@ namespace nogdb {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
         }
         try {
-            auto indexId = txn._dbinfo->getMaxIndexId() + IndexId{1};
-            auto indexProps = adapter::schema::IndexAccessInfo{foundClass.id, foundProperty.id, indexId, isUnique};
+            auto indexId = txn._dbInfo->getMaxIndexId() + IndexId{1};
+            auto indexProps = IndexAccessInfo{foundClass.id, foundProperty.id, indexId, isUnique};
+            // create index metadata in schema
             txn._index->create(indexProps);
-            auto indexHelper = index::IndexInterface(&txn);
-            indexHelper.create(foundProperty, indexProps, foundClass.type);
-            txn._dbinfo->setMaxIndexId(indexId);
-            txn._dbinfo->setNumIndexId(txn._dbinfo->getNumIndexId() + IndexId{1});
+            // create index record in index database
+            txn._iIndex->initialize(foundProperty, indexProps, foundClass.type);
+            txn._dbInfo->setMaxIndexId(indexId);
+            txn._dbInfo->setNumIndexId(txn._dbInfo->getNumIndexId() + IndexId{1});
         } catch (const Error &err) {
             if (err.code() == MDB_KEYEXIST) {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
@@ -137,18 +152,21 @@ namespace nogdb {
     }
 
     void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
-        Validate::isTransactionValid(txn);
-        auto foundClass = Validate::isExistingClass(txn, className);
-        auto foundProperty = Validate::isExistingPropertyExtend(txn, foundClass.id, propertyName);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto foundClass = txn._iSchema->getExistingClass(className);
+        auto foundProperty = txn._iSchema->getExistingPropertyExtend(txn, foundClass.id, propertyName);
         auto indexInfo = txn._index->getInfo(foundClass.id, foundProperty.id);
         if (indexInfo.id == IndexId{}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
         }
         try {
+            // remove index metadata from schema
             txn._index->remove(foundClass.id, foundProperty.id);
-            auto indexHelper = index::IndexInterface(&txn);
-            indexHelper.drop(foundProperty, indexInfo);
-            txn._dbinfo->setNumIndexId(txn._dbinfo->getNumIndexId() - IndexId{1});
+            // remove all index data from index database
+            txn._iIndex->drop(foundProperty, indexInfo);
+            txn._dbInfo->setNumIndexId(txn._dbInfo->getNumIndexId() - IndexId{1});
         } catch (const Error &err) {
             txn.rollback();
             throw NOGDB_FATAL_ERROR(err);
