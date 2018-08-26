@@ -26,6 +26,7 @@
 #include <vector>
 #include <unordered_set>
 #include <type_traits>
+#include <functional>
 
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
@@ -58,98 +59,45 @@ namespace nogdb {
             virtual ~IndexInterface() noexcept = default;
 
             void create(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo, const ClassType& classType) {
-                auto propertyIdMapInfo = _txn->_property.getIdMapInfo(indexInfo.classId);
                 switch (propertyInfo.type) {
                     case PropertyType::UNSIGNED_TINYINT:
+                        createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<uint64_t>(value.toTinyIntU());
+                        }); break;
                     case PropertyType::UNSIGNED_SMALLINT:
+                        createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<uint64_t>(value.toSmallIntU());
+                        }); break;
                     case PropertyType::UNSIGNED_INTEGER:
-                    case PropertyType::UNSIGNED_BIGINT: {
-                        auto indexAccess = openIndexRecordPositive(indexInfo);
-                        auto cursorHandler = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType).getCursor();
-                        for(auto keyValue = cursorHandler.getNext();
-                            !keyValue.empty();
-                            keyValue = cursorHandler.getNext()) {
-                            auto const positionId = keyValue.key.data.numeric<PositionId>();
-                            if (positionId == MAX_RECORD_NUM_EM) continue;
-                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
-                            auto bytesValue = record.get(propertyInfo.name);
-                            if (!bytesValue.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
-                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord);
-                                } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
-                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord);
-                                } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
-                                    indexAccess.create(static_cast<uint64_t>(bytesValue.toIntU()), indexRecord);
-                                } else {
-                                    indexAccess.create(bytesValue.toBigIntU(), indexRecord);
-                                }
-                            }
-                        }
-                        break;
-                    }
+                        createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<uint64_t>(value.toIntU());
+                        }); break;
+                    case PropertyType::UNSIGNED_BIGINT:
+                        createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return value.toBigIntU();
+                        }); break;
                     case PropertyType::TINYINT:
+                        createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<int64_t>(value.toTinyInt());
+                        }); break;
                     case PropertyType::SMALLINT:
+                        createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<int64_t>(value.toSmallInt());
+                        }); break;
                     case PropertyType::INTEGER:
+                        createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return static_cast<int64_t>(value.toInt());
+                        }); break;
                     case PropertyType::BIGINT:
-                    case PropertyType::REAL: {
-                        auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
-                        auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
-                        auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
-                        for(auto keyValue = cursorHandler.getNext();
-                            !keyValue.empty();
-                            keyValue = cursorHandler.getNext()) {
-                            auto const positionId = keyValue.key.data.numeric<PositionId>();
-                            if (positionId == MAX_RECORD_NUM_EM) continue;
-                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
-                            auto bytesValue = record.get(propertyInfo.name);
-                            if (!bytesValue.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                if (propertyInfo.type == PropertyType::TINYINT) {
-                                    auto value = static_cast<int64_t>(bytesValue.toTinyInt());
-                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
-                                    else indexNegativeAccess.create(value, indexRecord);
-                                } else if (propertyInfo.type == PropertyType::SMALLINT) {
-                                    auto value = static_cast<int64_t>(bytesValue.toSmallInt());
-                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
-                                    else indexNegativeAccess.create(value, indexRecord);
-                                } else if (propertyInfo.type == PropertyType::INTEGER) {
-                                    auto value = static_cast<int64_t>(bytesValue.toInt());
-                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
-                                    else indexNegativeAccess.create(value, indexRecord);
-                                } else if (propertyInfo.type == PropertyType::REAL) {
-                                    auto value = bytesValue.toReal();
-                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
-                                    else indexNegativeAccess.create(value, indexRecord);
-                                } else {
-                                    auto value = bytesValue.toBigInt();
-                                    if (value >= 0) indexPositiveAccess.create(value, indexRecord);
-                                    else indexNegativeAccess.create(value, indexRecord);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case PropertyType::TEXT: {
-                        auto indexAccess = openIndexRecordString(indexInfo);
-                        auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
-                        for(auto keyValue = cursorHandler.getNext();
-                            !keyValue.empty();
-                            keyValue = cursorHandler.getNext()) {
-                            auto const positionId = keyValue.key.data.numeric<PositionId>();
-                            if (positionId == MAX_RECORD_NUM_EM) continue;
-                            auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
-                            auto value = record.get(propertyInfo.name).toText();
-                            if (!value.empty()) {
-                                auto indexRecord = Blob(sizeof(PositionId));
-                                indexRecord.append(&positionId, sizeof(PositionId));
-                                indexAccess.create(value, indexRecord);
-                            }
-                        }
-                        break;
-                    }
+                        createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return value.toBigInt();
+                        }); break;
+                    case PropertyType::REAL:
+                        createSignedNumeric<double>(propertyInfo, indexInfo, classType, [](const Bytes& value) {
+                            return value.toReal();
+                        }); break;
+                    case PropertyType::TEXT:
+                        createString(propertyInfo, indexInfo, classType); break;
                     default:
                         break;
                 }
@@ -182,49 +130,75 @@ namespace nogdb {
                 }
             }
 
+            void insert(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+                        const PositionId& posId, const Bytes &value) {
+                if (!value.empty()) {
+                    try {
+                        switch (propertyInfo.type) {
+                            case PropertyType::UNSIGNED_TINYINT:
+                                insert(indexInfo, posId, static_cast<uint64_t>(value.toTinyIntU())); break;
+                            case PropertyType::UNSIGNED_SMALLINT:
+                                insert(indexInfo, posId, static_cast<uint64_t>(value.toSmallIntU())); break;
+                            case PropertyType::UNSIGNED_INTEGER:
+                                insert(indexInfo, posId, static_cast<uint64_t>(value.toIntU())); break;
+                            case PropertyType::UNSIGNED_BIGINT:
+                                insert(indexInfo, posId, value.toBigIntU()); break;
+                            case PropertyType::TINYINT:
+                                insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt())); break;
+                            case PropertyType::SMALLINT:
+                                insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt())); break;
+                            case PropertyType::INTEGER:
+                                insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt())); break;
+                            case PropertyType::BIGINT:
+                                insertSignedNumeric(indexInfo, posId, value.toBigInt()); break;
+                            case PropertyType::REAL:
+                                insertSignedNumeric(indexInfo, posId, value.toReal()); break;
+                            case PropertyType::TEXT: {
+                                auto valueString = value.toText();
+                                if (!valueString.empty()) {
+                                    insert(indexInfo, posId, valueString);
+                                }
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    } catch (const Error &err) {
+                        if (err.code() == MDB_KEYEXIST) {
+                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNIQUE_CONSTRAINT);
+                        } else {
+                            throw NOGDB_FATAL_ERROR(err);
+                        }
+                    }
+                }
+            }
+
             void remove(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
                         const PositionId& posId, const Bytes &value) {
                 if (!value.empty()) {
                     switch (propertyInfo.type) {
                         case PropertyType::UNSIGNED_TINYINT:
+                            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toTinyIntU())); break;
                         case PropertyType::UNSIGNED_SMALLINT:
+                            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toSmallIntU())); break;
                         case PropertyType::UNSIGNED_INTEGER:
-                        case PropertyType::UNSIGNED_BIGINT: {
-                            auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-                            if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
-                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toTinyIntU()));
-                            } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
-                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toSmallIntU()));
-                            } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
-                                removeByCursor(indexAccessCursor, posId, static_cast<uint64_t>(value.toIntU()));
-                            } else {
-                                removeByCursor(indexAccessCursor, posId, value.toBigIntU());
-                            }
-                            break;
-                        }
+                            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toIntU())); break;
+                        case PropertyType::UNSIGNED_BIGINT:
+                            removeByCursor(indexInfo, posId, value.toBigIntU()); break;
                         case PropertyType::TINYINT:
+                            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt())); break;
                         case PropertyType::SMALLINT:
+                            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt())); break;
                         case PropertyType::INTEGER:
+                            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt())); break;
                         case PropertyType::BIGINT:
-                        case PropertyType::REAL: {
-                            if (propertyInfo.type == PropertyType::TINYINT) {
-                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt()));
-                            } else if (propertyInfo.type == PropertyType::SMALLINT) {
-                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt()));
-                            } else if (propertyInfo.type == PropertyType::INTEGER) {
-                                removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt()));
-                            } else if (propertyInfo.type == PropertyType::REAL) {
-                                removeByCursorWithSignNumeric(indexInfo, posId, value.toReal());
-                            } else {
-                                removeByCursorWithSignNumeric(indexInfo, posId, value.toBigInt());
-                            }
-                            break;
-                        }
+                            removeByCursorWithSignNumeric(indexInfo, posId, value.toBigInt()); break;
+                        case PropertyType::REAL:
+                            removeByCursorWithSignNumeric(indexInfo, posId, value.toReal()); break;
                         case PropertyType::TEXT: {
-                            auto indexAccessCursor = openIndexRecordString(indexInfo).getCursor();
-                            auto stringValue = value.toText();
-                            if (!stringValue.empty()) {
-                                removeByCursor(indexAccessCursor, posId, stringValue);
+                            auto valueString = value.toText();
+                            if (!valueString.empty()) {
+                                removeByCursor(indexInfo, posId, valueString);
                             }
                             break;
                         }
@@ -241,8 +215,8 @@ namespace nogdb {
                     if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
                         return std::make_pair(false, IndexAccessInfo{});
                     }
-                    auto schema = schema::SchemaInterface(_txn);
-                    auto propertyNameMapInfo = schema.getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+                    auto schemaHelper = schema::SchemaInterface(_txn);
+                    auto propertyNameMapInfo = schemaHelper.getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
                     auto foundProperty = propertyNameMapInfo.find(condition.propName);
                     if (foundProperty != propertyNameMapInfo.cend()) {
                         auto indexInfo = _txn->_index->getInfo(classInfo.id, foundProperty->second.id);
@@ -447,16 +421,104 @@ namespace nogdb {
             }
 
             template <typename T>
-            void removeByCursor(const storage_engine::lmdb::Cursor& cursorHandler,
-                                PositionId positionId, const T& value) {
-                for (auto keyValue = cursorHandler.find(value);
+            void createNumeric(const PropertyAccessInfo& propertyInfo,
+                               const IndexAccessInfo &indexInfo,
+                               const ClassType& classType,
+                               T(*valueRetrieve)(const Bytes&)) {
+                auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
+                auto indexAccess = openIndexRecordPositive(indexInfo);
+                auto cursorHandler = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType).getCursor();
+                for(auto keyValue = cursorHandler.getNext();
+                    !keyValue.empty();
+                    keyValue = cursorHandler.getNext()) {
+                    auto const positionId = keyValue.key.data.numeric<PositionId>();
+                    if (positionId == MAX_RECORD_NUM_EM) continue;
+                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                    auto bytesValue = record.get(propertyInfo.name);
+                    if (!bytesValue.empty()) {
+                        auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                        indexAccess.create(valueRetrieve(bytesValue), indexRecord);
+                    }
+                }
+            }
+
+            template <typename T>
+            void createSignedNumeric(const PropertyAccessInfo& propertyInfo,
+                                     const IndexAccessInfo &indexInfo,
+                                     const ClassType & classType,
+                                     T(*valueRetrieve)(const Bytes&)) {
+                auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
+                auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+                auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+                auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
+                for(auto keyValue = cursorHandler.getNext();
+                    !keyValue.empty();
+                    keyValue = cursorHandler.getNext()) {
+                    auto const positionId = keyValue.key.data.numeric<PositionId>();
+                    if (positionId == MAX_RECORD_NUM_EM) continue;
+                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                    auto bytesValue = record.get(propertyInfo.name);
+                    if (!bytesValue.empty()) {
+                        auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                        auto value = valueRetrieve(bytesValue);
+                        (value >= 0)? indexPositiveAccess.create(value, indexRecord): indexNegativeAccess.create(value, indexRecord);
+                    }
+                }
+            }
+
+            void createString(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo &indexInfo, const ClassType & classType) {
+                auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
+                auto indexAccess = openIndexRecordString(indexInfo);
+                auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
+                for(auto keyValue = cursorHandler.getNext();
+                    !keyValue.empty();
+                    keyValue = cursorHandler.getNext()) {
+                    auto const positionId = keyValue.key.data.numeric<PositionId>();
+                    if (positionId == MAX_RECORD_NUM_EM) continue;
+                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                    auto value = record.get(propertyInfo.name).toText();
+                    if (!value.empty()) {
+                        auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                        indexAccess.create(value, indexRecord);
+                    }
+                }
+            }
+
+            template <typename T>
+            void insert(const IndexAccessInfo &indexInfo, PositionId positionId, const T &value) {
+                auto indexAccess = openIndexRecordPositive(indexInfo);
+                auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                indexAccess.create(value, indexRecord);
+            }
+
+            void insert(const IndexAccessInfo &indexInfo, PositionId positionId, const std::string &value) {
+                auto indexAccess = openIndexRecordString(indexInfo);
+                auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                indexAccess.create(value, indexRecord);
+            }
+
+            template <typename T>
+            void insertSignedNumeric(const IndexAccessInfo &indexInfo, PositionId positionId, const T &value) {
+                auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                if (value >= 0) {
+                    auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+                    indexPositiveAccess.create(value, indexRecord);
+                } else {
+                    auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+                    indexNegativeAccess.create(value, indexRecord);
+                }
+            }
+
+            template <typename T>
+            void removeByCursorNumeric(const storage_engine::lmdb::Cursor& cursor, PositionId positionId, const T& value) {
+                for (auto keyValue = cursor.find(value);
                      !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
+                     keyValue = cursor.getNext()) {
                     auto key = keyValue.key.data.template numeric<T>();
                     if (key == value) {
                         auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
                         if (positionId == valueAsPositionId) {
-                            cursorHandler.del();
+                            cursor.del();
                             break;
                         }
                     } else {
@@ -465,16 +527,22 @@ namespace nogdb {
                 }
             }
 
-            void removeByCursor(const storage_engine::lmdb::Cursor& cursorHandler,
-                                PositionId positionId, const std::string &value) {
-                for (auto keyValue = cursorHandler.find(value);
+            template <typename T>
+            void removeByCursor(const IndexAccessInfo& indexInfo, PositionId positionId, const T& value) {
+                auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                removeByCursorNumeric(indexAccessCursor, positionId, value);
+            }
+
+            void removeByCursor(const IndexAccessInfo& indexInfo, PositionId positionId, const std::string &value) {
+                auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                for (auto keyValue = indexAccessCursor.find(value);
                      !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
+                     keyValue = indexAccessCursor.getNext()) {
                     auto key = keyValue.key.data.string();
                     if (value == key) {
                         auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
                         if (positionId == valueAsPositionId) {
-                            cursorHandler.del();
+                            indexAccessCursor.del();
                             break;
                         }
                     } else {
@@ -484,11 +552,11 @@ namespace nogdb {
             }
 
             template<typename T>
-            void removeByCursorWithSignNumeric(const IndexAccessInfo& indexInfo, const PositionId& posId, const T& numValue) {
+            void removeByCursorWithSignNumeric(const IndexAccessInfo& indexInfo, const PositionId& posId, const T& value) {
                 auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
                 auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
-                (numValue < 0) ? removeByCursor(indexNegativeAccessCursor, posId, numValue)
-                               : removeByCursor(indexPositiveAccessCursor, posId, numValue);
+                (value < 0) ? removeByCursorNumeric(indexNegativeAccessCursor, posId, value):
+                              removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
             }
 
             inline static bool cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {

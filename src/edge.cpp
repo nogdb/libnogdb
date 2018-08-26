@@ -46,8 +46,9 @@ namespace nogdb {
         Validate::isExistingDstVertex(txn, dstVertexRecordDescriptor);
         auto edgeClassInfo = Generic::getClassInfo(txn, className, ClassType::EDGE);
         try {
+            auto schemaHelper = schema::SchemaInterface(&txn);
             auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-            auto propertyInfo = Generic::getPropertyNameMapInfo(txn, edgeClassInfo.id, edgeClassInfo.superClassId);
+            auto propertyInfo = schemaHelper.getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
             auto vertices = parser::Parser::parseVertexSrcDst(srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
             auto value = parser::Parser::parseRecord(record, propertyInfo);
             edgeDataRecord.insert(vertices + value);
