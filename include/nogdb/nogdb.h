@@ -96,17 +96,17 @@ namespace nogdb {
 
         static void destroy(Txn &txn, const std::string &className);
 
-        static ResultSet get(const Txn &txn, const std::string &className);
+        static ResultSet get(Txn &txn, const std::string &className);
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className);
 
-        static ResultSet getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor,
+        static ResultSet getInEdge(Txn &txn, const RecordDescriptor &recordDescriptor,
                                    const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor,
+        static ResultSet getOutEdge(Txn &txn, const RecordDescriptor &recordDescriptor,
                                     const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor,
+        static ResultSet getAllEdge(Txn &txn, const RecordDescriptor &recordDescriptor,
                                     const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor getInEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor,
@@ -118,15 +118,15 @@ namespace nogdb {
         static ResultSetCursor getAllEdgeCursor(Txn &txn, const RecordDescriptor &recordDescriptor,
                                                 const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet get(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSet get(Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet get(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet getIndex(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet getIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className, const Condition &condition);
 
@@ -139,39 +139,39 @@ namespace nogdb {
         static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
         static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+        getInEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+        getInEdge(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+        getInEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
                   const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+        getOutEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+        getOutEdge(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+        getOutEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
+        getAllEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
+        getAllEdge(Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &),
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
+        getAllEdge(Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition,
                    const ClassFilter &classFilter = ClassFilter{});
 
         static ResultSetCursor
@@ -236,25 +236,39 @@ namespace nogdb {
 
         static void destroy(Txn &txn, const std::string &className);
 
-        static ResultSet get(const Txn &txn, const std::string &className);
+        static ResultSet get(Txn &txn, const std::string &className);
+
+        static ResultSet getExtend(Txn &txn, const std::string &className);
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className);
 
-        static Result getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor);
+        static ResultSetCursor getExtendCursor(Txn& txn, const std::string& className);
 
-        static Result getDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+        static Result getSrc(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+        static Result getDst(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet getSrcDst(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+        static ResultSet get(Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet get(Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+        static ResultSet get(Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+        static ResultSet getExtend(Txn &txn, const std::string &className, const Condition &condition);
+
+        static ResultSet getExtend(Txn &txn, const std::string &className, bool (*condition)(const Record &));
+
+        static ResultSet getExtend(Txn &txn, const std::string &className, const MultiCondition &exp);
+
+        static ResultSet getIndex(Txn &txn, const std::string &className, const Condition &condition);
+
+        static ResultSet getIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
+
+        static ResultSet getExtendIndex(Txn &txn, const std::string &className, const Condition &condition);
+
+        static ResultSet getExtendIndex(Txn &txn, const std::string &className, const MultiCondition &exp);
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className, const Condition &condition);
 
@@ -262,9 +276,19 @@ namespace nogdb {
 
         static ResultSetCursor getCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
 
+        static ResultSetCursor getExtendCursor(Txn &txn, const std::string &className, const Condition &condition);
+
+        static ResultSetCursor getExtendCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &));
+
+        static ResultSetCursor getExtendCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
+
         static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const Condition &condition);
 
         static ResultSetCursor getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
+
+        static ResultSetCursor getExtendIndexCursor(Txn &txn, const std::string &className, const Condition &condition);
+
+        static ResultSetCursor getExtendIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp);
     };
 
     //*************************************************************
@@ -276,15 +300,15 @@ namespace nogdb {
 
         ~DB() noexcept = delete;
 
-        static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
+        static Record getRecord(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
+        static const std::vector<ClassDescriptor> getClasses(Txn &txn);
 
-        static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor& classDescriptor);
+        static const std::vector<PropertyDescriptor> getProperties(Txn &txn, const ClassDescriptor& classDescriptor);
 
-        static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
+        static const ClassDescriptor getClass(Txn &txn, const std::string &className);
 
-        static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
+        static const ClassDescriptor getClass(Txn &txn, const ClassId &classId);
     };
 
     //*************************************************************
@@ -296,59 +320,59 @@ namespace nogdb {
 
         ~Traverse() noexcept = delete;
 
-        static ResultSet inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet inEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                    unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet inEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                    unsigned int maxDepth, const PathFilter &pathFilter,
                                    const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet outEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet outEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const PathFilter &pathFilter,
                                     const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet allEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet allEdgeBfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const PathFilter &pathFilter,
                                     const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet inEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                    unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet inEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                    unsigned int maxDepth, const PathFilter &pathFilter,
                                    const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet outEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet outEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const PathFilter &pathFilter,
                                     const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet allEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+        static ResultSet allEdgeDfs(Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
                                     unsigned int maxDepth, const PathFilter &pathFilter,
                                     const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet shortestPath(const Txn &txn, const RecordDescriptor &srcVertexRecordDescriptor,
+        static ResultSet shortestPath(Txn &txn, const RecordDescriptor &srcVertexRecordDescriptor,
                                       const RecordDescriptor &dstVertexRecordDescriptor,
                                       const ClassFilter &classFilter = ClassFilter{});
 
-        static ResultSet shortestPath(const Txn &txn, const RecordDescriptor &srcVertexRecordDescriptor,
+        static ResultSet shortestPath(Txn &txn, const RecordDescriptor &srcVertexRecordDescriptor,
                                       const RecordDescriptor &dstVertexRecordDescriptor, const PathFilter &pathFilter,
                                       const ClassFilter &classFilter = ClassFilter{});
 
         /*
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
-        static std::pair<T, ResultSet> shortestPath(const Txn &txn,
+        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        static std::pair<T, ResultSet> shortestPath(Txn &txn,
                                          const RecordDescriptor &srcVertexRecordDescriptor,
                                          const RecordDescriptor &dstVertexRecordDescriptor,
                                          const CostFuncType &costFunction,
@@ -427,7 +451,7 @@ namespace nogdb {
                                                   const ClassFilter &classFilter = ClassFilter{});
 
         /*
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(const Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
+        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
         static std::pair<T, ResultSetCursor> shortestPathCursor(Txn &txn,
                                                                 const RecordDescriptor &srcVertexRecordDescriptor,
                                                                 const RecordDescriptor &dstVertexRecordDescriptor,

@@ -469,19 +469,17 @@ namespace nogdb {
                                T(*valueRetrieve)(const Bytes&)) {
                 auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
                 auto indexAccess = openIndexRecordPositive(indexInfo);
-                auto cursorHandler = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType).getCursor();
-                for(auto keyValue = cursorHandler.getNext();
-                    !keyValue.empty();
-                    keyValue = cursorHandler.getNext()) {
-                    auto const positionId = keyValue.key.data.numeric<PositionId>();
-                    if (positionId == MAX_RECORD_NUM_EM) continue;
-                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                    auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
                         auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
                         indexAccess.create(valueRetrieve(bytesValue), indexRecord);
                     }
-                }
+                };
+                dataRecord.resultSetIter(callback);
             }
 
             template <typename T>
@@ -492,38 +490,34 @@ namespace nogdb {
                 auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
                 auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
                 auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
-                auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
-                for(auto keyValue = cursorHandler.getNext();
-                    !keyValue.empty();
-                    keyValue = cursorHandler.getNext()) {
-                    auto const positionId = keyValue.key.data.numeric<PositionId>();
-                    if (positionId == MAX_RECORD_NUM_EM) continue;
-                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                    auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
                         auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
                         auto value = valueRetrieve(bytesValue);
                         (value >= 0)? indexPositiveAccess.create(value, indexRecord): indexNegativeAccess.create(value, indexRecord);
                     }
-                }
+                };
+                dataRecord.resultSetIter(callback);
             }
 
             void createString(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo &indexInfo, const ClassType & classType) {
                 auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
                 auto indexAccess = openIndexRecordString(indexInfo);
-                auto cursorHandler = adapter::datarecord::DataRecord{_txn->_txnBase, indexInfo.classId, classType}.getCursor();
-                for(auto keyValue = cursorHandler.getNext();
-                    !keyValue.empty();
-                    keyValue = cursorHandler.getNext()) {
-                    auto const positionId = keyValue.key.data.numeric<PositionId>();
-                    if (positionId == MAX_RECORD_NUM_EM) continue;
-                    auto const record = parser::Parser::parseRawData(keyValue.val, propertyIdMapInfo, classType == ClassType::EDGE);
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                    auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
                     auto value = record.get(propertyInfo.name).toText();
                     if (!value.empty()) {
                         auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
                         indexAccess.create(value, indexRecord);
                     }
-                }
+                };
+                dataRecord.resultSetIter(callback);
             }
 
             template <typename T>
@@ -677,15 +671,16 @@ namespace nogdb {
                     case PropertyType::UNSIGNED_SMALLINT:
                     case PropertyType::UNSIGNED_INTEGER:
                     case PropertyType::UNSIGNED_BIGINT: {
+                        auto result = std::vector<RecordDescriptor>{};
                         auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
                         if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
-                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()));
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), result);
                         } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
-                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()));
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), result);
                         } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
-                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()));
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), result);
                         } else {
-                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU());
+                            return exactMatchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), result);
                         }
                     }
                     case PropertyType::TINYINT:
@@ -699,7 +694,8 @@ namespace nogdb {
                     case PropertyType::REAL:
                         return getEqualNumeric(value.toReal(), indexInfo);
                     case PropertyType::TEXT: {
-                        return exactMatchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText());
+                        auto result = std::vector<RecordDescriptor>{};
+                        return exactMatchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), result);
                     }
                     default:
                         break;
@@ -865,8 +861,9 @@ namespace nogdb {
             template<typename T>
             std::vector<RecordDescriptor>
             getEqualNumeric(const T &value, const IndexAccessInfo &indexInfo) const {
+                auto result = std::vector<RecordDescriptor>{};
                 auto indexAccess = (value < 0)? openIndexRecordNegative(indexInfo): openIndexRecordPositive(indexInfo);
-                return exactMatchIndex(indexAccess.getCursor(), indexInfo.classId, value);
+                return exactMatchIndex(indexAccess.getCursor(), indexInfo.classId, value, result);
             };
 
             template<typename T>
@@ -916,8 +913,7 @@ namespace nogdb {
                 auto result = std::vector<RecordDescriptor>{};
                 if (!std::is_same<T, double>::value || positive) {
                     if (isInclude) {
-                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                        exactMatchIndex(cursorHandler, classId, value, result);
                     }
                     cursorHandler.findRange(value);
                     for (auto keyValue = cursorHandler.getPrev();
@@ -945,8 +941,10 @@ namespace nogdb {
 
             template<typename T>
             static std::vector<RecordDescriptor>
-            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId, const T &value) {
-                auto result = std::vector<RecordDescriptor>{};
+            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+                            const ClassId& classId,
+                            const T &value,
+                            std::vector<RecordDescriptor>& result) {
                 for (auto keyValue = cursorHandler.find(value);
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
@@ -958,12 +956,14 @@ namespace nogdb {
                         break;
                     }
                 }
-                return result;
+                return std::move(result);
             };
 
             static std::vector<RecordDescriptor>
-            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId, const std::string &value) {
-                auto result = std::vector<RecordDescriptor>{};
+            exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+                            const ClassId& classId,
+                            const std::string &value,
+                            std::vector<RecordDescriptor>& result) {
                 for (auto keyValue = cursorHandler.find(value);
                      !keyValue.empty();
                      keyValue = cursorHandler.getNext()) {
@@ -975,7 +975,7 @@ namespace nogdb {
                         break;
                     }
                 }
-                return result;
+                return std::move(result);
             };
 
             static std::vector<RecordDescriptor>
@@ -1009,8 +1009,7 @@ namespace nogdb {
                     }
                 } else {
                     if (isInclude) {
-                        auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                        exactMatchIndex(cursorHandler, classId, value, result);
                     }
                     cursorHandler.findRange(value);
                     for (auto keyValue = cursorHandler.getPrev();
@@ -1059,8 +1058,7 @@ namespace nogdb {
                     }
                 } else {
                     if (isIncludeBound.first) {
-                        auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
-                        result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
+                        exactMatchIndex(cursorHandler, classId, lower, result);
                     }
                     cursorHandler.findRange(lower);
                     for (auto keyValue = cursorHandler.getPrev();

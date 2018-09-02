@@ -36,12 +36,8 @@
 #include <type_traits>
 
 //******************************************************************
-//*  Forward declarations of NogDB and boost internal classes.     *
+//*  Forward declarations of NogDB internal classes.               *
 //******************************************************************
-
-namespace boost {
-    class shared_mutex;
-}
 
 namespace nogdb {
     struct Graph;
@@ -59,8 +55,6 @@ namespace nogdb {
 
     class Parser;
 
-    class TxnStat;
-
     class BaseTxn;
 
     class Condition;
@@ -68,8 +62,6 @@ namespace nogdb {
     class MultiCondition;
 
     class PathFilter;
-
-    class RWSpinLock;
 
     namespace storage_engine {
         class LMDBEnv;
@@ -79,9 +71,41 @@ namespace nogdb {
     namespace parser {
         class Parser;
     }
+
     namespace sql_parser {
         class Record;
     }
+
+    namespace adapter {
+        namespace metadata {
+            class DBInfoAccess;
+        }
+        namespace schema {
+            class ClassAccess;
+            class PropertyAccess;
+            class IndexAccess;
+        }
+        namespace datarecord {
+            class DataRecords;
+        }
+    }
+
+    namespace relation {
+        class GraphInterface;
+    }
+
+    namespace index {
+        class IndexInterface;
+    }
+
+    namespace schema {
+        class SchemaInterface;
+    }
+
+    namespace validate {
+        class Validator;
+    }
+
 }
 
 //*************************************************************
@@ -113,6 +137,7 @@ namespace nogdb {
     typedef uint16_t ClassId;
     typedef uint16_t PropertyId;
     typedef uint32_t PositionId;
+    typedef uint32_t ClusterId:
     typedef std::pair<ClassId, PositionId> RecordId;
     typedef uint64_t TxnId;
     typedef uint32_t IndexId;
@@ -615,14 +640,21 @@ namespace nogdb {
     struct RecordDescriptor {
         RecordDescriptor() = default;
 
-        RecordDescriptor(ClassId classId, PositionId posId)
-                : rid{classId, posId} {}
+        RecordDescriptor(const ClusterId& clusterId, const ClassId& classId, const PositionId& posId)
+                : cid{clusterId}, rid{classId, posId} {}
 
-        RecordDescriptor(const RecordId &rid_)
-                : rid{rid_} {}
+        RecordDescriptor(const ClusterId& clusterId, const RecordId& recordId)
+                : cid{clusterId}, rid{recordId} {}
+
+        RecordDescriptor(const ClassId& classId, const PositionId& posId)
+                : cid{0}, rid{classId, posId} {}
+
+        RecordDescriptor(const RecordId &recordId)
+                : cid{0}, rid{recordId} {}
 
         virtual ~RecordDescriptor() noexcept = default;
 
+        ClusterId cid{0};
         RecordId rid{0, 0};
 
     private:
@@ -671,8 +703,6 @@ namespace nogdb {
 
     class Txn;
 
-    struct ClassPropertyInfo;
-
     class ResultSetCursor {
     public:
         friend struct Generic;
@@ -683,10 +713,6 @@ namespace nogdb {
         ResultSetCursor(Txn &txn_);
 
         ~ResultSetCursor() noexcept;
-
-        ResultSetCursor(const ResultSetCursor &rc);
-
-        ResultSetCursor &operator=(const ResultSetCursor &rc);
 
         ResultSetCursor(ResultSetCursor &&rc) noexcept;
 
@@ -719,15 +745,10 @@ namespace nogdb {
         const Result *operator->() const;
 
     private:
-        typedef std::unordered_map<ClassId, ClassPropertyInfo> ClassPropertyCache;
-
         Txn &txn;
-        std::unique_ptr<ClassPropertyCache> classPropertyInfos;
         std::vector<RecordDescriptor> metadata{};
         long long currentIndex;
         Result result;
-
-        const ClassPropertyInfo resolveClassPropertyInfo(ClassId classId);
     };
 
     inline bool operator<(const RecordId &lhs, const RecordId &rhs) {

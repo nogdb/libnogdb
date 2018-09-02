@@ -134,8 +134,9 @@ namespace nogdb {
             static Record parseRawDataWithBasicInfo(const std::string &className,
                                                     const RecordId &rid,
                                                     const storage_engine::lmdb::Result &rawData,
-                                                    const adapter::schema::PropertyIdMapInfo& propertyInfos) {
-                return parseRawData(rawData, propertyInfos)
+                                                    const adapter::schema::PropertyIdMapInfo& propertyInfos,
+                                                    bool isEdge = false) {
+                return parseRawData(rawData, propertyInfos, isEdge)
                         .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
                         .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
                         .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);

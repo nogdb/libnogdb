@@ -26,37 +26,6 @@
 
 namespace nogdb {
 
-    namespace storage_engine {
-        class LMDBTxn;
-    }
-
-    namespace adapter {
-        namespace metadata {
-            class DBInfoAccess;
-        }
-        namespace schema {
-            class ClassAccess;
-            class PropertyAccess;
-            class IndexAccess;
-        }
-    }
-
-    namespace relation {
-        class GraphInterface;
-    }
-
-    namespace index {
-        class IndexInterface;
-    }
-
-    namespace schema {
-        class SchemaInterface;
-    }
-
-    namespace validate {
-        class Validator;
-    }
-
     class Txn {
     public:
         friend struct Compare;
@@ -69,15 +38,17 @@ namespace nogdb {
         friend struct Edge;
         friend struct Traverse;
 
+        friend class ResultSetCursor;
+
         friend class validate::Validator;
 
-        friend class ResultSetCursor;
+        friend class schema::SchemaInterface;
 
         friend class relation::GraphInterface;
 
         friend class index::IndexInterface;
 
-        friend class schema::SchemaInterface;
+        friend class adapter::datarecord::DataRecords;
 
         enum Mode { READ_ONLY, READ_WRITE };
 

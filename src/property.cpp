@@ -27,7 +27,6 @@
 #include "index.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
-#include "generic.hpp"
 #include "parser.hpp"
 
 #include "nogdb.h"

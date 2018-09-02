@@ -29,7 +29,6 @@
 #include "lmdb_engine.hpp"
 #include "graph.hpp"
 #include "parser.hpp"
-#include "generic.hpp"
 #include "schema.hpp"
 
 #include "nogdb_compare.h"

@@ -29,7 +29,6 @@
 #include "relation.hpp"
 #include "schema.hpp"
 #include "parser.hpp"
-#include "generic.hpp"
 #include "validate.hpp"
 #include "utils.hpp"
 

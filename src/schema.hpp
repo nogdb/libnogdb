@@ -93,6 +93,15 @@ namespace nogdb {
                 return foundClass;
             }
 
+            std::map<std::string, ClassAccessInfo>
+            getSubClassInfos(const ClassId& classId, std::map<std::string, ClassAccessInfo>& result) {
+                for(const auto& subClassInfo: _txn->_class->getSubClassInfos(classId)) {
+                    result.emplace(subClassInfo.name, subClassInfo);
+                    getSubClassInfos(subClassInfo.id, result);
+                }
+                return std::move(result);
+            }
+
             std::vector<PropertyAccessInfo>
             getNativePropertyInfo(const ClassId& classId) {
                 auto result = std::vector<PropertyAccessInfo>{};
@@ -103,15 +112,12 @@ namespace nogdb {
             }
 
             std::vector<PropertyAccessInfo>
-            getInheritPropertyInfo(const ClassId& superClassId) {
-                auto result = std::vector<PropertyAccessInfo>{};
+            getInheritPropertyInfo(const ClassId& superClassId, std::vector<PropertyAccessInfo>& result) {
                 if (superClassId != ClassId{}) {
-                    auto nativeProperties = _txn->_property->getInfos(superClassId);
-                    result.insert(result.cend(), nativeProperties.cbegin(), nativeProperties.cend());
-                    auto inheritProperties = getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId));
-                    result.insert(result.cend(), inheritProperties.cbegin(), inheritProperties.cend());
+                    result.emplace_back(_txn->_property->getInfos(superClassId));
+                    getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId));
                 }
-                return result;
+                return std::move(result);
             }
 
             PropertyNameMapInfo

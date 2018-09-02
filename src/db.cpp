@@ -25,7 +25,6 @@
 #include "lmdb_engine.hpp"
 #include "datarecord_adapter.hpp"
 #include "parser.hpp"
-#include "generic.hpp"
 
 #include "nogdb/nogdb.h"
 
@@ -34,7 +33,7 @@ namespace nogdb {
         auto classInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first);
         auto result = adapter::datarecord::DataRecord(txn._txnBase, recordDescriptor.rid.first, classInfo.type)
                 .getResult(recordDescriptor.rid.second);
-        auto propertyInfos = txn._property->getIdMapInfo(classInfo.id);
+        auto propertyInfos = txn._iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         return parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos);
     }
 

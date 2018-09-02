@@ -21,52 +21,29 @@
 
 #include <iterator>
 
-#include "generic.hpp"
 #include "schema.hpp"
 
+#include <nogdb.h>
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
 
 namespace nogdb {
 
     ResultSetCursor::ResultSetCursor(Txn &txn_)
-            : txn{txn_}, currentIndex{-1} {
-        classPropertyInfos = std::unique_ptr<ClassPropertyCache>(new ClassPropertyCache());
-    }
+            : txn{txn_}, currentIndex{-1} {}
 
     ResultSetCursor::~ResultSetCursor() noexcept {}
 
-    ResultSetCursor::ResultSetCursor(const ResultSetCursor &rc) : txn{rc.txn} {
-        metadata = rc.metadata;
-        classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
-        currentIndex = rc.currentIndex;
-    }
-
-    ResultSetCursor &ResultSetCursor::operator=(const ResultSetCursor &rc) {
-        if (this != &rc) {
-            txn = rc.txn;
-            classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
-            metadata = rc.metadata;
-            currentIndex = rc.currentIndex;
-        }
-        return *this;
-    }
-
     ResultSetCursor::ResultSetCursor(ResultSetCursor &&rc) noexcept: txn{rc.txn} {
-        txn = rc.txn;
         metadata = std::move(rc.metadata);
         currentIndex = rc.currentIndex;
-        classPropertyInfos = std::move(rc.classPropertyInfos);
-        rc.classPropertyInfos = nullptr;
     }
 
     ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
         if (this != &rc) {
-            txn = rc.txn;
+            txn = std::move(rc.txn);
             metadata = std::move(rc.metadata);
             currentIndex = rc.currentIndex;
-            classPropertyInfos = std::move(rc.classPropertyInfos);
-            rc.classPropertyInfos = nullptr;
         }
         return *this;
     }
@@ -92,7 +69,8 @@ namespace nogdb {
             return false;
         }
         auto cursor = metadata.begin() + currentIndex;
-        result = Generic::getRecordResult(txn, resolveClassPropertyInfo(cursor->rid.first), *(cursor));
+        auto recordDescriptor = *(cursor);
+        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
         return true;
     }
 
@@ -105,7 +83,8 @@ namespace nogdb {
             return false;
         }
         auto cursor = metadata.begin() + currentIndex;
-        result = Generic::getRecordResult(txn, resolveClassPropertyInfo(cursor->rid.first), *(cursor));
+        auto recordDescriptor = *(cursor);
+        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
         return true;
     }
 
@@ -125,8 +104,8 @@ namespace nogdb {
         if (!metadata.empty()) {
             currentIndex = 0;
             auto cursor = metadata.begin();
-            auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-            result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
+            auto recordDescriptor = *(cursor);
+            result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
         }
     }
 
@@ -134,8 +113,8 @@ namespace nogdb {
         if (!metadata.empty()) {
             currentIndex = static_cast<long long>(metadata.size() - 1);
             auto cursor = metadata.end() - 1;
-            auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-            result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
+            auto recordDescriptor = *(cursor);
+            result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
         }
     }
 
@@ -145,8 +124,8 @@ namespace nogdb {
         }
         currentIndex = index;
         auto cursor = metadata.begin() + currentIndex;
-        auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-        result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
+        auto recordDescriptor = *(cursor);
+        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
         return true;
     }
 
@@ -156,19 +135,6 @@ namespace nogdb {
 
     const Result *ResultSetCursor::operator->() const {
         return &(operator*());
-    }
-
-    const ClassPropertyInfo ResultSetCursor::resolveClassPropertyInfo(ClassId classId) {
-        auto classPropertyInfo = ClassPropertyInfo{};
-        auto findCacheClassInfo = classPropertyInfos->find(classId);
-        if (findCacheClassInfo == classPropertyInfos->cend()) {
-            auto classDescriptor = Generic::getClassInfo(txn, classId, ClassType::UNDEFINED);
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-            classPropertyInfos->emplace(classId, classPropertyInfo);
-            return classPropertyInfo;
-        } else {
-            return findCacheClassInfo->second;
-        }
     }
 
 }

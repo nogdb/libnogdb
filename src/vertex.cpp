@@ -28,7 +28,6 @@
 #include "parser.hpp"
 #include "compare.hpp"
 #include "index.hpp"
-#include "generic.hpp"
 
 #include "nogdb.h"
 
