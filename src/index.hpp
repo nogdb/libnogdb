@@ -130,6 +130,15 @@ namespace nogdb {
                 }
             }
 
+            void drop(const ClassId& classId, const PropertyNameMapInfo& propertyNameMapInfo) {
+                for(const auto& property: propertyNameMapInfo) {
+                    auto indexInfo = _txn->_index->getInfo(classId, property.second.id);
+                    if (indexInfo.id != IndexId{}) {
+                        drop(property.second, indexInfo);
+                    }
+                }
+            }
+
             void insert(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
                         const PositionId& posId, const Bytes &value) {
                 if (!value.empty()) {
@@ -173,6 +182,23 @@ namespace nogdb {
                 }
             }
 
+            void insert(const RecordDescriptor& recordDescriptor,
+                        const Record& record,
+                        const PropertyNameMapInfo& propertyNameMapInfo) {
+                for(const auto& property: record.getAll()) {
+                    if (property.second.empty()) continue;
+                    auto foundProperty = propertyNameMapInfo.find(property.first);
+                    if (foundProperty == propertyNameMapInfo.cend()) {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+                    } else {
+                        auto indexInfo = _txn->_index->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+                        if (indexInfo.id != IndexId{}) {
+                            insert(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
+                        }
+                    }
+                }
+            }
+
             void remove(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
                         const PositionId& posId, const Bytes &value) {
                 if (!value.empty()) {
@@ -204,6 +230,23 @@ namespace nogdb {
                         }
                         default:
                             break;
+                    }
+                }
+            }
+
+            void remove(const RecordDescriptor& recordDescriptor,
+                        const Record& record,
+                        const PropertyNameMapInfo& propertyNameMapInfo) {
+                for(const auto& property: record.getAll()) {
+                    if (property.second.empty()) continue;
+                    auto foundProperty = propertyNameMapInfo.find(property.first);
+                    if (foundProperty == propertyNameMapInfo.cend()) {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+                    } else {
+                        auto indexInfo = _txn->_index->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+                        if (indexInfo.id != IndexId{}) {
+                            remove(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
+                        }
                     }
                 }
             }

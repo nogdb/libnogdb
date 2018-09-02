@@ -126,7 +126,7 @@ namespace nogdb {
                 if (key == MAX_RECORD_NUM_EM) continue;
                 auto recordId = RecordId{foundClass.id, key};
                 if (foundClass.type == ClassType::EDGE) {
-                    auto vertices = parser::Parser::parseRawDataVertexSrcDst(keyValue.val.data.blob());
+                    auto vertices = parser::Parser::parseEdgeRawDataVertexSrcDst(keyValue.val.data.blob());
                     txn._iGraph->removeRel(recordId, vertices.first, vertices.second);
                 } else {
                     txn._iGraph->removeRelFromVertex(recordId);

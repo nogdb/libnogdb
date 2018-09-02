@@ -49,26 +49,14 @@ namespace nogdb {
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
         try {
-            auto recordDescriptor = txn._iGraph->addEdge(
-                    edgeClassInfo,
-                    propertyNameMapInfo,
-                    srcVertexRecordDescriptor,
-                    dstVertexRecordDescriptor,
-                    record
-            );
-            // add index if applied
-            for(const auto& property: record.getAll()) {
-                if (property.second.empty()) continue;
-                auto foundProperty = propertyNameMapInfo.find(property.first);
-                if (foundProperty == propertyNameMapInfo.cend()) {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-                } else {
-                    auto indexInfo = txn._index->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
-                    if (indexInfo.id != IndexId{}) {
-                        txn._iIndex->insert(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
-                    }
-                }
-            }
+            auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+            auto vertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
+                                                                    dstVertexRecordDescriptor.rid);
+            auto valueBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+            auto positionId = edgeDataRecord.insert(vertexBlob + valueBlob);
+            auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
+            txn._iGraph->addEdge(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
+            txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
             return recordDescriptor;
         } catch (const Error& error) {
             txn.rollback();
@@ -82,55 +70,19 @@ namespace nogdb {
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
         auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-        auto existingRecord = edgeDataRecord.getResult(recordDescriptor.rid.second);
+        auto existingRecordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
         auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
         try {
-            auto srcDstVertex = parser::Parser::parseRawDataVertexSrcDst(existingRecord.data.blob());
-            auto newBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
-            auto oldData = parser::Parser::parseRawData(existingRecord, propertyIdMapInfo, true);
-
-            //TODO: handle old source code below
-
-            auto existingRecord = Parser::parseRawData(keyValue, classInfo);
-            auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-            for (const auto &property: existingRecord.getAll()) {
-                // check if having any index
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty != classInfo.nameToDesc.cend()) {
-                    for (const auto &indexIter: foundProperty->second.indexInfo) {
-                        if (indexIter.second.first == classDescriptor->id) {
-                            existingIndexInfos.emplace(
-                                    property.first,
-                                    std::make_tuple(
-                                            foundProperty->second.type,
-                                            indexIter.first,
-                                            indexIter.second.second
-                                    )
-                            );
-                            break;
-                        }
-                    }
-                }
-            }
-            for (const auto &indexInfo: existingIndexInfos) {
-                auto bytesValue = existingRecord.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
-                                   isUnique);
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::addIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType,
-                                isUnique);
-            }
-
-            classDBHandler.put(recordDescriptor.rid.second, value);
+            // insert an updated record
+            auto vertexBlob = parser::Parser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
+            auto newRecordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+            edgeDataRecord.insert(vertexBlob + newRecordBlob);
+            // remove index if applied in existing record
+            auto existingRecord = parser::Parser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
+            txn._iIndex->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
+            // add index if applied in new record
+            txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
         } catch (const Error& error) {
             txn.rollback();
             throw NOGDB_FATAL_ERROR(error);
@@ -138,255 +90,94 @@ namespace nogdb {
     }
 
     void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
         try {
-            // update src and dst version
-            ResultSet srcDst = Edge::getSrcDst(txn, recordDescriptor);
-            Result src = srcDst[0], dst = srcDst[1];
-
-            Vertex::update(txn, src.descriptor, src.record);
-            Vertex::update(txn, dst.descriptor, dst.record);
-
-        } catch (const Error &err) {
-            // do nothing
+            auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+            edgeDataRecord.remove(recordDescriptor.rid.second);
+            txn._iGraph->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            // remove index if applied in the record
+            auto record = parser::Parser::parseRawData(recordResult, propertyIdMapInfo, true);
+            txn._iIndex->remove(recordDescriptor, record, propertyNameMapInfo);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        relationDBHandler.del(rid2str(recordDescriptor.rid));
-
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        // delete index if existing
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (!dsResult.data.empty()) {
-            auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-            auto record = Parser::parseRawData(dsResult, classInfo);
-            for (const auto &property: record.getAll()) {
-                // check if having any index
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty != classInfo.nameToDesc.cend()) {
-                    for (const auto &indexIter: foundProperty->second.indexInfo) {
-                        if (indexIter.second.first == classDescriptor->id) {
-                            indexInfos.emplace(
-                                    property.first,
-                                    std::make_tuple(
-                                            foundProperty->second.type,
-                                            indexIter.first,
-                                            indexIter.second.second
-                                    )
-                            );
-                            break;
-                        }
-                    }
-                }
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-            }
-        }
-        // delete actual record
-        classDBHandler.del(recordDescriptor.rid.second);
-
-        // update in-memory relations
-        txn._txnCtx.dbRelation->deleteEdge(*txn._txnBase, recordDescriptor.rid);
     }
 
     void Edge::destroy(Txn &txn, const std::string &className) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::EDGE);
-        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-        auto recordIds = std::vector<RecordId> {};
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
-        // remove all index records
-        auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
-        for (const auto &property: classInfo.nameToDesc) {
-            auto &type = property.second.type;
-            auto &indexInfo = property.second.indexInfo;
-            for (const auto &indexIter: indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace_back(
-                            std::make_tuple(
-                                    type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                }
-                break;
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        try {
+            auto cursorHandler = edgeDataRecord.getCursor();
+            for(auto keyValue = cursorHandler.getNext();
+                !keyValue.empty();
+                keyValue = cursorHandler.getNext()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key == MAX_RECORD_NUM_EM) continue;
+                auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(keyValue.val.data.blob());
+                txn._iGraph->removeRelFromEdge(RecordId{edgeClassInfo.id, key}, srcDstVertex.first, srcDstVertex.second);
             }
-        }
-        for (const auto &indexInfo: indexInfos) {
-            auto const propertyType = std::get<0>(indexInfo);
-            auto const indexId = std::get<1>(indexInfo);
-            auto const isUnique = std::get<2>(indexInfo);
-            switch (propertyType) {
-                case PropertyType::UNSIGNED_TINYINT:
-                case PropertyType::UNSIGNED_SMALLINT:
-                case PropertyType::UNSIGNED_INTEGER:
-                case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
-                    dataIndexDBHandler.drop();
-                    break;
-                }
-                case PropertyType::TINYINT:
-                case PropertyType::SMALLINT:
-                case PropertyType::INTEGER:
-                case PropertyType::BIGINT:
-                case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
-                    dataIndexDBHandlerPositive.drop();
-                    dataIndexDBHandlerNegative.drop();
-                    break;
-                }
-                case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
-                    dataIndexDBHandler.drop();
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-
-        // remove all records in database
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        auto keyValue = cursorHandler.getNext();
-        while (!keyValue.empty()) {
-            auto key = keyValue.key.data.numeric<PositionId>();
-            if (key != MAX_RECORD_NUM_EM) {
-                auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
-                recordIds.push_back(recordDescriptor.rid);
-                // delete from relations
-                relationDBHandler.del(rid2str(recordDescriptor.rid));
-
-                // update src and dst version
-                try {
-                    auto res = getSrcDst(txn, recordDescriptor);
-                    Result src = res[0], dst = res[1];
-
-                    Vertex::update(txn, src.descriptor, src.record);
-                    Vertex::update(txn, dst.descriptor, src.record);
-                } catch (const Error& err) {
-                    // do nothing
-                }
-
-            }
-            keyValue = cursorHandler.getNext();
-        }
-
-        // empty a database
-        classDBHandler.drop();
-
-        // update in-memory relations
-        for (const auto &recordId: recordIds) {
-            txn._txnCtx.dbRelation->deleteEdge(*txn._txnBase, recordId);
+            edgeDataRecord.destroy();
+            txn._iIndex->drop(edgeClassInfo.id, propertyNameMapInfo);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
     }
 
     void Edge::updateSrc(Txn &txn,
                          const RecordDescriptor &recordDescriptor,
                          const RecordDescriptor &newSrcVertexRecordDescriptor) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
-        // update source
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
         try {
-            Result currentSrc = getSrc(txn, recordDescriptor);
-            Vertex::update(txn, currentSrc.descriptor, currentSrc.record);
-        } catch (const Error &err) {
-            // do nothing
+            auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+            txn._iGraph->updateEdgeSrc(recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
+            auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+            edgeDataRecord.insert(newVertexBlob + dataBlob);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-
-        // update new source
-        try {
-            Record newSrcRecord = DB::getRecord(txn, newSrcVertexRecordDescriptor);
-            Vertex::update(txn, newSrcVertexRecordDescriptor, newSrcRecord);
-        } catch (const Error &err) {
-            // do nothing
-        }
-
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto vertexDescriptor = Generic::getClassInfo(txn, newSrcVertexRecordDescriptor.rid.first,
-                                                      ClassType::VERTEX);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-        }
-        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(newSrcVertexRecordDescriptor.rid.first), true);
-        dsResult = srcDBHandler.get(newSrcVertexRecordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-        }
-        auto key = rid2str(recordDescriptor.rid);
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        dsResult = relationDBHandler.get(key);
-        auto data = dsResult.data.blob();
-        auto dstClassId = ClassId{0};
-        auto dstPositionId = PositionId{0};
-        auto offset = data.retrieve(&dstClassId, sizeof(ClassId) + sizeof(PositionId), sizeof(ClassId));
-        data.retrieve(&dstPositionId, offset, sizeof(PositionId));
-        auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-        edge.append(&newSrcVertexRecordDescriptor.rid.first, sizeof(ClassId));
-        edge.append(&newSrcVertexRecordDescriptor.rid.second, sizeof(PositionId));
-        edge.append(&dstClassId, sizeof(ClassId));
-        edge.append(&dstPositionId, sizeof(PositionId));
-        relationDBHandler.put(key, edge);
-
-        // update in-memory relations
-        txn._txnCtx.dbRelation->alterVertexSrc(*txn._txnBase, recordDescriptor.rid, newSrcVertexRecordDescriptor.rid);
     }
 
     void Edge::updateDst(Txn &txn,
                          const RecordDescriptor &recordDescriptor,
                          const RecordDescriptor &newDstVertexDescriptor) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::EDGE);
-        auto vertexDescriptor = Generic::getClassInfo(txn, newDstVertexDescriptor.rid.first, ClassType::VERTEX);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_EDGE);
-        }
-        auto srcDBHandler = dsTxnHandler->openDbi(std::to_string(newDstVertexDescriptor.rid.first), true);
-        dsResult = srcDBHandler.get(newDstVertexDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-        }
-        auto key = rid2str(recordDescriptor.rid);
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        dsResult = relationDBHandler.get(key);
-        auto data = dsResult.data.blob();
-        auto srcClassId = 0U;
-        auto srcPositionId = 0U;
-        auto offset = data.retrieve(&srcClassId, 0, sizeof(ClassId));
-        data.retrieve(&srcPositionId, offset, sizeof(PositionId));
-        auto edge = Blob((sizeof(ClassId) + sizeof(PositionId)) * 2);
-        edge.append(&srcClassId, sizeof(ClassId));
-        edge.append(&srcPositionId, sizeof(PositionId));
-        edge.append(&newDstVertexDescriptor.rid.first, sizeof(ClassId));
-        edge.append(&newDstVertexDescriptor.rid.second, sizeof(PositionId));
-        relationDBHandler.put(key, edge);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid()
+        . isExistingSrcVertex(newDstVertexDescriptor);
 
-        // update in-memory relations
-        txn._txnCtx.dbRelation->alterVertexDst(*txn._txnBase, recordDescriptor.rid, newDstVertexDescriptor.rid);
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
+        try {
+            auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+            txn._iGraph->updateEdgeDst(recordDescriptor.rid, newDstVertexDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
+            auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+            edgeDataRecord.insert(newVertexBlob + dataBlob);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
+        }
     }
 
     ResultSet Edge::get(const Txn &txn, const std::string &className) {

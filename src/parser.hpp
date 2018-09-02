@@ -44,7 +44,7 @@ namespace nogdb {
         const std::string EMPTY_STRING = std::string{"\n"};
         constexpr size_t SIZE_OF_EMPTY_STRING = strlen(EMPTY_STRING.c_str());
 
-        constexpr size_t VERTEX_SRC_DST_RAW_DATA_LENGTH = 2 * sizeof(ClassId) + 2 * sizeof(PositionId);
+        constexpr size_t VERTEX_SRC_DST_RAW_DATA_LENGTH = 2 * (sizeof(ClassId) + sizeof(PositionId));
 
         class Parser {
         public:
@@ -52,6 +52,9 @@ namespace nogdb {
 
             ~Parser() noexcept = delete;
 
+            //-------------------------
+            // Common parsers
+            //-------------------------
             static Blob parseRecord(const Record &record,
                                     const adapter::schema::PropertyNameMapInfo &properties) {
                 auto dataSize = size_t{0};
@@ -69,15 +72,6 @@ namespace nogdb {
                 return parseRecord(record, dataSize, properties);
             }
 
-            static Blob parseVertexSrcDst(const RecordId& srcRid, const RecordId& dstRid) {
-                auto value = Blob(VERTEX_SRC_DST_RAW_DATA_LENGTH);
-                value.append(&srcRid.first, sizeof(ClassId));
-                value.append(&srcRid.second, sizeof(PositionId));
-                value.append(&dstRid.first, sizeof(ClassId));
-                value.append(&dstRid.second, sizeof(PositionId));
-                return value;
-            }
-
             static Record parseRawData(const storage_engine::lmdb::Result &rawData,
                                        const adapter::schema::PropertyIdMapInfo &propertyInfos,
                                        bool isEdge = false) {
@@ -88,7 +82,7 @@ namespace nogdb {
                 auto rawDataBlob = rawData.data.blob();
                 auto offset = size_t{0};
                 if (isEdge) {
-                    offset = 2 * sizeof(ClassId) + 2 * sizeof(PositionId);
+                    offset = VERTEX_SRC_DST_RAW_DATA_LENGTH;
                 }
                 if (rawDataBlob.capacity() == 0) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
@@ -137,7 +131,29 @@ namespace nogdb {
                 return Record(properties);
             }
 
-            static std::pair<RecordId, RecordId> parseRawDataVertexSrcDst(const Blob &blob) {
+            static Record parseRawDataWithBasicInfo(const std::string &className,
+                                                    const RecordId &rid,
+                                                    const storage_engine::lmdb::Result &rawData,
+                                                    const adapter::schema::PropertyIdMapInfo& propertyInfos) {
+                return parseRawData(rawData, propertyInfos)
+                        .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
+                        .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
+                        .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
+            }
+
+            //-------------------------
+            // Edge only parsers
+            //-------------------------
+            static Blob parseEdgeVertexSrcDst(const RecordId &srcRid, const RecordId &dstRid) {
+                auto value = Blob(VERTEX_SRC_DST_RAW_DATA_LENGTH);
+                value.append(&srcRid.first, sizeof(ClassId));
+                value.append(&srcRid.second, sizeof(PositionId));
+                value.append(&dstRid.first, sizeof(ClassId));
+                value.append(&dstRid.second, sizeof(PositionId));
+                return value;
+            }
+
+            static std::pair<RecordId, RecordId> parseEdgeRawDataVertexSrcDst(const Blob &blob) {
                 require(blob.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
                 auto srcVertexRid = RecordId{};
                 auto dstVertexRid = RecordId{};
@@ -149,14 +165,23 @@ namespace nogdb {
                 return std::make_pair(srcVertexRid, dstVertexRid);
             }
 
-            static Record parseRawDataWithBasicInfo(const std::string &className,
-                                                    const RecordId &rid,
-                                                    const storage_engine::lmdb::Result &rawData,
-                                                    const adapter::schema::PropertyIdMapInfo& propertyInfos) {
-                return parseRawData(rawData, propertyInfos)
-                        .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
-                        .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
-                        .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
+            static Blob parseEdgeRawDataVertexSrcDstAsBlob(const Blob &blob) {
+                require(blob.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
+                Blob::Byte byteData[VERTEX_SRC_DST_RAW_DATA_LENGTH];
+                blob.retrieve(byteData, 0, VERTEX_SRC_DST_RAW_DATA_LENGTH);
+                return Blob(byteData, VERTEX_SRC_DST_RAW_DATA_LENGTH);
+            }
+
+            static Blob parseEdgeRawDataAsBlob(const Blob& blob) {
+                if (blob.size() > VERTEX_SRC_DST_RAW_DATA_LENGTH) {
+                    auto offset = VERTEX_SRC_DST_RAW_DATA_LENGTH;
+                    auto rawDataSize = blob.size() - offset;
+                    Blob::Byte byteData[rawDataSize];
+                    blob.retrieve(byteData, offset, sizeof(byteData));
+                    return Blob(byteData, rawDataSize);
+                } else {
+                    return Blob();
+                }
             }
 
         private:

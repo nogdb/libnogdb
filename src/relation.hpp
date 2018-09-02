@@ -61,30 +61,34 @@ namespace nogdb {
 //
 //            }
 //
-            RecordDescriptor addEdge(const ClassAccessInfo& classInfo,
-                                     const PropertyNameMapInfo& propertyNameMapInfo,
-                                     const RecordDescriptor& srcVertex,
-                                     const RecordDescriptor& dstVertex,
-                                     const Record& record) {
-                auto edgeDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, ClassType::EDGE);
-                auto vertexBlob = parser::Parser::parseVertexSrcDst(srcVertex.rid, dstVertex.rid);
-                auto valueBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
-                auto positionId = edgeDataRecord.insert(vertexBlob + valueBlob);
-                auto recordDescriptor = RecordDescriptor{classInfo.id, positionId};
-                _outRel->create(RelationAccessInfo{
-                        srcVertex.rid,
-                        recordDescriptor,
-                        dstVertex.rid
-                });
-                _inRel->create(RelationAccessInfo{
-                    dstVertex.rid,
-                    recordDescriptor,
-                    srcVertex.rid
-                });
-                return RecordDescriptor{classInfo.id, positionId};
+            void addEdge(const RecordId& edgeRid,
+                         const RecordId& srcRid,
+                         const RecordId& dstRid) {
+                _outRel->create(RelationAccessInfo{srcRid, edgeRid, dstRid});
+                _inRel->create(RelationAccessInfo{dstRid, edgeRid, srcRid});
             }
 
-            void removeRel(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid) {
+            void updateEdgeSrc(const RecordId& edgeRid,
+                               const RecordId& newSrcRid,
+                               const RecordId& srcRid,
+                               const RecordId& dstRid) {
+                _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+                _outRel->create(RelationAccessInfo{newSrcRid, edgeRid, dstRid});
+                _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
+                _inRel->create(RelationAccessInfo{dstRid, edgeRid, newSrcRid});
+            }
+
+            void updateEdgeDst(const RecordId& edgeRid,
+                               const RecordId& newDstRid,
+                               const RecordId& srcRid,
+                               const RecordId& dstRid) {
+                _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+                _outRel->create(RelationAccessInfo{srcRid, edgeRid, newDstRid});
+                _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
+                _inRel->create(RelationAccessInfo{newDstRid, edgeRid, srcRid});
+            }
+
+            void removeRelFromEdge(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid) {
                 _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
                 _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
             }
@@ -95,9 +99,8 @@ namespace nogdb {
                     std::function<std::shared_ptr<DataRecord>(void)> callback = [&](){
                         return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
                     };
-                    auto edgeDataRecord = _edgeDataRecordCache.get(relInfo.edgeId.first, callback);
                     try {
-                        edgeDataRecord->remove(relInfo.edgeId.second);
+                        _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
                     } catch (const Error & err){
                         if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
                             throw err;
@@ -111,9 +114,8 @@ namespace nogdb {
                     std::function<std::shared_ptr<DataRecord>(void)> callback = [&](){
                         return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
                     };
-                    auto edgeDataRecord = _edgeDataRecordCache.get(relInfo.edgeId.first, callback);
                     try {
-                        edgeDataRecord->remove(relInfo.edgeId.second);
+                        _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
                     } catch (const Error & err){
                         if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
                             throw err;
