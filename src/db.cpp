@@ -34,7 +34,7 @@ namespace nogdb {
         auto result = adapter::datarecord::DataRecord(txn._txnBase, recordDescriptor.rid.first, classInfo.type)
                 .getResult(recordDescriptor.rid.second);
         auto propertyInfos = txn._iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        return parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos);
+        return parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
     }
 
     const std::vector<ClassDescriptor> DB::getClasses(const Txn &txn) {

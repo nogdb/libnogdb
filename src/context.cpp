@@ -30,7 +30,6 @@
 #include "utils.hpp"
 #include "constant.hpp"
 #include "storage_engine.hpp"
-#include "graph.hpp"
 #include "validate.hpp"
 #include "schema.hpp"
 

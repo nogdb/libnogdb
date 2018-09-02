@@ -35,7 +35,7 @@ namespace nogdb {
 
     using namespace adapter::schema;
 
-    const PropertyDescriptor Property::add(Txn &txn,
+    const PropertyDescriptor Property::add(const Txn &txn,
                                            const std::string &className,
                                            const std::string &propertyName,
                                            PropertyType type) {
@@ -66,7 +66,7 @@ namespace nogdb {
         }
     }
 
-    void Property::alter(Txn &txn,
+    void Property::alter(const Txn &txn,
                          const std::string &className,
                          const std::string &oldPropertyName,
                          const std::string &newPropertyName) {
@@ -91,7 +91,7 @@ namespace nogdb {
         }
     }
 
-    void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
+    void Property::remove(const Txn &txn, const std::string &className, const std::string &propertyName) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -114,7 +114,7 @@ namespace nogdb {
         }
     }
 
-    void Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
+    void Property::createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid()
         . isIndexIdMaxReach();
@@ -150,7 +150,7 @@ namespace nogdb {
         }
     }
 
-    void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
+    void Property::dropIndex(const Txn &txn, const std::string &className, const std::string &propertyName) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 

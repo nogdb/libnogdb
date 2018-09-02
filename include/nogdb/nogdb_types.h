@@ -710,7 +710,7 @@ namespace nogdb {
         friend struct Edge;
         friend struct Traverse;
 
-        ResultSetCursor(Txn &txn_);
+        ResultSetCursor(const Txn &txn_);
 
         ~ResultSetCursor() noexcept;
 
@@ -745,7 +745,7 @@ namespace nogdb {
         const Result *operator->() const;
 
     private:
-        Txn &txn;
+        const Txn &txn;
         std::vector<RecordDescriptor> metadata{};
         long long currentIndex;
         Result result;

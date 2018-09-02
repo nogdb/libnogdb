@@ -23,7 +23,6 @@
 
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
-#include "graph.hpp"
 #include "parser.hpp"
 #include "compare.hpp"
 #include "index.hpp"

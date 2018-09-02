@@ -123,7 +123,7 @@ namespace nogdb {
         return *this;
     }
 
-    void Txn::commit() {
+    void Txn::commit() const {
         try {
             _txnBase->commit();
             delete _txnBase;
@@ -138,7 +138,7 @@ namespace nogdb {
         }
     }
 
-    void Txn::rollback() noexcept {
+    void Txn::rollback() const noexcept {
         if (_txnBase) {
             _txnBase->rollback();
             delete _txnBase;

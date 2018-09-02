@@ -35,7 +35,7 @@
 
 namespace nogdb {
 
-    const RecordDescriptor Edge::create(Txn &txn,
+    const RecordDescriptor Edge::create(const Txn &txn,
                                         const std::string &className,
                                         const RecordDescriptor &srcVertexRecordDescriptor,
                                         const RecordDescriptor &dstVertexRecordDescriptor,
@@ -46,15 +46,15 @@ namespace nogdb {
         . isExistingDstVertex(dstVertexRecordDescriptor);
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        auto recordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
         try {
-            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
             auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
             auto vertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
                                                                     dstVertexRecordDescriptor.rid);
-            auto valueBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
-            auto positionId = edgeDataRecord.insert(vertexBlob + valueBlob);
+            auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
             auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
-            txn._iGraph->addEdge(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
+            txn._iGraph->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
             txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
             return recordDescriptor;
         } catch (const Error& error) {
@@ -63,21 +63,21 @@ namespace nogdb {
         }
     }
 
-    void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
+    void Edge::update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
         auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
         auto existingRecordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        auto newRecordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
         try {
-            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-            auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
             // insert an updated record
             auto vertexBlob = parser::Parser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
-            auto newRecordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
             edgeDataRecord.insert(vertexBlob + newRecordBlob);
             // remove index if applied in existing record
+            auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
             auto existingRecord = parser::Parser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
             txn._iIndex->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
             // add index if applied in new record
@@ -88,7 +88,7 @@ namespace nogdb {
         }
     }
 
-    void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
+    void Edge::destroy(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -110,7 +110,7 @@ namespace nogdb {
         }
     }
 
-    void Edge::destroy(Txn &txn, const std::string &className) {
+    void Edge::destroy(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -134,7 +134,7 @@ namespace nogdb {
         }
     }
 
-    void Edge::updateSrc(Txn &txn,
+    void Edge::updateSrc(const Txn &txn,
                          const RecordDescriptor &recordDescriptor,
                          const RecordDescriptor &newSrcVertexRecordDescriptor) {
         BEGIN_VALIDATION(&txn)
@@ -146,7 +146,8 @@ namespace nogdb {
         auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
         try {
             auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
-            txn._iGraph->updateEdgeSrc(recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            txn._iGraph->updateSrcRel(recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first,
+                                      srcDstVertex.second);
             auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
             auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
             edgeDataRecord.insert(newVertexBlob + dataBlob);
@@ -156,7 +157,7 @@ namespace nogdb {
         }
     }
 
-    void Edge::updateDst(Txn &txn,
+    void Edge::updateDst(const Txn &txn,
                          const RecordDescriptor &recordDescriptor,
                          const RecordDescriptor &newDstVertexDescriptor) {
         BEGIN_VALIDATION(&txn)
@@ -168,7 +169,8 @@ namespace nogdb {
         auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
         try {
             auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
-            txn._iGraph->updateEdgeDst(recordDescriptor.rid, newDstVertexDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            txn._iGraph->updateDstRel(recordDescriptor.rid, newDstVertexDescriptor.rid, srcDstVertex.first,
+                                      srcDstVertex.second);
             auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
             auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
             edgeDataRecord.insert(newVertexBlob + dataBlob);
@@ -178,7 +180,7 @@ namespace nogdb {
         }
     }
 
-    ResultSet Edge::get(Txn &txn, const std::string &className) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -191,14 +193,14 @@ namespace nogdb {
             auto const record = parser::Parser::parseRawDataWithBasicInfo(
                     edgeClassInfo.name,
                     RecordId{edgeClassInfo.id, positionId},
-                    result, propertyIdMapInfo, edgeClassInfo.type == ClassType::EDGE);
+                    result, propertyIdMapInfo, edgeClassInfo.type);
             resultSet.emplace_back(Result{RecordDescriptor{edgeClassInfo.id, positionId}, record});
         };
         edgeDataRecord.resultSetIter(callback);
         return resultSet;
     }
 
-    ResultSet Edge::getExtend(Txn &txn, const std::string &className) {
+    ResultSet Edge::getExtend(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -206,7 +208,7 @@ namespace nogdb {
         return adapter::datarecord::DataRecords(&txn, edgeClassInfo).get();
     }
 
-    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className) {
+    ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -222,7 +224,7 @@ namespace nogdb {
         return resultSetCursor;
     }
 
-    ResultSetCursor Edge::getExtendCursor(Txn &txn, const std::string &className) {
+    ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -230,7 +232,7 @@ namespace nogdb {
         return adapter::datarecord::DataRecords(&txn, edgeClassInfo).getCursor();
     }
 
-    Result Edge::getSrc(Txn &txn, const RecordDescriptor &recordDescriptor) {
+    Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -242,7 +244,7 @@ namespace nogdb {
         return Result{srcVertexRecordDescriptor, DB::getRecord(txn, srcVertexRecordDescriptor)};
     }
 
-    Result Edge::getDst(Txn &txn, const RecordDescriptor &recordDescriptor) {
+    Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -254,7 +256,7 @@ namespace nogdb {
         return Result{dstVertexRecordDescriptor, DB::getRecord(txn, dstVertexRecordDescriptor)};
     }
 
-    ResultSet Edge::getSrcDst(Txn &txn, const RecordDescriptor &recordDescriptor) {
+    ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -270,111 +272,111 @@ namespace nogdb {
         };
     }
 
-    //TODO:
-    ResultSet Edge::get(Txn &txn, const std::string &className, const Condition &condition) {
+    //TODO: complete all functions below
+    ResultSet Edge::get(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::get(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::get(Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition);
     }
 
-    ResultSet Edge::getExtend(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::getExtend(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSet Edge::getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }
 
-    ResultSet Edge::getExtend(Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition);
     }
 
-    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getExtendCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getExtendCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getExtendCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSet Edge::getIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition, true);
     }
 
-    ResultSet Edge::getIndex(Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition, true);
     }
 
-    ResultSet Edge::getExtendIndex(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSet Edge::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition, true);
     }
 
-    ResultSet Edge::getExtendIndex(Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+    ResultSet Edge::getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition, true);
     }
 
-    ResultSetCursor Edge::getIndexCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getExtendIndexCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Edge::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Edge::getExtendIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Edge::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::EDGE, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

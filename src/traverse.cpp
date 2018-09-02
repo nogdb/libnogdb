@@ -21,7 +21,6 @@
  
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
-#include "graph.hpp"
 #include "algorithm.hpp"
 
 #include "nogdb.h"
@@ -63,7 +62,7 @@ namespace nogdb {
                                             pathFilter);
     }
 
-    ResultSetCursor Traverse::inEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
@@ -83,7 +82,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::inEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
@@ -140,7 +139,7 @@ namespace nogdb {
                                             pathFilter);
     }
 
-    ResultSetCursor Traverse::outEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -161,7 +160,7 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Traverse::outEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -217,7 +216,7 @@ namespace nogdb {
                                             pathFilter);
     }
 
-    ResultSetCursor Traverse::allEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -237,7 +236,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::allEdgeBfsCursor(Txn &txn,
+    ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -293,7 +292,7 @@ namespace nogdb {
                                            pathFilter);
     }
 
-    ResultSetCursor Traverse::inEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
@@ -313,7 +312,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::inEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               unsigned int minDepth,
                                               unsigned int maxDepth,
@@ -369,7 +368,7 @@ namespace nogdb {
                                            pathFilter);
     }
 
-    ResultSetCursor Traverse::outEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -389,7 +388,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::outEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -445,7 +444,7 @@ namespace nogdb {
                                            pathFilter);
     }
 
-    ResultSetCursor Traverse::allEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -465,7 +464,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::allEdgeDfsCursor(Txn &txn,
+    ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
                                                const RecordDescriptor &recordDescriptor,
                                                unsigned int minDepth,
                                                unsigned int maxDepth,
@@ -509,7 +508,7 @@ namespace nogdb {
                                           pathFilter);
     }
 
-    ResultSetCursor Traverse::shortestPathCursor(Txn &txn,
+    ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
                                                  const RecordDescriptor &srcVertexRecordDescriptor,
                                                  const RecordDescriptor &dstVertexRecordDescriptor,
                                                  const ClassFilter &classFilter) {
@@ -523,7 +522,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Traverse::shortestPathCursor(Txn &txn,
+    ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
                                                  const RecordDescriptor &srcVertexRecordDescriptor,
                                                  const RecordDescriptor &dstVertexRecordDescriptor,
                                                  const PathFilter &pathFilter,

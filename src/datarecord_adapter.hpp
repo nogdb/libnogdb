@@ -158,7 +158,7 @@ namespace nogdb {
                             auto recordId = RecordId{classInfo.id, key};
                             auto record = parser::Parser::parseRawDataWithBasicInfo(
                                     classInfo.name, recordId, keyValue.val,
-                                    propertyIdMapInfo, classInfo.type == ClassType::EDGE);
+                                    propertyIdMapInfo, classInfo.type);
                             result.emplace_back(ResultSet{RecordDescriptor{_classInfo.id, key}, record});
                         }
                     }

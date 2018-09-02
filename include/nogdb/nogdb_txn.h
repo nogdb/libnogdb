@@ -60,9 +60,9 @@ namespace nogdb {
 
         Txn &operator=(Txn &&txn) noexcept;
 
-        void commit();
+        void commit() const;
 
-        void rollback() noexcept;
+        void rollback() const noexcept;
 
         Mode getTxnMode() const { return _txnMode; }
 
@@ -70,7 +70,6 @@ namespace nogdb {
 
     private:
         Context &_txnCtx;
-        storage_engine::LMDBTxn *_txnBase;
         adapter::metadata::DBInfoAccess *_dbInfo;
         adapter::schema::ClassAccess *_class;
         adapter::schema::PropertyAccess *_property;
@@ -80,7 +79,8 @@ namespace nogdb {
         relation::GraphInterface *_iGraph;
 
         Mode _txnMode;
-        bool _completed; // throw error if working with isCompleted = true
+        mutable storage_engine::LMDBTxn *_txnBase;
+        mutable bool _completed; // throw error if working with isCompleted = true
     };
 
 }

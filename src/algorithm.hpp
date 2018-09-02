@@ -27,7 +27,6 @@
 
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
-#include "graph.hpp"
 #include "parser.hpp"
 #include "schema.hpp"
 

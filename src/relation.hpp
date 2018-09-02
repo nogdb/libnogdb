@@ -57,31 +57,27 @@ namespace nogdb {
                 }
             };
 
-//            void addVertex(const RecordId& rid, const Record& record) {
-//
-//            }
-//
-            void addEdge(const RecordId& edgeRid,
-                         const RecordId& srcRid,
-                         const RecordId& dstRid) {
+            void addRel(const RecordId &edgeRid,
+                        const RecordId &srcRid,
+                        const RecordId &dstRid) {
                 _outRel->create(RelationAccessInfo{srcRid, edgeRid, dstRid});
                 _inRel->create(RelationAccessInfo{dstRid, edgeRid, srcRid});
             }
 
-            void updateEdgeSrc(const RecordId& edgeRid,
-                               const RecordId& newSrcRid,
-                               const RecordId& srcRid,
-                               const RecordId& dstRid) {
+            void updateSrcRel(const RecordId &edgeRid,
+                              const RecordId &newSrcRid,
+                              const RecordId &srcRid,
+                              const RecordId &dstRid) {
                 _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
                 _outRel->create(RelationAccessInfo{newSrcRid, edgeRid, dstRid});
                 _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
                 _inRel->create(RelationAccessInfo{dstRid, edgeRid, newSrcRid});
             }
 
-            void updateEdgeDst(const RecordId& edgeRid,
-                               const RecordId& newDstRid,
-                               const RecordId& srcRid,
-                               const RecordId& dstRid) {
+            void updateDstRel(const RecordId &edgeRid,
+                              const RecordId &newDstRid,
+                              const RecordId &srcRid,
+                              const RecordId &dstRid) {
                 _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
                 _outRel->create(RelationAccessInfo{srcRid, edgeRid, newDstRid});
                 _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});

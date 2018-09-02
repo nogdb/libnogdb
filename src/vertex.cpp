@@ -24,8 +24,8 @@
 #include "schema.hpp"
 #include "constant.hpp"
 #include "lmdb_engine.hpp"
-#include "graph.hpp"
 #include "parser.hpp"
+#include "relation.hpp"
 #include "compare.hpp"
 #include "index.hpp"
 
@@ -33,269 +33,147 @@
 
 namespace nogdb {
 
-    const RecordDescriptor Vertex::create(Txn &txn, const std::string &className, const Record &record) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
+    const RecordDescriptor Vertex::create(const Txn &txn, const std::string &className, const Record &record) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
-        // set default version
-        record.setBasicInfo(TXN_VERSION, txn.getVersionId());
-        record.setBasicInfo(VERSION_PROPERTY, 1ULL);
-
-        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::VERTEX);
-        auto classInfo = ClassPropertyInfo{};
-        auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(MAX_RECORD_NUM_EM);
-        auto const maxRecordNum = dsResult.data.numeric<PositionId>();
-        classDBHandler.put(maxRecordNum, value, true);
-        classDBHandler.put(MAX_RECORD_NUM_EM, PositionId{maxRecordNum + 1});
-
-        // add index if applied
-        for (const auto &indexInfo: indexInfos) {
-            auto bytesValue = record.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn._txnBase, indexId, maxRecordNum, bytesValue, propertyType, isUnique);
-        }
-        return RecordDescriptor{classDescriptor->id, maxRecordNum};
-    }
-
-    void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
-
-        record.updateVersion(txn);
-
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto classInfo = ClassPropertyInfo{};
-        auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        auto value = Parser::parseRecord(*txn._txnBase, classDescriptor, record, classInfo, indexInfos);
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
-        }
-        auto existingRecord = Parser::parseRawData(dsResult, classInfo);
-        auto existingIndexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-        for (const auto &property: existingRecord.getAll()) {
-            // check if having any index
-            auto foundProperty = classInfo.nameToDesc.find(property.first);
-            if (foundProperty != classInfo.nameToDesc.cend()) {
-                for (const auto &indexIter: foundProperty->second.indexInfo) {
-                    if (indexIter.second.first == classDescriptor->id) {
-                        existingIndexInfos.emplace(
-                                property.first,
-                                std::make_tuple(
-                                        foundProperty->second.type,
-                                        indexIter.first,
-                                        indexIter.second.second
-                                )
-                        );
-                        break;
-                    }
-                }
-            }
-        }
-        for (const auto &indexInfo: existingIndexInfos) {
-            auto bytesValue = existingRecord.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-        }
-        for (const auto &indexInfo: indexInfos) {
-            auto bytesValue = record.get(indexInfo.first);
-            auto const propertyType = std::get<0>(indexInfo.second);
-            auto const indexId = std::get<1>(indexInfo.second);
-            auto const isUnique = std::get<2>(indexInfo.second);
-            Index::addIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-        }
-
-        classDBHandler.put(recordDescriptor.rid.second, value);
-    }
-
-    void Vertex::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-        auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto recordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
         try {
-            for (const auto &edge: txn._txnCtx.dbRelation->getEdgeInOut(*txn._txnBase, recordDescriptor.rid)) {
-                edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
-            }
-        } catch (const Error &err) {
-            if (err.code() != NOGDB_GRAPH_NOEXST_VERTEX)
-                throw err;
+            auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+            auto positionId = vertexDataRecord.insert(recordBlob);
+            auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
+            txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
+            return recordDescriptor;
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-        // delete edges and relations
-        for (const auto &edge: edgeRecordDescriptors) {
-            Edge::destroy(txn, edge);
-        }
-        // delete a record in a datastore
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        // delete index if existing
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (!dsResult.data.empty()) {
-            auto indexInfos = std::map<std::string, std::tuple<PropertyType, IndexId, bool>>{};
-            auto record = Parser::parseRawData(dsResult, classInfo);
-            for (const auto &property: record.getAll()) {
-                // check if having any index
-                auto foundProperty = classInfo.nameToDesc.find(property.first);
-                if (foundProperty != classInfo.nameToDesc.cend()) {
-                    for (const auto &indexIter: foundProperty->second.indexInfo) {
-                        if (indexIter.second.first == classDescriptor->id) {
-                            indexInfos.emplace(
-                                    property.first,
-                                    std::make_tuple(
-                                            foundProperty->second.type,
-                                            indexIter.first,
-                                            indexIter.second.second
-                                    )
-                            );
-                            break;
-                        }
-                    }
-                }
-            }
-            for (const auto &indexInfo: indexInfos) {
-                auto bytesValue = record.get(indexInfo.first);
-                auto const propertyType = std::get<0>(indexInfo.second);
-                auto const indexId = std::get<1>(indexInfo.second);
-                auto const isUnique = std::get<2>(indexInfo.second);
-                Index::deleteIndex(*txn._txnBase, indexId, recordDescriptor.rid.second, bytesValue, propertyType, isUnique);
-            }
-        }
-        // delete actual record
-        classDBHandler.del(recordDescriptor.rid.second);
-        // update in-memory relations
-        txn._txnCtx.dbRelation->deleteVertex(*txn._txnBase, recordDescriptor.rid);
     }
 
-    void Vertex::destroy(Txn &txn, const std::string &className) {
-        // transaction validations
-        Validate::isTransactionValid(txn);
-        auto classDescriptor = Generic::getClassInfo(txn, className, ClassType::VERTEX);
-        auto classInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-        auto recordIds = std::vector<RecordId> {};
-        auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-        // remove all index records
-        auto indexInfos = std::vector<std::tuple<PropertyType, IndexId, bool>>{};
-        for (const auto &property: classInfo.nameToDesc) {
-            auto &type = property.second.type;
-            auto &indexInfo = property.second.indexInfo;
-            for (const auto &indexIter: indexInfo) {
-                if (indexIter.second.first == classDescriptor->id) {
-                    indexInfos.emplace_back(
-                            std::make_tuple(
-                                    type,
-                                    indexIter.first,
-                                    indexIter.second.second
-                            )
-                    );
-                }
-                break;
-            }
+    void Vertex::update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+        auto existingRecordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto newRecordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+        try {
+            // insert an updated record
+            vertexDataRecord.insert(newRecordBlob);
+            // remove index if applied in existing record
+            auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+            auto existingRecord = parser::Parser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
+            txn._iIndex->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
+            // add index if applied in new record
+            txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-        for (const auto &indexInfo: indexInfos) {
-            auto const propertyType = std::get<0>(indexInfo);
-            auto const indexId = std::get<1>(indexInfo);
-            auto const isUnique = std::get<2>(indexInfo);
-            switch (propertyType) {
-                case PropertyType::UNSIGNED_TINYINT:
-                case PropertyType::UNSIGNED_SMALLINT:
-                case PropertyType::UNSIGNED_INTEGER:
-                case PropertyType::UNSIGNED_BIGINT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), true, isUnique);
-                    dataIndexDBHandler.drop();
-                    break;
-                }
-                case PropertyType::TINYINT:
-                case PropertyType::SMALLINT:
-                case PropertyType::INTEGER:
-                case PropertyType::BIGINT:
-                case PropertyType::REAL: {
-                    auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(Index::getIndexingName(indexId, true), true, isUnique);
-                    auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(Index::getIndexingName(indexId, false), true, isUnique);
-                    dataIndexDBHandlerPositive.drop();
-                    dataIndexDBHandlerNegative.drop();
-                    break;
-                }
-                case PropertyType::TEXT: {
-                    auto dataIndexDBHandler = dsTxnHandler->openDbi(Index::getIndexingName(indexId), false, isUnique);
-                    dataIndexDBHandler.drop();
-                    break;
-                }
-                default:
-                    break;
-            }
+    }
+
+    void Vertex::destroy(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+        auto recordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
+        try {
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+            auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+            vertexDataRecord.remove(recordDescriptor.rid.second);
+            txn._iGraph->removeRelFromVertex(recordDescriptor.rid);
+            // remove index if applied in the record
+            auto record = parser::Parser::parseRawData(recordResult, propertyIdMapInfo, true);
+            txn._iIndex->remove(recordDescriptor, record, propertyNameMapInfo);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
-        // remove all records in a database
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto cursorHandler = dsTxnHandler->openCursor(classDBHandler);
-        auto relationDBHandler = dsTxnHandler->openDbi(TB_RELATIONS);
-        for(auto keyValue = cursorHandler.getNext();
-            !keyValue.empty();
-            keyValue = cursorHandler.getNext()) {
-            auto key = keyValue.key.data.numeric<PositionId>();
-            if (key != MAX_RECORD_NUM_EM) {
-                auto recordDescriptor = RecordDescriptor{classDescriptor->id, key};
-                recordIds.push_back(recordDescriptor.rid);
-                auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
-                try {
-                    for (const auto &edge: txn._txnCtx.dbRelation->getEdgeInOut(*txn._txnBase, recordDescriptor.rid)) {
-                        edgeRecordDescriptors.emplace_back(RecordDescriptor{edge.first, edge.second});
-                    }
-                } catch (const Error &err) {
-                    if (err.code() != NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw err;
-                    }
-                }
-                // delete from relations
-                for (const auto &edge: edgeRecordDescriptors) {
-                    relationDBHandler.del(rid2str(edge.rid));
-                    auto edgeClassHandler = dsTxnHandler->openDbi(std::to_string(edge.rid.first), true);
-                    edgeClassHandler.del(edge.rid.second);
-                }
-            }
-        }
-        // empty a database
-        classDBHandler.drop();
-        // update in-memory
-        for (const auto &recordId: recordIds) {
-            txn._txnCtx.dbRelation->deleteVertex(*txn._txnBase, recordId);
+    }
+
+    void Vertex::destroy(const Txn &txn, const std::string &className) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        try {
+            auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+            auto result = std::map<RecordId, std::pair<RecordId, RecordId>>{};
+            std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                auto recordId = RecordId{vertexClassInfo.id, positionId};
+                txn._iGraph->removeRelFromVertex(recordId);
+            };
+            vertexDataRecord.resultSetIter(callback);
+            vertexDataRecord.destroy();
+            txn._iIndex->drop(vertexClassInfo.id, propertyNameMapInfo);
+        } catch (const Error& error) {
+            txn.rollback();
+            throw NOGDB_FATAL_ERROR(error);
         }
     }
 
     ResultSet Vertex::get(const Txn &txn, const std::string &className) {
-        auto result = ResultSet{};
-        auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, ClassType::VERTEX);
-        for (const auto &classDescriptor: classDescriptors) {
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-            auto classInfo = ClassInfo{classDescriptor->id, className, classPropertyInfo};
-            auto partial = Generic::getRecordFromClassInfo(txn, classInfo);
-            result.insert(result.end(), partial.cbegin(), partial.cend());
-        }
-        return result;
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto resultSet = ResultSet{};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+            auto const record = parser::Parser::parseRawDataWithBasicInfo(
+                    vertexClassInfo.name,
+                    RecordId{vertexClassInfo.id, positionId},
+                    result, propertyIdMapInfo, vertexClassInfo.type);
+            resultSet.emplace_back(Result{RecordDescriptor{vertexClassInfo.id, positionId}, record});
+        };
+        vertexDataRecord.resultSetIter(callback);
+        return resultSet;
     }
 
-    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className) {
-        auto result = ResultSetCursor{txn};
-        auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, ClassType::VERTEX);
-        for (const auto &classDescriptor: classDescriptors) {
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn._txnBase, classDescriptor);
-            auto classInfo = ClassInfo{classDescriptor->id, className, classPropertyInfo};
-            auto metadata = Generic::getRdescFromClassInfo(txn, classInfo);
-            result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        }
-        return result;
+    ResultSet Vertex::getExtend(const Txn &txn, const std::string &className) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        return adapter::datarecord::DataRecords(&txn, vertexClassInfo).get();
     }
 
+
+    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto resultSetCursor = ResultSetCursor{txn};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+            resultSetCursor.metadata.emplace_back(RecordDescriptor{vertexClassInfo.id, positionId});
+        };
+        vertexDataRecord.resultSetIter(callback);
+        return resultSetCursor;
+    }
+
+    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        return adapter::datarecord::DataRecords(&txn, vertexClassInfo).getCursor();
+    }
+
+    //TODO: complete all functions below
     ResultSet Vertex::getInEdge(const Txn &txn,
                                 const RecordDescriptor &recordDescriptor,
                                 const ClassFilter &classFilter) {
@@ -323,7 +201,7 @@ namespace nogdb {
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
     }
 
-    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                             const RecordDescriptor &recordDescriptor,
                                             const ClassFilter &classFilter) {
         // basic class verification
@@ -335,7 +213,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
         // basic class verification
@@ -347,7 +225,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
         // basic class verification
@@ -377,7 +255,7 @@ namespace nogdb {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
     }
 
-    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
@@ -385,14 +263,14 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::getCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
@@ -435,7 +313,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const Condition &condition,
                                              const ClassFilter &classFilter) {
@@ -450,7 +328,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const MultiCondition &multiCondition,
                                              const ClassFilter &classFilter) {
@@ -465,7 +343,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getInEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              bool (*condition)(const Record &record),
                                              const ClassFilter &classFilter) {
@@ -516,7 +394,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const Condition &condition,
                                               const ClassFilter &classFilter) {
@@ -532,7 +410,7 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const MultiCondition &multiCondition,
                                               const ClassFilter &classFilter) {
@@ -548,7 +426,7 @@ namespace nogdb {
 
     }
 
-    ResultSetCursor Vertex::getOutEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               bool (*condition)(const Record &record),
                                               const ClassFilter &classFilter) {
@@ -599,7 +477,7 @@ namespace nogdb {
                                              classFilter);
     }
 
-    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const Condition &condition,
                                               const ClassFilter &classFilter) {
@@ -614,7 +492,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               const MultiCondition &multiCondition,
                                               const ClassFilter &classFilter) {
@@ -629,7 +507,7 @@ namespace nogdb {
         return result;
     }
 
-    ResultSetCursor Vertex::getAllEdgeCursor(Txn &txn,
+    ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
                                               const RecordDescriptor &recordDescriptor,
                                               bool (*condition)(const Record &record),
                                               const ClassFilter &classFilter) {
@@ -652,14 +530,14 @@ namespace nogdb {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
     }
 
-    ResultSetCursor Vertex::getIndexCursor(Txn &txn, const std::string &className, const Condition &condition) {
+    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::getIndexCursor(Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());

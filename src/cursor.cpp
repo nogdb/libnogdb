@@ -29,7 +29,7 @@
 
 namespace nogdb {
 
-    ResultSetCursor::ResultSetCursor(Txn &txn_)
+    ResultSetCursor::ResultSetCursor(const Txn &txn_)
             : txn{txn_}, currentIndex{-1} {}
 
     ResultSetCursor::~ResultSetCursor() noexcept {}
@@ -61,6 +61,8 @@ namespace nogdb {
     }
 
     bool ResultSetCursor::next() {
+        BEGIN_VALIDATION(&txn).isTransactionValid();
+
         if (!metadata.empty() && (currentIndex == -1)) {
             currentIndex = 0;
         } else if (hasNext()) {
@@ -75,6 +77,8 @@ namespace nogdb {
     }
 
     bool ResultSetCursor::previous() {
+        BEGIN_VALIDATION(&txn).isTransactionValid();
+
         if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
             currentIndex = static_cast<long long>(metadata.size() - 1);
         } else if (hasPrevious()) {
@@ -101,6 +105,8 @@ namespace nogdb {
     }
 
     void ResultSetCursor::first() {
+        BEGIN_VALIDATION(&txn).isTransactionValid();
+
         if (!metadata.empty()) {
             currentIndex = 0;
             auto cursor = metadata.begin();
@@ -110,6 +116,8 @@ namespace nogdb {
     }
 
     void ResultSetCursor::last() {
+        BEGIN_VALIDATION(&txn).isTransactionValid();
+
         if (!metadata.empty()) {
             currentIndex = static_cast<long long>(metadata.size() - 1);
             auto cursor = metadata.end() - 1;
@@ -119,6 +127,8 @@ namespace nogdb {
     }
 
     bool ResultSetCursor::to(unsigned long index) {
+        BEGIN_VALIDATION(&txn).isTransactionValid();
+
         if (index >= metadata.size()) {
             return false;
         }

@@ -41,7 +41,7 @@ namespace nogdb {
     using namespace adapter::schema;
     using namespace adapter::datarecord;
 
-    const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {
+    const ClassDescriptor Class::create(const Txn &txn, const std::string &className, ClassType type) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid()
         . isClassIdMaxReach()
@@ -66,7 +66,7 @@ namespace nogdb {
         }
     }
 
-    const ClassDescriptor Class::createExtend(Txn &txn, const std::string &className, const std::string &superClass) {
+    const ClassDescriptor Class::createExtend(const Txn &txn, const std::string &className, const std::string &superClass) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid()
         . isClassIdMaxReach()
@@ -92,7 +92,7 @@ namespace nogdb {
         }
     }
 
-    void Class::drop(Txn &txn, const std::string &className) {
+    void Class::drop(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
@@ -155,7 +155,7 @@ namespace nogdb {
         }
     }
 
-    void Class::alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
+    void Class::alter(const Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid()
         . isClassNameValid(newClassName)
