@@ -103,6 +103,18 @@ namespace nogdb {
                     }
                 }
 
+                std::vector<RecordId> getEdges(const RecordId& vertexId) const {
+                    auto result = std::vector<RelationAccessInfo>{};
+                    auto cursorHandler = cursor();
+                    for(auto keyValue = cursorHandler.find(rid2str(vertexId));
+                        !keyValue.empty();
+                        keyValue = cursorHandler.getNext()) {
+                        auto key = str2rid(keyValue.key.data.string());
+                        if (key != vertexId) break;
+                        result.emplace_back(parseEdgeId(keyValue.val.data.blob()));
+                    }
+                }
+
                 Direction getDirection() const {
                     return _direction;
                 };

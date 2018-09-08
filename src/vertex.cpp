@@ -173,34 +173,45 @@ namespace nogdb {
         return adapter::datarecord::DataRecords(&txn, vertexClassInfo).getCursor();
     }
 
-    //TODO: complete all functions below
     ResultSet Vertex::getInEdge(const Txn &txn,
                                 const RecordDescriptor &recordDescriptor,
                                 const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
     }
 
     ResultSet Vertex::getOutEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
     }
 
     ResultSet Vertex::getAllEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeClassIds = std::set<RecordId>{};
+        auto inEdgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+        auto outEdgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+        edgeClassIds.insert(edgeClassIds.cend(), inEdgeClassIds.cbegin(), inEdgeClassIds.cend());
+        edgeClassIds.insert(edgeClassIds.cend(), outEdgeClassIds.cbegin(), outEdgeClassIds.cend());
+
         return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
     }
 
+    //TODO: complete all functions below
     ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                             const RecordDescriptor &recordDescriptor,
                                             const ClassFilter &classFilter) {

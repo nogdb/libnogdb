@@ -122,6 +122,13 @@ namespace nogdb {
                 _outRel->remove(rid);
             }
 
+            std::vector<RecordId> getInEdges(const RecordId& recordId) const {
+                return _inRel->getEdges(recordId);
+            }
+
+            std::vector<RecordId> getOutEdges(const RecordId& recordId) const {
+                return _outRel->getEdges(recordId);
+            }
 
         private:
             const Txn* _txn;
