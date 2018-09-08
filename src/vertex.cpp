@@ -181,7 +181,7 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
-        return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
+        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
     }
 
     ResultSet Vertex::getOutEdge(const Txn &txn,
@@ -192,7 +192,7 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
         auto edgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
-        return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
+        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
     }
 
     ResultSet Vertex::getAllEdge(const Txn &txn,
@@ -205,10 +205,9 @@ namespace nogdb {
         auto edgeClassIds = std::set<RecordId>{};
         auto inEdgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
         auto outEdgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
-        edgeClassIds.insert(edgeClassIds.cend(), inEdgeClassIds.cbegin(), inEdgeClassIds.cend());
-        edgeClassIds.insert(edgeClassIds.cend(), outEdgeClassIds.cbegin(), outEdgeClassIds.cend());
-
-        return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
+        edgeClassIds.insert(inEdgeClassIds.cbegin(), inEdgeClassIds.cend());
+        edgeClassIds.insert(outEdgeClassIds.cbegin(), outEdgeClassIds.cend());
+        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
     }
 
     //TODO: complete all functions below
