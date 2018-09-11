@@ -180,8 +180,24 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
-        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
+        auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
+        auto result = ResultSet{};
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                }
+            } else {
+                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+            }
+        }
+        return result;
     }
 
     ResultSet Vertex::getOutEdge(const Txn &txn,
@@ -191,8 +207,24 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
-        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
+        auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
+        auto result = ResultSet{};
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                }
+            } else {
+                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+            }
+        }
+        return result;
     }
 
     ResultSet Vertex::getAllEdge(const Txn &txn,
@@ -202,51 +234,116 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = std::set<RecordId>{};
-        auto inEdgeClassIds = txn._iGraph->getInEdges(recordDescriptor.rid);
-        auto outEdgeClassIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
-        edgeClassIds.insert(inEdgeClassIds.cbegin(), inEdgeClassIds.cend());
-        edgeClassIds.insert(outEdgeClassIds.cbegin(), outEdgeClassIds.cend());
-        //return Generic::getEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
+        auto edgeRecordIds = std::set<RecordId>{};
+        auto inEdgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+        auto outEdgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+        edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
+        edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
+        auto result = ResultSet{};
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                }
+            } else {
+                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+            }
+        }
+        return result;
     }
 
-    //TODO: complete all functions below
     ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
                                             const RecordDescriptor &recordDescriptor,
                                             const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
         auto result = ResultSetCursor{txn};
-        auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeIn);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.metadata.emplace_back(edgeRecordDescriptor);
+                }
+            } else {
+                result.metadata.emplace_back(edgeRecordDescriptor);
+            }
+        }
         return result;
     }
 
     ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
         auto result = ResultSetCursor{txn};
-        auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeOut);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.metadata.emplace_back(edgeRecordDescriptor);
+                }
+            } else {
+                result.metadata.emplace_back(edgeRecordDescriptor);
+            }
+        }
         return result;
     }
 
     ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const ClassFilter &classFilter) {
-        // basic class verification
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+        auto edgeRecordIds = std::set<RecordId>{};
+        auto inEdgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+        auto outEdgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+        edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
+        edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
+        auto edgeClassIds = std::set<ClassId>{};
+        for(const auto& className: classFilter.getClassName()) {
+            auto classId = txn._class->getId(className);
+            edgeClassIds.insert(classId);
+        }
         auto result = ResultSetCursor{txn};
-        auto metadata = Generic::getRdescEdgeNeighbour(txn, recordDescriptor, edgeClassIds, &Graph::getEdgeInOut);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        for(const auto& recordId: edgeRecordIds) {
+            auto edgeRecordDescriptor = RecordDescriptor{recordId};
+            if (!edgeClassIds.empty()) {
+                if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
+                    result.metadata.emplace_back(edgeRecordDescriptor);
+                }
+            } else {
+                result.metadata.emplace_back(edgeRecordDescriptor);
+            }
+        }
         return result;
     }
 
+    //TODO: complete all functions below
     ResultSet Vertex::get(const Txn &txn,
                            const std::string &className,
                            const Condition &condition) {
@@ -262,6 +359,24 @@ namespace nogdb {
     ResultSet Vertex::get(const Txn &txn,
                            const std::string &className,
                            const MultiCondition &multiCondition) {
+        return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
+    }
+
+    ResultSet Vertex::getExtend(const Txn &txn,
+                                const std::string &className,
+                                const Condition &condition) {
+        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
+    }
+
+    ResultSet Vertex::getExtend(const Txn &txn,
+                                const std::string &className,
+                                bool (*condition)(const Record &)) {
+        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
+    }
+
+    ResultSet Vertex::getExtend(const Txn &txn,
+                                const std::string &className,
+                                const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
     }
 
@@ -281,6 +396,28 @@ namespace nogdb {
     }
 
     ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
+        auto result = ResultSetCursor{txn};
+        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+    }
+
+    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
+        auto result = ResultSetCursor{txn};
+        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+
+    }
+
+    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+        auto result = ResultSetCursor{txn};
+        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+    }
+
+    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
@@ -548,6 +685,28 @@ namespace nogdb {
     }
 
     ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
+        auto result = ResultSetCursor{txn};
+        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+    }
+
+    ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
+        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition, true);
+    }
+
+    ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+        return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
+    }
+
+    ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
+        auto result = ResultSetCursor{txn};
+        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+    }
+
+    ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
