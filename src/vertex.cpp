@@ -28,6 +28,7 @@
 #include "relation.hpp"
 #include "compare.hpp"
 #include "index.hpp"
+#include "datarecord.hpp"
 
 #include "nogdb.h"
 
@@ -125,19 +126,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
-        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto resultSet = ResultSet{};
-        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-            auto const record = parser::Parser::parseRawDataWithBasicInfo(
-                    vertexClassInfo.name,
-                    RecordId{vertexClassInfo.id, positionId},
-                    result, propertyIdMapInfo, vertexClassInfo.type);
-            resultSet.emplace_back(Result{RecordDescriptor{vertexClassInfo.id, positionId}, record});
-        };
-        vertexDataRecord.resultSetIter(callback);
-        return resultSet;
+        return txn._iRecord->getResultSet(vertexClassInfo);
     }
 
     ResultSet Vertex::getExtend(const Txn &txn, const std::string &className) {
@@ -145,7 +134,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-        return adapter::datarecord::DataRecords(&txn, vertexClassInfo).get();
+        return txn._iRecord->getResultSetExtend(vertexClassInfo);
     }
 
 
@@ -154,23 +143,15 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-        auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
-        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto resultSetCursor = ResultSetCursor{txn};
-        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-            resultSetCursor.metadata.emplace_back(RecordDescriptor{vertexClassInfo.id, positionId});
-        };
-        vertexDataRecord.resultSetIter(callback);
-        return resultSetCursor;
+        return txn._iRecord->getResultSetCursor(vertexClassInfo);
     }
 
     ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
-        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        return adapter::datarecord::DataRecords(&txn, vertexClassInfo).getCursor();
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        return txn._iRecord->getResultSetCursorExtend(vertexClassInfo);
     }
 
     ResultSet Vertex::getInEdge(const Txn &txn,
@@ -191,10 +172,14 @@ namespace nogdb {
             auto edgeRecordDescriptor = RecordDescriptor{recordId};
             if (!edgeClassIds.empty()) {
                 if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
-                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                    auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                    auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                    result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
                 }
             } else {
-                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
             }
         }
         return result;
@@ -218,10 +203,14 @@ namespace nogdb {
             auto edgeRecordDescriptor = RecordDescriptor{recordId};
             if (!edgeClassIds.empty()) {
                 if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
-                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                    auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                    auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                    result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
                 }
             } else {
-                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
             }
         }
         return result;
@@ -249,10 +238,14 @@ namespace nogdb {
             auto edgeRecordDescriptor = RecordDescriptor{recordId};
             if (!edgeClassIds.empty()) {
                 if (edgeClassIds.find(recordId.first) != edgeClassIds.cend()) {
-                    result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                    auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                    auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                    result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
                 }
             } else {
-                result.emplace_back(Result{edgeRecordDescriptor, DB::getRecord(txn, edgeRecordDescriptor)});
+                auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
+                auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
+                result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
             }
         }
         return result;
@@ -343,40 +336,33 @@ namespace nogdb {
         return result;
     }
 
+    ResultSet Vertex::get(const Txn &txn, const std::string &className, const Condition &condition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
+    }
+
     //TODO: complete all functions below
-    ResultSet Vertex::get(const Txn &txn,
-                           const std::string &className,
-                           const Condition &condition) {
+    ResultSet Vertex::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
 
-    ResultSet Vertex::get(const Txn &txn,
-                           const std::string &className,
-                           bool (*condition)(const Record &)) {
-        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
-    }
-
-    ResultSet Vertex::get(const Txn &txn,
-                           const std::string &className,
-                           const MultiCondition &multiCondition) {
+    ResultSet Vertex::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
     }
 
-    ResultSet Vertex::getExtend(const Txn &txn,
-                                const std::string &className,
-                                const Condition &condition) {
+    ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
 
-    ResultSet Vertex::getExtend(const Txn &txn,
-                                const std::string &className,
-                                bool (*condition)(const Record &)) {
+    ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
 
-    ResultSet Vertex::getExtend(const Txn &txn,
-                                const std::string &className,
-                                const MultiCondition &multiCondition) {
+    ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
         return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
     }
 

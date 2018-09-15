@@ -295,9 +295,53 @@ namespace nogdb {
                 return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
             }
 
+            std::pair<bool, IndexAccessInfo>
+            hasIndex(const ClassAccessInfo& classInfo,
+                     const PropertyAccessInfo &propertyInfo,
+                     const Condition &condition) const {
+                if (isValidComparator(condition)) {
+                    // check if NOT is not used for EQUAL
+                    if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
+                        return std::make_pair(false, IndexAccessInfo{});
+                    }
+                    auto indexInfo = _txn->_index->getInfo(classInfo.id, propertyInfo.id);
+                    return std::make_pair(indexInfo.id != IndexId{}, indexInfo);
+                }
+                return std::make_pair(false, IndexAccessInfo{});
+            }
+
+            std::pair<bool, PropertyIdMapIndex>
+            hasIndex(const ClassAccessInfo &classInfo,
+                     const PropertyAccessInfo& propertyInfo,
+                     const MultiCondition &conditions) const {
+                auto isFoundAll = true;
+                auto result = PropertyIdMapIndex{};
+                auto conditionPropNames = std::unordered_set<std::string>{};
+                for (const auto &condition: conditions.conditions) {
+                    if (auto conditionPtr = condition.lock()) {
+                        auto propertyName = conditionPtr->getCondition().propName;
+                        if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
+                            conditionPropNames.emplace(propertyName);
+                            auto searchIndexResult = hasIndex(classInfo, propertyInfo, conditionPtr->getCondition());
+                            if (searchIndexResult.first) {
+                                auto propertyId = _txn->_property->getId(classInfo.id, propertyName);
+                                result.emplace(propertyId, searchIndexResult.second);
+                            } else {
+                                isFoundAll = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        isFoundAll = false;
+                        break;
+                    }
+                }
+                return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
+            }
+
             std::vector<RecordDescriptor>
             getRecord(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-                      const Condition &condition, bool isNegative) const {
+                      const Condition &condition, bool isNegative = false) const {
                 auto isApplyNegative = condition.isNegative ^isNegative;
                 switch (condition.comp) {
                     case Condition::Comparator::EQUAL: {

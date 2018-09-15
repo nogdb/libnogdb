@@ -43,7 +43,7 @@ namespace nogdb {
 
     class Condition {
     private:
-        friend struct Compare;
+        friend class Compare;
 
         friend class MultiCondition;
 
@@ -263,7 +263,7 @@ namespace nogdb {
         class ConditionNode;
 
     public:
-        friend struct Compare;
+        friend class Compare;
 
         friend class Condition;
 

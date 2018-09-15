@@ -30,6 +30,7 @@
 #include "schema.hpp"
 #include "index.hpp"
 #include "relation.hpp"
+#include "datarecord.hpp"
 
 #include "nogdb.h"
 
@@ -185,19 +186,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto resultSet = ResultSet{};
-        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-            auto const record = parser::Parser::parseRawDataWithBasicInfo(
-                    edgeClassInfo.name,
-                    RecordId{edgeClassInfo.id, positionId},
-                    result, propertyIdMapInfo, edgeClassInfo.type);
-            resultSet.emplace_back(Result{RecordDescriptor{edgeClassInfo.id, positionId}, record});
-        };
-        edgeDataRecord.resultSetIter(callback);
-        return resultSet;
+        return txn._iRecord->getResultSet(edgeClassInfo);
     }
 
     ResultSet Edge::getExtend(const Txn &txn, const std::string &className) {
@@ -205,7 +194,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        return adapter::datarecord::DataRecords(&txn, edgeClassInfo).get();
+        return txn._iRecord->getResultSetExtend(edgeClassInfo);
     }
 
     ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className) {
@@ -213,15 +202,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-        auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto resultSetCursor = ResultSetCursor{txn};
-        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-            resultSetCursor.metadata.emplace_back(RecordDescriptor{edgeClassInfo.id, positionId});
-        };
-        edgeDataRecord.resultSetIter(callback);
-        return resultSetCursor;
+        return txn._iRecord->getResultSetCursor(edgeClassInfo);
     }
 
     ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className) {
@@ -229,7 +210,7 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        return adapter::datarecord::DataRecords(&txn, edgeClassInfo).getCursor();
+        return txn._iRecord->getResultSetCursorExtend(edgeClassInfo);
     }
 
     Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -241,7 +222,8 @@ namespace nogdb {
         auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
         auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
         auto srcVertexRecordDescriptor = RecordDescriptor{srcDstVertex.first};
-        return Result{srcVertexRecordDescriptor, DB::getRecord(txn, srcVertexRecordDescriptor)};
+        auto srcVertexClassInfo = txn._iSchema->getExistingClass(srcVertexRecordDescriptor.rid.first);
+        return Result{srcVertexRecordDescriptor, txn._iRecord->getRecord(srcVertexClassInfo, srcVertexRecordDescriptor)};
     }
 
     Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -253,7 +235,8 @@ namespace nogdb {
         auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
         auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
         auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
-        return Result{dstVertexRecordDescriptor, DB::getRecord(txn, dstVertexRecordDescriptor)};
+        auto dstVertexClassInfo = txn._iSchema->getExistingClass(dstVertexRecordDescriptor.rid.first);
+        return Result{dstVertexRecordDescriptor, txn._iRecord->getRecord(dstVertexClassInfo, dstVertexRecordDescriptor)};
     }
 
     ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -265,18 +248,27 @@ namespace nogdb {
         auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
         auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
         auto srcVertexRecordDescriptor = RecordDescriptor{srcDstVertex.first};
+        auto srcVertexClassInfo = txn._iSchema->getExistingClass(srcVertexRecordDescriptor.rid.first);
         auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
+        auto dstVertexClassInfo = txn._iSchema->getExistingClass(dstVertexRecordDescriptor.rid.first);
+        auto srcVertexResult = txn._iRecord->getRecord(srcVertexClassInfo, srcVertexRecordDescriptor);
+        auto dstVertexResult = txn._iRecord->getRecord(dstVertexClassInfo, dstVertexRecordDescriptor);
         return ResultSet{
-                Result{srcVertexRecordDescriptor, DB::getRecord(txn, srcVertexRecordDescriptor)},
-                Result{dstVertexRecordDescriptor, DB::getRecord(txn, dstVertexRecordDescriptor)}
+                Result{ srcVertexRecordDescriptor, srcVertexResult },
+                Result{ dstVertexRecordDescriptor, dstVertexResult }
         };
     }
 
-    //TODO: complete all functions below
     ResultSet Edge::get(const Txn &txn, const std::string &className, const Condition &condition) {
-        return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
     }
 
+    //TODO: complete all functions below
     ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }

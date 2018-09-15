@@ -40,18 +40,12 @@ namespace nogdb {
     public:
         friend struct Validate;
         friend struct Algorithm;
-        friend struct Compare;
-        friend struct Generic;
         friend struct Class;
         friend struct Property;
         friend struct DB;
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
-
-        friend class TxnStat;
-
-        friend class BaseTxn;
 
         friend class Txn;
 

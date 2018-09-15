@@ -28,15 +28,15 @@ namespace nogdb {
 
     class Txn {
     public:
-        friend struct Compare;
         friend struct Algorithm;
-        friend struct Generic;
         friend struct DB;
         friend struct Class;
         friend struct Property;
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
+
+        friend class Compare;
 
         friend class ResultSetCursor;
 
@@ -48,7 +48,7 @@ namespace nogdb {
 
         friend class index::IndexInterface;
 
-        friend class adapter::datarecord::DataRecords;
+        friend class datarecord::DataRecordInterface;
 
         enum Mode { READ_ONLY, READ_WRITE };
 
@@ -77,6 +77,7 @@ namespace nogdb {
         schema::SchemaInterface *_iSchema;
         index::IndexInterface *_iIndex;
         relation::GraphInterface *_iGraph;
+        datarecord::DataRecordInterface *_iRecord;
 
         Mode _txnMode;
         mutable storage_engine::LMDBTxn *_txnBase;

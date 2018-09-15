@@ -43,8 +43,6 @@ namespace nogdb {
     struct Graph;
     struct Validate;
     struct Algorithm;
-    struct Compare;
-    struct Generic;
     struct Schema;
     struct Class;
     struct Property;
@@ -55,7 +53,7 @@ namespace nogdb {
 
     class Parser;
 
-    class BaseTxn;
+    class Compare;
 
     class Condition;
 
@@ -85,9 +83,6 @@ namespace nogdb {
             class PropertyAccess;
             class IndexAccess;
         }
-        namespace datarecord {
-            class DataRecords;
-        }
     }
 
     namespace relation {
@@ -100,6 +95,10 @@ namespace nogdb {
 
     namespace schema {
         class SchemaInterface;
+    }
+
+    namespace datarecord {
+        class DataRecordInterface;
     }
 
     namespace validate {
@@ -602,7 +601,6 @@ namespace nogdb {
     private:
 
         friend struct parser::Parser;
-        friend struct Generic;
         friend struct Algorithm;
         friend struct Vertex;
         friend struct Edge;
@@ -658,7 +656,6 @@ namespace nogdb {
         RecordId rid{0, 0};
 
     private:
-        friend struct Generic;
         friend struct Algorithm;
         unsigned int depth{0};
     };
@@ -705,10 +702,11 @@ namespace nogdb {
 
     class ResultSetCursor {
     public:
-        friend struct Generic;
         friend struct Vertex;
         friend struct Edge;
         friend struct Traverse;
+
+        friend class datarecord::DataRecordInterface;
 
         ResultSetCursor(const Txn &txn_);
 

@@ -130,65 +130,6 @@ namespace nogdb {
                 ClassType _classType{ClassType::UNDEFINED};
             };
 
-            class DataRecords {
-            public:
-                DataRecords(const Txn* txn, const schema::ClassAccessInfo& classInfo)
-                        : _txn{txn}, _dataRecordInfos{}, _classInfo{classInfo} {
-                    _dataRecordInfos.emplace(classInfo.name, {classInfo, DataRecord(txn->_txnBase, classInfo.id, classInfo.type)});
-                    auto subClassInfos = std::map<std::string, schema::ClassAccessInfo>{};
-                    for(const auto& subClassInfo: txn->_iSchema->getSubClassInfos(classInfo.id, subClassInfos)) {
-                        _dataRecordInfos.emplace(subClassInfo.second.name, {subClassInfo.first, DataRecord(txn->_txnBase, subClassInfo.id, subClassInfo.type)});
-                    }
-                }
-
-                virtual ~DataRecords() noexcept = default;
-
-                ResultSet get() const {
-                    auto result = ResultSet{};
-                    for(const auto& dataRecordInfo: _dataRecordInfos) {
-                        auto &classInfo = dataRecordInfo.second.first;
-                        auto &dataRecord = dataRecordInfo.second.second;
-                        auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-                        auto cursorHandler = dataRecord.getCursor();
-                        for(auto keyValue = cursorHandler.getNext();
-                            !keyValue.empty();
-                            keyValue = cursorHandler.getNext()) {
-                            auto key = keyValue.key.data.numeric<PositionId>();
-                            if (key == MAX_RECORD_NUM_EM) continue;
-                            auto recordId = RecordId{classInfo.id, key};
-                            auto record = parser::Parser::parseRawDataWithBasicInfo(
-                                    classInfo.name, recordId, keyValue.val,
-                                    propertyIdMapInfo, classInfo.type);
-                            result.emplace_back(ResultSet{RecordDescriptor{_classInfo.id, key}, record});
-                        }
-                    }
-                    return result;
-                }
-
-                ResultSetCursor getCursor() const {
-                    auto result = ResultSetCursor{*_txn};
-                    for(const auto& dataRecordInfo: _dataRecordInfos) {
-                        auto &classInfo = dataRecordInfo.second.first;
-                        auto &dataRecord = dataRecordInfo.second.second;
-                        auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-                        auto cursorHandler = dataRecord.getCursor();
-                        for(auto keyValue = cursorHandler.getNext();
-                            !keyValue.empty();
-                            keyValue = cursorHandler.getNext()) {
-                            auto key = keyValue.key.data.numeric<PositionId>();
-                            if (key == MAX_RECORD_NUM_EM) continue;
-                            result.metadata.emplace_back(RecordDescriptor{_classInfo.id, key});
-                        }
-                    }
-                    return result;
-                }
-
-            private:
-                const Txn* _txn;
-                std::map<std::string, std::pair<schema::ClassAccessInfo, DataRecord>> _dataRecordInfos{};
-                schema::ClassAccessInfo _classInfo{};
-            };
-
         }
     }
 }
