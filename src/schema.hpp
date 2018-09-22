@@ -37,6 +37,7 @@ namespace nogdb {
         using adapter::schema::ClassAccessInfo;
         using adapter::schema::PropertyAccessInfo;
         using adapter::schema::PropertyNameMapInfo;
+        using adapter::schema::PropertyIdMapInfo;
 
         class SchemaInterface {
         public:

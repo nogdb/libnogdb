@@ -268,15 +268,25 @@ namespace nogdb {
         return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
     }
 
-    //TODO: complete all functions below
     ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
-        return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        return txn._iRecord->getResultSetByCmpFunction(edgeClassInfo, condition);
     }
 
     ResultSet Edge::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
-        return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+        return Compare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
     }
 
+    //TODO: complete all functions below
     ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
     }

@@ -43,33 +43,17 @@ namespace nogdb {
 
     class Condition {
     private:
+        enum class Comparator;
+
+    public:
         friend class Compare;
 
         friend class MultiCondition;
 
+        friend class datarecord::DataRecordInterface;
+
         friend class index::IndexInterface;
 
-        enum class Comparator {
-            IS_NULL,
-            NOT_NULL,
-            EQUAL,
-            GREATER,
-            LESS,
-            GREATER_EQUAL,
-            LESS_EQUAL,
-            CONTAIN,
-            BEGIN_WITH,
-            END_WITH,
-            LIKE,
-            REGEX,
-            IN,
-            BETWEEN,
-            BETWEEN_NO_UPPER,
-            BETWEEN_NO_LOWER,
-            BETWEEN_NO_BOUND
-        };
-
-    public:
         Condition(const std::string &propName_);
 
         ~Condition() noexcept = default;
@@ -250,6 +234,26 @@ namespace nogdb {
         Comparator comp;
         bool isIgnoreCase{false};
         bool isNegative{false};
+
+        enum class Comparator {
+            IS_NULL,
+            NOT_NULL,
+            EQUAL,
+            GREATER,
+            LESS,
+            GREATER_EQUAL,
+            LESS_EQUAL,
+            CONTAIN,
+            BEGIN_WITH,
+            END_WITH,
+            LIKE,
+            REGEX,
+            IN,
+            BETWEEN,
+            BETWEEN_NO_UPPER,
+            BETWEEN_NO_LOWER,
+            BETWEEN_NO_BOUND
+        };
     };
 
     class MultiCondition {
@@ -266,6 +270,8 @@ namespace nogdb {
         friend class Compare;
 
         friend class Condition;
+
+        friend class datarecord::DataRecordInterface;
 
         friend class index::IndexInterface;
 

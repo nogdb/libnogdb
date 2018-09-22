@@ -340,20 +340,30 @@ namespace nogdb {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
-        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        return Compare::compareCondition(txn, vertexClassInfo, propertyNameMapInfo, condition);
     }
 
-    //TODO: complete all functions below
     ResultSet Vertex::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
-        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        return txn._iRecord->getResultSetByCmpFunction(vertexClassInfo, condition);
     }
 
     ResultSet Vertex::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
-        return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        return Compare::compareMultiCondition(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
     }
 
+    //TODO: complete all functions below
     ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
         return Compare::compareCondition(txn, className, ClassType::VERTEX, condition);
     }
