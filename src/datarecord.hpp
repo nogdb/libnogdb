@@ -64,38 +64,15 @@ namespace nogdb {
                 auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
                 auto resultSet = ResultSet{};
                 std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                            auto const record = parser::Parser::parseRawDataWithBasicInfo(
-                                    classInfo.name,
-                                    RecordId{classInfo.id, positionId},
-                                    result, propertyIdMapInfo, classInfo.type);
-                            resultSet.emplace_back(Result{RecordDescriptor{classInfo.id, positionId}, record});
-                        };
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto const record = parser::Parser::parseRawDataWithBasicInfo(
+                                classInfo.name,
+                                RecordId{classInfo.id, positionId},
+                                result, propertyIdMapInfo, classInfo.type);
+                        resultSet.emplace_back(Result{RecordDescriptor{classInfo.id, positionId}, record});
+                    };
                 dataRecord.resultSetIter(callback);
                 return resultSet;
-            }
-
-            ResultSet getResultSetExtend(const schema::ClassAccessInfo &classInfo) const {
-                auto dataRecordInfos = prepareClassInfosExtend(classInfo);
-                auto result = ResultSet{};
-                for(const auto& dataRecordInfo: dataRecordInfos) {
-                    auto &currentClassInfo = dataRecordInfo.second.first;
-                    auto &dataRecord = dataRecordInfo.second.second;
-                    auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-                    auto cursorHandler = dataRecord.getCursor();
-                    for(auto keyValue = cursorHandler.getNext();
-                        !keyValue.empty();
-                        keyValue = cursorHandler.getNext()) {
-                        auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key == MAX_RECORD_NUM_EM) continue;
-                        auto recordId = RecordId{currentClassInfo.id, key};
-                        auto record = parser::Parser::parseRawDataWithBasicInfo(
-                                currentClassInfo.name, recordId, keyValue.val,
-                                propertyIdMapInfo, currentClassInfo.type);
-                        result.emplace_back(ResultSet{RecordDescriptor{currentClassInfo.id, key}, record});
-                    }
-                }
-                return result;
             }
 
             ResultSet getResultSetByCondition(const schema::ClassAccessInfo &classInfo,
@@ -105,33 +82,33 @@ namespace nogdb {
                 auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
                 auto resultSet = ResultSet{};
                 std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                            auto rid = RecordId{classInfo.id, positionId};
-                            auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                            if (condition.comp != Condition::Comparator::IS_NULL &&
-                                condition.comp != Condition::Comparator::NOT_NULL) {
-                                if (!record.get(condition.propName).empty()) {
-                                    if (Compare::compareBytesValue(record.get(condition.propName), propertyType, condition)) {
-                                        resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                    }
-                                }
-                            } else {
-                                switch (condition.comp) {
-                                    case Condition::Comparator::IS_NULL:
-                                        if (record.get(condition.propName).empty()) {
-                                            resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                        }
-                                        break;
-                                    case Condition::Comparator::NOT_NULL:
-                                        if (!record.get(condition.propName).empty()) {
-                                            resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                        }
-                                        break;
-                                    default:
-                                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        if (condition.comp != Condition::Comparator::IS_NULL &&
+                            condition.comp != Condition::Comparator::NOT_NULL) {
+                            if (!record.get(condition.propName).empty()) {
+                                if (Compare::compareBytesValue(record.get(condition.propName), propertyType, condition)) {
+                                    resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
                                 }
                             }
-                        };
+                        } else {
+                            switch (condition.comp) {
+                                case Condition::Comparator::IS_NULL:
+                                    if (record.get(condition.propName).empty()) {
+                                        resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
+                                    }
+                                    break;
+                                case Condition::Comparator::NOT_NULL:
+                                    if (!record.get(condition.propName).empty()) {
+                                        resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
+                                    }
+                                    break;
+                                default:
+                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
+                            }
+                        }
+                    };
                 dataRecord.resultSetIter(callback);
                 return resultSet;
             }
@@ -147,13 +124,13 @@ namespace nogdb {
                 }
                 auto resultSet = ResultSet{};
                 std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                            auto rid = RecordId{classInfo.id, positionId};
-                            auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                            if (multiCondition.execute(record, propertyTypes)) {
-                                resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                            }
-                        };
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        if (multiCondition.execute(record, propertyTypes)) {
+                            resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
+                        }
+                    };
                 dataRecord.resultSetIter(callback);
                 return resultSet;
             }
@@ -164,13 +141,13 @@ namespace nogdb {
                 auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
                 auto resultSet = ResultSet{};
                 std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                            auto rid = RecordId{classInfo.id, positionId};
-                            auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                            if ((*condition)(record)) {
-                                resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                            }
-                        };
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        if ((*condition)(record)) {
+                            resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
+                        }
+                    };
                 dataRecord.resultSetIter(callback);
                 return resultSet;
             }
@@ -187,46 +164,10 @@ namespace nogdb {
                 return resultSetCursor;
             }
 
-            ResultSetCursor getResultSetCursorExtend(const schema::ClassAccessInfo &classInfo) const {
-                auto dataRecordInfos = prepareClassInfosExtend(classInfo);
-                auto result = ResultSetCursor{*_txn};
-                for(const auto& dataRecordInfo: _dataRecordInfos) {
-                    auto &currentClassInfo = dataRecordInfo.second.first;
-                    auto &dataRecord = dataRecordInfo.second.second;
-                    auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-                    auto cursorHandler = dataRecord.getCursor();
-                    for(auto keyValue = cursorHandler.getNext();
-                        !keyValue.empty();
-                        keyValue = cursorHandler.getNext()) {
-                        auto key = keyValue.key.data.numeric<PositionId>();
-                        if (key == MAX_RECORD_NUM_EM) continue;
-                        result.metadata.emplace_back(RecordDescriptor{currentClassInfo.id, key});
-                    }
-                }
-                return result;
-            }
-
         private:
 
             const Txn* _txn;
             std::map<std::string, std::pair<schema::ClassAccessInfo, DataRecord>> _dataRecordInfos{};
-
-            std::map<std::string, std::pair<schema::ClassAccessInfo, DataRecord>>
-            prepareClassInfosExtend(const schema::ClassAccessInfo& classInfo) const {
-                auto dataRecordInfos = std::map<std::string, std::pair<schema::ClassAccessInfo, DataRecord>>{};
-                dataRecordInfos.emplace(
-                        classInfo.name,
-                        std::make_pair(classInfo, DataRecord(_txn->_txnBase, classInfo.id, classInfo.type))
-                );
-                auto subClassInfos = std::map<std::string, schema::ClassAccessInfo>{};
-                for(const auto& subClassInfo: _txn->_iSchema->getSubClassInfos(classInfo.id, subClassInfos)) {
-                    dataRecordInfos.emplace(
-                            subClassInfo.second.name,
-                            std::make_pair(subClassInfo.first, DataRecord(_txn->_txnBase, subClassInfo.second.id, subClassInfo.second.type))
-                    );
-                }
-                return dataRecordInfos;
-            }
 
         };
 

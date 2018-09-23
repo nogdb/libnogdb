@@ -65,6 +65,64 @@ namespace nogdb {
         //*  result set supported functions                               *
         //*****************************************************************
 
+        static ResultSet compareCondition(const Txn &txn,
+                                          const schema::ClassAccessInfo& classInfo,
+                                          const schema::PropertyNameMapInfo& propertyNameMapInfo,
+                                          const Condition &condition,
+                                          bool searchIndexOnly = false) {
+            auto foundProperty = propertyNameMapInfo.find(condition.propName);
+            if (foundProperty == propertyNameMapInfo.cend()) {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+            }
+            auto propertyInfo = foundProperty->second;
+            auto foundIndex = txn._iIndex->hasIndex(classInfo, propertyInfo, condition);
+            if (foundIndex.first) {
+                auto indexedRecords = txn._iIndex->getRecord(propertyInfo, foundIndex.second, condition);
+                return txn._iRecord->getResultSet(classInfo, indexedRecords);
+            } else {
+                if (!searchIndexOnly) {
+                    return txn._iRecord->getResultSetByCondition(classInfo, propertyInfo.type, condition);
+                }
+            }
+            return ResultSet{};
+        }
+
+        static ResultSet compareMultiCondition(const Txn &txn,
+                                               const schema::ClassAccessInfo& classInfo,
+                                               const schema::PropertyNameMapInfo& propertyNameMapInfo,
+                                               const MultiCondition &conditions,
+                                               bool searchIndexOnly = false) {
+            auto conditionProperties = schema::PropertyNameMapInfo{};
+            for (const auto &conditionNode: conditions.conditions) {
+                auto conditionNodePtr = conditionNode.lock();
+                require(conditionNodePtr != nullptr);
+                auto &condition = conditionNodePtr->getCondition();
+                auto foundConditionProperty = conditionProperties.find(condition.propName);
+                if (foundConditionProperty == foundConditionProperty.cend()) {
+                    auto foundProperty = propertyNameMapInfo.find(condition.propName);
+                    if (foundProperty == propertyNameMapInfo.cend()) {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+                    }
+                    conditionProperties.emplace(condition.propName, foundProperty->second);
+                }
+            }
+
+            auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, conditions);
+            if (foundIndex.first) {
+                auto indexedRecords = txn._iIndex->getRecord(conditionProperties, foundIndex.second, conditions);
+                return txn._iRecord->getResultSet(classInfo, indexedRecords);
+            } else {
+                if (!searchIndexOnly) {
+                    return txn._iRecord->getResultSetByMultiCondition(classInfo, conditionProperties, conditions);
+                }
+            }
+            return ResultSet{};
+        }
+
+        //
+        // UNUSED OR UNCONFIRMED FUNCTIONS
+        //
+
         static ResultSet getEdgeCondition(const Txn &txn,
                                           const RecordDescriptor &recordDescriptor,
                                           const std::vector<ClassId> &edgeClassIds,
@@ -254,62 +312,6 @@ namespace nogdb {
                         }
                     }
                     return result;
-            }
-        }
-
-        static ResultSet compareCondition(const Txn &txn,
-                                          const schema::ClassAccessInfo& classInfo,
-                                          const schema::PropertyNameMapInfo& propertyNameMapInfo,
-                                          const Condition &condition,
-                                          bool searchIndexOnly = false) {
-            auto foundProperty = propertyNameMapInfo.find(condition.propName);
-            if (foundProperty == propertyNameMapInfo.cend()) {
-                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-            }
-            auto propertyInfo = foundProperty->second;
-            auto foundIndex = txn._iIndex->hasIndex(classInfo, propertyInfo, condition);
-            if (foundIndex.first) {
-                auto indexedRecords = txn._iIndex->getRecord(propertyInfo, foundIndex.second, condition);
-                return txn._iRecord->getResultSet(classInfo, indexedRecords);
-            } else {
-                if (searchIndexOnly) {
-                    return ResultSet{};
-                } else {
-                    return txn._iRecord->getResultSetByCondition(txn, classInfo, propertyInfo.type, condition);
-                }
-            }
-        }
-
-        static ResultSet compareMultiCondition(const Txn &txn,
-                                               const schema::ClassAccessInfo& classInfo,
-                                               const schema::PropertyNameMapInfo& propertyNameMapInfo,
-                                               const MultiCondition &conditions,
-                                               bool searchIndexOnly = false) {
-            auto conditionProperties = schema::PropertyNameMapInfo{};
-            for (const auto &conditionNode: conditions.conditions) {
-                auto conditionNodePtr = conditionNode.lock();
-                require(conditionNodePtr != nullptr);
-                auto &condition = conditionNodePtr->getCondition();
-                auto foundConditionProperty = conditionProperties.find(condition.propName);
-                if (foundConditionProperty == foundConditionProperty.cend()) {
-                    auto foundProperty = propertyNameMapInfo.find(condition.propName);
-                    if (foundProperty == propertyNameMapInfo.cend()) {
-                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-                    }
-                    conditionProperties.emplace(condition.propName, foundProperty->second);
-                }
-            }
-
-            auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, conditions);
-            if (foundIndex.first) {
-                auto indexedRecords = txn._iIndex->getRecord(conditionProperties, foundIndex.second, conditions);
-                return txn._iRecord->getResultSet(classInfo, indexedRecords);
-            } else {
-                if (searchIndexOnly) {
-                    return ResultSet{};
-                } else {
-                    return txn._iRecord->getResultSetByMultiCondition(classInfo, conditionProperties, conditions);
-                }
             }
         }
 
@@ -966,11 +968,11 @@ namespace nogdb {
         };
 
         inline static bool genericCompareFunc(const Bytes &value,
-                                       PropertyType type,
-                                       const Bytes &cmpValue1,
-                                       const Bytes &cmpValue2,
-                                       Condition::Comparator cmp,
-                                       bool isIgnoreCase) {
+                                              const PropertyType& type,
+                                              const Bytes &cmpValue1,
+                                              const Bytes &cmpValue2,
+                                              const Condition::Comparator& cmp,
+                                              bool isIgnoreCase) {
             switch (type) {
                 case PropertyType::TINYINT:
                     switch (cmp) {

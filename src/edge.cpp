@@ -194,7 +194,15 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        return txn._iRecord->getResultSetExtend(edgeClassInfo);
+        auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: edgeClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto resultSet = txn._iRecord->getResultSet(classInfo);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
     ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className) {
@@ -210,7 +218,18 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        return txn._iRecord->getResultSetCursorExtend(edgeClassInfo);
+        auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: edgeClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto resultSet = txn._iRecord->getResultSetCursor(classInfo);
+            resultSetExtend.metadata.insert(
+                    resultSetExtend.metadata.cend(),
+                    resultSet.metadata.cbegin(), resultSet.metadata.cend()
+            );
+        }
+        return resultSetExtend;
     }
 
     Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -286,19 +305,57 @@ namespace nogdb {
         return Compare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
     }
 
-    //TODO: complete all functions below
     ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
-        return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: edgeClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
     ResultSet Edge::getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
-        return Compare::compareCondition(txn, className, ClassType::EDGE, condition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: edgeClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto resultSet =txn._iRecord->getResultSetByCmpFunction(classInfo, condition);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
     ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
-        return Compare::compareMultiCondition(txn, className, ClassType::EDGE, multiCondition);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
+        auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: edgeClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
+    //TODO: complete all functions below
     ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
         auto result = ResultSetCursor{txn};
         auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::EDGE, condition);
