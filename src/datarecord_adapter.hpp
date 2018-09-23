@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __DATARECORD_ADAPTER_HPP_INCLUDED_
-#define __DATARECORD_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include <nogdb_txn.h>
 #include "storage_adapter.hpp"
@@ -133,5 +132,3 @@ namespace nogdb {
         }
     }
 }
-
-#endif //__DATARECORD_ADAPTER_HPP_INCLUDED_

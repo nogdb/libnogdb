@@ -19,8 +19,13 @@
  *
  */
 
-#ifndef __NOGDB_SQL_H_INCLUDED_
-#define __NOGDB_SQL_H_INCLUDED_
+#pragma once
+
+#include <memory>
+#include <string>
+
+#include "nogdb_errors.h"
+#include "nogdb_types.h"
 
 namespace nogdb {
 
@@ -77,5 +82,3 @@ namespace nogdb {
         static const Result execute(Txn &txn, const std::string &sql);
     };
 }
-
-#endif

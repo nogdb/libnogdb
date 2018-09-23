@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __NOGDB_ERR_H_INCLUDED_
-#define __NOGDB_ERR_H_INCLUDED_
+#pragma once
 
 #include <string>
 #include <exception>
@@ -312,5 +311,3 @@ namespace nogdb {
 #define NOGDB_FATAL_ERROR(error)        nogdb::FatalError(error)
 
 }
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __RELATION_HPP_INCLUDED_
-#define __RELATION_HPP_INCLUDED_
+#pragma once
 
 #include <memory>
 #include <functional>
@@ -140,5 +139,3 @@ namespace nogdb {
         };
     }
 }
-
-#endif //__RELATION_HPP_INCLUDED_

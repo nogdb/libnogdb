@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __INDEX_HPP_INCLUDED_
-#define __INDEX_HPP_INCLUDED_
+#pragma once
 
 #include <iostream> // for debugging
 #include <vector>
@@ -1097,5 +1096,3 @@ namespace nogdb {
     }
 
 }
-
-#endif

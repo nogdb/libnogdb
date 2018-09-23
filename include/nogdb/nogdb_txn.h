@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __NOGDB_TXN_H_INCLUDED_
-#define __NOGDB_TXN_H_INCLUDED_
+#pragma once
 
 #include "nogdb_context.h"
 
@@ -85,5 +84,3 @@ namespace nogdb {
     };
 
 }
-
-#endif

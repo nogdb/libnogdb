@@ -19,8 +19,9 @@
  *
  */
 
-#ifndef __BLOB_HPP_INCLUDED_
-#define __BLOB_HPP_INCLUDED_
+#pragma once
+
+#include <unistd.h>
 
 namespace nogdb {
 
@@ -65,6 +66,3 @@ namespace nogdb {
     }
 
 }
-
-
-#endif

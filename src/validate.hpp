@@ -19,18 +19,21 @@
  *
  */
 
-#ifndef __VALIDATE_HPP_INCLUDED_
-#define __VALIDATE_HPP_INCLUDED_
+#pragma once
+
+#include <regex>
 
 #include "schema.hpp"
 #include "schema_adapter.hpp"
+#include "datarecord_adapter.hpp"
 
 #include "nogdb_errors.h"
 #include "nogdb_context.h"
 #include "nogdb_types.h"
-#include "nogdb_txn->h"
+#include "nogdb_txn.h"
 
 #define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
+#define CLASS_ID_UPPER_LIMIT      UINT16_MAX - 1
 
 namespace nogdb {
 
@@ -55,21 +58,21 @@ namespace nogdb {
             }
 
             Validator& isClassIdMaxReach() {
-                if ((_txn->_dbinfo->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+                if ((_txn->_dbInfo->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
                 }
                 return *this;
             }
 
             Validator& isPropertyIdMaxReach() {
-                if ((_txn->_dbinfo->getMaxPropertyId() >= UINT16_MAX)) {
+                if ((_txn->_dbInfo->getMaxPropertyId() >= UINT16_MAX)) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
                 }
                 return *this;
             }
 
             Validator& isIndexIdMaxReach() {
-                if ((_txn->_dbinfo->getMaxIndexId() >= UINT32_MAX)) {
+                if ((_txn->_dbInfo->getMaxIndexId() >= UINT32_MAX)) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
                 }
                 return *this;
@@ -131,9 +134,9 @@ namespace nogdb {
                 if (foundProperty != PropertyId{}) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
                 }
-                auto superClassId = txn._class->getSuperClassId(classId);
+                auto superClassId = _txn._class->getSuperClassId(classId);
                 if (superClassId != ClassId{}) {
-                    isNotDuplicatedProperty(txn, superClassId, propertyName);
+                    isNotDuplicatedProperty(superClassId, propertyName);
                 }
                 return *this;
             }
@@ -145,14 +148,14 @@ namespace nogdb {
                 }
                 for (const auto &subClassId: _txn->_class->getSubClassIds(classId)) {
                     if (subClassId != ClassId{}) {
-                        isNotOverridenProperty(txn, subClassId, propertyName);
+                        isNotOverridenProperty(subClassId, propertyName);
                     }
                 }
                 return *this;
             }
 
             Validator& isExistingSrcVertex(const RecordDescriptor &vertex) {
-                auto foundClass = isExistingClass(_txn, vertex.rid.first);
+                auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
                 auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
                 try {
                     vertexDataRecord.getBlob(vertex.rid.second);
@@ -167,7 +170,7 @@ namespace nogdb {
             }
 
             Validator& isExistingDstVertex(const RecordDescriptor &vertex) {
-                auto foundClass = isExistingClass(_txn, vertex.rid.first);
+                auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
                 auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
                 try {
                     vertexDataRecord.getBlob(vertex.rid.second);
@@ -192,5 +195,3 @@ namespace nogdb {
         };
     }
 }
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __SQL_CONTEXT_HPP_INCLUDED_
-#define __SQL_CONTEXT_HPP_INCLUDED_
+#pragma once
 
 #include "lemonxx/lemon_base.h"
 #include "sql.hpp"
@@ -150,5 +149,3 @@ namespace nogdb {
         };
     }
 }
-
-#endif

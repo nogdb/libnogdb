@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __DATARECORD_HPP_INCLUDED_
-#define __DATARECORD_HPP_INCLUDED_
+#pragma once
 
 #include "datarecord_adapter.hpp"
 #include "compare.hpp"
@@ -201,7 +200,7 @@ namespace nogdb {
                         }
                     };
                 dataRecord.resultSetIter(callback);
-                return resultSet;
+                return recordDescriptors;
             }
 
         private:
@@ -212,5 +211,3 @@ namespace nogdb {
     }
 
 }
-
-#endif

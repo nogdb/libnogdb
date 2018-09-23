@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __LMDB_ENGINE_HPP_INCLUDED_
-#define __LMDB_ENGINE_HPP_INCLUDED_
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -739,5 +738,3 @@ namespace nogdb {
         }
     }
 }
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __STORAGE_ENGINE_HPP_INCLUDED_
-#define __STORAGE_ENGINE_HPP_INCLUDED_
+#pragma once
 
 #include <type_traits>
 #include <string>
@@ -148,5 +147,3 @@ namespace nogdb {
     }
 
 }
-
-#endif

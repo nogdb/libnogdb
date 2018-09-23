@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __INDEX_ADAPTER_HPP_INCLUDED_
-#define __INDEX_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include <string>
 
@@ -112,5 +111,3 @@ namespace nogdb {
 
     }
 }
-
-#endif //__INDEX_ADAPTER_HPP_INCLUDED_

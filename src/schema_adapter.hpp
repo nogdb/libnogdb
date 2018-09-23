@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __SCHEMA_ADAPTER_HPP_INCLUDED_
-#define __SCHEMA_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include <algorithm>
 #include <vector>
@@ -579,6 +578,3 @@ namespace nogdb {
         }
     }
 }
-
-
-#endif //__SCHEMA_ADAPTER_HPP_INCLUDED_

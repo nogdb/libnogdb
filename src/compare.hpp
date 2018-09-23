@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __COMPARE_HPP_INCLUDED_
-#define __COMPARE_HPP_INCLUDED_
+#pragma once
 
 #include <regex>
 #include <utility>
@@ -761,5 +760,3 @@ namespace nogdb {
 
     };
 }
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __PARSER_HPP_INCLUDED_
-#define __PARSER_HPP_INCLUDED_
+#pragma once
 
 #include <map>
 #include <vector>
@@ -231,5 +230,3 @@ namespace nogdb {
     }
 
 }
-
-#endif

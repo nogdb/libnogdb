@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __SCHEMA_HPP_INCLUDED_
-#define __SCHEMA_HPP_INCLUDED_
+#pragma once
 
 #include <vector>
 
@@ -153,5 +152,3 @@ namespace nogdb {
     }
 
 }
-
-#endif

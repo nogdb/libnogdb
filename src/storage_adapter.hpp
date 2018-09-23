@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __STORAGE_ADAPTER_HPP_INCLUDED_
-#define __STORAGE_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include <string>
 #include "storage_engine.hpp"
@@ -104,5 +103,3 @@ namespace nogdb {
         }
     }
 }
-
-#endif //__STORAGE_ADAPTER_HPP_INCLUDED_

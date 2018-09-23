@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __UTILS_HPP_INCLUDED_
-#define __UTILS_HPP_INCLUDED_
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -180,5 +179,3 @@ namespace nogdb {
 
     }
 }
-
-#endif

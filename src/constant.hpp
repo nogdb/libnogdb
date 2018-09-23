@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __CONFIG_HPP_INCLUDED_
-#define __CONFIG_HPP_INCLUDED_
+#pragma once
 
 #include <string>
 
@@ -61,5 +60,3 @@ namespace nogdb {
     const std::string       NUM_INDEX_KEY               = "?num_index_id";
 
 }
-
-#endif

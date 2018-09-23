@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __DBINFO_ADAPTER_HPP_INCLUDED_
-#define __DBINFO_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include "storage_adapter.hpp"
 #include "constant.hpp"
@@ -187,5 +186,3 @@ namespace nogdb {
     }
 
 }
-
-#endif //__DBINFO_ADAPTER_HPP_INCLUDED_

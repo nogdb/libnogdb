@@ -20,8 +20,7 @@
  *
  */
 
-#ifndef __NOGDB_TYPES_H_INCLUDED_
-#define __NOGDB_TYPES_H_INCLUDED_
+#pragma once
 
 #include <algorithm>
 #include <cstdint>
@@ -842,5 +841,3 @@ inline std::ostream &operator<<(std::ostream &os, nogdb::ClassType type) {
     }
     return os;
 }
-
-#endif

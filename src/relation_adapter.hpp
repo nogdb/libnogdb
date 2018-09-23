@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __RELATION_ADAPTER_HPP_INCLUDED_
-#define __RELATION_ADAPTER_HPP_INCLUDED_
+#pragma once
 
 #include <string>
 #include <cstdlib>
@@ -172,5 +171,3 @@ namespace nogdb {
     }
 
 }
-
-#endif //__RELATION_ADAPTER_HPP_INCLUDED_

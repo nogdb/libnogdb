@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __NOGDB_CONTEXT_H_INCLUDED_
-#define __NOGDB_CONTEXT_H_INCLUDED_
+#pragma once
 
 #include <map>
 #include <vector>
@@ -79,5 +78,3 @@ namespace nogdb {
     };
 
 }
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __NOGDB_COMPARE_H_INCLUDED_
-#define __NOGDB_COMPARE_H_INCLUDED_
+#pragma once
 
 #include <iostream> // for debugging
 #include <string>
@@ -383,5 +382,3 @@ namespace nogdb {
     };
 
 }
-
-#endif

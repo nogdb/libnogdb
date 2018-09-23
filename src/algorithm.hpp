@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __ALGORITHM_HPP_INCLUDED_
-#define __ALGORITHM_HPP_INCLUDED_
+#pragma once
 
 #include <functional>
 #include <queue>
@@ -379,5 +378,3 @@ namespace nogdb {
     };
 
 }
-
-#endif

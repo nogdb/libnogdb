@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __NOGDB_H_INCLUDED_
-#define __NOGDB_H_INCLUDED_
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -462,5 +461,3 @@ namespace nogdb {
     };
 
 }
-
-#endif

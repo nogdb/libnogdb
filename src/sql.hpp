@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef __SQL_HPP_INCLUDED_
-#define __SQL_HPP_INCLUDED_
+#pragma once
 
 #include <iostream>
 #include <sstream>
@@ -339,5 +338,3 @@ namespace nogdb {
         string to_string(const Projection &proj);
     }
 }
-
-#endif
