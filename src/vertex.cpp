@@ -409,7 +409,7 @@ namespace nogdb {
         auto resultSetExtend = ResultSet{};
         for(const auto& classNameMapInfo: vertexClassInfoExtend) {
             auto &classInfo = classNameMapInfo.second;
-            auto resultSet =txn._iRecord->getResultSetByCmpFunction(classInfo, condition);
+            auto resultSet = txn._iRecord->getResultSetByCmpFunction(classInfo, condition);
             resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
         }
         return resultSetExtend;
@@ -432,55 +432,100 @@ namespace nogdb {
         return resultSetExtend;
     }
 
-    //TODO: complete all functions below
     ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto metadata = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition);
         auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
-
     }
 
     ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto metadata = txn._iRecord->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
         auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
-    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
+    ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto metadata = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
         auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
         result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
         return result;
     }
 
     ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
+            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
     ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto resultSet = txn._iRecord->getRecordDescriptorByCmpFunction(classInfo, condition);
+            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
-    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+    ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
+            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
+    //TODO: complete all functions below
     ResultSet Vertex::getInEdge(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const Condition &condition,
                                  const ClassFilter &classFilter) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
         return Compare::compareEdgeCondition(txn,
                                              recordDescriptor,
                                              &Graph::getEdgeIn,
@@ -723,47 +768,113 @@ namespace nogdb {
     }
 
     ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
-        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition, true);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        return Compare::compareCondition(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
     }
 
     ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
-        return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
-    }
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
 
-    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        return Compare::compareMultiCondition(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
     }
 
     ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
-        return Compare::compareCondition(txn, className, ClassType::VERTEX, condition, true);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
     ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
-        return Compare::compareMultiCondition(txn, className, ClassType::VERTEX, multiCondition, true);
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSet{};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
+            resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
+    }
+
+    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto metadata = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
+        auto result = ResultSetCursor{txn};
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
+    }
+
+    ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+        auto metadata = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
+        auto result = ResultSetCursor{txn};
+        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+        return result;
     }
 
     ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareConditionRdesc(txn, className, ClassType::VERTEX, condition, true);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
+            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
-    ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp) {
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareMultiConditionRdesc(txn, className, ClassType::VERTEX, exp, true);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+    ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
+        BEGIN_VALIDATION(&txn)
+        . isTransactionValid();
+
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+        auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
+        vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+        auto resultSetExtend = ResultSetCursor{txn};
+        for(const auto& classNameMapInfo: vertexClassInfoExtend) {
+            auto &classInfo = classNameMapInfo.second;
+            auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
+            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+        }
+        return resultSetExtend;
     }
 
 }

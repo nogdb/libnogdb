@@ -30,9 +30,9 @@
 
 namespace nogdb {
 
-    namespace datarecord {
+    using adapter::datarecord::DataRecord;
 
-        using adapter::datarecord::DataRecord;
+    namespace datarecord {
 
         class DataRecordInterface {
         public:
@@ -56,7 +56,7 @@ namespace nogdb {
                     auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
                     resultSet.emplace_back(Result{recordDescriptor, record});
                 }
-                return
+                return resultSet;
             }
 
             ResultSet getResultSet(const schema::ClassAccessInfo &classInfo) const {
@@ -75,6 +75,18 @@ namespace nogdb {
                 return resultSet;
             }
 
+            ResultSetCursor getResultSetCursor(const schema::ClassAccessInfo &classInfo) const {
+                auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+                auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+                auto resultSetCursor = ResultSetCursor{*_txn};
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        resultSetCursor.metadata.emplace_back(RecordDescriptor{classInfo.id, positionId});
+                    };
+                vertexDataRecord.resultSetIter(callback);
+                return resultSetCursor;
+            }
+
             ResultSet getResultSetByCondition(const schema::ClassAccessInfo &classInfo,
                                               const PropertyType& propertyType,
                                               const Condition& condition) const {
@@ -85,32 +97,64 @@ namespace nogdb {
                     [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                         auto rid = RecordId{classInfo.id, positionId};
                         auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                        if (condition.comp != Condition::Comparator::IS_NULL &&
-                            condition.comp != Condition::Comparator::NOT_NULL) {
-                            if (!record.get(condition.propName).empty()) {
-                                if (Compare::compareBytesValue(record.get(condition.propName), propertyType, condition)) {
+                        switch (condition.comp) {
+                            case Condition::Comparator::IS_NULL:
+                                if (record.get(condition.propName).empty()) {
                                     resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
                                 }
-                            }
-                        } else {
-                            switch (condition.comp) {
-                                case Condition::Comparator::IS_NULL:
-                                    if (record.get(condition.propName).empty()) {
+                                break;
+                            case Condition::Comparator::NOT_NULL:
+                                if (!record.get(condition.propName).empty()) {
+                                    resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
+                                }
+                                break;
+                            default:
+                                if (!record.get(condition.propName).empty()) {
+                                    if (Compare::compareBytesValue(record.get(condition.propName), propertyType, condition)) {
                                         resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
                                     }
-                                    break;
-                                case Condition::Comparator::NOT_NULL:
-                                    if (!record.get(condition.propName).empty()) {
-                                        resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                    }
-                                    break;
-                                default:
-                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
-                            }
+                                }
+                                break;
                         }
                     };
                 dataRecord.resultSetIter(callback);
                 return resultSet;
+            }
+
+            std::vector<RecordDescriptor>
+            getRecordDescriptorByCondition(const schema::ClassAccessInfo &classInfo,
+                                           const PropertyType &propertyType,
+                                           const Condition &condition) const {
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+                auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+                auto recordDescriptors = std::vector<RecordDescriptor>{};
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        switch (condition.comp) {
+                            case Condition::Comparator::IS_NULL:
+                                if (record.get(condition.propName).empty()) {
+                                    recordDescriptors.emplace_back(RecordDescriptor{rid});
+                                }
+                                break;
+                            case Condition::Comparator::NOT_NULL:
+                                if (!record.get(condition.propName).empty()) {
+                                    recordDescriptors.emplace_back(RecordDescriptor{rid});
+                                }
+                                break;
+                            default:
+                                if (!record.get(condition.propName).empty()) {
+                                    if (Compare::compareBytesValue(record.get(condition.propName), propertyType,
+                                                                   condition)) {
+                                        recordDescriptors.emplace_back(RecordDescriptor{rid});
+                                    }
+                                }
+                                break;
+                        }
+                    };
+                dataRecord.resultSetIter(callback);
+                return recordDescriptors;
             }
 
             ResultSet getResultSetByMultiCondition(const schema::ClassAccessInfo &classInfo,
@@ -135,6 +179,29 @@ namespace nogdb {
                 return resultSet;
             }
 
+            std::vector<RecordDescriptor>
+            getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo &classInfo,
+                                                const schema::PropertyNameMapInfo &propertyInfos,
+                                                const MultiCondition &multiCondition) const {
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+                auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+                auto propertyTypes = PropertyMapType{};
+                for(const auto& property: propertyInfos) {
+                    propertyTypes.emplace(property.first, property.second.type);
+                }
+                auto recordDescriptors = std::vector<RecordDescriptor>{};
+                std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        if (multiCondition.execute(record, propertyTypes)) {
+                            recordDescriptors.emplace_back(RecordDescriptor{rid});
+                        }
+                    };
+                dataRecord.resultSetIter(callback);
+                return recordDescriptors;
+            }
+
             ResultSet getResultSetByCmpFunction(const schema::ClassAccessInfo &classInfo,
                                                 bool (*condition)(const Record &record)) const {
                 auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
@@ -152,22 +219,26 @@ namespace nogdb {
                 return resultSet;
             }
 
-            ResultSetCursor getResultSetCursor(const schema::ClassAccessInfo &classInfo) const {
-                auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+            std::vector<RecordDescriptor>
+            getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo &classInfo,
+                                             bool (*condition)(const Record &record)) const {
+                auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
                 auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-                auto resultSetCursor = ResultSetCursor{*_txn};
+                auto recordDescriptors = std::vector<RecordDescriptor>{};
                 std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
-                        [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                            resultSetCursor.metadata.emplace_back(RecordDescriptor{classInfo.id, positionId});
-                        };
-                vertexDataRecord.resultSetIter(callback);
-                return resultSetCursor;
+                    [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                        auto rid = RecordId{classInfo.id, positionId};
+                        auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                        if ((*condition)(record)) {
+                            recordDescriptors.emplace_back(RecordDescriptor{rid});
+                        }
+                    };
+                dataRecord.resultSetIter(callback);
+                return resultSet;
             }
 
         private:
-
             const Txn* _txn;
-            std::map<std::string, std::pair<schema::ClassAccessInfo, DataRecord>> _dataRecordInfos{};
 
         };
 

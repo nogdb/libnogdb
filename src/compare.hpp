@@ -119,6 +119,60 @@ namespace nogdb {
             return ResultSet{};
         }
 
+        static std::vector<RecordDescriptor>
+        compareConditionRdesc(const Txn &txn,
+                              const schema::ClassAccessInfo& classInfo,
+                              const schema::PropertyNameMapInfo& propertyNameMapInfo,
+                              const Condition &condition,
+                              bool searchIndexOnly = false) {
+            auto foundProperty = propertyNameMapInfo.find(condition.propName);
+            if (foundProperty == propertyNameMapInfo.cend()) {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+            }
+            auto propertyInfo = foundProperty->second;
+            auto foundIndex = txn._iIndex->hasIndex(classInfo, propertyInfo, condition);
+            if (foundIndex.first) {
+                return txn._iIndex->getRecord(propertyInfo, foundIndex.second, condition);
+            } else {
+                if (!searchIndexOnly) {
+                    return txn._iRecord->getRdescSetByCondition(classInfo, propertyInfo.type, condition);
+                }
+            }
+            return std::vector<RecordDescriptor>{};
+        }
+
+        static std::vector<RecordDescriptor>
+        compareMultiConditionRdesc(const Txn &txn,
+                                   const schema::ClassAccessInfo& classInfo,
+                                   const schema::PropertyNameMapInfo& propertyNameMapInfo,
+                                   const MultiCondition &conditions,
+                                   bool searchIndexOnly = false) {
+            auto conditionProperties = schema::PropertyNameMapInfo{};
+            for (const auto &conditionNode: conditions.conditions) {
+                auto conditionNodePtr = conditionNode.lock();
+                require(conditionNodePtr != nullptr);
+                auto &condition = conditionNodePtr->getCondition();
+                auto foundConditionProperty = conditionProperties.find(condition.propName);
+                if (foundConditionProperty == foundConditionProperty.cend()) {
+                    auto foundProperty = propertyNameMapInfo.find(condition.propName);
+                    if (foundProperty == propertyNameMapInfo.cend()) {
+                        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+                    }
+                    conditionProperties.emplace(condition.propName, foundProperty->second);
+                }
+            }
+
+            auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, conditions);
+            if (foundIndex.first) {
+                return txn._iIndex->getRecord(conditionProperties, foundIndex.second, conditions);
+            } else {
+                if (!searchIndexOnly) {
+                    return txn._iRecord->getRdescByMultiCondition(classInfo, conditionProperties, conditions);
+                }
+            }
+            return std::vector<RecordDescriptor>{};
+        }
+
         //
         // UNUSED OR UNCONFIRMED FUNCTIONS
         //
@@ -454,97 +508,6 @@ namespace nogdb {
         //*****************************************************************
 
         static std::vector<RecordDescriptor>
-        getRdescCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos, const Condition &condition,
-                          PropertyType type) {
-            auto result = std::vector<RecordDescriptor>{};
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            for (const auto &classInfo: classInfos) {
-                auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
-                auto keyValue = cursorHandler.getNext();
-                while (!keyValue.empty()) {
-                    auto key = keyValue.key.data.numeric<PositionId>();
-                    if (key != MAX_RECORD_NUM_EM) {
-                        auto rid = RecordId{classInfo.id, key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
-                        if (condition.comp != Condition::Comparator::IS_NULL &&
-                            condition.comp != Condition::Comparator::NOT_NULL) {
-                            if (record.get(condition.propName).empty()) {
-                                keyValue = cursorHandler.getNext();
-                                continue;
-                            }
-                            if (compareBytesValue(record.get(condition.propName), type, condition)) {
-                                result.emplace_back(RecordDescriptor{rid});
-                            }
-                        } else {
-                            switch (condition.comp) {
-                                case Condition::Comparator::IS_NULL:
-                                    if (record.get(condition.propName).empty()) {
-                                        result.emplace_back(RecordDescriptor{rid});
-                                    }
-                                    break;
-                                case Condition::Comparator::NOT_NULL:
-                                    if (!record.get(condition.propName).empty()) {
-                                        result.emplace_back(RecordDescriptor{rid});
-                                    }
-                                    break;
-                                default:
-                                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_COMPARATOR);
-                            }
-                        }
-                    }
-                    keyValue = cursorHandler.getNext();
-                }
-            }
-            return result;
-        }
-
-        static std::vector<RecordDescriptor>
-        getRdescCondition(const Txn &ctx, const std::vector<ClassInfo> &classInfos,
-                          bool (*condition)(const Record &record)) {
-            auto result = std::vector<RecordDescriptor>{};
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            for (const auto &classInfo: classInfos) {
-                auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
-                auto keyValue = cursorHandler.getNext();
-                while (!keyValue.empty()) {
-                    auto key = keyValue.key.data.numeric<PositionId>();
-                    if (key != MAX_RECORD_NUM_EM) {
-                        auto rid = RecordId{classInfo.id, key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
-                        if ((*condition)(record)) {
-                            result.push_back(RecordDescriptor{rid});
-                        }
-                    }
-                    keyValue = cursorHandler.getNext();
-                }
-            }
-            return result;
-        }
-
-        static std::vector<RecordDescriptor>
-        getRdescMultiCondition(const Txn &txn, const std::vector<ClassInfo> &classInfos,
-                               const MultiCondition &conditions, const PropertyMapType &types) {
-            auto result = std::vector<RecordDescriptor>{};
-            auto dsTxnHandler = txn._txnBase->getDsTxnHandler();
-            for (const auto &classInfo: classInfos) {
-                auto cursorHandler = dsTxnHandler->openCursor(std::to_string(classInfo.id), true);
-                auto keyValue = cursorHandler.getNext();
-                while (!keyValue.empty()) {
-                    auto key = keyValue.key.data.numeric<PositionId>();
-                    if (key != MAX_RECORD_NUM_EM) {
-                        auto rid = RecordId{classInfo.id, key};
-                        auto record = Parser::parseRawDataWithBasicInfo(classInfo.name, rid, keyValue.val, classInfo.propertyInfo);
-                        if (conditions.execute(record, types)) {
-                            result.emplace_back(RecordDescriptor{rid});
-                        }
-                    }
-                    keyValue = cursorHandler.getNext();
-                }
-            }
-            return result;
-        }
-
-        static std::vector<RecordDescriptor>
         getRdescEdgeCondition(const Txn &txn, const RecordDescriptor &recordDescriptor,
                               const std::vector<ClassId> &edgeClassIds,
                               std::vector<RecordId>
@@ -732,103 +695,6 @@ namespace nogdb {
                     }
                     return result;
             }
-        }
-
-        static std::vector<RecordDescriptor>
-        compareConditionRdesc(const Txn &txn, const std::string &className, ClassType type, const Condition &condition,
-                              bool searchIndexOnly = false) {
-            auto propertyType = PropertyType::UNDEFINED;
-            auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-            auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
-            for (const auto &classInfo: classInfos) {
-                auto propertyInfo = classInfo.propertyInfo.nameToDesc.find(condition.propName);
-                if (propertyInfo != classInfo.propertyInfo.nameToDesc.cend()) {
-                    if (propertyType == PropertyType::UNDEFINED) {
-                        propertyType = propertyInfo->second.type;
-                    } else {
-                        if (propertyType != propertyInfo->second.type) {
-                            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
-                        }
-                    }
-                }
-            }
-            if (propertyType == PropertyType::UNDEFINED) {
-                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-            }
-            //TODO: temporary fix indexing errors
-//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-//            return BaseTxn::getCurrentVersion(*txn._txnBase, ptr->name).first == className;
-//        });
-//        auto &classId = (*foundClassId)->id;
-//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), condition);
-//        if (foundIndex.second) {
-//            return Index::getIndexRecord(txn, classId, foundIndex.first, condition);
-//        }
-//        if (searchIndexOnly) {
-//            return std::vector<RecordDescriptor>{};
-//        } else {
-            return getRdescCondition(txn, classInfos, condition, propertyType);
-//        }
-        }
-
-        static std::vector<RecordDescriptor>
-        compareConditionRdesc(const Txn &txn, const std::string &className, ClassType type,
-                              bool (*condition)(const Record &record)) {
-            auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-            auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
-            return getRdescCondition(txn, classInfos, condition);
-        }
-
-        static std::vector<RecordDescriptor>
-        compareMultiConditionRdesc(const Txn &txn, const std::string &className, ClassType type,
-                                   const MultiCondition &conditions, bool searchIndexOnly = false) {
-            // check if all conditions are valid
-            auto conditionPropertyTypes = PropertyMapType{};
-            for (const auto &conditionNode: conditions.conditions) {
-                auto conditionNodePtr = conditionNode.lock();
-                require(conditionNodePtr != nullptr);
-                auto &condition = conditionNodePtr->getCondition();
-                conditionPropertyTypes.emplace(condition.propName, PropertyType::UNDEFINED);
-            }
-            require(!conditionPropertyTypes.empty());
-
-            auto classDescriptors = Generic::getMultipleClassDescriptor(txn, std::set<std::string>{className}, type);
-            auto classInfos = Generic::getMultipleClassMapProperty(*txn._txnBase, classDescriptors);
-            auto numOfUndefPropertyType = conditionPropertyTypes.size();
-            for (const auto &classInfo: classInfos) {
-                for (auto &property: conditionPropertyTypes) {
-                    auto propertyInfo = classInfo.propertyInfo.nameToDesc.find(property.first);
-                    if (propertyInfo != classInfo.propertyInfo.nameToDesc.cend()) {
-                        if (property.second == PropertyType::UNDEFINED) {
-                            property.second = propertyInfo->second.type;
-                            --numOfUndefPropertyType;
-                        } else {
-                            if (property.second != propertyInfo->second.type) {
-                                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_CONFLICT_PROPTYPE);
-                            }
-                        }
-                    }
-                }
-            }
-            if (numOfUndefPropertyType != 0) {
-                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-            }
-            //TODO: temporary fix indexing errors
-//        auto foundClassId = std::find_if(classDescriptors.cbegin(), classDescriptors.cend(),
-//                                         [&txn, &className](const Schema::ClassDescriptorPtr& ptr) {
-//            return BaseTxn::getCurrentVersion(*txn._txnBase, ptr->name).first == className;
-//        });
-//        auto &classId = (*foundClassId)->id;
-//        auto foundIndex = Index::hasIndex(classId, *classInfos.cbegin(), conditions);
-//        if (foundIndex.second) {
-//            return Index::getIndexRecord(txn, classId, foundIndex.first, conditions);
-//        }
-//        if (searchIndexOnly) {
-//            return std::vector<RecordDescriptor>{};
-//        } else {
-            return getRdescMultiCondition(txn, classInfos, conditions, conditionPropertyTypes);
-//        }
         }
 
         static std::vector<RecordDescriptor>
