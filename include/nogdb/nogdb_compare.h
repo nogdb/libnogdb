@@ -382,45 +382,6 @@ namespace nogdb {
         };
     };
 
-    class ClassFilter {
-    public:
-        ClassFilter() = default;
-
-        ~ClassFilter() noexcept = default;
-
-        ClassFilter(const std::initializer_list<std::string> &initializerList);
-
-        ClassFilter(const std::vector<std::string> &classNames_);
-
-        ClassFilter(const std::list<std::string> &classNames_);
-
-        ClassFilter(const std::set<std::string> &classNames_);
-
-        ClassFilter(const std::vector<std::string>::const_iterator &begin,
-                    const std::vector<std::string>::const_iterator &end);
-
-        ClassFilter(const std::list<std::string>::const_iterator &begin,
-                    const std::list<std::string>::const_iterator &end);
-
-        ClassFilter(const std::set<std::string>::const_iterator &begin,
-                    const std::set<std::string>::const_iterator &end);
-
-        //ClassFilter& exclude();
-        void add(const std::string &className);
-
-        void remove(const std::string &className);
-
-        size_t size() const;
-
-        bool empty() const;
-
-        const std::set<std::string> &getClassName() const;
-        //bool isExcludeClassName() const;
-    private:
-        std::set<std::string> classNames{};
-        //bool isExclude{false};
-    };
-
 }
 
 #endif

@@ -37,7 +37,7 @@ namespace nogdb {
 
         namespace relation {
 
-            enum class Direction { IN, OUT };
+            enum class Direction { IN, OUT, ALL };
 
             /**
              * Raw record format in lmdb data storage:

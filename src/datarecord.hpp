@@ -97,24 +97,8 @@ namespace nogdb {
                     [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                         auto rid = RecordId{classInfo.id, positionId};
                         auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                        switch (condition.comp) {
-                            case Condition::Comparator::IS_NULL:
-                                if (record.get(condition.propName).empty()) {
-                                    resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                }
-                                break;
-                            case Condition::Comparator::NOT_NULL:
-                                if (!record.get(condition.propName).empty()) {
-                                    resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                }
-                                break;
-                            default:
-                                if (!record.get(condition.propName).empty()) {
-                                    if (Compare::compareBytesValue(record.get(condition.propName), propertyType, condition)) {
-                                        resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
-                                    }
-                                }
-                                break;
+                        if (Compare::compareRecordByCondition(record, propertyType, condition)) {
+                            resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
                         }
                     };
                 dataRecord.resultSetIter(callback);
@@ -132,25 +116,8 @@ namespace nogdb {
                     [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                         auto rid = RecordId{classInfo.id, positionId};
                         auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
-                        switch (condition.comp) {
-                            case Condition::Comparator::IS_NULL:
-                                if (record.get(condition.propName).empty()) {
-                                    recordDescriptors.emplace_back(RecordDescriptor{rid});
-                                }
-                                break;
-                            case Condition::Comparator::NOT_NULL:
-                                if (!record.get(condition.propName).empty()) {
-                                    recordDescriptors.emplace_back(RecordDescriptor{rid});
-                                }
-                                break;
-                            default:
-                                if (!record.get(condition.propName).empty()) {
-                                    if (Compare::compareBytesValue(record.get(condition.propName), propertyType,
-                                                                   condition)) {
-                                        recordDescriptors.emplace_back(RecordDescriptor{rid});
-                                    }
-                                }
-                                break;
+                        if (Compare::compareRecordByCondition(record, propertyType, condition)) {
+                            recordDescriptors.emplace_back(RecordDescriptor{rid});
                         }
                     };
                 dataRecord.resultSetIter(callback);
