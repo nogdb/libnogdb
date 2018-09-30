@@ -50,8 +50,6 @@ namespace nogdb {
     struct Edge;
     struct Traverse;
 
-    class Parser;
-
     class Compare;
 
     class Condition;
@@ -135,7 +133,7 @@ namespace nogdb {
     typedef uint16_t ClassId;
     typedef uint16_t PropertyId;
     typedef uint32_t PositionId;
-    typedef uint32_t ClusterId:
+    typedef uint32_t ClusterId;
     typedef std::pair<ClassId, PositionId> RecordId;
     typedef uint64_t TxnId;
     typedef uint32_t IndexId;
@@ -746,6 +744,21 @@ namespace nogdb {
         std::vector<RecordDescriptor> metadata{};
         long long currentIndex;
         Result result;
+
+        ResultSetCursor& addMetadata(const RecordDescriptor& recordDescriptor) {
+            metadata.emplace_back(recordDescriptor);
+            return *this;
+        }
+
+        ResultSetCursor& addMetadata(const std::vector<RecordDescriptor>& recordDescriptors) {
+            metadata.insert(metadata.cend(), recordDescriptors.cbegin(), recordDescriptors.cend());
+            return *this;
+        }
+
+        ResultSetCursor& addMetadata(const ResultSetCursor& resultSetCursor) {
+            metadata.insert(metadata.cend(), resultSetCursor.metadata.cbegin(), resultSetCursor.metadata.cend());
+            return *this;
+        }
     };
 
     inline bool operator<(const RecordId &lhs, const RecordId &rhs) {
@@ -774,7 +787,7 @@ namespace nogdb {
 
 }
 
-inline std::string rid2str(const RecordId &rid) {
+inline std::string rid2str(const nogdb::RecordId &rid) {
     std::stringstream ss{};
     ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
     return ss.str();

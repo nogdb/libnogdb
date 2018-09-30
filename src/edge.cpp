@@ -222,12 +222,7 @@ namespace nogdb {
         edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
         auto resultSetExtend = ResultSetCursor{txn};
         for(const auto& classNameMapInfo: edgeClassInfoExtend) {
-            auto &classInfo = classNameMapInfo.second;
-            auto resultSet = txn._iRecord->getResultSetCursor(classInfo);
-            resultSetExtend.metadata.insert(
-                    resultSetExtend.metadata.cend(),
-                    resultSet.metadata.cbegin(), resultSet.metadata.cend()
-            );
+            resultSetExtend.addMetadata(txn._iRecord->getResultSetCursor(classNameMapInfo.second));
         }
         return resultSetExtend;
     }
@@ -361,10 +356,8 @@ namespace nogdb {
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto metadata = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
@@ -372,10 +365,8 @@ namespace nogdb {
         . isTransactionValid();
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
-        auto metadata = txn._iRecord->getRecordDescriptorByCmpFunction(edgeClassInfo, condition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = txn._iRecord->getRecordDescriptorByCmpFunction(edgeClassInfo, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
@@ -384,10 +375,8 @@ namespace nogdb {
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto metadata = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -402,7 +391,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -416,9 +405,7 @@ namespace nogdb {
         edgeClassInfoExtend = txn._iSchema->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
         auto resultSetExtend = ResultSetCursor{txn};
         for(const auto& classNameMapInfo: edgeClassInfoExtend) {
-            auto &classInfo = classNameMapInfo.second;
-            auto resultSet = txn._iRecord->getRecordDescriptorByCmpFunction(classInfo, condition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(txn._iRecord->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
         }
         return resultSetExtend;
     }
@@ -435,7 +422,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -498,10 +485,8 @@ namespace nogdb {
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto metadata = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Edge::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
@@ -510,10 +495,8 @@ namespace nogdb {
 
         auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-        auto metadata = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Edge::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -528,7 +511,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -545,7 +528,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }

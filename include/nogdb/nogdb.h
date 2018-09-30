@@ -320,144 +320,62 @@ namespace nogdb {
         ~Traverse() noexcept = delete;
 
         static ResultSet
-        inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
-
-        static ResultSet
         inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                  const PathFilter &pathFilter);
-
-        static ResultSet
-        outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                  const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet
         outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter);
-
-        static ResultSet
-        allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                   const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet
         allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter);
-
-        static ResultSet
-        inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                   const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet
         inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                  const PathFilter &pathFilter);
-
-        static ResultSet
-        outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                  const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet
         outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter);
-
-        static ResultSet
-        allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                   const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet
         allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter);
-
-        static ResultSet shortestPath(const Txn &txn,
-                                      const RecordDescriptor &srcVertexRecordDescriptor,
-                                      const RecordDescriptor &dstVertexRecordDescriptor);
+                   const PathFilter &pathFilter = PathFilter{});
 
         static ResultSet shortestPath(const Txn &txn,
                                       const RecordDescriptor &srcVertexRecordDescriptor,
                                       const RecordDescriptor &dstVertexRecordDescriptor,
-                                      const PathFilter &pathFilter);
-
-        /*
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
-        static std::pair<T, ResultSet> shortestPath(const Txn &txn,
-                                         const RecordDescriptor &srcVertexRecordDescriptor,
-                                         const RecordDescriptor &dstVertexRecordDescriptor,
-                                         const CostFuncType &costFunction,
-                                         const PathFilter &pathFilter,
-                                         ) {
-            Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-            return Algorithm::dijkstraShortestPath<CostFuncType, T, CompareT>(
-                    txn, srcVertexRecordDescriptor,
-                    dstVertexRecordDescriptor, costFunction, edgeClassIds, pathFilter);
-        }
-         */
-
-        static ResultSetCursor
-        inEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                                      const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         inEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                        const PathFilter &pathFilter);
-
-        static ResultSetCursor
-        outEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                        const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         outEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter);
-
-        static ResultSetCursor
-        allEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                         const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         allEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter);
-
-        static ResultSetCursor
-        inEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                         const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         inEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                        const PathFilter &pathFilter);
-
-        static ResultSetCursor
-        outEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                        const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         outEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter);
-
-        static ResultSetCursor
-        allEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth);
+                         const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor
         allEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter);
-
-        static ResultSetCursor shortestPathCursor(const Txn &txn,
-                                                  const RecordDescriptor &srcVertexRecordDescriptor,
-                                                  const RecordDescriptor &dstVertexRecordDescriptor);
+                         const PathFilter &pathFilter = PathFilter{});
 
         static ResultSetCursor shortestPathCursor(const Txn &txn,
                                                   const RecordDescriptor &srcVertexRecordDescriptor,
                                                   const RecordDescriptor &dstVertexRecordDescriptor,
-                                                  const PathFilter &pathFilter);
-
-        /*
-        template<typename CostFuncType, typename T = typename std::result_of<CostFuncType(Txn&, const RecordDescriptor&)>::type, typename CompareT = std::greater<T>>
-        static std::pair<T, ResultSetCursor> shortestPathCursor(const Txn &txn,
-                                                                const RecordDescriptor &srcVertexRecordDescriptor,
-                                                                const RecordDescriptor &dstVertexRecordDescriptor,
-                                                                const CostFuncType &costFunction,
-                                                                const PathFilter &pathFilter,
-                                                                ) {
-            Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-            auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-            auto result = ResultSetCursor{txn};
-            auto metadata = Algorithm::dijkstraShortestPathRdesc<CostFuncType, T, CompareT>(
-                    txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
-                    costFunction, edgeClassIds, pathFilter);
-
-            result.metadata.insert(result.metadata.end(), metadata.second.cbegin(), metadata.second.cend());
-            return {metadata.first, result};
-        }
-        */
+                                                  const PathFilter &pathFilter = PathFilter{});
     };
 
 }

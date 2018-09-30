@@ -161,12 +161,7 @@ namespace nogdb {
         vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
         auto resultSetExtend = ResultSetCursor{txn};
         for(const auto& classNameMapInfo: vertexClassInfoExtend) {
-            auto &classInfo = classNameMapInfo.second;
-            auto resultSet = txn._iRecord->getResultSetCursor(classInfo);
-            resultSetExtend.metadata.insert(
-                    resultSetExtend.metadata.cend(),
-                    resultSet.metadata.cbegin(), resultSet.metadata.cend()
-            );
+            resultSetExtend.addMetadata(txn._iRecord->getResultSetCursor(classNameMapInfo.second));
         }
         return resultSetExtend;
     }
@@ -231,7 +226,7 @@ namespace nogdb {
         auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
         auto result = ResultSetCursor{txn};
         for(const auto& recordId: edgeRecordIds) {
-            result.metadata.emplace_back(RecordDescriptor{recordId});
+            result.addMetadata(RecordDescriptor{recordId});
         }
         return result;
     }
@@ -244,7 +239,7 @@ namespace nogdb {
         auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
         auto result = ResultSetCursor{txn};
         for(const auto& recordId: edgeRecordIds) {
-            result.metadata.emplace_back(RecordDescriptor{recordId});
+            result.addMetadata(RecordDescriptor{recordId});
         }
         return result;
     }
@@ -261,7 +256,7 @@ namespace nogdb {
         edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
         auto result = ResultSetCursor{txn};
         for(const auto& recordId: edgeRecordIds) {
-            result.metadata.emplace_back(RecordDescriptor{recordId});
+            result.addMetadata(RecordDescriptor{recordId});
         }
         return result;
     }
@@ -349,10 +344,8 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto metadata = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
@@ -360,10 +353,8 @@ namespace nogdb {
         . isTransactionValid();
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-        auto metadata = txn._iRecord->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = txn._iRecord->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
@@ -372,10 +363,8 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto metadata = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -390,7 +379,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -404,9 +393,7 @@ namespace nogdb {
         vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
         auto resultSetExtend = ResultSetCursor{txn};
         for(const auto& classNameMapInfo: vertexClassInfoExtend) {
-            auto &classInfo = classNameMapInfo.second;
-            auto resultSet = txn._iRecord->getRecordDescriptorByCmpFunction(classInfo, condition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(txn._iRecord->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
         }
         return resultSetExtend;
     }
@@ -423,7 +410,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -465,10 +452,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
@@ -478,10 +463,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::IN, multiCondition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::IN, multiCondition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
@@ -491,10 +474,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSet Vertex::getOutEdge(const Txn &txn,
@@ -534,10 +515,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
@@ -547,10 +526,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::OUT, multiCondition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::OUT, multiCondition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
@@ -560,10 +537,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSet Vertex::getAllEdge(const Txn &txn,
@@ -603,10 +578,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
@@ -616,10 +589,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::ALL, multiCondition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::ALL, multiCondition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
@@ -629,10 +600,8 @@ namespace nogdb {
         . isTransactionValid();
 
         txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        auto result = ResultSetCursor{txn};
-        auto metadata = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -693,10 +662,8 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto metadata = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
@@ -705,10 +672,8 @@ namespace nogdb {
 
         auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-        auto metadata = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
-        auto result = ResultSetCursor{txn};
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+        auto result = Compare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
+        return std::move(ResultSetCursor{txn}.addMetadata(result));
     }
 
     ResultSetCursor Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -723,7 +688,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
@@ -740,7 +705,7 @@ namespace nogdb {
             auto &classInfo = classNameMapInfo.second;
             auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
             auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-            resultSetExtend.metadata.insert(resultSetExtend.metadata.cend(), resultSet.cbegin(), resultSet.cend());
+            resultSetExtend.addMetadata(resultSet);
         }
         return resultSetExtend;
     }
