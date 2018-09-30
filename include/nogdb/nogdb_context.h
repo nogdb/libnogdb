@@ -35,46 +35,46 @@
 
 namespace nogdb {
 
-    class Context {
-    public:
-        friend struct Validate;
-        friend struct Algorithm;
-        friend struct Class;
-        friend struct Property;
-        friend struct DB;
-        friend struct Vertex;
-        friend struct Edge;
-        friend struct Traverse;
+  class Context {
+  public:
+    friend struct Validate;
+    friend struct Algorithm;
+    friend struct Class;
+    friend struct Property;
+    friend struct DB;
+    friend struct Vertex;
+    friend struct Edge;
+    friend struct Traverse;
 
-        friend class Txn;
+    friend class Txn;
 
-        Context() = default;
+    Context() = default;
 
-        ~Context() noexcept;
+    ~Context() noexcept;
 
-        Context(const std::string &dbPath);
+    Context(const std::string &dbPath);
 
-        explicit Context(const std::string &dbPath, unsigned int maxDbNum);
+    explicit Context(const std::string &dbPath, unsigned int maxDbNum);
 
-        explicit Context(const std::string &dbPath, unsigned long maxDbSize);
+    explicit Context(const std::string &dbPath, unsigned long maxDbSize);
 
-        Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
+    Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
 
-        Context(Context &&ctx) noexcept;
+    Context(Context &&ctx) noexcept;
 
-        Context &operator=(Context &&ctx) noexcept;
+    Context &operator=(Context &&ctx) noexcept;
 
-        std::string getDBPath() const { return _dbPath; }
+    std::string getDBPath() const { return _dbPath; }
 
-        unsigned int getMaxDB() const { return _maxDB; }
+    unsigned int getMaxDB() const { return _maxDB; }
 
-        unsigned long getMaxDBSize() const { return _maxDBSize; }
+    unsigned long getMaxDBSize() const { return _maxDBSize; }
 
-    private:
-        std::string _dbPath{};
-        unsigned int _maxDB{};
-        unsigned long _maxDBSize{};
-        std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
-    };
+  private:
+    std::string _dbPath{};
+    unsigned int _maxDB{};
+    unsigned long _maxDBSize{};
+    std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
+  };
 
 }

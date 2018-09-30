@@ -36,346 +36,358 @@
 
 namespace nogdb {
 
-    //*************************************************************
-    //*  NogDB class operations.                                  *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB class operations.                                  *
+  //*************************************************************
 
-    struct Class {
-        Class() = delete;
+  struct Class {
+    Class() = delete;
 
-        ~Class() noexcept = delete;
+    ~Class() noexcept = delete;
 
-        static const ClassDescriptor create(const Txn &txn, const std::string &className, ClassType type);
+    static const ClassDescriptor create(const Txn &txn, const std::string &className, ClassType type);
 
-        static const ClassDescriptor
-        createExtend(const Txn &txn, const std::string &className, const std::string &superClass);
+    static const ClassDescriptor
+    createExtend(const Txn &txn, const std::string &className, const std::string &superClass);
 
-        static void drop(const Txn &txn, const std::string &className);
+    static void drop(const Txn &txn, const std::string &className);
 
-        static void alter(const Txn &txn, const std::string &oldClassName, const std::string &newClassName);
-    };
+    static void alter(const Txn &txn, const std::string &oldClassName, const std::string &newClassName);
+  };
 
-    //*************************************************************
-    //*  NogDB property operations.                               *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB property operations.                               *
+  //*************************************************************
 
-    struct Property {
-        Property() = delete;
+  struct Property {
+    Property() = delete;
 
-        ~Property() noexcept = delete;
+    ~Property() noexcept = delete;
 
-        static const PropertyDescriptor
-        add(const Txn &txn, const std::string &className, const std::string &propertyName, PropertyType type);
+    static const PropertyDescriptor
+    add(const Txn &txn, const std::string &className, const std::string &propertyName, PropertyType type);
 
-        static void alter(const Txn &txn, const std::string &className, const std::string &oldPropertyName,
-                          const std::string &newPropertyName);
+    static void alter(const Txn &txn, const std::string &className, const std::string &oldPropertyName,
+                      const std::string &newPropertyName);
 
-        static void remove(const Txn &txn, const std::string &className, const std::string &propertyName);
+    static void remove(const Txn &txn, const std::string &className, const std::string &propertyName);
 
-        static void
-        createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
+    static void
+    createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
 
-        static void dropIndex(const Txn &txn, const std::string &className, const std::string &propertyName);
-    };
+    static void dropIndex(const Txn &txn, const std::string &className, const std::string &propertyName);
+  };
 
-    //*************************************************************
-    //*  NogDB vertex operations.                                 *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB vertex operations.                                 *
+  //*************************************************************
 
-    struct Vertex {
-        Vertex() = delete;
+  struct Vertex {
+    Vertex() = delete;
 
-        ~Vertex() noexcept = delete;
+    ~Vertex() noexcept = delete;
 
-        static const RecordDescriptor create(const Txn &txn, const std::string &className, const Record &record = Record{});
+    static const RecordDescriptor create(const Txn &txn, const std::string &className, const Record &record = Record{});
 
-        static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+    static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
 
-        static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static void destroy(const Txn &txn, const std::string &className);
+    static void destroy(const Txn &txn, const std::string &className);
 
-        static ResultSet get(const Txn &txn, const std::string &className);
+    static ResultSet get(const Txn &txn, const std::string &className);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className);
+    static ResultSet getExtend(const Txn &txn, const std::string &className);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className);
 
-        static ResultSet getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSet getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSet getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSet getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSetCursor getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSetCursor getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSetCursor getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSetCursor getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSetCursor getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSetCursor getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSetCursor
+    getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor
+    getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor
+    getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSet
+    getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSet
+    getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSet
-        getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+    static ResultSet
+    getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
 
-        static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSet
+    getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSet
+    getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSet
-        getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+    static ResultSet
+    getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
 
-        static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSet
+    getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSet
+    getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSet
-        getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+    static ResultSet
+    getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
 
-        static ResultSetCursor
-        getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSetCursor
+    getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSetCursor
-        getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSetCursor
+    getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSetCursor
-        getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+    static ResultSetCursor
+    getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
 
-        static ResultSetCursor
-        getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSetCursor
+    getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSetCursor
-        getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSetCursor
+    getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSetCursor
-        getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+    static ResultSetCursor
+    getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
 
-        static ResultSetCursor
-        getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
+    static ResultSetCursor
+    getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const Condition &condition);
 
-        static ResultSetCursor
-        getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
+    static ResultSetCursor
+    getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, bool (*condition)(const Record &));
 
-        static ResultSetCursor
-        getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
-    };
+    static ResultSetCursor
+    getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const MultiCondition &multiCondition);
+  };
 
-    //*************************************************************
-    //*  NogDB edge operations.                                   *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB edge operations.                                   *
+  //*************************************************************
 
-    struct Edge {
-        Edge() = delete;
+  struct Edge {
+    Edge() = delete;
 
-        ~Edge() noexcept = delete;
+    ~Edge() noexcept = delete;
 
-        static const RecordDescriptor
-        create(const Txn &txn, const std::string &className, const RecordDescriptor &srcVertexRecordDescriptor,
-               const RecordDescriptor &dstVertexRecordDescriptor, const Record &record = Record{});
+    static const RecordDescriptor
+    create(const Txn &txn, const std::string &className, const RecordDescriptor &srcVertexRecordDescriptor,
+           const RecordDescriptor &dstVertexRecordDescriptor, const Record &record = Record{});
 
-        static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+    static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
 
-        static void updateSrc(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                              const RecordDescriptor &newSrcVertexRecordDescriptor);
+    static void updateSrc(const Txn &txn, const RecordDescriptor &recordDescriptor,
+                          const RecordDescriptor &newSrcVertexRecordDescriptor);
 
-        static void
-        updateDst(const Txn &txn, const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstRecordDescriptor);
+    static void
+    updateDst(const Txn &txn, const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstRecordDescriptor);
 
-        static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static void destroy(const Txn &txn, const std::string &className);
+    static void destroy(const Txn &txn, const std::string &className);
 
-        static ResultSet get(const Txn &txn, const std::string &className);
+    static ResultSet get(const Txn &txn, const std::string &className);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className);
+    static ResultSet getExtend(const Txn &txn, const std::string &className);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string& className);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className);
 
-        static Result getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static Result getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static Result getDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static Result getDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static ResultSet getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    static ResultSetCursor
+    getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
 
-        static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
 
-        static ResultSetCursor getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    static ResultSetCursor
+    getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
 
-        static ResultSetCursor getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-    };
+    static ResultSetCursor
+    getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+  };
 
-    //*************************************************************
-    //*  NogDB database operations.                               *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB database operations.                               *
+  //*************************************************************
 
-    struct DB {
-        DB() = delete;
+  struct DB {
+    DB() = delete;
 
-        ~DB() noexcept = delete;
+    ~DB() noexcept = delete;
 
-        static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
-        static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
+    static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
 
-        static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor& classDescriptor);
+    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
 
-        static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
+    static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
 
-        static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
-    };
+    static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
+  };
 
-    //*************************************************************
-    //*  NogDB graph traversal operations.                        *
-    //*************************************************************
+  //*************************************************************
+  //*  NogDB graph traversal operations.                        *
+  //*************************************************************
 
-    struct Traverse {
-        Traverse() = delete;
+  struct Traverse {
+    Traverse() = delete;
 
-        ~Traverse() noexcept = delete;
+    ~Traverse() noexcept = delete;
 
-        static ResultSet
-        inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                  const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+              const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet
-        outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+               const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet
-        allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+               const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet
-        inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                  const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+              const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet
-        outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+               const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet
-        allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                   const PathFilter &pathFilter = PathFilter{});
+    static ResultSet
+    allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
+               const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSet shortestPath(const Txn &txn,
-                                      const RecordDescriptor &srcVertexRecordDescriptor,
-                                      const RecordDescriptor &dstVertexRecordDescriptor,
-                                      const PathFilter &pathFilter = PathFilter{});
+    static ResultSet shortestPath(const Txn &txn,
+                                  const RecordDescriptor &srcVertexRecordDescriptor,
+                                  const RecordDescriptor &dstVertexRecordDescriptor,
+                                  const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        inEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                        const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    inEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                    unsigned int maxDepth,
+                    const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        outEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    outEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                     unsigned int maxDepth,
+                     const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        allEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    allEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                     unsigned int maxDepth,
+                     const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        inEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                        const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    inEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                    unsigned int maxDepth,
+                    const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        outEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    outEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                     unsigned int maxDepth,
+                     const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor
-        allEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                         const PathFilter &pathFilter = PathFilter{});
+    static ResultSetCursor
+    allEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth,
+                     unsigned int maxDepth,
+                     const PathFilter &pathFilter = PathFilter{});
 
-        static ResultSetCursor shortestPathCursor(const Txn &txn,
-                                                  const RecordDescriptor &srcVertexRecordDescriptor,
-                                                  const RecordDescriptor &dstVertexRecordDescriptor,
-                                                  const PathFilter &pathFilter = PathFilter{});
-    };
+    static ResultSetCursor shortestPathCursor(const Txn &txn,
+                                              const RecordDescriptor &srcVertexRecordDescriptor,
+                                              const RecordDescriptor &dstVertexRecordDescriptor,
+                                              const PathFilter &pathFilter = PathFilter{});
+  };
 
 }

@@ -31,80 +31,80 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-    namespace internal_data_type {
+  namespace internal_data_type {
 
-        Blob::Blob(const size_t capacity)
-                : _capacity{capacity}, _size{0}, _value{nullptr} {
-            _value = new(std::nothrow) Byte[capacity]{};
-        }
-
-        Blob::Blob(const Byte *value, const size_t capacity)
-                : _capacity{capacity}, _size{capacity}, _value{nullptr} {
-            _value = new(std::nothrow) Byte[capacity]{};
-            std::copy(value, value + capacity, _value);
-        }
-
-        Blob::~Blob() noexcept {
-            delete[] _value;
-        }
-
-        Blob::Blob(const Blob &binaryObject)
-                : _capacity{binaryObject._capacity}, _size{binaryObject._size}, _value{nullptr} {
-            _value = new(std::nothrow) Byte[_capacity]{};
-            std::copy(binaryObject._value, binaryObject._value + binaryObject._capacity, _value);
-        }
-
-        Blob &Blob::operator=(const Blob &binaryObject) noexcept {
-            if (this != &binaryObject) {
-                auto tmp(binaryObject);
-                delete[] _value;
-                _value = nullptr;
-                using std::swap;
-                swap(tmp, *this);
-            }
-            return *this;
-        }
-
-        Blob::Blob(Blob &&binaryObject)
-                : _capacity{binaryObject._capacity}, _size{binaryObject._size}, _value{std::move(binaryObject._value)} {
-            binaryObject._value = nullptr;
-            binaryObject._capacity = 0;
-            binaryObject._size = 0;
-        }
-
-        Blob &Blob::operator=(Blob &&binaryObject) noexcept {
-            if (this != &binaryObject) {
-                delete[] _value;
-                _value = binaryObject._value;
-                _capacity = binaryObject._capacity;
-                _size = binaryObject._size;
-                binaryObject._value = nullptr;
-                binaryObject._capacity = 0;
-                binaryObject._size = 0;
-            }
-            return *this;
-        }
-
-        Blob &Blob::append(const void *data, size_t size) {
-            require(_size + size <= _capacity);
-            memcpy(static_cast<void *>(_value + _size), data, size);
-            _size += size;
-            return *this;
-        }
-
-        size_t Blob::retrieve(void *data, size_t offset, size_t size) const {
-            require(offset + size <= _capacity);
-            memcpy(data, static_cast<const void *>(_value + offset), size);
-            return offset + size;
-        }
-
-        Blob Blob::operator+(const Blob &suffix) const {
-            auto capacity = _capacity + suffix._capacity;
-            auto blob = Blob{_value, capacity};
-            blob.append(suffix._value, suffix._size);
-            return blob;
-        }
-
+    Blob::Blob(const size_t capacity)
+        : _capacity{capacity}, _size{0}, _value{nullptr} {
+      _value = new(std::nothrow) Byte[capacity]{};
     }
+
+    Blob::Blob(const Byte *value, const size_t capacity)
+        : _capacity{capacity}, _size{capacity}, _value{nullptr} {
+      _value = new(std::nothrow) Byte[capacity]{};
+      std::copy(value, value + capacity, _value);
+    }
+
+    Blob::~Blob() noexcept {
+      delete[] _value;
+    }
+
+    Blob::Blob(const Blob &binaryObject)
+        : _capacity{binaryObject._capacity}, _size{binaryObject._size}, _value{nullptr} {
+      _value = new(std::nothrow) Byte[_capacity]{};
+      std::copy(binaryObject._value, binaryObject._value + binaryObject._capacity, _value);
+    }
+
+    Blob &Blob::operator=(const Blob &binaryObject) noexcept {
+      if (this != &binaryObject) {
+        auto tmp(binaryObject);
+        delete[] _value;
+        _value = nullptr;
+        using std::swap;
+        swap(tmp, *this);
+      }
+      return *this;
+    }
+
+    Blob::Blob(Blob &&binaryObject)
+        : _capacity{binaryObject._capacity}, _size{binaryObject._size}, _value{std::move(binaryObject._value)} {
+      binaryObject._value = nullptr;
+      binaryObject._capacity = 0;
+      binaryObject._size = 0;
+    }
+
+    Blob &Blob::operator=(Blob &&binaryObject) noexcept {
+      if (this != &binaryObject) {
+        delete[] _value;
+        _value = binaryObject._value;
+        _capacity = binaryObject._capacity;
+        _size = binaryObject._size;
+        binaryObject._value = nullptr;
+        binaryObject._capacity = 0;
+        binaryObject._size = 0;
+      }
+      return *this;
+    }
+
+    Blob &Blob::append(const void *data, size_t size) {
+      require(_size + size <= _capacity);
+      memcpy(static_cast<void *>(_value + _size), data, size);
+      _size += size;
+      return *this;
+    }
+
+    size_t Blob::retrieve(void *data, size_t offset, size_t size) const {
+      require(offset + size <= _capacity);
+      memcpy(data, static_cast<const void *>(_value + offset), size);
+      return offset + size;
+    }
+
+    Blob Blob::operator+(const Blob &suffix) const {
+      auto capacity = _capacity + suffix._capacity;
+      auto blob = Blob{_value, capacity};
+      blob.append(suffix._value, suffix._size);
+      return blob;
+    }
+
+  }
 
 }

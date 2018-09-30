@@ -30,70 +30,70 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-    Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        auto classInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first);
-        return txn._iRecord->getRecord(classInfo, recordDescriptor);
-    }
+  Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+    auto classInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first);
+    return txn._iRecord->getRecord(classInfo, recordDescriptor);
+  }
 
-    const std::vector<ClassDescriptor> DB::getClasses(const Txn &txn) {
-        auto result = std::vector<ClassDescriptor>{};
-        for (const auto &classInfo: txn._class->getAllInfos()) {
-            result.emplace_back(
-                    ClassDescriptor{
-                        classInfo.id,
-                        classInfo.name,
-                        classInfo.superClassId,
-                        classInfo.type
-                    });
-        }
-        return result;
+  const std::vector<ClassDescriptor> DB::getClasses(const Txn &txn) {
+    auto result = std::vector<ClassDescriptor>{};
+    for (const auto &classInfo: txn._class->getAllInfos()) {
+      result.emplace_back(
+          ClassDescriptor{
+              classInfo.id,
+              classInfo.name,
+              classInfo.superClassId,
+              classInfo.type
+          });
     }
+    return result;
+  }
 
-    const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor& classDescriptor) {
-        auto result = std::vector<PropertyDescriptor>{};
-        auto foundClass = txn._iSchema->getExistingClass(classDescriptor.id);
-        // native properties
-        for(const auto& property: txn._iSchema->getNativePropertyInfo(txn, foundClass.id)) {
-            result.emplace_back(
-                    PropertyDescriptor{
-                       property.id,
-                       property.name,
-                       property.type,
-                       false
-                    });
-        }
-        // inherited properties
-        for(const auto& property: txn._iSchema->getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
-            result.emplace_back(
-                    PropertyDescriptor{
-                        property.id,
-                        property.name,
-                        property.type,
-                        true
-                    });
-        }
-        return result;
+  const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor &classDescriptor) {
+    auto result = std::vector<PropertyDescriptor>{};
+    auto foundClass = txn._iSchema->getExistingClass(classDescriptor.id);
+    // native properties
+    for (const auto &property: txn._iSchema->getNativePropertyInfo(txn, foundClass.id)) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              false
+          });
     }
+    // inherited properties
+    for (const auto &property: txn._iSchema->getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              true
+          });
+    }
+    return result;
+  }
 
-    const ClassDescriptor DB::getClass(const Txn &txn, const std::string &className) {
-        auto classInfo = txn._class->getInfo(className);
-        return ClassDescriptor{
-            classInfo.id,
-            classInfo.name,
-            classInfo.superClassId,
-            classInfo.type
-        };
-    }
+  const ClassDescriptor DB::getClass(const Txn &txn, const std::string &className) {
+    auto classInfo = txn._class->getInfo(className);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
 
-    const ClassDescriptor DB::getClass(const Txn &txn, const ClassId &classId) {
-        auto classInfo = txn._class->getInfo(classId);
-        return ClassDescriptor{
-            classInfo.id,
-            classInfo.name,
-            classInfo.superClassId,
-            classInfo.type
-        };
-    }
+  const ClassDescriptor DB::getClass(const Txn &txn, const ClassId &classId) {
+    auto classInfo = txn._class->getInfo(classId);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
 }
 
 

@@ -18,7 +18,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
- 
+
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
 #include "algorithm.hpp"
@@ -27,472 +27,472 @@
 
 namespace nogdb {
 
-    ResultSet Traverse::inEdgeBfs(const Txn &txn,
-                                  const RecordDescriptor &recordDescriptor,
-                                  unsigned int minDepth,
-                                  unsigned int maxDepth,
-                                  const PathFilter &pathFilter) {
-        BEGIN_VALIDATION(&txn)
-        . isTransactionValid();
+  ResultSet Traverse::inEdgeBfs(const Txn &txn,
+                                const RecordDescriptor &recordDescriptor,
+                                unsigned int minDepth,
+                                unsigned int maxDepth,
+                                const PathFilter &pathFilter) {
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid();
 
-        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeIn,
-                                            &Graph::getVertexSrc,
-                                            pathFilter);
-    }
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return Algorithm::breadthFirstSearch(txn,
+                                         recordDescriptor,
+                                         minDepth,
+                                         maxDepth,
+                                         edgeClassIds,
+                                         &Graph::getEdgeIn,
+                                         &Graph::getVertexSrc,
+                                         pathFilter);
+  }
 
-    ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
-                                              const RecordDescriptor &recordDescriptor,
-                                              unsigned int minDepth,
-                                              unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeIn,
-                                                          &Graph::getVertexSrc,
-                                                          PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
+  ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
+                                            const RecordDescriptor &recordDescriptor,
+                                            unsigned int minDepth,
+                                            unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeIn,
+                                                       &Graph::getVertexSrc,
+                                                       PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
 
-    ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
-                                              const RecordDescriptor &recordDescriptor,
-                                              unsigned int minDepth,
-                                              unsigned int maxDepth,
-                                              const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeIn,
-                                                          &Graph::getVertexSrc,
-                                                          pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
+  ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
+                                            const RecordDescriptor &recordDescriptor,
+                                            unsigned int minDepth,
+                                            unsigned int maxDepth,
+                                            const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeIn,
+                                                       &Graph::getVertexSrc,
+                                                       pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
 
 
-    ResultSet Traverse::outEdgeBfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeOut,
-                                            &Graph::getVertexDst,
-                                            PathFilter{});
-    }
+  ResultSet Traverse::outEdgeBfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::breadthFirstSearch(txn,
+                                         recordDescriptor,
+                                         minDepth,
+                                         maxDepth,
+                                         edgeClassIds,
+                                         &Graph::getEdgeOut,
+                                         &Graph::getVertexDst,
+                                         PathFilter{});
+  }
 
-    ResultSet Traverse::outEdgeBfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth,
+  ResultSet Traverse::outEdgeBfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth,
+                                 const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::breadthFirstSearch(txn,
+                                         recordDescriptor,
+                                         minDepth,
+                                         maxDepth,
+                                         edgeClassIds,
+                                         &Graph::getEdgeOut,
+                                         &Graph::getVertexDst,
+                                         pathFilter);
+  }
+
+  ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeOut,
+                                                       &Graph::getVertexDst,
+                                                       PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+
+  }
+
+  ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth,
+                                             const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeOut,
+                                                       &Graph::getVertexDst,
+                                                       pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSet Traverse::allEdgeBfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::breadthFirstSearch(txn,
+                                         recordDescriptor,
+                                         minDepth,
+                                         maxDepth,
+                                         edgeClassIds,
+                                         &Graph::getEdgeInOut,
+                                         nullptr,
+                                         PathFilter{});
+  }
+
+  ResultSet Traverse::allEdgeBfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth,
+                                 const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::breadthFirstSearch(txn,
+                                         recordDescriptor,
+                                         minDepth,
+                                         maxDepth,
+                                         edgeClassIds,
+                                         &Graph::getEdgeInOut,
+                                         nullptr,
+                                         pathFilter);
+  }
+
+  ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeInOut,
+                                                       nullptr,
+                                                       PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth,
+                                             const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
+                                                       recordDescriptor,
+                                                       minDepth,
+                                                       maxDepth,
+                                                       edgeClassIds,
+                                                       &Graph::getEdgeInOut,
+                                                       nullptr,
+                                                       pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSet Traverse::inEdgeDfs(const Txn &txn,
+                                const RecordDescriptor &recordDescriptor,
+                                unsigned int minDepth,
+                                unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeIn,
+                                       &Graph::getVertexSrc,
+                                       PathFilter{});
+  }
+
+  ResultSet Traverse::inEdgeDfs(const Txn &txn,
+                                const RecordDescriptor &recordDescriptor,
+                                unsigned int minDepth,
+                                unsigned int maxDepth,
+                                const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeIn,
+                                       &Graph::getVertexSrc,
+                                       pathFilter);
+  }
+
+  ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
+                                            const RecordDescriptor &recordDescriptor,
+                                            unsigned int minDepth,
+                                            unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeIn,
+                                                     &Graph::getVertexSrc,
+                                                     PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
+                                            const RecordDescriptor &recordDescriptor,
+                                            unsigned int minDepth,
+                                            unsigned int maxDepth,
+                                            const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeIn,
+                                                     &Graph::getVertexSrc,
+                                                     pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSet Traverse::outEdgeDfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeOut,
+                                       &Graph::getVertexDst,
+                                       PathFilter{});
+  }
+
+  ResultSet Traverse::outEdgeDfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth,
+                                 const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeOut,
+                                       &Graph::getVertexDst,
+                                       pathFilter);
+  }
+
+  ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeOut,
+                                                     &Graph::getVertexDst,
+                                                     PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth,
+                                             const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeOut,
+                                                     &Graph::getVertexDst,
+                                                     pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSet Traverse::allEdgeDfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeInOut,
+                                       nullptr,
+                                       PathFilter{});
+  }
+
+  ResultSet Traverse::allEdgeDfs(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 unsigned int minDepth,
+                                 unsigned int maxDepth,
+                                 const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::depthFirstSearch(txn,
+                                       recordDescriptor,
+                                       minDepth,
+                                       maxDepth,
+                                       edgeClassIds,
+                                       &Graph::getEdgeInOut,
+                                       nullptr,
+                                       pathFilter);
+  }
+
+  ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeInOut,
+                                                     nullptr,
+                                                     PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
+                                             const RecordDescriptor &recordDescriptor,
+                                             unsigned int minDepth,
+                                             unsigned int maxDepth,
+                                             const PathFilter &pathFilter) {
+    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
+                                                     recordDescriptor,
+                                                     minDepth,
+                                                     maxDepth,
+                                                     edgeClassIds,
+                                                     &Graph::getEdgeInOut,
+                                                     nullptr,
+                                                     pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
+
+  ResultSet Traverse::shortestPath(const Txn &txn,
+                                   const RecordDescriptor &srcVertexRecordDescriptor,
+                                   const RecordDescriptor &dstVertexRecordDescriptor) {
+    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
+                                      PathFilter{});
+  }
+
+  ResultSet Traverse::shortestPath(const Txn &txn,
+                                   const RecordDescriptor &srcVertexRecordDescriptor,
+                                   const RecordDescriptor &dstVertexRecordDescriptor,
                                    const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeOut,
-                                            &Graph::getVertexDst,
-                                            pathFilter);
-    }
+    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
+                                      pathFilter);
+  }
 
-    ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeOut,
-                                                          &Graph::getVertexDst,
-                                                          PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
+  ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
+                                               const RecordDescriptor &srcVertexRecordDescriptor,
+                                               const RecordDescriptor &dstVertexRecordDescriptor) {
+    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
+                                                    edgeClassIds, PathFilter{});
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
 
-    }
-
-    ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth,
+  ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
+                                               const RecordDescriptor &srcVertexRecordDescriptor,
+                                               const RecordDescriptor &dstVertexRecordDescriptor,
                                                const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeOut,
-                                                          &Graph::getVertexDst,
-                                                          pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSet Traverse::allEdgeBfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeInOut,
-                                            nullptr,
-                                            PathFilter{});
-    }
-
-    ResultSet Traverse::allEdgeBfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth,
-                                   const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeInOut,
-                                            nullptr,
-                                            pathFilter);
-    }
-
-    ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeInOut,
-                                                          nullptr,
-                                                          PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth,
-                                               const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                          recordDescriptor,
-                                                          minDepth,
-                                                          maxDepth,
-                                                          edgeClassIds,
-                                                          &Graph::getEdgeInOut,
-                                                          nullptr,
-                                                          pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSet Traverse::inEdgeDfs(const Txn &txn,
-                                  const RecordDescriptor &recordDescriptor,
-                                  unsigned int minDepth,
-                                  unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeIn,
-                                           &Graph::getVertexSrc,
-                                           PathFilter{});
-    }
-
-    ResultSet Traverse::inEdgeDfs(const Txn &txn,
-                                  const RecordDescriptor &recordDescriptor,
-                                  unsigned int minDepth,
-                                  unsigned int maxDepth,
-                                  const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeIn,
-                                           &Graph::getVertexSrc,
-                                           pathFilter);
-    }
-
-    ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
-                                              const RecordDescriptor &recordDescriptor,
-                                              unsigned int minDepth,
-                                              unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeIn,
-                                                         &Graph::getVertexSrc,
-                                                         PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
-                                              const RecordDescriptor &recordDescriptor,
-                                              unsigned int minDepth,
-                                              unsigned int maxDepth,
-                                              const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeIn,
-                                                         &Graph::getVertexSrc,
-                                                         pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSet Traverse::outEdgeDfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeOut,
-                                           &Graph::getVertexDst,
-                                           PathFilter{});
-    }
-
-    ResultSet Traverse::outEdgeDfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth,
-                                   const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeOut,
-                                           &Graph::getVertexDst,
-                                           pathFilter);
-    }
-
-    ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeOut,
-                                                         &Graph::getVertexDst,
-                                                         PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth,
-                                               const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeOut,
-                                                         &Graph::getVertexDst,
-                                                         pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSet Traverse::allEdgeDfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeInOut,
-                                           nullptr,
-                                           PathFilter{});
-    }
-
-    ResultSet Traverse::allEdgeDfs(const Txn &txn,
-                                   const RecordDescriptor &recordDescriptor,
-                                   unsigned int minDepth,
-                                   unsigned int maxDepth,
-                                   const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::depthFirstSearch(txn,
-                                           recordDescriptor,
-                                           minDepth,
-                                           maxDepth,
-                                           edgeClassIds,
-                                           &Graph::getEdgeInOut,
-                                           nullptr,
-                                           pathFilter);
-    }
-
-    ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeInOut,
-                                                         nullptr,
-                                                         PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
-                                               const RecordDescriptor &recordDescriptor,
-                                               unsigned int minDepth,
-                                               unsigned int maxDepth,
-                                               const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                         recordDescriptor,
-                                                         minDepth,
-                                                         maxDepth,
-                                                         edgeClassIds,
-                                                         &Graph::getEdgeInOut,
-                                                         nullptr,
-                                                         pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSet Traverse::shortestPath(const Txn &txn,
-                                     const RecordDescriptor &srcVertexRecordDescriptor,
-                                     const RecordDescriptor &dstVertexRecordDescriptor) {
-        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
-                                          PathFilter{});
-    }
-
-    ResultSet Traverse::shortestPath(const Txn &txn,
-                                     const RecordDescriptor &srcVertexRecordDescriptor,
-                                     const RecordDescriptor &dstVertexRecordDescriptor,
-                                     const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
-                                          pathFilter);
-    }
-
-    ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
-                                                 const RecordDescriptor &srcVertexRecordDescriptor,
-                                                 const RecordDescriptor &dstVertexRecordDescriptor) {
-        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
-                                                        edgeClassIds, PathFilter{});
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
-
-    ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
-                                                 const RecordDescriptor &srcVertexRecordDescriptor,
-                                                 const RecordDescriptor &dstVertexRecordDescriptor,
-                                                 const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        auto result = ResultSetCursor{txn};
-        auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
-                                                        edgeClassIds, pathFilter);
-        result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-        return result;
-    }
+    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+    auto result = ResultSetCursor{txn};
+    auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
+                                                    edgeClassIds, pathFilter);
+    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
+    return result;
+  }
 
 }

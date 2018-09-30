@@ -29,56 +29,56 @@
 
 namespace nogdb {
 
-    namespace sql_parser { class Context; }
+  namespace sql_parser { class Context; }
 
-    struct SQL {
-        SQL() = delete;
+  struct SQL {
+    SQL() = delete;
 
-        ~SQL() noexcept = delete;
+    ~SQL() noexcept = delete;
 
-        SQL &operator=(const SQL &_) = delete;
+    SQL &operator=(const SQL &_) = delete;
 
-        class Result {
-        public:
-            friend class sql_parser::Context;
+    class Result {
+    public:
+      friend class sql_parser::Context;
 
-            Result() : t(NO_RESULT), value(nullptr) {}
+      Result() : t(NO_RESULT), value(nullptr) {}
 
-            enum Type {
-                NO_RESULT,
-                ERROR,
-                CLASS_DESCRIPTOR,
-                PROPERTY_DESCRIPTOR,
-                RECORD_DESCRIPTORS,
-                RESULT_SET
-            };
+      enum Type {
+        NO_RESULT,
+        ERROR,
+        CLASS_DESCRIPTOR,
+        PROPERTY_DESCRIPTOR,
+        RECORD_DESCRIPTORS,
+        RESULT_SET
+      };
 
-            inline Type type() const {
-                return this->t;
-            }
+      inline Type type() const {
+        return this->t;
+      }
 
-            template<typename T>
-            inline T &get() const {
-                return *std::static_pointer_cast<T>(this->value);
-            }
+      template<typename T>
+      inline T &get() const {
+        return *std::static_pointer_cast<T>(this->value);
+      }
 
-        protected:
-            Result(Type type_, std::shared_ptr<void> value_) : t(type_), value(value_) {}
+    protected:
+      Result(Type type_, std::shared_ptr<void> value_) : t(type_), value(value_) {}
 
-            Result(Error *error) : t(ERROR), value(error) {}
+      Result(Error *error) : t(ERROR), value(error) {}
 
-            Result(ClassDescriptor *classDescriptor) : t(CLASS_DESCRIPTOR), value(classDescriptor) {}
+      Result(ClassDescriptor *classDescriptor) : t(CLASS_DESCRIPTOR), value(classDescriptor) {}
 
-            Result(PropertyDescriptor *propertyDescriptor) : t(PROPERTY_DESCRIPTOR), value(propertyDescriptor) {}
+      Result(PropertyDescriptor *propertyDescriptor) : t(PROPERTY_DESCRIPTOR), value(propertyDescriptor) {}
 
-            Result(std::vector<RecordDescriptor> *recordDescriptor) : t(RECORD_DESCRIPTORS), value(recordDescriptor) {}
+      Result(std::vector<RecordDescriptor> *recordDescriptor) : t(RECORD_DESCRIPTORS), value(recordDescriptor) {}
 
-            Result(ResultSet *resultSet) : t(RESULT_SET), value(resultSet) {}
+      Result(ResultSet *resultSet) : t(RESULT_SET), value(resultSet) {}
 
-            Type t;
-            std::shared_ptr<void> value;
-        };
-
-        static const Result execute(Txn &txn, const std::string &sql);
+      Type t;
+      std::shared_ptr<void> value;
     };
+
+    static const Result execute(Txn &txn, const std::string &sql);
+  };
 }

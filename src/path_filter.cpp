@@ -23,29 +23,29 @@
 
 namespace nogdb {
 
-    PathFilter::PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record)) :
-            vertexFilter(vertexFunc), edgeFilter(edgeFunc) {}
+  PathFilter::PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record)) :
+      vertexFilter(vertexFunc), edgeFilter(edgeFunc) {}
 
-    PathFilter &PathFilter::setVertex(bool (*function)(const Record &record)) {
-        vertexFilter = function;
-        return *this;
-    }
+  PathFilter &PathFilter::setVertex(bool (*function)(const Record &record)) {
+    vertexFilter = function;
+    return *this;
+  }
 
-    PathFilter &PathFilter::setEdge(bool (*function)(const Record &record)) {
-        edgeFilter = function;
-        return *this;
-    }
+  PathFilter &PathFilter::setEdge(bool (*function)(const Record &record)) {
+    edgeFilter = function;
+    return *this;
+  }
 
-    bool PathFilter::isEnable() const {
-        return isSetVertex() || isSetEdge();
-    }
+  bool PathFilter::isEnable() const {
+    return isSetVertex() || isSetEdge();
+  }
 
-    bool PathFilter::isSetVertex() const {
-        return vertexFilter != nullptr;
-    }
+  bool PathFilter::isSetVertex() const {
+    return vertexFilter != nullptr;
+  }
 
-    bool PathFilter::isSetEdge() const {
-        return edgeFilter != nullptr;
-    }
+  bool PathFilter::isSetEdge() const {
+    return edgeFilter != nullptr;
+  }
 
 }

@@ -55,7 +55,7 @@
 #define NOGDB_CTX_OVERRIDE_PROPERTY             0x2040
 #define NOGDB_CTX_CONFLICT_PROPTYPE             0x2050
 #define NOGDB_CTX_IN_USED_PROPERTY              0x2060
-#define NOGDB_CTX_NOEXST_RECORD	                0x3000
+#define NOGDB_CTX_NOEXST_RECORD                  0x3000
 #define NOGDB_CTX_INVALID_COMPARATOR            0x4000
 #define NOGDB_CTX_INVALID_PROPTYPE_INDEX        0x6000
 #define NOGDB_CTX_NOEXST_INDEX                  0x6010
@@ -87,220 +87,220 @@
 
 namespace nogdb {
 
+  /**
+   *  NogDB generic error definition
+   */
+  class Error : public std::runtime_error {
+  public:
     /**
-     *  NogDB generic error definition
+     * Constructor
      */
-    class Error : public std::runtime_error {
-    public:
-        /**
-         * Constructor
-         */
-        Error(const int code, const std::string& func, const std::string& file, const int line) noexcept
-                : _code{code}, _func{func}, _file{file}, _line{line},
-                  runtime_error{func + " in " + file + ":" + std::to_string(line)} {}
+    Error(const int code, const std::string &func, const std::string &file, const int line) noexcept
+        : _code{code}, _func{func}, _file{file}, _line{line},
+          runtime_error{func + " in " + file + ":" + std::to_string(line)} {}
 
-        virtual int code() const noexcept {
-            return _code;
-        }
+    virtual int code() const noexcept {
+      return _code;
+    }
 
-        virtual std::string origin() const noexcept {
-            return runtime_error::what();
-        }
+    virtual std::string origin() const noexcept {
+      return runtime_error::what();
+    }
 
-        virtual const char* what() const noexcept {
-            return "NOGDB_UNKNOWN_ERR: Unknown";
-        }
+    virtual const char *what() const noexcept {
+      return "NOGDB_UNKNOWN_ERR: Unknown";
+    }
 
-    protected:
-        const int _code;
-        const std::string _func{};
-        const std::string _file{};
-        const int _line;
-    };
+  protected:
+    const int _code;
+    const std::string _func{};
+    const std::string _file{};
+    const int _line;
+  };
 
-    /**
-     * NogDB storage error definition
-     */
-    class StorageError : public Error {
-    public:
-        using Error::Error;
+  /**
+   * NogDB storage error definition
+   */
+  class StorageError : public Error {
+  public:
+    using Error::Error;
 
-        virtual const char *what() const noexcept {
-            return mdb_strerror(_code);
-        }
-    };
+    virtual const char *what() const noexcept {
+      return mdb_strerror(_code);
+    }
+  };
 
-    /**
-     * NogDB graph error definition
-     */
-    class GraphError : public Error {
-    public:
-        using Error::Error;
+  /**
+   * NogDB graph error definition
+   */
+  class GraphError : public Error {
+  public:
+    using Error::Error;
 
-        virtual const char *what() const noexcept {
-            switch (_code) {
-                case NOGDB_GRAPH_DUP_VERTEX:
-                    return "NOGDB_GRAPH_DUP_VERTEX: A duplicated vertex in a graph";
-                case NOGDB_GRAPH_NOEXST_VERTEX:
-                    return "NOGDB_GRAPH_NOEXST_VERTEX: A vertex doesn't exist";
-                case NOGDB_GRAPH_NOEXST_SRC:
-                    return "NOGDB_GRAPH_NOEXST_SRC: A source vertex doesn't exist";
-                case NOGDB_GRAPH_NOEXST_DST:
-                    return "NOGDB_GRAPH_NOEXST_DST: A destination vertex doesn't exist";
-                case NOGDB_GRAPH_DUP_EDGE:
-                    return "NOGDB_GRAPH_DUP_EDGE: A duplicated edge in a graph";
-                case NOGDB_GRAPH_NOEXST_EDGE:
-                    return "NOGDB_GRAPH_NOEXST_EDGE: An edge doesn't exist";
-                case NOGDB_GRAPH_UNKNOWN_ERR:
-                default:
-                    return "NOGDB_GRAPH_UNKNOWN_ERR: Unknown";
-            }
-        }
-    };
+    virtual const char *what() const noexcept {
+      switch (_code) {
+        case NOGDB_GRAPH_DUP_VERTEX:
+          return "NOGDB_GRAPH_DUP_VERTEX: A duplicated vertex in a graph";
+        case NOGDB_GRAPH_NOEXST_VERTEX:
+          return "NOGDB_GRAPH_NOEXST_VERTEX: A vertex doesn't exist";
+        case NOGDB_GRAPH_NOEXST_SRC:
+          return "NOGDB_GRAPH_NOEXST_SRC: A source vertex doesn't exist";
+        case NOGDB_GRAPH_NOEXST_DST:
+          return "NOGDB_GRAPH_NOEXST_DST: A destination vertex doesn't exist";
+        case NOGDB_GRAPH_DUP_EDGE:
+          return "NOGDB_GRAPH_DUP_EDGE: A duplicated edge in a graph";
+        case NOGDB_GRAPH_NOEXST_EDGE:
+          return "NOGDB_GRAPH_NOEXST_EDGE: An edge doesn't exist";
+        case NOGDB_GRAPH_UNKNOWN_ERR:
+        default:
+          return "NOGDB_GRAPH_UNKNOWN_ERR: Unknown";
+      }
+    }
+  };
 
-    /**
-     * NogDB context error definition
-     */
-    class ContextError : public Error {
-    public:
-        using Error::Error;
+  /**
+   * NogDB context error definition
+   */
+  class ContextError : public Error {
+  public:
+    using Error::Error;
 
-        virtual const char *what() const noexcept {
-            switch (_code) {
-                case NOGDB_CTX_INVALID_CLASSTYPE:
-                    return "NOGDB_CTX_INVALID_CLASSTYPE: A type of class is not valid";
-                case NOGDB_CTX_DUPLICATE_CLASS:
-                    return "NOGDB_CTX_DUPLICATE_CLASS: A specified class name has already existed";
-                case NOGDB_CTX_NOEXST_CLASS:
-                    return "NOGDB_CTX_NOEXST_CLASS: A class does not exist";
-                case NOGDB_CTX_INVALID_PROPTYPE:
-                    return "NOGDB_CTX_INVALID_PROPTYPE: A type of property is not valid";
-                case NOGDB_CTX_DUPLICATE_PROPERTY:
-                    return "NOGDB_CTX_DUPLICATE_PROPERTY: A specified property name has already existed";
-                case NOGDB_CTX_OVERRIDE_PROPERTY:
-                    return "NOGDB_CTX_OVERRIDE_PROPERTY: A specified property name has already existed in some sub-classes";
-                case NOGDB_CTX_NOEXST_PROPERTY:
-                    return "NOGDB_CTX_NOEXST_PROPERTY: A property does not exist";
-                case NOGDB_CTX_CONFLICT_PROPTYPE:
-                    return "NOGDB_CTX_CONFLICT_PROPTYPE: Some properties do not have the same type";
-                case NOGDB_CTX_IN_USED_PROPERTY:
-                    return "NOGDB_CTX_IN_USED_PROPERTY: A property is used by one or more database indexes";
-                case NOGDB_CTX_NOEXST_RECORD:
-                    return "NOGDB_CTX_NOEXST_RECORD: A record with the given descriptor doesn't exist";
-                case NOGDB_CTX_MISMATCH_CLASSTYPE:
-                    return "NOGDB_CTX_MISMATCH_CLASSTYPE: A type of a class does not match as expected";
-                case NOGDB_CTX_INTERNAL_ERR:
-                    return "NOGDB_CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
-                case NOGDB_CTX_INVALID_COMPARATOR:
-                    return "NOGDB_CTX_INVALID_COMPARATOR: A comparator is not defined";
-                case NOGDB_CTX_INVALID_CLASSNAME:
-                    return "NOGDB_CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
-                case NOGDB_CTX_INVALID_PROPERTYNAME:
-                    return "NOGDB_CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
-                case NOGDB_CTX_IS_LOCKED:
-                    return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
-                case NOGDB_CTX_LIMIT_DBSCHEMA:
-                    return "NOGDB_CTX_LIMIT_DBSCHEMA: A limitation of a database schema has been reached";
-                case NOGDB_CTX_NOT_IMPLEMENTED:
-                    return "NOGDB_CTX_NOT_IMPLEMENTED: A function or class has not been implemented yet";
-                case NOGDB_CTX_INVALID_PROPTYPE_INDEX:
-                    return "NOGDB_CTX_INVALID_PROPTYPE_INDEX: A property type doesn't support database indexing";
-                case NOGDB_CTX_NOEXST_INDEX:
-                    return "NOGDB_CTX_NOEXST_INDEX: An index doesn't exist on given class and property";
-                case NOGDB_CTX_DUPLICATE_INDEX:
-                    return "NOGDB_CTX_DUPLICATE_INDEX: A specified index has already existed";
-                case NOGDB_CTX_INVALID_INDEX_CONSTRAINT:
-                    return "NOGDB_CTX_INVALID_INDEX_CONSTRAINT: An index couldn't be created with a unique constraint due to some duplicated values in existing records";
-                case NOGDB_CTX_UNIQUE_CONSTRAINT:
-                    return "NOGDB_CTX_UNIQUE_CONSTRAINT: A record has some duplicated values when a unique constraint is applied";
-                case NOGDB_CTX_UNKNOWN_ERR:
-                default:
-                    return "NOGDB_CTX_UNKNOWN_ERR: Unknown";
-            }
-        }
+    virtual const char *what() const noexcept {
+      switch (_code) {
+        case NOGDB_CTX_INVALID_CLASSTYPE:
+          return "NOGDB_CTX_INVALID_CLASSTYPE: A type of class is not valid";
+        case NOGDB_CTX_DUPLICATE_CLASS:
+          return "NOGDB_CTX_DUPLICATE_CLASS: A specified class name has already existed";
+        case NOGDB_CTX_NOEXST_CLASS:
+          return "NOGDB_CTX_NOEXST_CLASS: A class does not exist";
+        case NOGDB_CTX_INVALID_PROPTYPE:
+          return "NOGDB_CTX_INVALID_PROPTYPE: A type of property is not valid";
+        case NOGDB_CTX_DUPLICATE_PROPERTY:
+          return "NOGDB_CTX_DUPLICATE_PROPERTY: A specified property name has already existed";
+        case NOGDB_CTX_OVERRIDE_PROPERTY:
+          return "NOGDB_CTX_OVERRIDE_PROPERTY: A specified property name has already existed in some sub-classes";
+        case NOGDB_CTX_NOEXST_PROPERTY:
+          return "NOGDB_CTX_NOEXST_PROPERTY: A property does not exist";
+        case NOGDB_CTX_CONFLICT_PROPTYPE:
+          return "NOGDB_CTX_CONFLICT_PROPTYPE: Some properties do not have the same type";
+        case NOGDB_CTX_IN_USED_PROPERTY:
+          return "NOGDB_CTX_IN_USED_PROPERTY: A property is used by one or more database indexes";
+        case NOGDB_CTX_NOEXST_RECORD:
+          return "NOGDB_CTX_NOEXST_RECORD: A record with the given descriptor doesn't exist";
+        case NOGDB_CTX_MISMATCH_CLASSTYPE:
+          return "NOGDB_CTX_MISMATCH_CLASSTYPE: A type of a class does not match as expected";
+        case NOGDB_CTX_INTERNAL_ERR:
+          return "NOGDB_CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
+        case NOGDB_CTX_INVALID_COMPARATOR:
+          return "NOGDB_CTX_INVALID_COMPARATOR: A comparator is not defined";
+        case NOGDB_CTX_INVALID_CLASSNAME:
+          return "NOGDB_CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
+        case NOGDB_CTX_INVALID_PROPERTYNAME:
+          return "NOGDB_CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
+        case NOGDB_CTX_IS_LOCKED:
+          return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
+        case NOGDB_CTX_LIMIT_DBSCHEMA:
+          return "NOGDB_CTX_LIMIT_DBSCHEMA: A limitation of a database schema has been reached";
+        case NOGDB_CTX_NOT_IMPLEMENTED:
+          return "NOGDB_CTX_NOT_IMPLEMENTED: A function or class has not been implemented yet";
+        case NOGDB_CTX_INVALID_PROPTYPE_INDEX:
+          return "NOGDB_CTX_INVALID_PROPTYPE_INDEX: A property type doesn't support database indexing";
+        case NOGDB_CTX_NOEXST_INDEX:
+          return "NOGDB_CTX_NOEXST_INDEX: An index doesn't exist on given class and property";
+        case NOGDB_CTX_DUPLICATE_INDEX:
+          return "NOGDB_CTX_DUPLICATE_INDEX: A specified index has already existed";
+        case NOGDB_CTX_INVALID_INDEX_CONSTRAINT:
+          return "NOGDB_CTX_INVALID_INDEX_CONSTRAINT: An index couldn't be created with a unique constraint due to some duplicated values in existing records";
+        case NOGDB_CTX_UNIQUE_CONSTRAINT:
+          return "NOGDB_CTX_UNIQUE_CONSTRAINT: A record has some duplicated values when a unique constraint is applied";
+        case NOGDB_CTX_UNKNOWN_ERR:
+        default:
+          return "NOGDB_CTX_UNKNOWN_ERR: Unknown";
+      }
+    }
 
-    };
+  };
 
-    /**
-     * NogDB transaction error definition
-     */
-    class TxnError : public Error {
-    public:
-        using Error::Error;
+  /**
+   * NogDB transaction error definition
+   */
+  class TxnError : public Error {
+  public:
+    using Error::Error;
 
-        virtual const char *what() const noexcept {
-            switch (_code) {
-                case NOGDB_TXN_INVALID_MODE:
-                    return "NOGDB_TXN_INVALID_MODE: An operation couldn't be executed due to an invalid transaction mode";
-                case NOGDB_TXN_COMPLETED:
-                    return "NOGDB_TXN_COMPLETED: An operation couldn't be executed due to a completed transaction";
-                case NOGDB_TXN_UNKNOWN_ERR:
-                default:
-                    return "NOGDB_TXN_UNKNOWN_ERR: Unknown";
-            }
-        }
-    };
+    virtual const char *what() const noexcept {
+      switch (_code) {
+        case NOGDB_TXN_INVALID_MODE:
+          return "NOGDB_TXN_INVALID_MODE: An operation couldn't be executed due to an invalid transaction mode";
+        case NOGDB_TXN_COMPLETED:
+          return "NOGDB_TXN_COMPLETED: An operation couldn't be executed due to a completed transaction";
+        case NOGDB_TXN_UNKNOWN_ERR:
+        default:
+          return "NOGDB_TXN_UNKNOWN_ERR: Unknown";
+      }
+    }
+  };
 
-    /**
-     * NogDB SQL error definition
-     */
-    class SQLError : public Error {
-    public:
-        using Error::Error;
+  /**
+   * NogDB SQL error definition
+   */
+  class SQLError : public Error {
+  public:
+    using Error::Error;
 
-        virtual const char *what() const noexcept {
-            switch(_code) {
-                case NOGDB_SQL_UNRECOGNIZED_TOKEN:
-                    return "NOGDB_SQL_UNRECOGNIZED_TOKEN: A SQL has some word or keyword that can't recognize.";
-                case NOGDB_SQL_SYNTAX_ERROR:
-                    return "NOGDB_SQL_SYNTAX_ERROR: A SQL syntax error.";
-                case NOGDB_SQL_STACK_OVERFLOW:
-                    return "NOGDB_SQL_STACK_OVERFLOW: A parser stack overflow.";
-                case NOGDB_SQL_NUMBER_FORMAT_EXCEPTION:
-                    return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or overlimit.";
-                case NOGDB_SQL_INVALID_ALTER_ATTR:
-                    return "NOGDB_SQL_INVALID_ALTER_ATTR: A attribute of alter is invalid (or unknown).";
-                case NOGDB_SQL_INVALID_COMPARATOR:
-                    return "NOGDB_SQL_INVALID_COMPARATOR: A comparator is invalid for this function.";
-                case NOGDB_SQL_INVALID_FUNCTION_NAME:
-                    return "NOGDB_SQL_INVALID_FUNCTION_NAME: A function name is invalid (or unknown).";
-                case NOGDB_SQL_INVALID_FUNCTION_ARGS:
-                    return "NOGDB_SQL_INVALID_FUNCTION_ARGS: A arguments of function is invalid (invalid args).";
-                case NOGDB_SQL_INVALID_PROJECTION:
-                    return "NOGDB_SQL_INVALID_PROJECTION: Projection(s) of select statement is invalid.";
-                case NOGDB_SQL_INVALID_TRAVERSE_DIRECTION:
-                    return "NOGDB_SQL_INVALID_TRAVERSE_DIRECTION: Traverse direction must be in, out or all.";
-                case NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH:
-                    return "NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH: Traverse minimum depth must be unsigned integer.";
-                case NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH:
-                    return "NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH: Traverse maximum depth must be unsigned integer.";
-                case NOGDB_SQL_INVALID_TRAVERSE_STRATEGY:
-                    return "NOGDB_SQL_INVALID_TRAVERSE_STRATEGY: Traverse strategy must be DEPTH_FIRST or BREADTH_FIRST.";
-                case NOGDB_SQL_INVALID_PROJECTION_METHOD:
-                    return "NOGDB_SQL_INVALID_PROJECTION_METHOD: Projection method has some problem (invalid results).";
-                case NOGDB_SQL_NOT_IMPLEMENTED:
-                    return "NOGDB_SQL_NOT_IMPLEMENTED: A function has not been implemented yet.";
-                case NOGDB_SQL_UNKNOWN_ERR:
-                default:
-                    return "NOGDB_SQL_UNKNOWN_ERROR: Unknown";
-            }
-        }
-    };
+    virtual const char *what() const noexcept {
+      switch (_code) {
+        case NOGDB_SQL_UNRECOGNIZED_TOKEN:
+          return "NOGDB_SQL_UNRECOGNIZED_TOKEN: A SQL has some word or keyword that can't recognize.";
+        case NOGDB_SQL_SYNTAX_ERROR:
+          return "NOGDB_SQL_SYNTAX_ERROR: A SQL syntax error.";
+        case NOGDB_SQL_STACK_OVERFLOW:
+          return "NOGDB_SQL_STACK_OVERFLOW: A parser stack overflow.";
+        case NOGDB_SQL_NUMBER_FORMAT_EXCEPTION:
+          return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or overlimit.";
+        case NOGDB_SQL_INVALID_ALTER_ATTR:
+          return "NOGDB_SQL_INVALID_ALTER_ATTR: A attribute of alter is invalid (or unknown).";
+        case NOGDB_SQL_INVALID_COMPARATOR:
+          return "NOGDB_SQL_INVALID_COMPARATOR: A comparator is invalid for this function.";
+        case NOGDB_SQL_INVALID_FUNCTION_NAME:
+          return "NOGDB_SQL_INVALID_FUNCTION_NAME: A function name is invalid (or unknown).";
+        case NOGDB_SQL_INVALID_FUNCTION_ARGS:
+          return "NOGDB_SQL_INVALID_FUNCTION_ARGS: A arguments of function is invalid (invalid args).";
+        case NOGDB_SQL_INVALID_PROJECTION:
+          return "NOGDB_SQL_INVALID_PROJECTION: Projection(s) of select statement is invalid.";
+        case NOGDB_SQL_INVALID_TRAVERSE_DIRECTION:
+          return "NOGDB_SQL_INVALID_TRAVERSE_DIRECTION: Traverse direction must be in, out or all.";
+        case NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH:
+          return "NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH: Traverse minimum depth must be unsigned integer.";
+        case NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH:
+          return "NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH: Traverse maximum depth must be unsigned integer.";
+        case NOGDB_SQL_INVALID_TRAVERSE_STRATEGY:
+          return "NOGDB_SQL_INVALID_TRAVERSE_STRATEGY: Traverse strategy must be DEPTH_FIRST or BREADTH_FIRST.";
+        case NOGDB_SQL_INVALID_PROJECTION_METHOD:
+          return "NOGDB_SQL_INVALID_PROJECTION_METHOD: Projection method has some problem (invalid results).";
+        case NOGDB_SQL_NOT_IMPLEMENTED:
+          return "NOGDB_SQL_NOT_IMPLEMENTED: A function has not been implemented yet.";
+        case NOGDB_SQL_UNKNOWN_ERR:
+        default:
+          return "NOGDB_SQL_UNKNOWN_ERROR: Unknown";
+      }
+    }
+  };
 
-    /**
-     * NogDB Fatal error definition
-     */
-    class FatalError : public Error {
-    public:
-        explicit FatalError(const Error& error) : _error{&error}, Error{error} {}
+  /**
+   * NogDB Fatal error definition
+   */
+  class FatalError : public Error {
+  public:
+    explicit FatalError(const Error &error) : _error{&error}, Error{error} {}
 
-        virtual const char *what() const noexcept {
-            return "(FATAL)" + std::string{_error->what()};
-        }
+    virtual const char *what() const noexcept {
+      return "(FATAL)" + std::string{_error->what()};
+    }
 
-    private:
-        const Error * const _error;
-    };
+  private:
+    const Error *const _error;
+  };
 
 #define NOGDB_ERROR(error)              nogdb::Error(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_STORAGE_ERROR(error)      nogdb::StorageError(error,__FUNCTION__, __FILE__,__LINE__)

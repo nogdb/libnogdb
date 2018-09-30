@@ -40,74 +40,74 @@
 
 namespace nogdb {
 
-    namespace adapter {
+  namespace adapter {
 
-        namespace index {
+    namespace index {
 
-            using namespace schema;
+      using namespace schema;
 
-            class IndexRecord : public storage_engine::adapter::LMDBKeyValAccess {
-            public:
-                IndexRecord(const storage_engine::LMDBTxn *const txn, const IndexId& indexId, const unsigned int flags)
-                    : _positive{getPositiveFlag(flags)}, _numeric{getNumericFlag(flags)}, _unique{getUniqueFlag(flags)},
-                    LMDBKeyValAccess(txn, buildIndexName(indexId, _positive), _numeric, _unique, false, false) {}
+      class IndexRecord : public storage_engine::adapter::LMDBKeyValAccess {
+      public:
+        IndexRecord(const storage_engine::LMDBTxn *const txn, const IndexId &indexId, const unsigned int flags)
+            : _positive{getPositiveFlag(flags)}, _numeric{getNumericFlag(flags)}, _unique{getUniqueFlag(flags)},
+              LMDBKeyValAccess(txn, buildIndexName(indexId, _positive), _numeric, _unique, false, false) {}
 
-                virtual ~IndexRecord() noexcept = default;
+        virtual ~IndexRecord() noexcept = default;
 
-                IndexRecord(IndexRecord&& other) noexcept {
-                    *this = std::move(other);
-                }
-
-                IndexRecord& operator=(IndexRecord&& other) noexcept {
-                    if (this != &other) {
-                        using std::swap;
-                        swap(*this, other);
-                    }
-                    return *this;
-                }
-
-                template<typename K>
-                void create(const K& key, const Blob& blob) {
-                    put(key, blob);
-                }
-
-                void destroy() {
-                    drop(true);
-                }
-
-                storage_engine::lmdb::Cursor getCursor() const {
-                    return cursor();
-                }
-
-            private:
-                bool _positive;
-                bool _numeric;
-                bool _unique;
-
-                static std::string buildIndexName(const IndexId& indexId, bool positive) {
-                    auto indexName = TB_INDEXING_PREFIX + std::to_string(indexId);
-                    if (!positive) {
-                        return indexName + "_n";
-                    } else {
-                        return indexName;
-                    }
-                }
-
-                static bool getPositiveFlag(const unsigned int flags) {
-                    return ((flags & INDEX_TYPE_NEGATIVE) == INDEX_TYPE_POSITIVE);
-                }
-
-                static bool getNumericFlag(const unsigned int flags) {
-                    return ((flags & INDEX_TYPE_STRING) == INDEX_TYPE_NUMERIC);
-                }
-
-                static bool getUniqueFlag(const unsigned int flags) {
-                    return ((flags & INDEX_TYPE_NON_UNIQUE) == INDEX_TYPE_UNIQUE);
-                }
-
-            };
-
+        IndexRecord(IndexRecord &&other) noexcept {
+          *this = std::move(other);
         }
 
+        IndexRecord &operator=(IndexRecord &&other) noexcept {
+          if (this != &other) {
+            using std::swap;
+            swap(*this, other);
+          }
+          return *this;
+        }
+
+        template<typename K>
+        void create(const K &key, const Blob &blob) {
+          put(key, blob);
+        }
+
+        void destroy() {
+          drop(true);
+        }
+
+        storage_engine::lmdb::Cursor getCursor() const {
+          return cursor();
+        }
+
+      private:
+        bool _positive;
+        bool _numeric;
+        bool _unique;
+
+        static std::string buildIndexName(const IndexId &indexId, bool positive) {
+          auto indexName = TB_INDEXING_PREFIX + std::to_string(indexId);
+          if (!positive) {
+            return indexName + "_n";
+          } else {
+            return indexName;
+          }
+        }
+
+        static bool getPositiveFlag(const unsigned int flags) {
+          return ((flags & INDEX_TYPE_NEGATIVE) == INDEX_TYPE_POSITIVE);
+        }
+
+        static bool getNumericFlag(const unsigned int flags) {
+          return ((flags & INDEX_TYPE_STRING) == INDEX_TYPE_NUMERIC);
+        }
+
+        static bool getUniqueFlag(const unsigned int flags) {
+          return ((flags & INDEX_TYPE_NON_UNIQUE) == INDEX_TYPE_UNIQUE);
+        }
+
+      };
+
     }
+
+  }
 }

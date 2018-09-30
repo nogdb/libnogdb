@@ -34,351 +34,351 @@
 
 namespace nogdb {
 
-    namespace index {
-        class IndexInterface;
+  namespace index {
+    class IndexInterface;
+  }
+
+  class MultiCondition;
+
+  class Condition {
+  private:
+    enum class Comparator;
+
+  public:
+    friend class Compare;
+
+    friend class MultiCondition;
+
+    friend class datarecord::DataRecordInterface;
+
+    friend class index::IndexInterface;
+
+    Condition(const std::string &propName_);
+
+    ~Condition() noexcept = default;
+
+    template<typename T>
+    Condition eq(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::EQUAL;
+      return tmp;
     }
 
-    class MultiCondition;
+    template<typename T>
+    Condition gt(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::GREATER;
+      return tmp;
+    }
 
-    class Condition {
-    private:
-        enum class Comparator;
+    template<typename T>
+    Condition lt(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LESS;
+      return tmp;
+    }
 
-    public:
-        friend class Compare;
+    template<typename T>
+    Condition ge(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::GREATER_EQUAL;
+      return tmp;
+    }
 
-        friend class MultiCondition;
+    template<typename T>
+    Condition le(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LESS_EQUAL;
+      return tmp;
+    }
 
-        friend class datarecord::DataRecordInterface;
+    template<typename T>
+    Condition contain(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::CONTAIN;
+      return tmp;
+    }
 
-        friend class index::IndexInterface;
+    template<typename T>
+    Condition beginWith(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::BEGIN_WITH;
+      return tmp;
+    }
 
-        Condition(const std::string &propName_);
+    template<typename T>
+    Condition endWith(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::END_WITH;
+      return tmp;
+    }
 
-        ~Condition() noexcept = default;
+    template<typename T>
+    Condition like(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LIKE;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition eq(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::EQUAL;
-            return tmp;
-        }
+    template<typename T>
+    Condition regex(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::REGEX;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition gt(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::GREATER;
-            return tmp;
-        }
+    Condition ignoreCase() const {
+      auto tmp(*this);
+      tmp.isIgnoreCase = true;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition lt(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::LESS;
-            return tmp;
-        }
+    Condition null() const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{};
+      tmp.comp = Comparator::IS_NULL;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition ge(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::GREATER_EQUAL;
-            return tmp;
-        }
+    template<typename T>
+    Condition between(T lower_, T upper_, const std::pair<bool, bool> isIncludeBound = {true, true}) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{Bytes{lower_}, Bytes{upper_}};
+      if (!isIncludeBound.first && !isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_BOUND;
+      } else if (!isIncludeBound.first && isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_LOWER;
+      } else if (isIncludeBound.first && !isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_UPPER;
+      } else {
+        tmp.comp = Comparator::BETWEEN;
+      }
+      return tmp;
+    }
 
-        template<typename T>
-        Condition le(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::LESS_EQUAL;
-            return tmp;
-        }
+    template<typename T>
+    Condition in(const std::vector<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition contain(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::CONTAIN;
-            return tmp;
-        }
+    template<typename T>
+    Condition in(const std::list<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition beginWith(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::BEGIN_WITH;
-            return tmp;
-        }
+    template<typename T>
+    Condition in(const std::set<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition endWith(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::END_WITH;
-            return tmp;
-        }
+    template<typename T>
+    Condition in(const T &value) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{Bytes{value}};
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
 
-        template<typename T>
-        Condition like(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::LIKE;
-            return tmp;
-        }
+    template<typename T, typename... U>
+    Condition in(const T &head, const U &... tail) const {
+      auto tmp = in(head);
+      for (const auto &value: in(tail...).valueSet) {
+        tmp.valueSet.emplace_back(value);
+      }
+      return tmp;
+    }
 
-        template<typename T>
-        Condition regex(T value_) const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{value_};
-            tmp.comp = Comparator::REGEX;
-            return tmp;
-        }
+    MultiCondition operator&&(const Condition &c) const;
 
-        Condition ignoreCase() const {
-            auto tmp(*this);
-            tmp.isIgnoreCase = true;
-            return tmp;
-        }
+    MultiCondition operator&&(const MultiCondition &e) const;
 
-        Condition null() const {
-            auto tmp(*this);
-            tmp.valueBytes = Bytes{};
-            tmp.comp = Comparator::IS_NULL;
-            return tmp;
-        }
+    MultiCondition operator||(const Condition &c) const;
 
-        template<typename T>
-        Condition between(T lower_, T upper_, const std::pair<bool, bool> isIncludeBound = {true, true}) const {
-            auto tmp(*this);
-            tmp.valueSet = std::vector<Bytes>{Bytes{lower_}, Bytes{upper_}};
-            if (!isIncludeBound.first && !isIncludeBound.second) {
-                tmp.comp = Comparator::BETWEEN_NO_BOUND;
-            } else if (!isIncludeBound.first && isIncludeBound.second) {
-                tmp.comp = Comparator::BETWEEN_NO_LOWER;
-            } else if (isIncludeBound.first && !isIncludeBound.second) {
-                tmp.comp = Comparator::BETWEEN_NO_UPPER;
-            } else {
-                tmp.comp = Comparator::BETWEEN;
-            }
-            return tmp;
-        }
+    MultiCondition operator||(const MultiCondition &e) const;
 
-        template<typename T>
-        Condition in(const std::vector<T> &values) const {
-            auto tmp(*this);
-            tmp.valueSet = std::vector<Bytes>{};
-            for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
-                tmp.valueSet.emplace_back(Bytes{*iter});
-            }
-            tmp.comp = Comparator::IN;
-            return tmp;
-        }
+    Condition operator!() const;
 
-        template<typename T>
-        Condition in(const std::list<T> &values) const {
-            auto tmp(*this);
-            tmp.valueSet = std::vector<Bytes>{};
-            for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
-                tmp.valueSet.emplace_back(Bytes{*iter});
-            }
-            tmp.comp = Comparator::IN;
-            return tmp;
-        }
+  private:
+    std::string propName;
+    Bytes valueBytes;
+    std::vector<Bytes> valueSet;
+    Comparator comp;
+    bool isIgnoreCase{false};
+    bool isNegative{false};
 
-        template<typename T>
-        Condition in(const std::set<T> &values) const {
-            auto tmp(*this);
-            tmp.valueSet = std::vector<Bytes>{};
-            for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
-                tmp.valueSet.emplace_back(Bytes{*iter});
-            }
-            tmp.comp = Comparator::IN;
-            return tmp;
-        }
+    enum class Comparator {
+      IS_NULL,
+      NOT_NULL,
+      EQUAL,
+      GREATER,
+      LESS,
+      GREATER_EQUAL,
+      LESS_EQUAL,
+      CONTAIN,
+      BEGIN_WITH,
+      END_WITH,
+      LIKE,
+      REGEX,
+      IN,
+      BETWEEN,
+      BETWEEN_NO_UPPER,
+      BETWEEN_NO_LOWER,
+      BETWEEN_NO_BOUND
+    };
+  };
 
-        template<typename T>
-        Condition in(const T &value) const {
-            auto tmp(*this);
-            tmp.valueSet = std::vector<Bytes>{Bytes{value}};
-            tmp.comp = Comparator::IN;
-            return tmp;
-        }
-
-        template<typename T, typename... U>
-        Condition in(const T &head, const U &... tail) const {
-            auto tmp = in(head);
-            for (const auto &value: in(tail...).valueSet) {
-                tmp.valueSet.emplace_back(value);
-            }
-            return tmp;
-        }
-
-        MultiCondition operator&&(const Condition &c) const;
-
-        MultiCondition operator&&(const MultiCondition &e) const;
-
-        MultiCondition operator||(const Condition &c) const;
-
-        MultiCondition operator||(const MultiCondition &e) const;
-
-        Condition operator!() const;
-
-    private:
-        std::string propName;
-        Bytes valueBytes;
-        std::vector<Bytes> valueSet;
-        Comparator comp;
-        bool isIgnoreCase{false};
-        bool isNegative{false};
-
-        enum class Comparator {
-            IS_NULL,
-            NOT_NULL,
-            EQUAL,
-            GREATER,
-            LESS,
-            GREATER_EQUAL,
-            LESS_EQUAL,
-            CONTAIN,
-            BEGIN_WITH,
-            END_WITH,
-            LIKE,
-            REGEX,
-            IN,
-            BETWEEN,
-            BETWEEN_NO_UPPER,
-            BETWEEN_NO_LOWER,
-            BETWEEN_NO_BOUND
-        };
+  class MultiCondition {
+  private:
+    enum Operator {
+      AND, OR
     };
 
-    class MultiCondition {
-    private:
-        enum Operator {
-            AND, OR
-        };
+    class CompositeNode;
 
-        class CompositeNode;
+    class ConditionNode;
 
-        class ConditionNode;
+  public:
+    friend class Compare;
 
+    friend class Condition;
+
+    friend class datarecord::DataRecordInterface;
+
+    friend class index::IndexInterface;
+
+    MultiCondition() = delete;
+
+    MultiCondition &operator&&(const MultiCondition &e);
+
+    MultiCondition &operator&&(const Condition &c);
+
+    MultiCondition &operator||(const MultiCondition &e);
+
+    MultiCondition &operator||(const Condition &c);
+
+    MultiCondition operator!() const;
+
+    bool execute(const Record &r, const PropertyMapType &propType) const;
+
+  private:
+    std::shared_ptr<CompositeNode> root;
+    std::vector<std::weak_ptr<ConditionNode>> conditions;
+
+    MultiCondition(const Condition &c1, const Condition &c2, Operator opt);
+
+    MultiCondition(const Condition &c, const MultiCondition &e, Operator opt);
+
+    class ExprNode {
     public:
-        friend class Compare;
+      explicit ExprNode(bool isCondition_);
 
-        friend class Condition;
+      virtual ~ExprNode() noexcept = default;
 
-        friend class datarecord::DataRecordInterface;
+      virtual bool check(const Record &r, const PropertyMapType &propType) const = 0;
 
-        friend class index::IndexInterface;
-
-        MultiCondition() = delete;
-
-        MultiCondition &operator&&(const MultiCondition &e);
-
-        MultiCondition &operator&&(const Condition &c);
-
-        MultiCondition &operator||(const MultiCondition &e);
-
-        MultiCondition &operator||(const Condition &c);
-
-        MultiCondition operator!() const;
-
-        bool execute(const Record &r, const PropertyMapType &propType) const;
+      bool checkIfCondition() const;
 
     private:
-        std::shared_ptr<CompositeNode> root;
-        std::vector<std::weak_ptr<ConditionNode>> conditions;
-
-        MultiCondition(const Condition &c1, const Condition &c2, Operator opt);
-
-        MultiCondition(const Condition &c, const MultiCondition &e, Operator opt);
-
-        class ExprNode {
-        public:
-            explicit ExprNode(bool isCondition_);
-
-            virtual ~ExprNode() noexcept = default;
-
-            virtual bool check(const Record &r, const PropertyMapType &propType) const = 0;
-
-            bool checkIfCondition() const;
-
-        private:
-            bool isCondition;
-        };
-
-        class ConditionNode : public ExprNode {
-        public:
-            explicit ConditionNode(const Condition &cond_);
-
-            ~ConditionNode() noexcept override = default;
-
-            virtual bool check(const Record &r, const PropertyMapType &propType) const override;
-
-            const Condition &getCondition() const;
-
-        private:
-            Condition cond;
-        };
-
-        class CompositeNode : public ExprNode {
-        public:
-            CompositeNode(const std::shared_ptr<ExprNode> &left_,
-                          const std::shared_ptr<ExprNode> &right_,
-                          Operator opt_,
-                          bool isNegative_ = false);
-
-            ~CompositeNode() noexcept override = default;
-
-            virtual bool check(const Record &r, const PropertyMapType &propType) const override;
-
-            const std::shared_ptr<ExprNode> &getLeftNode() const;
-
-            const std::shared_ptr<ExprNode> &getRightNode() const;
-
-            const Operator &getOperator() const;
-
-            bool getIsNegative() const;
-
-        private:
-            std::shared_ptr<ExprNode> left;
-            std::shared_ptr<ExprNode> right;
-            Operator opt;
-            bool isNegative;
-        };
+      bool isCondition;
     };
 
-    class PathFilter {
+    class ConditionNode : public ExprNode {
     public:
-        friend struct Algorithm;
+      explicit ConditionNode(const Condition &cond_);
 
-        PathFilter() = default;
+      ~ConditionNode() noexcept override = default;
 
-        PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record));
+      virtual bool check(const Record &r, const PropertyMapType &propType) const override;
 
-        ~PathFilter() noexcept = default;
-
-        PathFilter &setVertex(bool (*function)(const Record &record));
-
-        PathFilter &setEdge(bool (*function)(const Record &record));
-
-        bool isEnable() const;
-
-        bool isSetVertex() const;
-
-        bool isSetEdge() const;
+      const Condition &getCondition() const;
 
     private:
-        bool (*vertexFilter)(const Record &record) {
-            nullptr
-        };
-
-        bool (*edgeFilter)(const Record &record) {
-            nullptr
-        };
+      Condition cond;
     };
+
+    class CompositeNode : public ExprNode {
+    public:
+      CompositeNode(const std::shared_ptr<ExprNode> &left_,
+                    const std::shared_ptr<ExprNode> &right_,
+                    Operator opt_,
+                    bool isNegative_ = false);
+
+      ~CompositeNode() noexcept override = default;
+
+      virtual bool check(const Record &r, const PropertyMapType &propType) const override;
+
+      const std::shared_ptr<ExprNode> &getLeftNode() const;
+
+      const std::shared_ptr<ExprNode> &getRightNode() const;
+
+      const Operator &getOperator() const;
+
+      bool getIsNegative() const;
+
+    private:
+      std::shared_ptr<ExprNode> left;
+      std::shared_ptr<ExprNode> right;
+      Operator opt;
+      bool isNegative;
+    };
+  };
+
+  class PathFilter {
+  public:
+    friend struct Algorithm;
+
+    PathFilter() = default;
+
+    PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record));
+
+    ~PathFilter() noexcept = default;
+
+    PathFilter &setVertex(bool (*function)(const Record &record));
+
+    PathFilter &setEdge(bool (*function)(const Record &record));
+
+    bool isEnable() const;
+
+    bool isSetVertex() const;
+
+    bool isSetEdge() const;
+
+  private:
+    bool (*vertexFilter)(const Record &record) {
+        nullptr
+    };
+
+    bool (*edgeFilter)(const Record &record) {
+        nullptr
+    };
+  };
 
 }

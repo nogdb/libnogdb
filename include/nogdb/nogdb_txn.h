@@ -25,62 +25,64 @@
 
 namespace nogdb {
 
-    class Txn {
-    public:
-        friend struct Algorithm;
-        friend struct DB;
-        friend struct Class;
-        friend struct Property;
-        friend struct Vertex;
-        friend struct Edge;
-        friend struct Traverse;
+  class Txn {
+  public:
+    friend struct Algorithm;
+    friend struct DB;
+    friend struct Class;
+    friend struct Property;
+    friend struct Vertex;
+    friend struct Edge;
+    friend struct Traverse;
 
-        friend class Compare;
+    friend class Compare;
 
-        friend class ResultSetCursor;
+    friend class ResultSetCursor;
 
-        friend class validate::Validator;
+    friend class validate::Validator;
 
-        friend class schema::SchemaInterface;
+    friend class schema::SchemaInterface;
 
-        friend class relation::GraphInterface;
+    friend class relation::GraphInterface;
 
-        friend class index::IndexInterface;
+    friend class index::IndexInterface;
 
-        friend class datarecord::DataRecordInterface;
+    friend class datarecord::DataRecordInterface;
 
-        enum Mode { READ_ONLY, READ_WRITE };
-
-        Txn(Context &ctx, Mode mode);
-
-        ~Txn() noexcept;
-
-        Txn(Txn &&txn) noexcept;
-
-        Txn &operator=(Txn &&txn) noexcept;
-
-        void commit() const;
-
-        void rollback() const noexcept;
-
-        Mode getTxnMode() const { return _txnMode; }
-
-        bool isCompleted() const { return _completed; }
-
-    private:
-        Context &_txnCtx;
-        adapter::metadata::DBInfoAccess *_dbInfo;
-        adapter::schema::ClassAccess *_class;
-        adapter::schema::PropertyAccess *_property;
-        adapter::schema::IndexAccess *_index;
-        schema::SchemaInterface *_iSchema;
-        index::IndexInterface *_iIndex;
-        relation::GraphInterface *_iGraph;
-        datarecord::DataRecordInterface *_iRecord;
-
-        Mode _txnMode;
-        mutable storage_engine::LMDBTxn *_txnBase;
-        mutable bool _completed; // throw error if working with isCompleted = true
+    enum Mode {
+      READ_ONLY, READ_WRITE
     };
+
+    Txn(Context &ctx, Mode mode);
+
+    ~Txn() noexcept;
+
+    Txn(Txn &&txn) noexcept;
+
+    Txn &operator=(Txn &&txn) noexcept;
+
+    void commit() const;
+
+    void rollback() const noexcept;
+
+    Mode getTxnMode() const { return _txnMode; }
+
+    bool isCompleted() const { return _completed; }
+
+  private:
+    Context &_txnCtx;
+    adapter::metadata::DBInfoAccess *_dbInfo;
+    adapter::schema::ClassAccess *_class;
+    adapter::schema::PropertyAccess *_property;
+    adapter::schema::IndexAccess *_index;
+    schema::SchemaInterface *_iSchema;
+    index::IndexInterface *_iIndex;
+    relation::GraphInterface *_iGraph;
+    datarecord::DataRecordInterface *_iRecord;
+
+    Mode _txnMode;
+    mutable storage_engine::LMDBTxn *_txnBase;
+    mutable bool _completed; // throw error if working with isCompleted = true
+  };
 
 }

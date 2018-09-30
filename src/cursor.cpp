@@ -29,122 +29,122 @@
 
 namespace nogdb {
 
-    ResultSetCursor::ResultSetCursor(const Txn &txn_)
-            : txn{txn_}, currentIndex{-1} {}
+  ResultSetCursor::ResultSetCursor(const Txn &txn_)
+      : txn{txn_}, currentIndex{-1} {}
 
-    ResultSetCursor::~ResultSetCursor() noexcept {}
+  ResultSetCursor::~ResultSetCursor() noexcept {}
 
-    ResultSetCursor::ResultSetCursor(ResultSetCursor &&rc) noexcept: txn{rc.txn} {
-        metadata = std::move(rc.metadata);
-        currentIndex = rc.currentIndex;
+  ResultSetCursor::ResultSetCursor(ResultSetCursor &&rc) noexcept: txn{rc.txn} {
+    metadata = std::move(rc.metadata);
+    currentIndex = rc.currentIndex;
+  }
+
+  ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
+    if (this != &rc) {
+      txn = std::move(rc.txn);
+      metadata = std::move(rc.metadata);
+      currentIndex = rc.currentIndex;
     }
+    return *this;
+  }
 
-    ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
-        if (this != &rc) {
-            txn = std::move(rc.txn);
-            metadata = std::move(rc.metadata);
-            currentIndex = rc.currentIndex;
-        }
-        return *this;
+  bool ResultSetCursor::hasNext() const {
+    return !(metadata.empty()) && (currentIndex < static_cast<long long>(metadata.size() - 1));
+  }
+
+  bool ResultSetCursor::hasPrevious() const {
+    return !(metadata.empty()) && (currentIndex > 0);
+  }
+
+  bool ResultSetCursor::hasAt(unsigned long index) const {
+    return !(metadata.empty()) && (index < metadata.size() - 1);
+  }
+
+  bool ResultSetCursor::next() {
+    BEGIN_VALIDATION(&txn).isTransactionValid();
+
+    if (!metadata.empty() && (currentIndex == -1)) {
+      currentIndex = 0;
+    } else if (hasNext()) {
+      ++currentIndex;
+    } else {
+      return false;
     }
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
+    return true;
+  }
 
-    bool ResultSetCursor::hasNext() const {
-        return !(metadata.empty()) && (currentIndex < static_cast<long long>(metadata.size() - 1));
+  bool ResultSetCursor::previous() {
+    BEGIN_VALIDATION(&txn).isTransactionValid();
+
+    if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
+      currentIndex = static_cast<long long>(metadata.size() - 1);
+    } else if (hasPrevious()) {
+      --currentIndex;
+    } else {
+      return false;
     }
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
+    return true;
+  }
 
-    bool ResultSetCursor::hasPrevious() const {
-        return !(metadata.empty()) && (currentIndex > 0);
+  bool ResultSetCursor::empty() const {
+    return metadata.empty();
+  }
+
+  size_t ResultSetCursor::size() const {
+    return metadata.size();
+  }
+
+  size_t ResultSetCursor::count() const {
+    return size();
+  }
+
+  void ResultSetCursor::first() {
+    BEGIN_VALIDATION(&txn).isTransactionValid();
+
+    if (!metadata.empty()) {
+      currentIndex = 0;
+      auto cursor = metadata.begin();
+      auto recordDescriptor = *(cursor);
+      result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
     }
+  }
 
-    bool ResultSetCursor::hasAt(unsigned long index) const {
-        return !(metadata.empty()) && (index < metadata.size() - 1);
+  void ResultSetCursor::last() {
+    BEGIN_VALIDATION(&txn).isTransactionValid();
+
+    if (!metadata.empty()) {
+      currentIndex = static_cast<long long>(metadata.size() - 1);
+      auto cursor = metadata.end() - 1;
+      auto recordDescriptor = *(cursor);
+      result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
     }
+  }
 
-    bool ResultSetCursor::next() {
-        BEGIN_VALIDATION(&txn).isTransactionValid();
+  bool ResultSetCursor::to(unsigned long index) {
+    BEGIN_VALIDATION(&txn).isTransactionValid();
 
-        if (!metadata.empty() && (currentIndex == -1)) {
-            currentIndex = 0;
-        } else if (hasNext()) {
-            ++currentIndex;
-        } else {
-            return false;
-        }
-        auto cursor = metadata.begin() + currentIndex;
-        auto recordDescriptor = *(cursor);
-        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
-        return true;
+    if (index >= metadata.size()) {
+      return false;
     }
+    currentIndex = index;
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
+    return true;
+  }
 
-    bool ResultSetCursor::previous() {
-        BEGIN_VALIDATION(&txn).isTransactionValid();
+  const Result &ResultSetCursor::operator*() const {
+    return result;
+  }
 
-        if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
-            currentIndex = static_cast<long long>(metadata.size() - 1);
-        } else if (hasPrevious()) {
-            --currentIndex;
-        } else {
-            return false;
-        }
-        auto cursor = metadata.begin() + currentIndex;
-        auto recordDescriptor = *(cursor);
-        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
-        return true;
-    }
-
-    bool ResultSetCursor::empty() const {
-        return metadata.empty();
-    }
-
-    size_t ResultSetCursor::size() const {
-        return metadata.size();
-    }
-
-    size_t ResultSetCursor::count() const {
-        return size();
-    }
-
-    void ResultSetCursor::first() {
-        BEGIN_VALIDATION(&txn).isTransactionValid();
-
-        if (!metadata.empty()) {
-            currentIndex = 0;
-            auto cursor = metadata.begin();
-            auto recordDescriptor = *(cursor);
-            result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
-        }
-    }
-
-    void ResultSetCursor::last() {
-        BEGIN_VALIDATION(&txn).isTransactionValid();
-
-        if (!metadata.empty()) {
-            currentIndex = static_cast<long long>(metadata.size() - 1);
-            auto cursor = metadata.end() - 1;
-            auto recordDescriptor = *(cursor);
-            result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
-        }
-    }
-
-    bool ResultSetCursor::to(unsigned long index) {
-        BEGIN_VALIDATION(&txn).isTransactionValid();
-
-        if (index >= metadata.size()) {
-            return false;
-        }
-        currentIndex = index;
-        auto cursor = metadata.begin() + currentIndex;
-        auto recordDescriptor = *(cursor);
-        result = Result{recordDescriptor, DB::getRecord(txn, recordDescriptor)};
-        return true;
-    }
-
-    const Result &ResultSetCursor::operator*() const {
-        return result;
-    }
-
-    const Result *ResultSetCursor::operator->() const {
-        return &(operator*());
-    }
+  const Result *ResultSetCursor::operator->() const {
+    return &(operator*());
+  }
 
 }

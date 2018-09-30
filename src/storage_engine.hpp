@@ -42,108 +42,108 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-    namespace storage_engine {
+  namespace storage_engine {
 
-        class LMDBEnv {
-        public:
+    class LMDBEnv {
+    public:
 
-            LMDBEnv(const std::string &dbPath, unsigned int dbNum, unsigned long dbSize, unsigned int readers) {
-                if (!utils::io::fileExists(dbPath)) {
-                    mkdir(dbPath.c_str(), 0755);
-                }
-                _env = std::move(lmdb::Env::create(dbNum, dbSize, readers).open(dbPath));
-            }
+      LMDBEnv(const std::string &dbPath, unsigned int dbNum, unsigned long dbSize, unsigned int readers) {
+        if (!utils::io::fileExists(dbPath)) {
+          mkdir(dbPath.c_str(), 0755);
+        }
+        _env = std::move(lmdb::Env::create(dbNum, dbSize, readers).open(dbPath));
+      }
 
-            ~LMDBEnv() noexcept {
-                try { close(); } catch (...) {}
-            }
+      ~LMDBEnv() noexcept {
+        try { close(); } catch (...) {}
+      }
 
-            LMDBEnv(LMDBEnv &&other) noexcept {
-                using std::swap;
-                swap(_env, other._env);
-            }
+      LMDBEnv(LMDBEnv &&other) noexcept {
+        using std::swap;
+        swap(_env, other._env);
+      }
 
-            LMDBEnv &operator=(LMDBEnv &&other) noexcept {
-                if (this != &other) {
-                    using std::swap;
-                    swap(_env, other._env);
-                }
-                return *this;
-            }
+      LMDBEnv &operator=(LMDBEnv &&other) noexcept {
+        if (this != &other) {
+          using std::swap;
+          swap(_env, other._env);
+        }
+        return *this;
+      }
 
-            void close() noexcept {
-                _env.close();
-            }
+      void close() noexcept {
+        _env.close();
+      }
 
-            lmdb::EnvHandler *handle() const noexcept {
-                return _env.handle();
-            }
+      lmdb::EnvHandler *handle() const noexcept {
+        return _env.handle();
+      }
 
-        private:
-            lmdb::Env _env{nullptr};
-        };
+    private:
+      lmdb::Env _env{nullptr};
+    };
 
 
-        class LMDBTxn {
-        public:
+    class LMDBTxn {
+    public:
 
-            LMDBTxn(LMDBEnv *const env, const unsigned int txnMode) {
-                _txn = lmdb::Txn::begin(env->handle(), txnMode);
-            }
+      LMDBTxn(LMDBEnv *const env, const unsigned int txnMode) {
+        _txn = lmdb::Txn::begin(env->handle(), txnMode);
+      }
 
-            ~LMDBTxn() noexcept {
-                if (_txn.handle()) {
-                    try { rollback(); } catch (...) {}
-                    _txn = nullptr;
-                }
-            }
+      ~LMDBTxn() noexcept {
+        if (_txn.handle()) {
+          try { rollback(); } catch (...) {}
+          _txn = nullptr;
+        }
+      }
 
-            LMDBTxn(LMDBTxn &&other) noexcept {
-                using std::swap;
-                swap(_txn, other._txn);
-            }
+      LMDBTxn(LMDBTxn &&other) noexcept {
+        using std::swap;
+        swap(_txn, other._txn);
+      }
 
-            LMDBTxn &operator=(LMDBTxn &&other) noexcept {
-                if (this != &other) {
-                    using std::swap;
-                    swap(_txn, other._txn);
-                }
-                return *this;
-            }
+      LMDBTxn &operator=(LMDBTxn &&other) noexcept {
+        if (this != &other) {
+          using std::swap;
+          swap(_txn, other._txn);
+        }
+        return *this;
+      }
 
-            lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) const {
-                if (_txn.handle()) {
-                    return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
-                } else {
-                    throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
-                }
-            }
+      lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) const {
+        if (_txn.handle()) {
+          return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+        } else {
+          throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
+        }
+      }
 
-            lmdb::Cursor openCursor(const lmdb::Dbi &dbi) const {
-                require(_txn.handle() == dbi.txn());
-                return lmdb::Cursor::open(_txn.handle(), dbi.handle());
-            }
+      lmdb::Cursor openCursor(const lmdb::Dbi &dbi) const {
+        require(_txn.handle() == dbi.txn());
+        return lmdb::Cursor::open(_txn.handle(), dbi.handle());
+      }
 
-            lmdb::Cursor openCursor(const std::string &dbName, bool numericKey = false, bool unique = true) const {
-                return openCursor(openDbi(dbName, numericKey, unique));
-            }
+      lmdb::Cursor openCursor(const std::string &dbName, bool numericKey = false, bool unique = true) const {
+        return openCursor(openDbi(dbName, numericKey, unique));
+      }
 
-            void commit() {
-                _txn.commit();
-            }
+      void commit() {
+        _txn.commit();
+      }
 
-            void rollback() {
-                _txn.abort();
-            }
+      void rollback() {
+        _txn.abort();
+      }
 
-            lmdb::TxnHandler *handle() const noexcept {
-                return _txn.handle();
-            }
+      lmdb::TxnHandler *handle() const noexcept {
+        return _txn.handle();
+      }
 
-        private:
-            lmdb::Txn _txn{nullptr};
-        };
+    private:
+      lmdb::Txn _txn{nullptr};
+    };
 
-    }
+  }
 
 }

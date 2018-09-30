@@ -25,44 +25,44 @@
 
 namespace nogdb {
 
-    namespace internal_data_type {
+  namespace internal_data_type {
 
-        class Blob {
-        public:
-            typedef unsigned char Byte;
+    class Blob {
+    public:
+      typedef unsigned char Byte;
 
-            Blob(const size_t capacity = 1);
+      Blob(const size_t capacity = 1);
 
-            Blob(const Byte *value, const size_t capacity);
+      Blob(const Byte *value, const size_t capacity);
 
-            ~Blob() noexcept;
+      ~Blob() noexcept;
 
-            Blob(const Blob &binaryObject);
+      Blob(const Blob &binaryObject);
 
-            Blob &operator=(const Blob &binaryObject) noexcept;
+      Blob &operator=(const Blob &binaryObject) noexcept;
 
-            Blob(Blob &&binaryObject);
+      Blob(Blob &&binaryObject);
 
-            Blob &operator=(Blob &&binaryObject) noexcept;
+      Blob &operator=(Blob &&binaryObject) noexcept;
 
-            size_t capacity() const noexcept { return _capacity; }
+      size_t capacity() const noexcept { return _capacity; }
 
-            size_t size() const noexcept { return _size; }
+      size_t size() const noexcept { return _size; }
 
-            Byte *bytes() const noexcept { return _value; }
+      Byte *bytes() const noexcept { return _value; }
 
-            Blob &append(const void *data, size_t size);
+      Blob &append(const void *data, size_t size);
 
-            size_t retrieve(void *data, size_t offset, size_t size) const;
+      size_t retrieve(void *data, size_t offset, size_t size) const;
 
-            Blob operator+(const Blob& suffix) const;
+      Blob operator+(const Blob &suffix) const;
 
-        private:
-            size_t _capacity;
-            size_t _size;
-            Byte *_value;
-        };
+    private:
+      size_t _capacity;
+      size_t _size;
+      Byte *_value;
+    };
 
-    }
+  }
 
 }

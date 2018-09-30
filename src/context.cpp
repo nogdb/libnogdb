@@ -39,39 +39,40 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-    Context::Context(const std::string &dbPath)
-            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
+  Context::Context(const std::string &dbPath)
+      : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
-    Context::Context(const std::string &dbPath, unsigned int maxDbNum)
-            : Context{dbPath, maxDbNum, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
+  Context::Context(const std::string &dbPath, unsigned int maxDbNum)
+      : Context{dbPath, maxDbNum, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
-    Context::Context(const std::string &dbPath, unsigned long maxDbSize)
-            : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
+  Context::Context(const std::string &dbPath, unsigned long maxDbSize)
+      : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
 
-    Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize)
-            : _dbPath{dbPath}, _maxDB{maxDbNum}, _maxDBSize{maxDbSize} {
-        if (!utils::io::fileExists(dbPath)) {
-            mkdir(dbPath.c_str(), 0755);
-        }
-        _envHandler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+  Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize)
+      : _dbPath{dbPath}, _maxDB{maxDbNum}, _maxDBSize{maxDbSize} {
+    if (!utils::io::fileExists(dbPath)) {
+      mkdir(dbPath.c_str(), 0755);
     }
+    _envHandler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+  }
 
-    Context::~Context() noexcept {
-        if (_envHandler) {
-            delete _envHandler;
-            _envHandler = nullptr;
-        }
+  Context::~Context() noexcept {
+    if (_envHandler) {
+      delete _envHandler;
+      _envHandler = nullptr;
     }
-    Context::Context(Context &&ctx) noexcept
-            : _envHandler{std::move(ctx._envHandler)} {}
+  }
 
-    Context &Context::operator=(Context &&ctx) noexcept {
-        if (this != &ctx) {
-            delete _envHandler;
-            _envHandler = ctx._envHandler;
-            ctx._envHandler = nullptr;
-        }
-        return *this;
+  Context::Context(Context &&ctx) noexcept
+      : _envHandler{std::move(ctx._envHandler)} {}
+
+  Context &Context::operator=(Context &&ctx) noexcept {
+    if (this != &ctx) {
+      delete _envHandler;
+      _envHandler = ctx._envHandler;
+      ctx._envHandler = nullptr;
     }
+    return *this;
+  }
 
 }
