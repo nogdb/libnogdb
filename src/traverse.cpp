@@ -30,29 +30,12 @@ namespace nogdb {
     ResultSet Traverse::inEdgeBfs(const Txn &txn,
                                   const RecordDescriptor &recordDescriptor,
                                   unsigned int minDepth,
-                                  unsigned int maxDepth) {
+                                  unsigned int maxDepth,
+                                  const PathFilter &pathFilter) {
         BEGIN_VALIDATION(&txn)
         . isTransactionValid();
 
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-        return Algorithm::breadthFirstSearch(txn,
-                                            recordDescriptor,
-                                            minDepth,
-                                            maxDepth,
-                                            edgeClassIds,
-                                            &Graph::getEdgeIn,
-                                            &Graph::getVertexSrc,
-                                            PathFilter{});
-    }
-
-    ResultSet Traverse::inEdgeBfs(const Txn &txn,
-                                  const RecordDescriptor &recordDescriptor,
-                                  unsigned int minDepth,
-                                  unsigned int maxDepth,
-                                  const PathFilter &pathFilter) {
-        Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-        auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
+        auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
         return Algorithm::breadthFirstSearch(txn,
                                             recordDescriptor,
                                             minDepth,
