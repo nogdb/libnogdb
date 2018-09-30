@@ -39,9 +39,6 @@
 //******************************************************************
 
 namespace nogdb {
-  struct Graph;
-  struct Validate;
-  struct Algorithm;
   struct Schema;
   struct Class;
   struct Property;
@@ -49,8 +46,6 @@ namespace nogdb {
   struct Vertex;
   struct Edge;
   struct Traverse;
-
-  class Compare;
 
   class Condition;
 
@@ -65,7 +60,11 @@ namespace nogdb {
   }
 
   namespace parser {
-    class Parser;
+    class RecordParser;
+  }
+
+  namespace compare {
+    class RecordCompare;
   }
 
   namespace sql_parser {
@@ -103,6 +102,10 @@ namespace nogdb {
 
   namespace validate {
     class Validator;
+  }
+
+  namespace algorithm {
+    class GraphTraversal;
   }
 
 }
@@ -604,10 +607,12 @@ namespace nogdb {
 
   private:
 
-    friend struct parser::Parser;
-    friend struct Algorithm;
     friend struct Vertex;
     friend struct Edge;
+
+    friend class parser::RecordParser;
+
+    friend class algorithm::GraphTraversal;
 
     friend class sql_parser::Record;
 
@@ -660,8 +665,10 @@ namespace nogdb {
     RecordId rid{0, 0};
 
   private:
-    friend struct Algorithm;
-    unsigned int depth{0};
+    friend class algorithm::GraphTraversal;
+
+    unsigned int _depth{0};
+
   };
 
   struct PropertyDescriptor {

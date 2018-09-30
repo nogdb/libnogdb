@@ -48,10 +48,10 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto recordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+    auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-      auto vertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
+      auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
                                                               dstVertexRecordDescriptor.rid);
       auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
       auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
@@ -72,14 +72,14 @@ namespace nogdb {
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto existingRecordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto newRecordBlob = parser::Parser::parseRecord(record, propertyNameMapInfo);
+    auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       // insert an updated record
-      auto vertexBlob = parser::Parser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
+      auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
       edgeDataRecord.insert(vertexBlob + newRecordBlob);
       // remove index if applied in existing record
       auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-      auto existingRecord = parser::Parser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
+      auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
       txn._iIndex->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
       // add index if applied in new record
       txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
@@ -99,11 +99,11 @@ namespace nogdb {
     try {
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-      auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
       edgeDataRecord.remove(recordDescriptor.rid.second);
       txn._iGraph->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       // remove index if applied in the record
-      auto record = parser::Parser::parseRawData(recordResult, propertyIdMapInfo, true);
+      auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       txn._iIndex->remove(recordDescriptor, record, propertyNameMapInfo);
     } catch (const Error &error) {
       txn.rollback();
@@ -122,7 +122,7 @@ namespace nogdb {
       auto result = std::map<RecordId, std::pair<RecordId, RecordId>>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-            auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(result.data.blob());
+            auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result.data.blob());
             auto edgeRecordId = RecordId{edgeClassInfo.id, positionId};
             txn._iGraph->removeRelFromEdge(edgeRecordId, srcDstVertex.first, srcDstVertex.second);
           };
@@ -146,11 +146,11 @@ namespace nogdb {
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-      auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
       txn._iGraph->updateSrcRel(recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first,
                                 srcDstVertex.second);
-      auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
-      auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+      auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
+      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
       edgeDataRecord.insert(newVertexBlob + dataBlob);
     } catch (const Error &error) {
       txn.rollback();
@@ -169,11 +169,11 @@ namespace nogdb {
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-      auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
       txn._iGraph->updateDstRel(recordDescriptor.rid, newDstVertexDescriptor.rid, srcDstVertex.first,
                                 srcDstVertex.second);
-      auto newVertexBlob = parser::Parser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
-      auto dataBlob = parser::Parser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+      auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
+      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
       edgeDataRecord.insert(newVertexBlob + dataBlob);
     } catch (const Error &error) {
       txn.rollback();
@@ -232,9 +232,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-    auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
-    auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
+    auto srcDstVertex = txn._iGraph->getSrcDstVertices(recordDescriptor.rid);
     auto srcVertexRecordDescriptor = RecordDescriptor{srcDstVertex.first};
     auto srcVertexClassInfo = txn._iSchema->getExistingClass(srcVertexRecordDescriptor.rid.first);
     return Result{srcVertexRecordDescriptor, txn._iRecord->getRecord(srcVertexClassInfo, srcVertexRecordDescriptor)};
@@ -245,9 +243,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-    auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
-    auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
+    auto srcDstVertex = txn._iGraph->getSrcDstVertices(recordDescriptor.rid);
     auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
     auto dstVertexClassInfo = txn._iSchema->getExistingClass(dstVertexRecordDescriptor.rid.first);
     return Result{dstVertexRecordDescriptor, txn._iRecord->getRecord(dstVertexClassInfo, dstVertexRecordDescriptor)};
@@ -258,9 +254,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-    auto rawData = edgeDataRecord.getBlob(recordDescriptor.rid.second);
-    auto srcDstVertex = parser::Parser::parseEdgeRawDataVertexSrcDst(rawData);
+    auto srcDstVertex = txn._iGraph->getSrcDstVertices(recordDescriptor.rid);
     auto srcVertexRecordDescriptor = RecordDescriptor{srcDstVertex.first};
     auto srcVertexClassInfo = txn._iSchema->getExistingClass(srcVertexRecordDescriptor.rid.first);
     auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
@@ -279,7 +273,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
+    return compare::RecordCompare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition);
   }
 
   ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
@@ -297,7 +291,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    return Compare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
+    return compare::RecordCompare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
   }
 
   ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -311,7 +305,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
+      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -344,7 +338,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
+      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -356,7 +350,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto result = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition);
+    auto result = compare::RecordCompare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
@@ -375,7 +369,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto result = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
+    auto result = compare::RecordCompare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
@@ -390,7 +384,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
+      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
       resultSetExtend.addMetadata(resultSet);
     }
     return resultSetExtend;
@@ -423,7 +417,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
+      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
       resultSetExtend.addMetadata(resultSet);
     }
     return resultSetExtend;
@@ -435,7 +429,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    return Compare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
+    return compare::RecordCompare::compareCondition(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
   }
 
   ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
@@ -444,7 +438,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    return Compare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
+    return compare::RecordCompare::compareMultiCondition(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
   }
 
   ResultSet Edge::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
@@ -458,7 +452,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
+      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -475,7 +469,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
+      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -487,7 +481,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto result = Compare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
+    auto result = compare::RecordCompare::compareConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, condition, true);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
@@ -498,7 +492,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto result = Compare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
+    auto result = compare::RecordCompare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyNameMapInfo, multiCondition, true);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
@@ -513,7 +507,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
+      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
       resultSetExtend.addMetadata(resultSet);
     }
     return resultSetExtend;
@@ -531,7 +525,7 @@ namespace nogdb {
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = Compare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
+      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
       resultSetExtend.addMetadata(resultSet);
     }
     return resultSetExtend;

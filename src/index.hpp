@@ -502,7 +502,7 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
               auto bytesValue = record.get(propertyInfo.name);
               if (!bytesValue.empty()) {
                 auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -523,7 +523,7 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
               auto bytesValue = record.get(propertyInfo.name);
               if (!bytesValue.empty()) {
                 auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -542,7 +542,7 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::Parser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
               auto value = record.get(propertyInfo.name).toText();
               if (!value.empty()) {
                 auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));

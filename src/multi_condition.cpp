@@ -158,7 +158,7 @@ namespace nogdb {
     }
     if (cond.comp != Condition::Comparator::IS_NULL && cond.comp != Condition::Comparator::NOT_NULL) {
       if (!value.empty()) {
-        return Compare::compareBytesValue(value, type->second, cond);
+        return compare::RecordCompare::compareBytesValue(value, type->second, cond);
       }
       return false;
     } else {

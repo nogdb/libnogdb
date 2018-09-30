@@ -27,7 +27,6 @@ namespace nogdb {
 
   class Txn {
   public:
-    friend struct Algorithm;
     friend struct DB;
     friend struct Class;
     friend struct Property;
@@ -35,9 +34,9 @@ namespace nogdb {
     friend struct Edge;
     friend struct Traverse;
 
-    friend class Compare;
-
     friend class ResultSetCursor;
+
+    friend class compare::RecordCompare;
 
     friend class validate::Validator;
 
@@ -48,6 +47,8 @@ namespace nogdb {
     friend class index::IndexInterface;
 
     friend class datarecord::DataRecordInterface;
+
+    friend class algorithm::GraphTraversal;
 
     enum Mode {
       READ_ONLY, READ_WRITE

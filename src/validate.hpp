@@ -156,32 +156,59 @@ namespace nogdb {
 
       Validator &isExistingSrcVertex(const RecordDescriptor &vertex) {
         auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
-        try {
-          vertexDataRecord.getBlob(vertex.rid.second);
-        } catch (const Error &error) {
-          if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-          } else {
-            throw NOGDB_FATAL_ERROR(error);
+        if (foundClass.type == ClassType::VERTEX) {
+          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+          try {
+            vertexDataRecord.getBlob(vertex.rid.second);
+          } catch (const Error &error) {
+            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
+            } else {
+              throw NOGDB_FATAL_ERROR(error);
+            }
           }
+          return *this;
+        } else {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
         }
-        return *this;
       }
 
       Validator &isExistingDstVertex(const RecordDescriptor &vertex) {
         auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
-        try {
-          vertexDataRecord.getBlob(vertex.rid.second);
-        } catch (const Error &error) {
-          if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-          } else {
-            throw NOGDB_FATAL_ERROR(error);
+        if (foundClass.type == ClassType::VERTEX) {
+          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+          try {
+            vertexDataRecord.getBlob(vertex.rid.second);
+          } catch (const Error &error) {
+            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
+            } else {
+              throw NOGDB_FATAL_ERROR(error);
+            }
           }
+          return *this;
+        } else {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
         }
-        return *this;
+      }
+
+      Validator &isExistingVertex(const RecordDescriptor &vertex) {
+        auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
+        if (foundClass.type == ClassType::VERTEX) {
+          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+          try {
+            vertexDataRecord.getBlob(vertex.rid.second);
+          } catch (const Error &error) {
+            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
+            } else {
+              throw NOGDB_FATAL_ERROR(error);
+            }
+          }
+          return *this;
+        } else {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
+        }
       }
 
     private:

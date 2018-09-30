@@ -65,7 +65,7 @@ namespace nogdb {
         if (foundProperty.type == PropertyType::UNDEFINED) {
           throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
-        return foundProperty
+        return foundProperty;
       }
 
       PropertyAccessInfo getExistingPropertyExtend(const ClassId &classId, const std::string &propertyName) {
@@ -115,7 +115,7 @@ namespace nogdb {
       getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result) {
         if (superClassId != ClassId{}) {
           result.emplace_back(_txn->_property->getInfos(superClassId));
-          getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId));
+          getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId), result);
         }
         return std::move(result);
       }
@@ -126,7 +126,8 @@ namespace nogdb {
         for (const auto &property: getNativePropertyInfo(classId)) {
           result[property.name] = property;
         }
-        for (const auto &property: getInheritPropertyInfo(superClassId)) {
+        auto inheritResult = std::vector<PropertyAccessInfo>{};
+        for(const auto& property: getInheritPropertyInfo(superClassId, inheritResult)) {
           result[property.name] = property;
         }
         return result;
@@ -138,7 +139,8 @@ namespace nogdb {
         for (const auto &property: getNativePropertyInfo(classId)) {
           result[property.id] = property;
         }
-        for (const auto &property: getInheritPropertyInfo(superClassId)) {
+        auto inheritResult = std::vector<PropertyAccessInfo>{};
+        for(const auto& property: getInheritPropertyInfo(superClassId, inheritResult)) {
           result[property.id] = property;
         }
         return result;

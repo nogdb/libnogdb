@@ -45,11 +45,11 @@ namespace nogdb {
 
     constexpr size_t VERTEX_SRC_DST_RAW_DATA_LENGTH = 2 * (sizeof(ClassId) + sizeof(PositionId));
 
-    class Parser {
+    class RecordParser {
     public:
-      Parser() = delete;
+      RecordParser() = delete;
 
-      ~Parser() noexcept = delete;
+      ~RecordParser() noexcept = delete;
 
       //-------------------------
       // Common parsers

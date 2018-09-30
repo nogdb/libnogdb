@@ -37,8 +37,6 @@ namespace nogdb {
 
   class Context {
   public:
-    friend struct Validate;
-    friend struct Algorithm;
     friend struct Class;
     friend struct Property;
     friend struct DB;

@@ -45,9 +45,10 @@ namespace nogdb {
     enum class Comparator;
 
   public:
-    friend class Compare;
 
     friend class MultiCondition;
+
+    friend class compare::RecordCompare;
 
     friend class datarecord::DataRecordInterface;
 
@@ -266,9 +267,10 @@ namespace nogdb {
     class ConditionNode;
 
   public:
-    friend class Compare;
 
     friend class Condition;
+
+    friend class compare::RecordCompare;
 
     friend class datarecord::DataRecordInterface;
 
@@ -353,7 +355,7 @@ namespace nogdb {
 
   class PathFilter {
   public:
-    friend struct Algorithm;
+    friend class algorithm::GraphTraversal;
 
     PathFilter() = default;
 

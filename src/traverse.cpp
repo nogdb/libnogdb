@@ -22,6 +22,7 @@
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
 #include "algorithm.hpp"
+#include "relation_adapter.hpp"
 
 #include "nogdb.h"
 
@@ -33,36 +34,12 @@ namespace nogdb {
                                 unsigned int maxDepth,
                                 const PathFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return Algorithm::breadthFirstSearch(txn,
-                                         recordDescriptor,
-                                         minDepth,
-                                         maxDepth,
-                                         edgeClassIds,
-                                         &Graph::getEdgeIn,
-                                         &Graph::getVertexSrc,
-                                         pathFilter);
-  }
-
-  ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
-                                            const RecordDescriptor &recordDescriptor,
-                                            unsigned int minDepth,
-                                            unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeIn,
-                                                       &Graph::getVertexSrc,
-                                                       PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    return algorithm::GraphTraversal::breadthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, pathFilter);
   }
 
   ResultSetCursor Traverse::inEdgeBfsCursor(const Txn &txn,
@@ -70,36 +47,14 @@ namespace nogdb {
                                             unsigned int minDepth,
                                             unsigned int maxDepth,
                                             const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeIn,
-                                                       &Graph::getVertexSrc,
-                                                       pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-
-  ResultSet Traverse::outEdgeBfs(const Txn &txn,
-                                 const RecordDescriptor &recordDescriptor,
-                                 unsigned int minDepth,
-                                 unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::breadthFirstSearch(txn,
-                                         recordDescriptor,
-                                         minDepth,
-                                         maxDepth,
-                                         edgeClassIds,
-                                         &Graph::getEdgeOut,
-                                         &Graph::getVertexDst,
-                                         PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::outEdgeBfs(const Txn &txn,
@@ -107,36 +62,13 @@ namespace nogdb {
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
                                  const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::breadthFirstSearch(txn,
-                                         recordDescriptor,
-                                         minDepth,
-                                         maxDepth,
-                                         edgeClassIds,
-                                         &Graph::getEdgeOut,
-                                         &Graph::getVertexDst,
-                                         pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
-                                             const RecordDescriptor &recordDescriptor,
-                                             unsigned int minDepth,
-                                             unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeOut,
-                                                       &Graph::getVertexDst,
-                                                       PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::breadthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, pathFilter);
   }
 
   ResultSetCursor Traverse::outEdgeBfsCursor(const Txn &txn,
@@ -144,35 +76,14 @@ namespace nogdb {
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
                                              const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeOut,
-                                                       &Graph::getVertexDst,
-                                                       pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSet Traverse::allEdgeBfs(const Txn &txn,
-                                 const RecordDescriptor &recordDescriptor,
-                                 unsigned int minDepth,
-                                 unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::breadthFirstSearch(txn,
-                                         recordDescriptor,
-                                         minDepth,
-                                         maxDepth,
-                                         edgeClassIds,
-                                         &Graph::getEdgeInOut,
-                                         nullptr,
-                                         PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::allEdgeBfs(const Txn &txn,
@@ -180,35 +91,13 @@ namespace nogdb {
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
                                  const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::breadthFirstSearch(txn,
-                                         recordDescriptor,
-                                         minDepth,
-                                         maxDepth,
-                                         edgeClassIds,
-                                         &Graph::getEdgeInOut,
-                                         nullptr,
-                                         pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
-                                             const RecordDescriptor &recordDescriptor,
-                                             unsigned int minDepth,
-                                             unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeInOut,
-                                                       nullptr,
-                                                       PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::breadthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, pathFilter);
   }
 
   ResultSetCursor Traverse::allEdgeBfsCursor(const Txn &txn,
@@ -216,35 +105,14 @@ namespace nogdb {
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
                                              const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::breadthFirstSearchRdesc(txn,
-                                                       recordDescriptor,
-                                                       minDepth,
-                                                       maxDepth,
-                                                       edgeClassIds,
-                                                       &Graph::getEdgeInOut,
-                                                       nullptr,
-                                                       pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSet Traverse::inEdgeDfs(const Txn &txn,
-                                const RecordDescriptor &recordDescriptor,
-                                unsigned int minDepth,
-                                unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeIn,
-                                       &Graph::getVertexSrc,
-                                       PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::inEdgeDfs(const Txn &txn,
@@ -252,35 +120,13 @@ namespace nogdb {
                                 unsigned int minDepth,
                                 unsigned int maxDepth,
                                 const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeIn,
-                                       &Graph::getVertexSrc,
-                                       pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
-                                            const RecordDescriptor &recordDescriptor,
-                                            unsigned int minDepth,
-                                            unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeIn,
-                                                     &Graph::getVertexSrc,
-                                                     PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::depthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, pathFilter);
   }
 
   ResultSetCursor Traverse::inEdgeDfsCursor(const Txn &txn,
@@ -288,35 +134,14 @@ namespace nogdb {
                                             unsigned int minDepth,
                                             unsigned int maxDepth,
                                             const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeIn,
-                                                     &Graph::getVertexSrc,
-                                                     pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSet Traverse::outEdgeDfs(const Txn &txn,
-                                 const RecordDescriptor &recordDescriptor,
-                                 unsigned int minDepth,
-                                 unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeOut,
-                                       &Graph::getVertexDst,
-                                       PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::outEdgeDfs(const Txn &txn,
@@ -324,35 +149,13 @@ namespace nogdb {
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
                                  const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeOut,
-                                       &Graph::getVertexDst,
-                                       pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
-                                             const RecordDescriptor &recordDescriptor,
-                                             unsigned int minDepth,
-                                             unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeOut,
-                                                     &Graph::getVertexDst,
-                                                     PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::depthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, pathFilter);
   }
 
   ResultSetCursor Traverse::outEdgeDfsCursor(const Txn &txn,
@@ -360,35 +163,14 @@ namespace nogdb {
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
                                              const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeOut,
-                                                     &Graph::getVertexDst,
-                                                     pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSet Traverse::allEdgeDfs(const Txn &txn,
-                                 const RecordDescriptor &recordDescriptor,
-                                 unsigned int minDepth,
-                                 unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeInOut,
-                                       nullptr,
-                                       PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::allEdgeDfs(const Txn &txn,
@@ -396,35 +178,13 @@ namespace nogdb {
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
                                  const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::depthFirstSearch(txn,
-                                       recordDescriptor,
-                                       minDepth,
-                                       maxDepth,
-                                       edgeClassIds,
-                                       &Graph::getEdgeInOut,
-                                       nullptr,
-                                       pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
-                                             const RecordDescriptor &recordDescriptor,
-                                             unsigned int minDepth,
-                                             unsigned int maxDepth) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeInOut,
-                                                     nullptr,
-                                                     PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::depthFirstSearch(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, pathFilter);
   }
 
   ResultSetCursor Traverse::allEdgeDfsCursor(const Txn &txn,
@@ -432,67 +192,47 @@ namespace nogdb {
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
                                              const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::depthFirstSearchRdesc(txn,
-                                                     recordDescriptor,
-                                                     minDepth,
-                                                     maxDepth,
-                                                     edgeClassIds,
-                                                     &Graph::getEdgeInOut,
-                                                     nullptr,
-                                                     pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingVertex(recordDescriptor);
 
-  ResultSet Traverse::shortestPath(const Txn &txn,
-                                   const RecordDescriptor &srcVertexRecordDescriptor,
-                                   const RecordDescriptor &dstVertexRecordDescriptor) {
-    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
-                                      PathFilter{});
+    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
+        txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Traverse::shortestPath(const Txn &txn,
                                    const RecordDescriptor &srcVertexRecordDescriptor,
                                    const RecordDescriptor &dstVertexRecordDescriptor,
                                    const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    return Algorithm::bfsShortestPath(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeClassIds,
-                                      pathFilter);
-  }
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingSrcVertex(srcVertexRecordDescriptor)
+        .isExistingDstVertex(dstVertexRecordDescriptor);
 
-  ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
-                                               const RecordDescriptor &srcVertexRecordDescriptor,
-                                               const RecordDescriptor &dstVertexRecordDescriptor) {
-    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
-                                                    edgeClassIds, PathFilter{});
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    auto srcVertexClassInfo = txn._iSchema->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto dstVertexClassInfo = txn._iSchema->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    return algorithm::GraphTraversal::bfsShortestPath(
+        txn, srcVertexClassInfo, dstVertexClassInfo,
+        srcVertexRecordDescriptor, dstVertexRecordDescriptor, pathFilter);
   }
 
   ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
                                                const RecordDescriptor &srcVertexRecordDescriptor,
                                                const RecordDescriptor &dstVertexRecordDescriptor,
                                                const PathFilter &pathFilter) {
-    Generic::getClassInfo(txn, srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    Generic::getClassInfo(txn, dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeClassIds = Generic::getEdgeClassId(txn, classFilter.getClassName());
-    auto result = ResultSetCursor{txn};
-    auto metadata = Algorithm::bfsShortestPathRdesc(txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor,
-                                                    edgeClassIds, pathFilter);
-    result.metadata.insert(result.metadata.end(), metadata.cbegin(), metadata.cend());
-    return result;
+    BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isExistingSrcVertex(srcVertexRecordDescriptor)
+        .isExistingDstVertex(dstVertexRecordDescriptor);
+
+    auto srcVertexClassInfo = txn._iSchema->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto dstVertexClassInfo = txn._iSchema->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto result = algorithm::GraphTraversal::bfsShortestPathRdesc(
+        txn, srcVertexClassInfo, dstVertexClassInfo,
+        srcVertexRecordDescriptor, dstVertexRecordDescriptor, pathFilter);
+    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
 }

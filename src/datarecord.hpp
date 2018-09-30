@@ -43,7 +43,7 @@ namespace nogdb {
         auto propertyInfos = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
             .getResult(recordDescriptor.rid.second);
-        return parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos,
+        return parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result, propertyInfos,
                                                          classInfo.type);
       }
 
@@ -54,7 +54,7 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         for (const auto &recordDescriptor: recordDescriptors) {
           auto result = dataRecord.getResult(recordDescriptor.rid.second);
-          auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result,
+          auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, recordDescriptor.rid, result,
                                                                   propertyInfos, classInfo.type);
           resultSet.emplace_back(Result{recordDescriptor, record});
         }
@@ -67,7 +67,7 @@ namespace nogdb {
         auto resultSet = ResultSet{};
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::Parser::parseRawDataWithBasicInfo(
+              auto const record = parser::RecordParser::parseRawDataWithBasicInfo(
                   classInfo.name,
                   RecordId{classInfo.id, positionId},
                   result, propertyIdMapInfo, classInfo.type);
@@ -98,9 +98,9 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
-              if (Compare::compareRecordByCondition(record, propertyType, condition)) {
+              if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                 resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
               }
             };
@@ -118,9 +118,9 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
-              if (Compare::compareRecordByCondition(record, propertyType, condition)) {
+              if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                 recordDescriptors.emplace_back(RecordDescriptor{rid});
               }
             };
@@ -141,7 +141,7 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
               if (multiCondition.execute(record, propertyTypes)) {
                 resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
@@ -165,7 +165,7 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
               if (multiCondition.execute(record, propertyTypes)) {
                 recordDescriptors.emplace_back(RecordDescriptor{rid});
@@ -183,7 +183,7 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
               if ((*condition)(record)) {
                 resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
@@ -202,7 +202,7 @@ namespace nogdb {
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto rid = RecordId{classInfo.id, positionId};
-              auto record = parser::Parser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
+              auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result, propertyIdMapInfo,
                                                                       classInfo.type);
               if ((*condition)(record)) {
                 recordDescriptors.emplace_back(RecordDescriptor{rid});
