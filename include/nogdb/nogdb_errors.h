@@ -23,6 +23,7 @@
 #define __NOGDB_ERR_H_INCLUDED_
 
 #include <exception>
+#include <stdexcept>
 #include "lmdb/lmdb.h"
 
 //*************************************************************
