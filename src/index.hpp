@@ -22,6 +22,7 @@
 #pragma once
 
 #include <iostream> // for debugging
+#include <algorithm>
 #include <vector>
 #include <unordered_set>
 #include <type_traits>
@@ -477,19 +478,19 @@ namespace nogdb {
       adapter::index::IndexRecord openIndexRecordPositive(const IndexAccessInfo &indexInfo) const {
         auto indexFlags = INDEX_POSITIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
         auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
-        return std::move(indexAccess);
+        return indexAccess;
       }
 
       adapter::index::IndexRecord openIndexRecordNegative(const IndexAccessInfo &indexInfo) const {
         auto indexFlags = INDEX_NEGATIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
         auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
-        return std::move(indexAccess);
+        return indexAccess;
       }
 
       adapter::index::IndexRecord openIndexRecordString(const IndexAccessInfo &indexInfo) const {
         auto indexFlags = INDEX_STRING_UNIQUE(indexInfo.isUnique);
         auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
-        return std::move(indexAccess);
+        return indexAccess;
       }
 
       template<typename T>
@@ -627,7 +628,7 @@ namespace nogdb {
         removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
       }
 
-      inline static bool cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
+      inline static auto cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
         return lhs.rid < rhs.rid;
       };
 
@@ -845,6 +846,7 @@ namespace nogdb {
                                        true, isEqual);
           }
           default:
+            return std::vector<RecordDescriptor>{};
             break;
         }
       }

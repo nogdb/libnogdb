@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <sstream>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -39,7 +40,6 @@
 //******************************************************************
 
 namespace nogdb {
-  struct Schema;
   struct Class;
   struct Property;
   struct DB;
@@ -65,10 +65,6 @@ namespace nogdb {
 
   namespace compare {
     class RecordCompare;
-  }
-
-  namespace sql_parser {
-    class Record;
   }
 
   namespace adapter {
@@ -106,6 +102,10 @@ namespace nogdb {
 
   namespace algorithm {
     class GraphTraversal;
+  }
+
+  namespace sql_parser {
+    class Record;
   }
 
 }
@@ -672,6 +672,11 @@ namespace nogdb {
   };
 
   struct PropertyDescriptor {
+    PropertyDescriptor() = default;
+
+    PropertyDescriptor(const PropertyId &_id, const std::string &_name, const PropertyType &_type, bool _inherited)
+        : id{_id}, name{_name}, type{_type}, inherited{_inherited} {}
+
     PropertyId id{0};
     std::string name{""};
     PropertyType type{PropertyType::UNDEFINED};
@@ -679,22 +684,15 @@ namespace nogdb {
   };
 
   struct ClassDescriptor {
+    ClassDescriptor() = default;
+
+    ClassDescriptor(const ClassId &_id, const std::string &_name, const ClassId &_base, const ClassType &_type)
+        : id{_id}, name{_name}, base{_base}, type{_type} {}
+
     ClassId id{0};
     std::string name{""};
     ClassId base{0};
     ClassType type{ClassType::UNDEFINED};
-  };
-
-  struct DBSchema {
-
-    struct IndexInfo {
-      PropertyId propertyId;
-      bool unique;
-    };
-
-    ClassDescriptor classDescriptor;
-    std::vector<PropertyDescriptor> propertyDescriptors;
-    std::vector<IndexInfo> indexInfos;
   };
 
   struct Result {
@@ -754,7 +752,7 @@ namespace nogdb {
     const Result *operator->() const;
 
   private:
-    const Txn &txn;
+    const Txn *txn;
     std::vector<RecordDescriptor> metadata{};
     long long currentIndex;
     Result result;

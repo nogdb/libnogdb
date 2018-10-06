@@ -39,9 +39,8 @@ namespace nogdb {
         _completed{false} {
     try {
       _txnBase = new storage_engine::LMDBTxn(
-          ctx._envHandler.get(),
-          (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO
-      );
+          ctx._envHandler,
+          (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
       _dbInfo = new adapter::metadata::DBInfoAccess{_txnBase};
       _class = new adapter::schema::ClassAccess{_txnBase};
       _property = new adapter::schema::PropertyAccess{_txnBase};

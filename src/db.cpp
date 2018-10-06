@@ -27,7 +27,7 @@
 #include "datarecord_adapter.hpp"
 #include "parser.hpp"
 
-#include "nogdb/nogdb.h"
+#include "nogdb.h"
 
 namespace nogdb {
   Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -53,7 +53,7 @@ namespace nogdb {
     auto result = std::vector<PropertyDescriptor>{};
     auto foundClass = txn._iSchema->getExistingClass(classDescriptor.id);
     // native properties
-    for (const auto &property: txn._iSchema->getNativePropertyInfo(txn, foundClass.id)) {
+    for (const auto &property: txn._iSchema->getNativePropertyInfo(foundClass.id)) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,
@@ -63,7 +63,9 @@ namespace nogdb {
           });
     }
     // inherited properties
-    for (const auto &property: txn._iSchema->getInheritPropertyInfo(txn, txn._class->getSuperClassId(foundClass.id))) {
+    auto inheritResult = std::vector<schema::PropertyAccessInfo>{};
+    for (const auto &property: txn._iSchema->getInheritPropertyInfo(txn._class->getSuperClassId(foundClass.id),
+                                                                    inheritResult)) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,

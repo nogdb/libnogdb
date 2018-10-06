@@ -38,9 +38,9 @@ namespace nogdb {
         DataRecord(const storage_engine::LMDBTxn *const txn,
                    const ClassId &classId,
                    const ClassType &classType = ClassType::UNDEFINED)
-            : _classId{classId},
-              _classType{classType},
-              LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) {}
+            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) ,
+              _classId{classId},
+              _classType{classType} {}
 
         virtual ~DataRecord() noexcept = default;
 
@@ -122,6 +122,14 @@ namespace nogdb {
             if (key == MAX_RECORD_NUM_EM) continue;
             callback(key, keyValue.val);
           }
+        }
+
+        const ClassId& getClassId() const {
+          return _classId;
+        }
+
+        const ClassType& getClassType() const {
+          return _classType;
         }
 
       private:

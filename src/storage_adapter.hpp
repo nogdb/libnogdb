@@ -72,7 +72,7 @@ namespace nogdb {
 
         template<typename K>
         lmdb::Result get(const K &key) const {
-          _dbi.get(key);
+          return _dbi.get(key);
         }
 
         template<typename K>

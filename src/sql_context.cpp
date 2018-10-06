@@ -19,6 +19,7 @@
  *
  */
 
+#include <algorithm>
 #include <functional>
 
 #include "constant.hpp"
@@ -65,7 +66,7 @@ void Context::createClass(const Token &tName, const Token &tExtend, bool checkIf
     this->result = SQL::Result(new ClassDescriptor(move(result)));
   } catch (const Error &e) {
     if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_CLASS) {
-      result = DB::getSchema(this->txn, name);
+      result = DB::getClass(this->txn, name);
       this->rc = SQL_OK;
       this->result = SQL::Result(new ClassDescriptor(move(result)));
     } else {
@@ -163,7 +164,14 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
     this->result = SQL::Result(new PropertyDescriptor(move(result)));
   } catch (const Error &e) {
     if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_PROPERTY) {
-      result = DB::getSchema(this->txn, tClassName.toString()).properties.at(tPropName.toString());
+      ClassDescriptor classDescriptor = DB::getClass(this->txn, tClassName.toString());
+      vector<PropertyDescriptor> properties = DB::getProperties(this->txn, classDescriptor);
+      for(const auto& property: properties) {
+        if (property.name == tPropName.toString()) {
+          result = property;
+          break;
+        }
+      }
       this->rc = SQL_OK;
       this->result = SQL::Result(new PropertyDescriptor(move(result)));
     } else {
@@ -281,7 +289,7 @@ void Context::update(const UpdateArgs &args) {
       for (const auto &prop: args.prop.getAll()) {
         r.set(prop.first, prop.second);
       }
-      ClassType type = DB::getSchema(this->txn, target.descriptor.rid.first).type;
+      ClassType type = DB::getClass(this->txn, target.descriptor.rid.first).type;
       switch (type) {
         case ClassType::VERTEX:
           Vertex::update(this->txn, target.descriptor, r);
@@ -335,15 +343,13 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
         ResultSet edges;
         switch (whereType) {
           case WhereType::NO_COND:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, ClassFilter({className}));
+            edges = Vertex::getOutEdge(this->txn, src.descriptor);
             break;
           case WhereType::CONDITION:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<Condition>(),
-                                       ClassFilter({className}));
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<Condition>());
             break;
           case WhereType::MULTI_COND:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<MultiCondition>(),
-                                       ClassFilter({className}));
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<MultiCondition>());
             break;
         }
         // edgeDescs += edges;
@@ -359,15 +365,13 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
           ResultSet edges;
           switch (whereType) {
             case WhereType::NO_COND:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, ClassFilter({className}));
+              edges = Vertex::getInEdge(this->txn, dest.descriptor);
               break;
             case WhereType::CONDITION:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<Condition>(),
-                                        ClassFilter({className}));
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<Condition>());
               break;
             case WhereType::MULTI_COND:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<MultiCondition>(),
-                                        ClassFilter({className}));
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<MultiCondition>());
               break;
           }
           // inEdgeDescs += edges
@@ -628,8 +632,7 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
 }
 
 ResultSet Context::traversePrivate(const TraverseArgs &args) {
-  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int,
-                                               unsigned int, const ClassFilter &);
+  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int, const PathFilter&);
   static const auto mapFunc = map<string, TraverseFunction, StringCaseCompare>(
       {
           {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
@@ -664,7 +667,7 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     }
   }
 
-  return func(this->txn, args.root, args.minDepth, args.maxDepth, ClassFilter(args.filter));
+  return func(this->txn, args.root, args.minDepth, args.maxDepth, PathFilter{});
 }
 
 Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {
@@ -780,20 +783,20 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
 }
 
 nogdb::ClassType Context::findClassType(Txn &txn, const string &className) {
-  auto classD = DB::getSchema(txn, className);
-  return classD.type;
+  return DB::getClass(txn, className).type;
 }
 
 nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID) {
   if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
-    const ClassProperty &classProp = DB::getSchema(txn, classID).properties;
+    const ClassDescriptor classDescriptor = DB::getClass(txn, classID);
+    const vector<PropertyDescriptor> properties = DB::getProperties(txn, classDescriptor);
     PropertyMapType map{
         {CLASS_NAME_PROPERTY, PropertyType::TEXT},
-        {RECORD_ID_PROPERTY,  PropertyType::TEXT},
-        {VERSION_PROPERTY,    PropertyType::UNSIGNED_BIGINT}
+        {RECORD_ID_PROPERTY,  PropertyType::TEXT}/*,
+        {VERSION_PROPERTY,    PropertyType::UNSIGNED_BIGINT}*/
     };
-    for (const auto &p: classProp) {
-      map[p.first] = p.second.type;
+    for (const auto &p: properties) {
+      map[p.name] = p.type;
     }
     return map;
   } else {
@@ -811,7 +814,7 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
       mapProp.clear();
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
-      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
+//      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
       for (const auto &prop: in->record.getAll()) {
         mapProp[prop.first] = prop.second.type();
       }
@@ -819,10 +822,11 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
       mapProp.clear();
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
-      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
-      const ClassProperty &classProp = DB::getSchema(txn, classID).properties;
-      for (const auto &p: classProp) {
-        mapProp[p.first] = p.second.type;
+//      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
+      const ClassDescriptor classDescriptor = DB::getClass(txn, classID);
+      const vector<PropertyDescriptor> properties = DB::getProperties(txn, classDescriptor);
+      for (const auto &p: properties) {
+        mapProp[p.name] = p.type;
       }
     } else /* if (classID == previousClassID) */ {
       // no-op;

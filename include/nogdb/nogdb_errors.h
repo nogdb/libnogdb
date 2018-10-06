@@ -96,8 +96,8 @@ namespace nogdb {
      * Constructor
      */
     Error(const int code, const std::string &func, const std::string &file, const int line) noexcept
-        : _code{code}, _func{func}, _file{file}, _line{line},
-          runtime_error{func + " in " + file + ":" + std::to_string(line)} {}
+        : runtime_error{func + " in " + file + ":" + std::to_string(line)},
+        _code{code}, _func{func}, _file{file}, _line{line} {}
 
     virtual int code() const noexcept {
       return _code;
@@ -292,10 +292,10 @@ namespace nogdb {
    */
   class FatalError : public Error {
   public:
-    explicit FatalError(const Error &error) : _error{&error}, Error{error} {}
+    explicit FatalError(const Error &error) : Error{error}, _error{&error} {}
 
     virtual const char *what() const noexcept {
-      return "(FATAL)" + std::string{_error->what()};
+      return (std::string{"(FATAL)"} + std::string{_error->what()}).c_str();
     }
 
   private:

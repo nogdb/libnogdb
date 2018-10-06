@@ -228,7 +228,7 @@ namespace nogdb {
     class Function {
     public:
       enum class Id {
-        UNDEFINE,
+        UNDEFINED,
         COUNT,
         MIN, MAX,
         IN, IN_E, IN_V,
@@ -282,7 +282,7 @@ namespace nogdb {
 
       static Bytes expand(Txn &txn, ResultSet &input, const vector<Projection> &args);
 
-      static ClassFilter argsToClassFilter(const vector<Projection> &args);
+//      static ClassFilter argsToClassFilter(const vector<Projection> &args);
     };
 
     /* An arguments for create edge statement */
@@ -328,7 +328,7 @@ namespace nogdb {
     /* An arguments for tarverse statement */
     struct TraverseArgs {
       string direction;
-      set<string> filter;
+//      set<string> filter;
       RecordDescriptor root;
       long long minDepth;
       long long maxDepth;

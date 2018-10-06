@@ -43,10 +43,10 @@ namespace nogdb {
     auto foundClass = txn._iSchema->getExistingClass(className);
 
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid(txn)
+        .isTransactionValid()
         .isPropertyNameValid(propertyName)
         .isPropertyTypeValid(type)
-        .isPropertyIdMaxReach(txn)
+        .isPropertyIdMaxReach()
         .isNotDuplicatedProperty(foundClass.id, propertyName)
         .isNotOverridenProperty(foundClass.id, propertyName);
 
@@ -156,7 +156,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto foundClass = txn._iSchema->getExistingClass(className);
-    auto foundProperty = txn._iSchema->getExistingPropertyExtend(txn, foundClass.id, propertyName);
+    auto foundProperty = txn._iSchema->getExistingPropertyExtend(foundClass.id, propertyName);
     auto indexInfo = txn._index->getInfo(foundClass.id, foundProperty.id);
     if (indexInfo.id == IndexId{}) {
       throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);

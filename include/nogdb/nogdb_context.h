@@ -72,7 +72,7 @@ namespace nogdb {
     std::string _dbPath{};
     unsigned int _maxDB{};
     unsigned long _maxDBSize{};
-    std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
+    storage_engine::LMDBEnv *_envHandler;
   };
 
 }

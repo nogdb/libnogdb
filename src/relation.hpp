@@ -142,6 +142,7 @@ namespace nogdb {
             throw err;
           }
         }
+        return {RecordId{}, RecordId{}};
       }
 
     private:

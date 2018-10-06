@@ -45,6 +45,12 @@ namespace nogdb {
        * {name<string>} -> {id<uint16>}{superClassId<uint16>}{type<char>}
        */
       struct ClassAccessInfo {
+        ClassAccessInfo() = default;
+
+        ClassAccessInfo(const std::string &_name, const ClassId &_id, const ClassId &_superClassId,
+                        const ClassType &_type)
+            : name{_name}, id{_id}, superClassId{_superClassId}, type{_type} {}
+
         std::string name{""};
         ClassId id{0};
         ClassId superClassId{0};
@@ -250,6 +256,12 @@ namespace nogdb {
        * {classId<string>:name<string+padding>} -> {id<uint16>}{type<char>}
        */
       struct PropertyAccessInfo {
+        PropertyAccessInfo() = default;
+
+        PropertyAccessInfo(const ClassId &_classId, const std::string &_name, const PropertyId &_id,
+                           const PropertyType &_type)
+            : classId{_classId}, name{_name}, id{_id}, type{_type} {}
+
         ClassId classId{0};
         std::string name{""};
         PropertyId id{0};
@@ -431,7 +443,7 @@ namespace nogdb {
         std::pair<ClassId, std::string> splitKey(const std::string &key) const {
           auto splitKey = utils::string::split(key, KEY_SEPARATOR);
           require(splitKey.size() == 2);
-          auto classId = ClassId{std::atoi(splitKey[0].c_str())};
+          auto classId = static_cast<ClassId>(std::strtoul(splitKey[0].c_str(), nullptr, 0));
           auto propertyName = splitKey[1];
           ltrim(propertyName);
           return std::make_pair(classId, propertyName);
@@ -450,6 +462,11 @@ namespace nogdb {
        * {classId<uint16>}{propertyId<uint16>} -> {id<uint16>}{isUnique<uint8>}
        */
       struct IndexAccessInfo {
+        IndexAccessInfo() = default;
+
+        IndexAccessInfo(const ClassId &_classId, const PropertyId &_propertyId, const IndexId &_id, bool _isUnique)
+            : classId{_classId}, propertyId{_propertyId}, id{_id}, isUnique{_isUnique} {}
+
         ClassId classId{0};
         PropertyId propertyId{0};
         IndexId id{0};
@@ -519,6 +536,7 @@ namespace nogdb {
             if (classId != classIdKey) break;
             result.emplace_back(parse(classIdKey, propertyIdKey, keyValue.val.data.blob()));
           }
+          return result;
         }
 
       protected:

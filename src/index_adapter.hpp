@@ -29,7 +29,7 @@
 #include "datarecord_adapter.hpp"
 #include "parser.hpp"
 
-#include "nogdb/nogdb_txn.h"
+#include "nogdb_txn.h"
 
 #define INDEX_TYPE_POSITIVE     0   //0000
 #define INDEX_TYPE_NEGATIVE     1   //0001
@@ -49,8 +49,9 @@ namespace nogdb {
       class IndexRecord : public storage_engine::adapter::LMDBKeyValAccess {
       public:
         IndexRecord(const storage_engine::LMDBTxn *const txn, const IndexId &indexId, const unsigned int flags)
-            : _positive{getPositiveFlag(flags)}, _numeric{getNumericFlag(flags)}, _unique{getUniqueFlag(flags)},
-              LMDBKeyValAccess(txn, buildIndexName(indexId, _positive), _numeric, _unique, false, false) {}
+            : LMDBKeyValAccess(txn, buildIndexName(indexId, getPositiveFlag(flags)), getNumericFlag(flags),
+                               getUniqueFlag(flags), false, false),
+              _positive{getPositiveFlag(flags)}, _numeric{getNumericFlag(flags)}, _unique{getUniqueFlag(flags)} {}
 
         virtual ~IndexRecord() noexcept = default;
 

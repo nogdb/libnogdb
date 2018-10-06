@@ -345,7 +345,7 @@ Function::Function(const string &name_, vector<Projection> &&args_)
   if (id_ != nameMap.end()) {
     this->id = id_->second;
   } else {
-    this->id = Id::UNDEFINE;
+    this->id = Id::UNDEFINED;
   }
 }
 
@@ -475,8 +475,8 @@ Bytes Function::walkIn(nogdb::Txn &txn, const Result &input, const vector<Projec
 }
 
 Bytes Function::walkInEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  ClassFilter filter = argsToClassFilter(args);
-  return Bytes(Vertex::getInEdge(txn, input.descriptor, filter));
+//  ClassFilter filter = argsToClassFilter(args);
+  return Bytes(Vertex::getInEdge(txn, input.descriptor));
 }
 
 Bytes Function::walkInVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
@@ -497,8 +497,8 @@ Bytes Function::walkOut(nogdb::Txn &txn, const Result &input, const vector<Proje
 }
 
 Bytes Function::walkOutEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  ClassFilter filter = argsToClassFilter(args);
-  return Bytes(Vertex::getOutEdge(txn, input.descriptor, filter));
+//  ClassFilter filter = argsToClassFilter(args);
+  return Bytes(Vertex::getOutEdge(txn, input.descriptor));
 }
 
 Bytes Function::walkOutVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
@@ -523,8 +523,8 @@ Bytes Function::walkBoth(Txn &txn, const Result &input, const vector<Projection>
 }
 
 Bytes Function::walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  ClassFilter filter = argsToClassFilter(args);
-  return Bytes(Vertex::getAllEdge(txn, input.descriptor, filter));
+//  ClassFilter filter = argsToClassFilter(args);
+  return Bytes(Vertex::getAllEdge(txn, input.descriptor));
 }
 
 Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
@@ -557,16 +557,16 @@ Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &arg
   return Bytes();
 }
 
-nogdb::ClassFilter Function::argsToClassFilter(const vector<Projection> &args) {
-  ClassFilter filter{};
-  for (const Projection &arg: args) {
-    if (arg.type != ProjectionType::PROPERTY) {
-      throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
-    }
-    filter.add(arg.get<string>());
-  }
-  return filter;
-}
+//nogdb::ClassFilter Function::argsToClassFilter(const vector<Projection> &args) {
+//  ClassFilter filter{};
+//  for (const Projection &arg: args) {
+//    if (arg.type != ProjectionType::PROPERTY) {
+//      throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
+//    }
+//    filter.add(arg.get<string>());
+//  }
+//  return filter;
+//}
 
 
 #pragma mark - Parser process

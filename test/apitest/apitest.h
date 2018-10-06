@@ -30,7 +30,9 @@
 #include <vector>
 #include <algorithm>
 #include <set>
+
 #include "nogdb/nogdb.h"
+
 #include "apitest_config.h"
 #include "apitest_utils.h"
 

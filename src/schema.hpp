@@ -24,10 +24,10 @@
 #include <vector>
 
 #include "schema_adapter.hpp"
-
-#include "nogdb_txn.h"
-#include "nogdb_types.h"
 #include "validate.hpp"
+
+#include "nogdb_types.h"
+#include "nogdb_txn.h"
 
 namespace nogdb {
 
@@ -114,7 +114,8 @@ namespace nogdb {
       std::vector<PropertyAccessInfo>
       getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result) {
         if (superClassId != ClassId{}) {
-          result.emplace_back(_txn->_property->getInfos(superClassId));
+          auto partialResult = _txn->_property->getInfos(superClassId);
+          result.insert(result.cend(), partialResult.cbegin(), partialResult.cend());
           getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId), result);
         }
         return std::move(result);
@@ -127,7 +128,7 @@ namespace nogdb {
           result[property.name] = property;
         }
         auto inheritResult = std::vector<PropertyAccessInfo>{};
-        for(const auto& property: getInheritPropertyInfo(superClassId, inheritResult)) {
+        for (const auto &property: getInheritPropertyInfo(superClassId, inheritResult)) {
           result[property.name] = property;
         }
         return result;
@@ -140,7 +141,7 @@ namespace nogdb {
           result[property.id] = property;
         }
         auto inheritResult = std::vector<PropertyAccessInfo>{};
-        for(const auto& property: getInheritPropertyInfo(superClassId, inheritResult)) {
+        for (const auto &property: getInheritPropertyInfo(superClassId, inheritResult)) {
           result[property.id] = property;
         }
         return result;

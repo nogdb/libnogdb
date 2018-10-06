@@ -23,13 +23,8 @@
 
 #include <regex>
 
-#include "schema.hpp"
-#include "schema_adapter.hpp"
-#include "datarecord_adapter.hpp"
-
 #include "nogdb_errors.h"
 #include "nogdb_context.h"
-#include "nogdb_types.h"
 #include "nogdb_txn.h"
 
 #define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
@@ -47,169 +42,33 @@ namespace nogdb {
 
       virtual ~Validator() noexcept = default;
 
-      Validator &isTransactionValid() {
-        if (_txn->getTxnMode() == Txn::Mode::READ_ONLY) {
-          throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
-        }
-        if (_txn->isCompleted()) {
-          throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
-        }
-        return *this;
-      }
+      Validator &isTransactionValid();
 
-      Validator &isClassIdMaxReach() {
-        if ((_txn->_dbInfo->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
-        }
-        return *this;
-      }
+      Validator &isClassIdMaxReach();
 
-      Validator &isPropertyIdMaxReach() {
-        if ((_txn->_dbInfo->getMaxPropertyId() >= UINT16_MAX)) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
-        }
-        return *this;
-      }
+      Validator &isPropertyIdMaxReach();
 
-      Validator &isIndexIdMaxReach() {
-        if ((_txn->_dbInfo->getMaxIndexId() >= UINT32_MAX)) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
-        }
-        return *this;
-      }
+      Validator &isIndexIdMaxReach();
 
-      Validator &isClassNameValid(const std::string &className) {
-        if (!isNameValid(className)) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSNAME);
-        }
-        return *this;
-      }
+      Validator &isClassNameValid(const std::string &className);
 
-      Validator &isPropertyNameValid(const std::string &propName) {
-        if (!isNameValid(propName)) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPERTYNAME);
-        }
-        return *this;
-      }
+      Validator &isPropertyNameValid(const std::string &propName);
 
-      Validator &isClassTypeValid(const ClassType &type) {
-        switch (type) {
-          case ClassType::VERTEX:
-          case ClassType::EDGE:
-            return *this;
-          default:
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSTYPE);
-        }
-      }
+      Validator &isClassTypeValid(const ClassType &type);
 
-      Validator &isPropertyTypeValid(const PropertyType &type) {
-        switch (type) {
-          case PropertyType::TINYINT:
-          case PropertyType::UNSIGNED_TINYINT:
-          case PropertyType::SMALLINT:
-          case PropertyType::UNSIGNED_SMALLINT:
-          case PropertyType::INTEGER:
-          case PropertyType::UNSIGNED_INTEGER:
-          case PropertyType::BIGINT:
-          case PropertyType::UNSIGNED_BIGINT:
-          case PropertyType::TEXT:
-          case PropertyType::REAL:
-          case PropertyType::BLOB:
-            return *this;
-          default:
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE);
-        }
-      }
+      Validator &isPropertyTypeValid(const PropertyType &type);
 
-      Validator &isNotDuplicatedClass(const std::string &className) {
-        auto foundClass = _txn->_class->getId(className);
-        if (foundClass != ClassId{}) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
-        }
-        return *this;
-      }
+      Validator &isNotDuplicatedClass(const std::string &className);
 
-      Validator &isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName) {
-        auto foundProperty = _txn->_property->getId(classId, propertyName);
-        if (foundProperty != PropertyId{}) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
-        }
-        auto superClassId = _txn._class->getSuperClassId(classId);
-        if (superClassId != ClassId{}) {
-          isNotDuplicatedProperty(superClassId, propertyName);
-        }
-        return *this;
-      }
+      Validator &isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName);
 
-      Validator &isNotOverridenProperty(const ClassId &classId, const std::string &propertyName) {
-        auto foundProperty = _txn->_property->getId(classId, propertyName);
-        if (foundProperty != PropertyId{}) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
-        }
-        for (const auto &subClassId: _txn->_class->getSubClassIds(classId)) {
-          if (subClassId != ClassId{}) {
-            isNotOverridenProperty(subClassId, propertyName);
-          }
-        }
-        return *this;
-      }
+      Validator &isNotOverridenProperty(const ClassId &classId, const std::string &propertyName);
 
-      Validator &isExistingSrcVertex(const RecordDescriptor &vertex) {
-        auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
-        if (foundClass.type == ClassType::VERTEX) {
-          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
-          try {
-            vertexDataRecord.getBlob(vertex.rid.second);
-          } catch (const Error &error) {
-            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
-              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-            } else {
-              throw NOGDB_FATAL_ERROR(error);
-            }
-          }
-          return *this;
-        } else {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
-        }
-      }
+      Validator &isExistingSrcVertex(const RecordDescriptor &vertex);
 
-      Validator &isExistingDstVertex(const RecordDescriptor &vertex) {
-        auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
-        if (foundClass.type == ClassType::VERTEX) {
-          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
-          try {
-            vertexDataRecord.getBlob(vertex.rid.second);
-          } catch (const Error &error) {
-            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
-              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-            } else {
-              throw NOGDB_FATAL_ERROR(error);
-            }
-          }
-          return *this;
-        } else {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
-        }
-      }
+      Validator &isExistingDstVertex(const RecordDescriptor &vertex);
 
-      Validator &isExistingVertex(const RecordDescriptor &vertex) {
-        auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
-        if (foundClass.type == ClassType::VERTEX) {
-          auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
-          try {
-            vertexDataRecord.getBlob(vertex.rid.second);
-          } catch (const Error &error) {
-            if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
-              throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
-            } else {
-              throw NOGDB_FATAL_ERROR(error);
-            }
-          }
-          return *this;
-        } else {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
-        }
-      }
+      Validator &isExistingVertex(const RecordDescriptor &vertex);
 
     private:
 

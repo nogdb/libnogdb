@@ -127,7 +127,7 @@ namespace nogdb {
         auto recordId = RecordId{foundClass.id, key};
         if (foundClass.type == ClassType::EDGE) {
           auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(keyValue.val.data.blob());
-          txn._iGraph->removeRel(recordId, vertices.first, vertices.second);
+          txn._iGraph->removeRelFromEdge(recordId, vertices.first, vertices.second);
         } else {
           txn._iGraph->removeRelFromVertex(recordId);
         }

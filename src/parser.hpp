@@ -41,7 +41,7 @@ namespace nogdb {
     constexpr size_t UINT32_BITS_COUNT = 8 * sizeof(uint32_t);
 
     const std::string EMPTY_STRING = std::string{"\n"};
-    constexpr size_t SIZE_OF_EMPTY_STRING = strlen(EMPTY_STRING.c_str());
+    const size_t SIZE_OF_EMPTY_STRING = strlen(EMPTY_STRING.c_str());
 
     constexpr size_t VERTEX_SRC_DST_RAW_DATA_LENGTH = 2 * (sizeof(ClassId) + sizeof(PositionId));
 
@@ -206,7 +206,7 @@ namespace nogdb {
         if (dataSize <= 0) {
           // create an empty property as a raw data for a class
           auto value = Blob(SIZE_OF_EMPTY_STRING);
-          value.append(static_cast<void *>(&EMPTY_STRING), SIZE_OF_EMPTY_STRING);
+          value.append(EMPTY_STRING.c_str(), SIZE_OF_EMPTY_STRING);
           return value;
         } else {
           // create properties as a raw data for a class

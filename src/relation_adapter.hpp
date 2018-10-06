@@ -28,7 +28,7 @@
 #include "constant.hpp"
 #include "storage_adapter.hpp"
 
-#include "nogdb/nogdb_txn.h"
+#include "nogdb_txn.h"
 
 namespace nogdb {
 
@@ -45,6 +45,11 @@ namespace nogdb {
        * {vertexId<string>} -> {edgeId<RecordId>}{neighborId<RecordId>}
        */
       struct RelationAccessInfo {
+        RelationAccessInfo() = default;
+
+        RelationAccessInfo(const RecordId &_vertexId, const RecordId &_edgeId, const RecordId &_neighborId)
+            : vertexId{_vertexId}, edgeId{_edgeId}, neighborId{_neighborId} {}
+
         RecordId vertexId{};
         RecordId edgeId{};
         RecordId neighborId{};
@@ -88,10 +93,11 @@ namespace nogdb {
             if (key != vertexId) break;
             result.emplace_back(parse(vertexId, keyValue.val.data.blob()));
           }
+          return result;
         }
 
         std::vector<RecordId> getEdges(const RecordId &vertexId, const RecordId &neighborId) const {
-          auto result = std::vector<RelationAccessInfo>{};
+          auto result = std::vector<RecordId>{};
           auto cursorHandler = cursor();
           for (auto keyValue = cursorHandler.find(rid2str(vertexId));
                !keyValue.empty();
@@ -102,10 +108,11 @@ namespace nogdb {
             if (neighbor != neighborId) continue;
             result.emplace_back(parseEdgeId(keyValue.val.data.blob()));
           }
+          return result;
         }
 
         std::vector<RecordId> getEdges(const RecordId &vertexId) const {
-          auto result = std::vector<RelationAccessInfo>{};
+          auto result = std::vector<RecordId>{};
           auto cursorHandler = cursor();
           for (auto keyValue = cursorHandler.find(rid2str(vertexId));
                !keyValue.empty();
@@ -114,6 +121,7 @@ namespace nogdb {
             if (key != vertexId) break;
             result.emplace_back(parseEdgeId(keyValue.val.data.blob()));
           }
+          return result;
         }
 
         Direction getDirection() const {
@@ -162,8 +170,8 @@ namespace nogdb {
         RecordId str2rid(const std::string &key) const {
           auto splitKey = utils::string::split(key, KEY_SEPARATOR);
           require(splitKey.size() == 2);
-          auto classId = ClassId{std::atoi(splitKey[0].c_str())};
-          auto positionId = PositionId{std::strtoul(splitKey[1].c_str(), nullptr, 0)};
+          auto classId = static_cast<ClassId>(std::strtoul(splitKey[0].c_str(), nullptr, 0));
+          auto positionId = static_cast<PositionId>(std::strtoul(splitKey[1].c_str(), nullptr, 0));
           return RecordId{classId, positionId};
         };
 

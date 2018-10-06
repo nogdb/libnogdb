@@ -79,6 +79,26 @@ namespace nogdb {
   };
 
   //*************************************************************
+  //*  NogDB database operations.                               *
+  //*************************************************************
+
+  struct DB {
+    DB() = delete;
+
+    ~DB() noexcept = delete;
+
+    static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
+
+    static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
+
+    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
+
+    static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
+
+    static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
+  };
+
+  //*************************************************************
   //*  NogDB vertex operations.                                 *
   //*************************************************************
 
@@ -294,26 +314,6 @@ namespace nogdb {
 
     static ResultSetCursor
     getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-  };
-
-  //*************************************************************
-  //*  NogDB database operations.                               *
-  //*************************************************************
-
-  struct DB {
-    DB() = delete;
-
-    ~DB() noexcept = delete;
-
-    static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
-
-    static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
-
-    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
-
-    static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
-
-    static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
   };
 
   //*************************************************************
