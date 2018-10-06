@@ -23,6 +23,7 @@
 
 #include <string>
 #include <exception>
+#include <stdexcept>
 #include "lmdb/lmdb.h"
 
 //*************************************************************

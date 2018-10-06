@@ -85,48 +85,22 @@ target_compile_options(nogdb
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(nogdb Threads::Threads)
-if(MINGW)
+if(NOT APPLE)
     target_link_libraries(nogdb atomic)
 endif()
 
 ## TARGET unittest
-#set(UNITTEST_COMPILE_OPTIONS
-#    -std=c++11
-#    -W
-#    -Wall
-#    -Wno-unused-parameter
-#    -Wno-unused-variable
-#    -Wno-unknown-pragmas
-#    -Wno-format-extra-args
-#    -fPIC
-#    -march=native
-#)
-#
-#set(UNITTEST_PATH "test/unittest/unittest.cpp")
-#string(REPLACE ${UNITTEST_PATH} "" nogdb_UNIT_TEST "${nogdb_UNIT_TEST}")
-#add_library(nogdb_unittest_object OBJECT EXCLUDE_FROM_ALL
-#    ${nogdb_UNIT_TEST}
-#    ${nogdb_UNIT_TEST_HEADER}
-#    ${nogdb_UNIT_TEST_LMDB}
-#    ${nogdb_UNIT_TEST_LMDB_HEADER}
-#    ${CMAKE_CURRENT_SOURCE_DIR}/include
-#    ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
-#)
-#target_include_directories(nogdb_unittest_object
-#    PRIVATE
-#        $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
-#        ${CMAKE_CURRENT_SOURCE_DIR}/lib/lmdb
-#        ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb
-#    PUBLIC
-#        /usr/local/include
-#)
-#add_executable(unittest_all EXCLUDE_FROM_ALL ${UNITTEST_PATH} $<TARGET_OBJECTS:nogdb_unittest_object>)
-#find_library(lmdb_LIB lmdb)
-#find_library(gtest_LIB gtest)
-#find_library(gmock_LIB gmock)
-#target_link_libraries(unittest_all ${gtest_LIB} ${gmock_LIB} ${lmdb_LIB})
-#add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
-#add_test(NAME unittest_all COMMAND unittest_all)
+set(UNITTEST_COMPILE_OPTIONS
+    -std=c++11
+    -W
+    -Wall
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-unknown-pragmas
+    -Wno-format-extra-args
+    -fPIC
+    -march=native
+)
 
 ## TARGET apitest
 set(APITEST_COMPILE_OPTIONS
@@ -138,6 +112,7 @@ set(APITEST_COMPILE_OPTIONS
     -Wno-unused-but-set-variable
     -Wno-unknown-warning-option
     -fPIC
+    -march=native
 )
 
 set(APITEST_PATH "test/apitest/apitest.cpp")
@@ -176,7 +151,29 @@ if(nogdb_BuildTests)
     apitest_executable(schema_txn)
     apitest_executable(txn)
     apitest_executable(sql)
+
+    add_executable(unittest_all EXCLUDE_FROM_ALL
+        ${nogdb_UNIT_TEST}
+        ${nogdb_UNIT_TEST_HEADER}
+        ${nogdb_UNIT_TEST_LMDB}
+        ${nogdb_UNIT_TEST_LMDB_HEADER}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
+    )
+    target_include_directories(unittest_all
+        PRIVATE
+            $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+    find_library(gtest_LIB gtest)
+    find_library(gmock_LIB gmock)
+    target_link_libraries(unittest_all lmdb ${gtest_LIB} ${gmock_LIB} pthread)
+    if (NOT APPLE)
+        target_link_libraries(unittest_all atomic)
+    endif()
+    add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
+    add_test(NAME unittest_all COMMAND unittest_all)
 endif()
+
 
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)
