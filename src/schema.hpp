@@ -44,43 +44,13 @@ namespace nogdb {
 
       virtual ~SchemaInterface() noexcept = default;
 
-      ClassAccessInfo getExistingClass(const std::string &className) {
-        auto foundClass = _txn->_class->getInfo(className);
-        if (foundClass.type == ClassType::UNDEFINED) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
-        }
-        return foundClass;
-      }
+      ClassAccessInfo getExistingClass(const std::string &className);
 
-      ClassAccessInfo getExistingClass(const ClassId &classId) {
-        auto foundClass = _txn->_class->getInfo(classId);
-        if (foundClass.type == ClassType::UNDEFINED) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
-        }
-        return foundClass;
-      }
+      ClassAccessInfo getExistingClass(const ClassId &classId);
 
-      PropertyAccessInfo getExistingProperty(const ClassId &classId, const std::string &propertyName) {
-        auto foundProperty = _txn->_property->getInfo(classId, propertyName);
-        if (foundProperty.type == PropertyType::UNDEFINED) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-        }
-        return foundProperty;
-      }
+      PropertyAccessInfo getExistingProperty(const ClassId &classId, const std::string &propertyName);
 
-      PropertyAccessInfo getExistingPropertyExtend(const ClassId &classId, const std::string &propertyName) {
-        auto foundProperty = _txn->_property->getInfo(classId, propertyName);
-        if (foundProperty.type == PropertyType::UNDEFINED) {
-          auto superClassId = _txn->_class->getSuperClassId(classId);
-          if (superClassId != ClassId{}) {
-            return getExistingPropertyExtend(classId, propertyName);
-          } else {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-          }
-        } else {
-          return foundProperty;
-        }
-      }
+      PropertyAccessInfo getExistingPropertyExtend(const ClassId &classId, const std::string &propertyName);
 
       template<typename T>
       ClassAccessInfo getValidClassInfo(const T &classSearchKey, ClassType type = ClassType::UNDEFINED) {
@@ -94,58 +64,18 @@ namespace nogdb {
       }
 
       std::map<std::string, ClassAccessInfo>
-      getSubClassInfos(const ClassId &classId, std::map<std::string, ClassAccessInfo> &result) {
-        for (const auto &subClassInfo: _txn->_class->getSubClassInfos(classId)) {
-          result.emplace(subClassInfo.name, subClassInfo);
-          getSubClassInfos(subClassInfo.id, result);
-        }
-        return std::move(result);
-      }
+      getSubClassInfos(const ClassId &classId, std::map<std::string, ClassAccessInfo> &result);
+
+      std::vector<PropertyAccessInfo> getNativePropertyInfo(const ClassId &classId);
 
       std::vector<PropertyAccessInfo>
-      getNativePropertyInfo(const ClassId &classId) {
-        auto result = std::vector<PropertyAccessInfo>{};
-        for (const auto &propertyInfo: _txn->_property->getInfos(classId)) {
-          result.emplace_back(propertyInfo);
-        }
-        return result;
-      }
-
-      std::vector<PropertyAccessInfo>
-      getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result) {
-        if (superClassId != ClassId{}) {
-          auto partialResult = _txn->_property->getInfos(superClassId);
-          result.insert(result.cend(), partialResult.cbegin(), partialResult.cend());
-          getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId), result);
-        }
-        return std::move(result);
-      }
+      getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result);
 
       PropertyNameMapInfo
-      getPropertyNameMapInfo(const ClassId &classId, const ClassId &superClassId) {
-        auto result = PropertyNameMapInfo{};
-        for (const auto &property: getNativePropertyInfo(classId)) {
-          result[property.name] = property;
-        }
-        auto inheritResult = std::vector<PropertyAccessInfo>{};
-        for (const auto &property: getInheritPropertyInfo(superClassId, inheritResult)) {
-          result[property.name] = property;
-        }
-        return result;
-      }
+      getPropertyNameMapInfo(const ClassId &classId, const ClassId &superClassId);
 
       PropertyIdMapInfo
-      getPropertyIdMapInfo(const ClassId &classId, const ClassId &superClassId) {
-        auto result = PropertyIdMapInfo{};
-        for (const auto &property: getNativePropertyInfo(classId)) {
-          result[property.id] = property;
-        }
-        auto inheritResult = std::vector<PropertyAccessInfo>{};
-        for (const auto &property: getInheritPropertyInfo(superClassId, inheritResult)) {
-          result[property.id] = property;
-        }
-        return result;
-      }
+      getPropertyIdMapInfo(const ClassId &classId, const ClassId &superClassId);
 
     private:
       const Txn *_txn;
