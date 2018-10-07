@@ -87,15 +87,24 @@ namespace nogdb {
 
     ~DB() noexcept = delete;
 
+    static DBInfo getDBInfo(const Txn &txn);
+
     static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
 
     static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
 
     static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
 
+    static const std::vector<IndexDescriptor> getIndexes(const Txn& txn, const ClassDescriptor& classDescriptor);
+
     static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
 
     static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
+
+    static const PropertyDescriptor getProperty(const Txn& txn, const std::string &className, const std::string &propertyName);
+
+    static const IndexDescriptor getIndex(const Txn& txn, const std::string &className, const std::string &propertyName);
+
   };
 
   //*************************************************************

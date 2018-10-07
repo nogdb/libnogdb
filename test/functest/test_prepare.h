@@ -22,7 +22,7 @@
 #ifndef TEST_PREPARE_H_
 #define TEST_PREPARE_H_
 
-#include "apitest.h"
+#include "functest.h"
 
 inline void init_vertex_book() {
     try {

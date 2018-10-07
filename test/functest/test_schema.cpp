@@ -19,7 +19,7 @@
  *
  */
 
-#include "apitest.h"
+#include "functest.h"
 
 void test_create_class() {
     try {

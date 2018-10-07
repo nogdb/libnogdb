@@ -22,7 +22,7 @@
 #include <thread>
 #include <mutex>
 #include <unistd.h>
-#include "apitest.h"
+#include "functest.h"
 #include "test_prepare.h"
 
 std::mutex wlock;

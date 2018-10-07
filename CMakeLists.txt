@@ -5,8 +5,8 @@ project(nogdb VERSION 0.12.0 LANGUAGES C CXX)
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 file(GLOB nogdb_SOURCE_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
 file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/*.h)
-file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.cpp)
-file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/apitest/*.h)
+file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/functest/*.cpp)
+file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/functest/*.h)
 file(GLOB nogdb_UNIT_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.cpp)
 file(GLOB nogdb_UNIT_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.h)
 file(GLOB nogdb_UNIT_TEST_LMDB ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/lmdb_engine/*.cpp)
@@ -102,8 +102,8 @@ set(UNITTEST_COMPILE_OPTIONS
     -march=native
 )
 
-## TARGET apitest
-set(APITEST_COMPILE_OPTIONS
+## TARGET functest
+set(FUNCTEST_COMPILE_OPTIONS
     -std=c++11
     -W
     -Wall
@@ -115,42 +115,42 @@ set(APITEST_COMPILE_OPTIONS
     -march=native
 )
 
-set(APITEST_PATH "test/apitest/apitest.cpp")
-string(REPLACE ${APITEST_PATH} "" nogdb_API_TEST "${nogdb_API_TEST}")
-add_library(nogdb_apitest_object OBJECT EXCLUDE_FROM_ALL
+set(FUNCTEST_PATH "test/functest/functest.cpp")
+string(REPLACE ${FUNCTEST_PATH} "" nogdb_API_TEST "${nogdb_API_TEST}")
+add_library(nogdb_functest_object OBJECT EXCLUDE_FROM_ALL
     ${nogdb_API_TEST}
     ${nogdb_API_TEST_HEADER}
 )
-target_include_directories(nogdb_apitest_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(nogdb_functest_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
 
-# apitest_executable(name)
-function(apitest_executable name)
+# functest_executable(name)
+function(functest_executable name)
     string(TOUPPER ${name} upper_name)
-    add_executable(apitest_${name} EXCLUDE_FROM_ALL ${APITEST_PATH} $<TARGET_OBJECTS:nogdb_apitest_object>)
-    target_link_libraries(apitest_${name} nogdb)
-    target_compile_options(apitest_${name}
+    add_executable(functest_${name} EXCLUDE_FROM_ALL ${FUNCTEST_PATH} $<TARGET_OBJECTS:nogdb_functest_object>)
+    target_link_libraries(functest_${name} nogdb)
+    target_compile_options(functest_${name}
         PRIVATE
-            ${APITEST_COMPILE_OPTIONS}
+            ${FUNCTEST_COMPILE_OPTIONS}
             -DTEST_${upper_name}_OPERATIONS
     )
-    add_test(build_apitest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target apitest_${name})
-    add_test(NAME test_${name} COMMAND apitest_${name})
+    add_test(build_functest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target functest_${name})
+    add_test(NAME test_${name} COMMAND functest_${name})
     set_tests_properties(test_${name} PROPERTIES DEPENDS ctest_build_test_${name})
 endfunction()
 
 if(nogdb_BuildTests)
     enable_testing()
-    apitest_executable(context)
-    apitest_executable(schema)
-    apitest_executable(record)
-    apitest_executable(misc)
-    apitest_executable(graph)
-    apitest_executable(find)
-    apitest_executable(inheritance)
-    apitest_executable(index)
-    apitest_executable(schema_txn)
-    apitest_executable(txn)
-    apitest_executable(sql)
+    functest_executable(context)
+    functest_executable(schema)
+    functest_executable(record)
+    functest_executable(misc)
+    functest_executable(graph)
+    functest_executable(find)
+    functest_executable(inheritance)
+    functest_executable(index)
+    functest_executable(schema_txn)
+    functest_executable(txn)
+    functest_executable(sql)
 
     add_executable(unittest_all EXCLUDE_FROM_ALL
         ${nogdb_UNIT_TEST}

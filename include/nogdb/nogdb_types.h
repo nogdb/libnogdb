@@ -141,9 +141,18 @@ namespace nogdb {
   typedef uint32_t PositionId;
   typedef uint32_t ClusterId;
   typedef std::pair<ClassId, PositionId> RecordId;
-  typedef uint64_t TxnId;
   typedef uint32_t IndexId;
   typedef std::map<std::string, PropertyType> PropertyMapType;
+
+  struct DBInfo {
+    std::string dbPath;
+    ClassId maxClassId;
+    ClassId numClass;
+    PropertyId maxPropertyId;
+    PropertyId numProperty;
+    IndexId maxIndexId;
+    IndexId numIndex;
+  };
 
   class Txn;
 
@@ -671,6 +680,18 @@ namespace nogdb {
 
   };
 
+  struct IndexDescriptor {
+    IndexDescriptor() = default;
+
+    IndexDescriptor(const IndexId &_id, const ClassId &_classId, const PropertyId &_propertyId, bool _isUnique)
+        : id{_id}, classId{_classId}, propertyId{_propertyId}, unique{_isUnique} {}
+
+    IndexId id{0};
+    ClassId classId{0};
+    PropertyId propertyId{0};
+    bool unique{true};
+  };
+
   struct PropertyDescriptor {
     PropertyDescriptor() = default;
 
@@ -797,12 +818,12 @@ namespace nogdb {
     return !operator==(lhs, rhs);
   }
 
-}
+  inline std::string rid2str(const nogdb::RecordId &rid) {
+    std::stringstream ss{};
+    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
+    return ss.str();
+  }
 
-inline std::string rid2str(const nogdb::RecordId &rid) {
-  std::stringstream ss{};
-  ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
-  return ss.str();
 }
 
 inline std::ostream &operator<<(std::ostream &os, const nogdb::RecordId &rid) {

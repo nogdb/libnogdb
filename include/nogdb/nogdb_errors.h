@@ -56,7 +56,7 @@
 #define NOGDB_CTX_OVERRIDE_PROPERTY             0x2040
 #define NOGDB_CTX_CONFLICT_PROPTYPE             0x2050
 #define NOGDB_CTX_IN_USED_PROPERTY              0x2060
-#define NOGDB_CTX_NOEXST_RECORD                  0x3000
+#define NOGDB_CTX_NOEXST_RECORD                 0x3000
 #define NOGDB_CTX_INVALID_COMPARATOR            0x4000
 #define NOGDB_CTX_INVALID_PROPTYPE_INDEX        0x6000
 #define NOGDB_CTX_NOEXST_INDEX                  0x6010
@@ -96,9 +96,24 @@ namespace nogdb {
     /**
      * Constructor
      */
-    Error(const int code, const std::string &func, const std::string &file, const int line) noexcept
-        : runtime_error{func + " in " + file + ":" + std::to_string(line)},
+    explicit Error(const int code, const std::string &func, const std::string &file, const int line)
+        : std::runtime_error{func + " in " + file + ":" + std::to_string(line)},
         _code{code}, _func{func}, _file{file}, _line{line} {}
+
+    Error(const Error& error) noexcept
+        : std::runtime_error{error._func + " in " + error._file + ":" + std::to_string(error._line)},
+          _code{error._code}, _func{error._func}, _file{error._file}, _line{error._line} {}
+
+    Error& operator=(const Error& error) noexcept {
+      if (this != &error) {
+        auto tmp = Error(error);
+        using std::swap;
+        swap(tmp, *this);
+      }
+      return *this;
+    }
+
+    virtual ~Error() noexcept = default;
 
     virtual int code() const noexcept {
       return _code;

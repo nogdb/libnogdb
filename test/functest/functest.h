@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef RUNTEST_H_
-#define RUNTEST_H_
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -33,8 +32,8 @@
 
 #include "nogdb/nogdb.h"
 
-#include "apitest_config.h"
-#include "apitest_utils.h"
+#include "functest_config.h"
+#include "functest_utils.h"
 
 extern nogdb::Context *ctx;
 
@@ -429,6 +428,4 @@ extern void test_sql_traverse();
 extern void test_sql_create_index();
 extern void test_sql_create_index_unique();
 extern void test_sql_drop_index();
-#endif
-
 #endif

@@ -118,6 +118,15 @@ namespace nogdb {
       return result;
     }
 
+    IndexAccessInfo
+    SchemaInterface::getIndexInfo(const ClassId &classId, const PropertyId &propertyId) {
+      auto foundIndexInfo = _txn->_index->getInfo(classId, propertyId);
+      if (foundIndexInfo.id == IndexId{}) {
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
+      }
+      return foundIndexInfo;
+    }
+
   }
 
 }

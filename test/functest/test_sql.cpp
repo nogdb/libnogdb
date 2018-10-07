@@ -22,8 +22,8 @@
 #include <string.h>
 
 #include <nogdb/nogdb.h>
-#include "apitest.h"
-#include "apitest_utils.h"
+#include "functest.h"
+#include "functest_utils.h"
 #include "test_prepare.h"
 
 using namespace std;

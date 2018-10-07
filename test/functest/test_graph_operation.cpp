@@ -23,7 +23,7 @@
 #include <vector>
 #include <list>
 
-#include "apitest.h"
+#include "functest.h"
 #include "test_prepare.h"
 
 void test_bfs_traverse_in() {

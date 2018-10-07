@@ -21,7 +21,7 @@
 
 #include <ctime>
 #include <sstream>
-#include "apitest.h"
+#include "functest.h"
 
 nogdb::Context *ctx = nullptr;
 auto tnum = 0;

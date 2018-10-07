@@ -19,7 +19,7 @@
  *
  */
 
-#include "apitest.h"
+#include "functest.h"
 
 void assert_class(const nogdb::Txn &txn, const std::string &className, const std::string &superClassName,
                   size_t sizeOfSubClasses, size_t sizeOfProperties) {

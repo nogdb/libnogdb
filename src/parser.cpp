@@ -39,8 +39,6 @@ namespace nogdb {
         dataSize += getRawDataSize(property.second.size());
         //TODO: check if having any index?
       }
-      // calculate a raw data from basic property info (only version and txn id)
-      dataSize += getRawDataSize(2 * sizeof(TxnId));
       return parseRecord(record, dataSize, properties);
     }
 

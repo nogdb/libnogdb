@@ -18,7 +18,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "apitest.h"
+#include "functest.h"
 #include "test_prepare.h"
 
 void test_txn_commit_nothing() {

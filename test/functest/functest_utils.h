@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef RUNTEST_UTILS_H_
-#define RUNTEST_UTILS_H_
+#pragma once
 
 #include <cassert>
 #include <type_traits>
@@ -31,6 +30,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/file.h>
+
+#include "functest_config.h"
 
 #include "nogdb/nogdb.h"
 
@@ -50,46 +51,8 @@ inline void init() {
     }
 }
 
-inline void showSchema(const nogdb::Txn &txn) {
-    auto info = nogdb::DB::getDBInfo(txn);
-    std::cout << "db_path = " << info.dbPath << "\n"
-              << "max_db = " << info.maxDB << "\n"
-              << "max_db_size = " << info.maxDBSize << "\n"
-              << "num_class = " << info.numClass << "\n"
-              << "num_property = " << info.numProperty << "\n"
-              << "max_class_id = " << info.maxClassId << "\n"
-              << "max_property_id = " << info.maxPropertyId << "\n";
-    auto schema = std::vector<nogdb::ClassDescriptor>{};
-    try {
-        schema = nogdb::DB::getSchema(txn);
-    } catch (const nogdb::Error &ex) {
-        std::cout << "Error: " << ex.what() << std::endl;
-        assert(0);
-    }
-    for (auto db = schema.cbegin(); db != schema.cend(); ++db) {
-        std::cout << "class id = " << db->id << ", name = '" << db->name << "', "
-                  << "type = '" << db->type << "'\n"
-                  << "+--------------+--------------------------+--------------+\n"
-                  << "| property id  |      property name       |     type     |\n"
-                  << "+--------------+--------------------------+--------------+\n";
-        auto properties = db->properties;
-        for (auto prop = properties.begin(); prop != properties.end(); ++prop) {
-            std::cout << "| "
-                      << std::setfill(' ') << std::setw(COLUMN_ID_OFFSET) << std::left << prop->second.id
-                      << "| "
-                      << std::setfill(' ') << std::setw(COLUMN_NAME_OFFSET) << std::left << prop->first
-                      << "| "
-                      << std::setfill(' ') << std::setw(COLUMN_TYPE_OFFSET) << std::left << prop->second.type
-                      << "|\n";
-        }
-        std::cout << "+--------------+--------------------------+--------------+\n";
-    }
-}
-
 inline std::string rid2str(const nogdb::RecordId &rid) {
-    std::stringstream ss{};
-    ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);
-    return ss.str();
+    return nogdb::rid2str(rid);
 }
 
 #define REQUIRE(_err, _exp, _msg) \
@@ -1781,5 +1744,3 @@ void nonUniqueIndexCursorConditionTester(nogdb::Context *ctx, const std::string&
     }
 
 }
-
-#endif

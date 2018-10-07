@@ -19,7 +19,7 @@
  *
  */
 
-#include "apitest.h"
+#include "functest.h"
 
 void assert_dbinfo(const nogdb::DBInfo &info1, const nogdb::DBInfo &info2) {
 	assert(info1.numClass == info2.numClass);
@@ -29,30 +29,28 @@ void assert_dbinfo(const nogdb::DBInfo &info1, const nogdb::DBInfo &info2) {
 	assert(info1.maxClassId == info2.maxClassId);
 	assert(info1.maxPropertyId == info2.maxPropertyId);
 	assert(info1.maxIndexId == info2.maxIndexId);
-	assert(info1.maxDB == info2.maxDB);
 }
 
-void assert_schema(const std::vector<nogdb::ClassDescriptor>& sc1, const std::vector<nogdb::ClassDescriptor>& sc2) {
+void assert_schema(const nogdb::Txn& txn, const std::vector<nogdb::ClassDescriptor>& sc1, const std::vector<nogdb::ClassDescriptor>& sc2) {
 	assert(sc1.size() == sc2.size());
-	auto map_compare = [](const nogdb::IndexInfo& lhs, const nogdb::IndexInfo& rhs) {
-		return lhs.size() == rhs.size()
-			   && std::equal(lhs.begin(), lhs.end(), rhs.begin());
-	};
 	for(auto it = sc1.cbegin(); it != sc1.cend(); ++it) {
+		// compare class
 		auto tmp = std::find_if(sc2.cbegin(), sc2.cend(), [&it](const nogdb::ClassDescriptor& c) {
-			return (it->name == c.name) && (it->id == c.id) && (it->type == c.type);
+			return (it->name == c.name) && (it->id == c.id) && (it->type == c.type) && (it->bas c.base);
 		});
 		assert(tmp != sc2.cend());
-		assert(it->properties.size() == tmp->properties.size());
-		for(auto inner_it = it->properties.cbegin(); inner_it != it->properties.cend(); ++inner_it) {
-			assert(tmp->properties.find(inner_it->first) != tmp->properties.cend());
-			assert(inner_it->second.type == tmp->properties.at(inner_it->first).type);
-			map_compare(inner_it->second.indexInfo, tmp->properties.at(inner_it->first).indexInfo);
+		// compare property
+		auto sc1Property = nogdb::DB::getProperties(txn, *it);
+		auto sc2Property = nogdb::DB::getProperties(txn, *tmp);
+		assert(sc1Property.size() == sc2Property.size());
+		for(auto pit = sc1Property.cbegin(); pit != sc1Property.cend(); ++pit) {
+			auto ptmp = std::find_if(sc2Property.cbegin(), sc2Property.cend(), [&pit](const nogdb::PropertyDescriptor& p) {
+				return (pit->name == p.name) && (pit->type == p.type) && (pit->id == p.id) && (pit->inherited == p.inherited);
+			});
+			assert(ptmp != sc2Property.cend());
 		}
-		assert(it->super == tmp->super);
-		for(auto inner_it = it->sub.cbegin(); inner_it != it->sub.cend(); ++inner_it) {
-			assert(std::find(tmp->sub.cbegin(), tmp->sub.cend(), *inner_it) != tmp->sub.cend());
-		}
+		// compare index
+
 	}
 }
 
@@ -80,7 +78,7 @@ void test_ctx_copy() {
 	assert_ctx(*ctx, tmp1);
 	assert_ctx(tmp1, tmp2);
 	try {
-        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
 		nogdb::Class::create(txn, "ctx_copy_test", nogdb::ClassType::VERTEX);
 		nogdb::Property::add(txn, "ctx_copy_test", "prop1", nogdb::PropertyType::TEXT);
 		nogdb::Property::add(txn, "ctx_copy_test", "prop2", nogdb::PropertyType::UNSIGNED_INTEGER);
@@ -93,7 +91,7 @@ void test_ctx_copy() {
 	assert_ctx(tmp1, tmp2);
 
 	try {
-        auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+		auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
 		nogdb::Class::drop(txn, "ctx_copy_test");
         txn.commit();
 	} catch(const nogdb::Error& ex) {
@@ -105,7 +103,7 @@ void test_ctx_copy() {
 }
 
 void test_ctx_copy_v2() {
-    auto schema = std::vector<nogdb::ClassDescriptor>{};
+	auto schema = std::vector<nogdb::ClassDescriptor>{};
 	auto info = nogdb::DBInfo{};
 	try {
         auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};

@@ -19,7 +19,7 @@
  *
  */
 
-#include "apitest.h"
+#include "functest.h"
 #include "test_prepare.h"
 
 void test_create_index() {

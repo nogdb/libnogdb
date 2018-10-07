@@ -35,6 +35,7 @@ namespace nogdb {
 
     using adapter::schema::ClassAccessInfo;
     using adapter::schema::PropertyAccessInfo;
+    using adapter::schema::IndexAccessInfo;
     using adapter::schema::PropertyNameMapInfo;
     using adapter::schema::PropertyIdMapInfo;
 
@@ -76,6 +77,9 @@ namespace nogdb {
 
       PropertyIdMapInfo
       getPropertyIdMapInfo(const ClassId &classId, const ClassId &superClassId);
+
+      IndexAccessInfo
+      getIndexInfo(const ClassId &classId, const PropertyId &propertyId);
 
     private:
       const Txn *_txn;
