@@ -82,9 +82,8 @@ int main() {
     // ctx
 #ifdef TEST_CONTEXT_OPERATIONS
     std::cout << "\n\x1B[96mEnd-to-end tests for a database context copying and re-opening should:\x1B[0m\n";
-    exec(test_ctx_copy, "copying contexts");
     exec(test_reopen_ctx, "reopening a context");
-    exec(test_ctx_copy_v2, "moving contexts");
+    exec(test_ctx_move, "moving contexts");
 #endif
     // type
 #ifdef TEST_RECORD_OPERATIONS

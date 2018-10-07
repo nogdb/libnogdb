@@ -40,8 +40,7 @@ extern nogdb::Context *ctx;
 // context operations testing
 #ifdef TEST_CONTEXT_OPERATIONS
 extern void test_context();
-extern void test_ctx_copy();
-extern void test_ctx_copy_v2();
+extern void test_ctx_move();
 extern void test_reopen_ctx(); // without records
 extern void test_reopen_ctx_v2(); // with records
 extern void test_reopen_ctx_v3(); // with records and relations

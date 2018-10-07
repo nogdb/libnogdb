@@ -818,6 +818,18 @@ namespace nogdb {
     return !operator==(lhs, rhs);
   }
 
+  inline bool operator==(const ClassDescriptor &lhs, const ClassDescriptor &rhs) {
+    return (lhs.id == rhs.id) && (lhs.name == rhs.name) && (lhs.type == rhs.type) && (lhs.base == rhs.base);
+  }
+
+  inline bool operator==(const PropertyDescriptor &lhs, const PropertyDescriptor &rhs) {
+    return (lhs.id == rhs.id) && (lhs.name == rhs.name) && (lhs.type == rhs.type) && (lhs.inherited == rhs.inherited);
+  }
+
+  inline bool operator==(const IndexDescriptor &lhs, const IndexDescriptor &rhs) {
+    return (lhs.id == rhs.id) && (lhs.classId == rhs.classId) && (lhs.propertyId == rhs.propertyId) && (lhs.unique == rhs.unique);
+  }
+
   inline std::string rid2str(const nogdb::RecordId &rid) {
     std::stringstream ss{};
     ss << std::to_string(rid.first) << ":" << std::to_string(rid.second);

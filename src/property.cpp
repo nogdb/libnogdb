@@ -114,7 +114,7 @@ namespace nogdb {
     }
   }
 
-  void
+  const IndexDescriptor
   Property::createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
@@ -138,6 +138,12 @@ namespace nogdb {
       txn._iIndex->initialize(foundProperty, indexProps, foundClass.type);
       txn._dbInfo->setMaxIndexId(indexId);
       txn._dbInfo->setNumIndexId(txn._dbInfo->getNumIndexId() + IndexId{1});
+      return IndexDescriptor{
+        indexId,
+        foundClass.id,
+        foundProperty.id,
+        isUnique
+      };
     } catch (const Error &err) {
       if (err.code() == MDB_KEYEXIST) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);

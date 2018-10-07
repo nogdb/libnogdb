@@ -72,7 +72,7 @@ namespace nogdb {
 
     static void remove(const Txn &txn, const std::string &className, const std::string &propertyName);
 
-    static void
+    static const IndexDescriptor
     createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
 
     static void dropIndex(const Txn &txn, const std::string &className, const std::string &propertyName);
