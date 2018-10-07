@@ -90,7 +90,7 @@ before_script:
   - ${CC} --version
   - ${CXX} --version
   - cmake --version
-  - export TESTPREFIX="apitest"
+  - export TESTPREFIX="functest"
 
 
 # execute all of the commands which should make the build pass or fail
@@ -117,6 +117,6 @@ script:
       cd build-cmake                &&
       cmake ..                      &&
       cmake --build . --target all  &&
-      cmake --build . --target nogdb_apitest_object &&
+      cmake --build . --target nogdb_functest_object &&
       ctest --verbose
     fi
