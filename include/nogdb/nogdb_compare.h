@@ -353,34 +353,63 @@ namespace nogdb {
     };
   };
 
-  class PathFilter {
+  class GraphFilter {
   public:
     friend class algorithm::GraphTraversal;
 
-    PathFilter() = default;
+    GraphFilter() = default;
 
-    PathFilter(bool (*vertexFunc)(const Record &record), bool (*edgeFunc)(const Record &record));
+    virtual ~GraphFilter() noexcept = default;
 
-    ~PathFilter() noexcept = default;
+    GraphFilter &where(const Condition* condition);
 
-    PathFilter &setVertex(bool (*function)(const Record &record));
+    GraphFilter &where(const MultiCondition* multiCondition);
 
-    PathFilter &setEdge(bool (*function)(const Record &record));
+    GraphFilter &where(bool (*function)(const Record &record));
 
-    bool isEnable() const;
+    GraphFilter &only(const std::initializer_list<std::string> &initializerList);
 
-    bool isSetVertex() const;
+    GraphFilter &only(const std::vector<std::string> &classNames);
 
-    bool isSetEdge() const;
+    GraphFilter &only(const std::list<std::string> &classNames);
 
-  private:
-    bool (*vertexFilter)(const Record &record) {
-        nullptr
-    };
+    GraphFilter &only(const std::set<std::string> &classNames);
 
-    bool (*edgeFilter)(const Record &record) {
-        nullptr
-    };
+    GraphFilter &only(const std::vector<std::string>::const_iterator &begin,
+                      const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::list<std::string>::const_iterator &begin,
+                      const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::set<std::string>::const_iterator &begin,
+                      const std::set<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::initializer_list<std::string> &initializerList);
+
+    GraphFilter &exclude(const std::vector<std::string> &classNames);
+
+    GraphFilter &exclude(const std::list<std::string> &classNames);
+
+    GraphFilter &exclude(const std::set<std::string> &classNames);
+
+    GraphFilter &exclude(const std::vector<std::string>::const_iterator &begin,
+                         const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::list<std::string>::const_iterator &begin,
+                         const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
+                         const std::set<std::string>::const_iterator &end);
+
+  protected:
+
+    const Condition *cmpCondition{nullptr};
+    const MultiCondition *cmpMultiCondition{nullptr};
+    bool (*cmpFunction)(const Record &record){nullptr};
+
+    std::set<std::string> onlyClasses{};
+    std::set<std::string> ignoreClasses{};
+
   };
 
 }

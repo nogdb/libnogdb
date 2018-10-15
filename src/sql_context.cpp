@@ -632,7 +632,7 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
 }
 
 ResultSet Context::traversePrivate(const TraverseArgs &args) {
-  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int, const PathFilter&);
+  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int, const GraphFilter&);
   static const auto mapFunc = map<string, TraverseFunction, StringCaseCompare>(
       {
           {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
@@ -667,7 +667,7 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     }
   }
 
-  return func(this->txn, args.root, args.minDepth, args.maxDepth, PathFilter{});
+  return func(this->txn, args.root, args.minDepth, args.maxDepth, GraphFilter{});
 }
 
 Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {

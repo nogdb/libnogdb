@@ -2051,7 +2051,7 @@ void test_bfs_traverse_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() < 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeBfs(txn, a, 0, 1, pathFilter);
         assertSize(res, 2);
         assert(res[0].record.get("name").toText() == "A");
@@ -2083,7 +2083,7 @@ void test_bfs_traverse_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() > 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeBfs(txn, a, 1, 3, pathFilter);
         assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "C");
@@ -2157,7 +2157,7 @@ void test_dfs_traverse_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeDfs(txn, a, 1, 3, pathFilter);
         assertSize(res, 3);
         assert(res[0].record.get("name").toText() == "B");
@@ -2194,7 +2194,7 @@ void test_dfs_traverse_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeDfs(txn, a, 1, 3, pathFilter);
         assertSize(res, 4);
         assert(res[0].record.get("name").toText() == "Z");
@@ -2272,7 +2272,7 @@ void test_shortest_path_with_condition() {
     }
 
     try {
-        auto pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+        auto pathFilter = nogdb::GraphFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() >= 1000ULL);
         }).setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 120U);
@@ -2290,7 +2290,7 @@ void test_shortest_path_with_condition() {
         assert(res[4].record.get("name").toText() == "F");
         assert(res[4].record.getDepth() == 4);
 
-        pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() < 5000ULL);
         }).setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 200U);
@@ -2306,7 +2306,7 @@ void test_shortest_path_with_condition() {
         assert(res[3].record.get("name").toText() == "F");
         assert(res[3].record.getDepth() == 3);
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
@@ -2320,7 +2320,7 @@ void test_shortest_path_with_condition() {
         assert(res[3].record.get("name").toText() == "F");
         assert(res[3].record.getDepth() == 3);
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return record.get("distance").toIntU() >= 100U && record.get("distance").toIntU() != 150U;
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
@@ -2334,7 +2334,7 @@ void test_shortest_path_with_condition() {
         assert(res[3].record.get("name").toText() == "F");
         assert(res[3].record.getDepth() == 3);
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return record.get("distance").toIntU() >= 1000U;
         });
         res = nogdb::Traverse::shortestPath(txn, a, f, pathFilter);
@@ -4312,7 +4312,7 @@ void test_bfs_traverse_cursor_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() < 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeBfsCursor(txn, a, 0, 1, pathFilter);
         assertSize(res, 2);
         cursorContains(res, std::set<std::string>{"A", "B"}, "name");
@@ -4339,7 +4339,7 @@ void test_bfs_traverse_cursor_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() > 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeBfsCursor(txn, a, 1, 3, pathFilter);
         assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"C", "D", "F"}, "name");
@@ -4404,7 +4404,7 @@ void test_dfs_traverse_cursor_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::outEdgeDfsCursor(txn, a, 1, 3, pathFilter);
         assertSize(res, 3);
         cursorContains(res, std::set<std::string>{"B", "C", "D"}, "name");
@@ -4434,7 +4434,7 @@ void test_dfs_traverse_cursor_with_condition() {
         auto edgeCondition = [](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 100U);
         };
-        auto pathFilter = nogdb::PathFilter{}.setEdge(edgeCondition);
+        auto pathFilter = nogdb::GraphFilter{}.setEdge(edgeCondition);
         auto res = nogdb::Traverse::allEdgeDfsCursor(txn, a, 1, 3, pathFilter);
         assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"Z", "B", "C", "D"}, "name");
@@ -4495,7 +4495,7 @@ void test_shortest_path_cursor_with_condition() {
     }
 
     try {
-        auto pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+        auto pathFilter = nogdb::GraphFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() >= 1000ULL);
         }).setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 120U);
@@ -4503,7 +4503,7 @@ void test_shortest_path_cursor_with_condition() {
         auto res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
         assertSize(res, 5);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "D", "F"}, "name");
-        pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() < 5000ULL);
         }).setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 200U);
@@ -4512,21 +4512,21 @@ void test_shortest_path_cursor_with_condition() {
         assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "F"}, "name");
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 200U);
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
         assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "B", "C", "F"}, "name");
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return record.get("distance").toIntU() >= 100U && record.get("distance").toIntU() != 150U;
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
         assertSize(res, 4);
         cursorContains(res, std::set<std::string>{"A", "C", "D", "F"}, "name");
 
-        pathFilter = nogdb::PathFilter{}.setEdge([](const nogdb::Record &record) {
+        pathFilter = nogdb::GraphFilter{}.setEdge([](const nogdb::Record &record) {
             return record.get("distance").toIntU() >= 1000U;
         });
         res = nogdb::Traverse::shortestPathCursor(txn, a, f, pathFilter);
@@ -4577,7 +4577,7 @@ void test_shortest_path_dijkstra() {
     }
 
     try {
-        auto pathFilter = nogdb::PathFilter{}.setVertex([](const nogdb::Record &record) {
+        auto pathFilter = nogdb::GraphFilter{}.setVertex([](const nogdb::Record &record) {
             return (record.get("population").toBigIntU() >= 1000ULL);
         }).setEdge([](const nogdb::Record &record) {
             return (record.get("distance").toIntU() <= 150U);
@@ -4609,11 +4609,11 @@ void test_shortest_path_dijkstra() {
             return record.getIntU("distance") + 20;
         };
 
-        auto res3 = nogdb::Traverse::shortestPath(txn, a, c, costFunctionDistanceOffset, nogdb::PathFilter());
+        auto res3 = nogdb::Traverse::shortestPath(txn, a, c, costFunctionDistanceOffset, nogdb::GraphFilter());
         assert(res3.first == 170);
         assertSize(res3.second, 3);
 
-        auto res4 = nogdb::Traverse::shortestPath(txn, a, z, costFunction, nogdb::PathFilter());
+        auto res4 = nogdb::Traverse::shortestPath(txn, a, z, costFunction, nogdb::GraphFilter());
         assertSize(res4.second, 0);
 
         txn.commit();

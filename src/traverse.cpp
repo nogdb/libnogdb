@@ -32,7 +32,7 @@ namespace nogdb {
                                 const RecordDescriptor &recordDescriptor,
                                 unsigned int minDepth,
                                 unsigned int maxDepth,
-                                const PathFilter &pathFilter) {
+                                const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -46,7 +46,7 @@ namespace nogdb {
                                             const RecordDescriptor &recordDescriptor,
                                             unsigned int minDepth,
                                             unsigned int maxDepth,
-                                            const PathFilter &pathFilter) {
+                                            const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -61,7 +61,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
-                                 const PathFilter &pathFilter) {
+                                 const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -75,7 +75,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
-                                             const PathFilter &pathFilter) {
+                                             const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -90,7 +90,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
-                                 const PathFilter &pathFilter) {
+                                 const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -104,7 +104,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
-                                             const PathFilter &pathFilter) {
+                                             const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -119,7 +119,7 @@ namespace nogdb {
                                 const RecordDescriptor &recordDescriptor,
                                 unsigned int minDepth,
                                 unsigned int maxDepth,
-                                const PathFilter &pathFilter) {
+                                const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -133,7 +133,7 @@ namespace nogdb {
                                             const RecordDescriptor &recordDescriptor,
                                             unsigned int minDepth,
                                             unsigned int maxDepth,
-                                            const PathFilter &pathFilter) {
+                                            const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -148,7 +148,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
-                                 const PathFilter &pathFilter) {
+                                 const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -162,7 +162,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
-                                             const PathFilter &pathFilter) {
+                                             const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -177,7 +177,7 @@ namespace nogdb {
                                  const RecordDescriptor &recordDescriptor,
                                  unsigned int minDepth,
                                  unsigned int maxDepth,
-                                 const PathFilter &pathFilter) {
+                                 const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -191,7 +191,7 @@ namespace nogdb {
                                              const RecordDescriptor &recordDescriptor,
                                              unsigned int minDepth,
                                              unsigned int maxDepth,
-                                             const PathFilter &pathFilter) {
+                                             const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
@@ -205,7 +205,7 @@ namespace nogdb {
   ResultSet Traverse::shortestPath(const Txn &txn,
                                    const RecordDescriptor &srcVertexRecordDescriptor,
                                    const RecordDescriptor &dstVertexRecordDescriptor,
-                                   const PathFilter &pathFilter) {
+                                   const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingSrcVertex(srcVertexRecordDescriptor)
@@ -221,7 +221,7 @@ namespace nogdb {
   ResultSetCursor Traverse::shortestPathCursor(const Txn &txn,
                                                const RecordDescriptor &srcVertexRecordDescriptor,
                                                const RecordDescriptor &dstVertexRecordDescriptor,
-                                               const PathFilter &pathFilter) {
+                                               const GraphFilter &pathFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
         .isExistingSrcVertex(srcVertexRecordDescriptor)

@@ -51,7 +51,7 @@ namespace nogdb {
 
   class MultiCondition;
 
-  class PathFilter;
+  class GraphFilter;
 
   namespace storage_engine {
     class LMDBEnv;

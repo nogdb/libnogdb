@@ -55,7 +55,7 @@ namespace nogdb {
                                           unsigned int minDepth,
                                           unsigned int maxDepth,
                                           const adapter::relation::Direction &direction,
-                                          const PathFilter &pathFilter);
+                                          const GraphFilter &pathFilter);
 
       static std::vector<RecordDescriptor>
       breadthFirstSearchRdesc(const Txn &txn,
@@ -64,7 +64,7 @@ namespace nogdb {
                               unsigned int minDepth,
                               unsigned int maxDepth,
                               const adapter::relation::Direction &direction,
-                              const PathFilter &pathFilter);
+                              const GraphFilter &pathFilter);
 
       static ResultSet depthFirstSearch(const Txn &txn,
                                         const schema::ClassAccessInfo &classInfo,
@@ -72,7 +72,7 @@ namespace nogdb {
                                         unsigned int minDepth,
                                         unsigned int maxDepth,
                                         const adapter::relation::Direction &direction,
-                                        const PathFilter &pathFilter);
+                                        const GraphFilter &pathFilter);
 
       static std::vector<RecordDescriptor>
       depthFirstSearchRdesc(const Txn &txn,
@@ -81,14 +81,14 @@ namespace nogdb {
                             unsigned int minDepth,
                             unsigned int maxDepth,
                             const adapter::relation::Direction &direction,
-                            const PathFilter &pathFilter);
+                            const GraphFilter &pathFilter);
 
       static ResultSet bfsShortestPath(const Txn &txn,
                                        const schema::ClassAccessInfo &srcVertexClassInfo,
                                        const schema::ClassAccessInfo &dstVertexClassInfo,
                                        const RecordDescriptor &srcVertexRecordDescriptor,
                                        const RecordDescriptor &dstVertexRecordDescriptor,
-                                       const PathFilter &pathFilter);
+                                       const GraphFilter &pathFilter);
 
       static std::vector<RecordDescriptor>
       bfsShortestPathRdesc(const Txn &txn,
@@ -96,7 +96,7 @@ namespace nogdb {
                            const schema::ClassAccessInfo &dstVertexClassInfo,
                            const RecordDescriptor &srcVertexRecordDescriptor,
                            const RecordDescriptor &dstVertexRecordDescriptor,
-                           const PathFilter &pathFilter);
+                           const GraphFilter &pathFilter);
 
     private:
 
@@ -108,13 +108,13 @@ namespace nogdb {
 
       static RecordDescriptor filterRecord(const Txn &txn,
                                            const RecordDescriptor &recordDescriptor,
-                                           const PathFilter &pathFilter);
+                                           const GraphFilter &pathFilter);
 
       static std::vector<RecordDescriptor>
       filterIncidentEdges(const Txn &txn,
                           const RecordId &vertex,
                           const adapter::relation::Direction &direction,
-                          const PathFilter &pathFilter);
+                          const GraphFilter &pathFilter);
 
     };
   }
