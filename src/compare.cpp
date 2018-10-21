@@ -78,6 +78,109 @@ namespace nogdb {
       return false;
     }
 
+    bool RecordCompare::compareRecordByCondition(const Record &record,
+                                                 const schema::PropertyNameMapInfo &propertyNameMapInfo,
+                                                 const Condition &condition) {
+      auto foundProperty = propertyNameMapInfo.find(condition.propName);
+      if (foundProperty == propertyNameMapInfo.cend()) {
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+      }
+      return compareRecordByCondition(record, foundProperty->second.type, condition);
+    }
+
+    bool RecordCompare::compareRecordByMultiCondition(const Record &record,
+                                                      const schema::PropertyNameMapInfo &propertyNameMapInfo,
+                                                      const MultiCondition &multiCondition) {
+      auto propertyTypes = PropertyMapType{};
+      for (const auto &conditionNode: multiCondition.conditions) {
+        auto conditionNodePtr = conditionNode.lock();
+        require(conditionNodePtr != nullptr);
+        auto &condition = conditionNodePtr->getCondition();
+        auto foundConditionProperty = propertyTypes.find(condition.propName);
+        if (foundConditionProperty == propertyTypes.cend()) {
+          auto foundProperty = propertyNameMapInfo.find(condition.propName);
+          if (foundProperty == propertyNameMapInfo.cend()) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+          }
+          propertyTypes.emplace(condition.propName, foundProperty->second.type);
+        }
+      }
+      return multiCondition.execute(record, propertyTypes);
+    }
+
+    RecordDescriptor RecordCompare::filterRecord(const Txn &txn,
+                                                 const RecordDescriptor &recordDescriptor,
+                                                 const GraphFilter &filter) {
+      return filterResult(txn, recordDescriptor, filter).descriptor;
+    }
+
+    Result RecordCompare::filterResult(const Txn &txn,
+                                       const RecordDescriptor &recordDescriptor,
+                                       const GraphFilter &filter) {
+      auto classInfo = txn._class->getInfo(recordDescriptor.rid.first);
+      // filter classes
+      if (!filter.onlyClasses.empty()) {
+        if (filter.onlyClasses.find(classInfo.name) == filter.onlyClasses.cend()) {
+          return Result{};
+        }
+      }
+      // filter excluded classes
+      if (!filter.ignoreClasses.empty()) {
+        if (filter.ignoreClasses.find(classInfo.name) != filter.ignoreClasses.cend()) {
+          return Result{};
+        }
+      }
+
+      auto record = txn._iRecord->getRecord(classInfo, recordDescriptor);
+      if (filter.cmpCondition) {
+        auto condition = *filter.cmpCondition;
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, condition);
+        return cmpResult ? Result{recordDescriptor, record} : Result{};
+      } else if (filter.cmpMultiCondition) {
+        auto multiCondition = *filter.cmpMultiCondition;
+        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
+            record, propertyNameMapInfo, multiCondition);
+        return cmpResult ? Result{recordDescriptor, record} : Result{};
+      } else if (filter.cmpFunction) {
+        return (*filter.cmpFunction)(record) ? Result{recordDescriptor, record} : Result{};;
+      } else {
+        return Result{};
+      }
+    }
+
+    std::vector<RecordDescriptor>
+    RecordCompare::filterIncidentEdges(const Txn &txn,
+                                       const RecordId &vertex,
+                                       const adapter::relation::Direction &direction,
+                                       const GraphFilter &filter) {
+      auto edgeRecordDescriptors = std::vector<RecordDescriptor>{};
+      auto edgeNeighbours = std::vector<RecordId>{};
+      switch (direction) {
+        case adapter::relation::Direction::IN:
+          edgeNeighbours = txn._iGraph->getInEdges(vertex);
+          break;
+        case adapter::relation::Direction::OUT:
+          edgeNeighbours = txn._iGraph->getOutEdges(vertex);
+          break;
+        case adapter::relation::Direction::ALL:
+          edgeNeighbours = txn._iGraph->getInEdges(vertex);
+          auto moreEdges = txn._iGraph->getOutEdges(vertex);
+          edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
+          break;
+      }
+
+      for (const auto &edge: edgeNeighbours) {
+        auto edgeRdesc = RecordDescriptor{edge};
+        if (filterRecord(txn, edgeRdesc, filter) != RecordDescriptor{}) {
+          edgeRecordDescriptors.emplace_back(edgeRdesc);
+        }
+      }
+
+      return edgeRecordDescriptors;
+    }
+
     std::vector<RecordId>
     RecordCompare::resolveEdgeRecordIds(const Txn &txn, const RecordId &recordId, const Direction &direction) {
       auto edgeRecordIds = std::vector<RecordId>{};
@@ -122,10 +225,10 @@ namespace nogdb {
     ResultSet RecordCompare::compareMultiCondition(const Txn &txn,
                                                    const schema::ClassAccessInfo &classInfo,
                                                    const schema::PropertyNameMapInfo &propertyNameMapInfo,
-                                                   const MultiCondition &conditions,
+                                                   const MultiCondition &multiCondition,
                                                    bool searchIndexOnly) {
       auto conditionProperties = schema::PropertyNameMapInfo{};
-      for (const auto &conditionNode: conditions.conditions) {
+      for (const auto &conditionNode: multiCondition.conditions) {
         auto conditionNodePtr = conditionNode.lock();
         require(conditionNodePtr != nullptr);
         auto &condition = conditionNodePtr->getCondition();
@@ -139,13 +242,13 @@ namespace nogdb {
         }
       }
 
-      auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, conditions);
+      auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, multiCondition);
       if (foundIndex.first) {
-        auto indexedRecords = txn._iIndex->getRecord(conditionProperties, foundIndex.second, conditions);
+        auto indexedRecords = txn._iIndex->getRecord(conditionProperties, foundIndex.second, multiCondition);
         return txn._iRecord->getResultSet(classInfo, indexedRecords);
       } else {
         if (!searchIndexOnly) {
-          return txn._iRecord->getResultSetByMultiCondition(classInfo, conditionProperties, conditions);
+          return txn._iRecord->getResultSetByMultiCondition(classInfo, conditionProperties, multiCondition);
         }
       }
       return ResultSet{};

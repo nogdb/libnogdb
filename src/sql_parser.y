@@ -309,18 +309,17 @@ cmd ::= traverse_stmt(stmt) SEMI. {
 
 %type traverse_stmt { TraverseArgs }
 traverse_stmt(A) ::= TRAVERSE
-    IDENTITY(direction) //LP class_filter(filter) RP
+    IDENTITY(direction) LP class_filter(filter) RP
     FROM rid(root)
     min_depth_opt(min_depth) max_depth_opt(max_depth)
     strategy_opt(strategy).
 {
-//    A = TraverseArgs{direction.toString(), filter, root, min_depth, max_depth, strategy};
-    A = TraverseArgs{direction.toString(), root, min_depth, max_depth, strategy};
+    A = TraverseArgs{direction.toString(), filter, root, min_depth, max_depth, strategy};
 }
 
-//%type class_filter { set<string> }
-//class_filter(A) ::= . { A = set<string>(); }
-//class_filter(A) ::= name_set(X). { A = move(X); }
+%type class_filter { set<string> }
+class_filter(A) ::= . { A = set<string>(); }
+class_filter(A) ::= name_set(X). { A = move(X); }
 
 %type min_depth_opt { long long }
 min_depth_opt(A) ::= . { A = 0; }

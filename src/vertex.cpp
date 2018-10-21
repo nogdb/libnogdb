@@ -166,7 +166,7 @@ namespace nogdb {
     return resultSetExtend;
   }
 
-  ResultSet Vertex::getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSet Vertex::getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -175,14 +175,15 @@ namespace nogdb {
     auto result = ResultSet{};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
-      auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
-      result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterResult.descriptor != RecordDescriptor{}) {
+        result.emplace_back(filterResult);
+      }
     }
     return result;
   }
 
-  ResultSet Vertex::getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSet Vertex::getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -191,14 +192,15 @@ namespace nogdb {
     auto result = ResultSet{};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
-      auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
-      result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterResult.descriptor != RecordDescriptor{}) {
+        result.emplace_back(filterResult);
+      }
     }
     return result;
   }
 
-  ResultSet Vertex::getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSet Vertex::getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -211,14 +213,15 @@ namespace nogdb {
     auto result = ResultSet{};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto edgeClassInfo = txn._iSchema->getExistingClass(edgeRecordDescriptor.rid.first);
-      auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, edgeRecordDescriptor);
-      result.emplace_back(Result{edgeRecordDescriptor, edgeRecord});
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterResult.descriptor != RecordDescriptor{}) {
+        result.emplace_back(filterResult);
+      }
     }
     return result;
   }
 
-  ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -226,12 +229,16 @@ namespace nogdb {
     auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
     for (const auto &recordId: edgeRecordIds) {
-      result.addMetadata(RecordDescriptor{recordId});
+      auto edgeRecordDescriptor = RecordDescriptor{recordId};
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterRecord != RecordDescriptor{}) {
+        result.addMetadata(filterRecord);
+      }
     }
     return result;
   }
 
-  ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -239,12 +246,16 @@ namespace nogdb {
     auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
     for (const auto &recordId: edgeRecordIds) {
-      result.addMetadata(RecordDescriptor{recordId});
+      auto edgeRecordDescriptor = RecordDescriptor{recordId};
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterRecord != RecordDescriptor{}) {
+        result.addMetadata(filterRecord);
+      }
     }
     return result;
   }
 
-  ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
@@ -256,7 +267,11 @@ namespace nogdb {
     edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
     auto result = ResultSetCursor{txn};
     for (const auto &recordId: edgeRecordIds) {
-      result.addMetadata(RecordDescriptor{recordId});
+      auto edgeRecordDescriptor = RecordDescriptor{recordId};
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      if (filterRecord != RecordDescriptor{}) {
+        result.addMetadata(filterRecord);
+      }
     }
     return result;
   }
@@ -416,195 +431,6 @@ namespace nogdb {
       resultSetExtend.addMetadata(resultSet);
     }
     return resultSetExtend;
-  }
-
-  ResultSet Vertex::getInEdge(const Txn &txn,
-                              const RecordDescriptor &recordDescriptor,
-                              const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::IN, condition);
-  }
-
-  ResultSet Vertex::getInEdge(const Txn &txn,
-                              const RecordDescriptor &recordDescriptor,
-                              const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeMultiCondition(txn, recordDescriptor, Direction::IN, multiCondition);
-  }
-
-  ResultSet Vertex::getInEdge(const Txn &txn,
-                              const RecordDescriptor &recordDescriptor,
-                              bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::IN, condition);
-  }
-
-  ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor,
-                                          const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor,
-                                          const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::IN, multiCondition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor,
-                                          bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::IN, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSet Vertex::getOutEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::OUT, condition);
-  }
-
-  ResultSet Vertex::getOutEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeMultiCondition(txn, recordDescriptor, Direction::OUT, multiCondition);
-  }
-
-  ResultSet Vertex::getOutEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::OUT, condition);
-  }
-
-  ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::OUT, multiCondition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::OUT, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSet Vertex::getAllEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::ALL, condition);
-  }
-
-  ResultSet Vertex::getAllEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeMultiCondition(txn, recordDescriptor, Direction::ALL, multiCondition);
-  }
-
-  ResultSet Vertex::getAllEdge(const Txn &txn,
-                               const RecordDescriptor &recordDescriptor,
-                               bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    return compare::RecordCompare::compareEdgeCondition(txn, recordDescriptor, Direction::ALL, condition);
-  }
-
-  ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const Condition &condition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const MultiCondition &multiCondition) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeMultiConditionRdesc(txn, recordDescriptor, Direction::ALL, multiCondition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
-  }
-
-  ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           bool (*condition)(const Record &record)) {
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
-
-    txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto result = compare::RecordCompare::compareEdgeConditionRdesc(txn, recordDescriptor, Direction::ALL, condition);
-    return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
   ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {

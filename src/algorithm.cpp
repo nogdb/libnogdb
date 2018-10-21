@@ -32,9 +32,10 @@ namespace nogdb {
                                        unsigned int minDepth,
                                        unsigned int maxDepth,
                                        const adapter::relation::Direction &direction,
-                                       const GraphFilter &pathFilter) {
+                                       const GraphFilter &edgeFilter,
+                                       const GraphFilter &vertexFilter) {
       const auto searchResultDescriptor = breadthFirstSearchRdesc(
-          txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, pathFilter);
+          txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
@@ -54,7 +55,8 @@ namespace nogdb {
                                             unsigned int minDepth,
                                             unsigned int maxDepth,
                                             const adapter::relation::Direction &direction,
-                                            const GraphFilter &pathFilter) {
+                                            const GraphFilter &edgeFilter,
+                                            const GraphFilter &vertexFilter) {
       auto result = std::vector<RecordDescriptor>{};
       auto visited = std::unordered_set<RecordId, RecordIdHash>{recordDescriptor.rid};
       auto queue = std::queue<RecordId>{};
@@ -63,19 +65,18 @@ namespace nogdb {
       queue.push(recordDescriptor.rid);
 
       try {
-        auto addUniqueVertex = [&](const RecordId &vertex, const GraphFilter &pathFilter) {
+        auto addUniqueVertex = [&](const RecordId &vertex) {
           if (visited.find(vertex) != visited.cend()) return;
-          auto rdesc = pathFilter.isSet() ?
-                       filterRecord(txn, RecordDescriptor{vertex}, pathFilter) : RecordDescriptor{vertex};
-          if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (rdesc != RecordDescriptor{})) {
-            rdesc._depth = currentLevel + 1;
-            result.emplace_back(rdesc);
+          auto vertexRdesc = compare::RecordCompare::filterRecord(txn, RecordDescriptor{vertex}, vertexFilter);
+          if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor{})) {
+            vertexRdesc._depth = currentLevel + 1;
+            result.emplace_back(vertexRdesc);
           }
           visited.insert(vertex);
           if (firstRecordId == RecordId{}) {
             firstRecordId = vertex;
           }
-          if ((currentLevel + 1 < maxDepth) && (rdesc != RecordDescriptor{})) {
+          if ((currentLevel + 1 < maxDepth) && (vertexRdesc != RecordDescriptor{})) {
             queue.push(vertex);
           }
         };
@@ -92,18 +93,17 @@ namespace nogdb {
             firstRecordId = RecordId{};
           }
 
-          for (const auto &edge: filterIncidentEdges(txn, vertexId, direction, pathFilter)) {
+          for (const auto &edge: compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter)) {
             auto srcDstVertex = txn._iGraph->getSrcDstVertices(edge.rid);
             switch (direction) {
               case adapter::relation::Direction::IN:
-                addUniqueVertex(srcDstVertex.first, pathFilter);
+                addUniqueVertex(srcDstVertex.first);
                 break;
               case adapter::relation::Direction::OUT:
-                addUniqueVertex(srcDstVertex.second, pathFilter);
+                addUniqueVertex(srcDstVertex.second);
                 break;
               case adapter::relation::Direction::ALL:
-                addUniqueVertex(srcDstVertex.first != vertexId ? srcDstVertex.first : srcDstVertex.second,
-                                pathFilter);
+                addUniqueVertex(srcDstVertex.first != vertexId ? srcDstVertex.first : srcDstVertex.second);
                 break;
             }
           }
@@ -112,7 +112,7 @@ namespace nogdb {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
-          throw err;
+          throw NOGDB_FATAL_ERROR(err);
         }
       }
       return result;
@@ -125,9 +125,10 @@ namespace nogdb {
                                      unsigned int minDepth,
                                      unsigned int maxDepth,
                                      const adapter::relation::Direction &direction,
-                                     const GraphFilter &pathFilter) {
+                                     const GraphFilter &edgeFilter,
+                                     const GraphFilter &vertexFilter) {
       const auto searchResultDescriptor = depthFirstSearchRdesc(
-          txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, pathFilter);
+          txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
@@ -147,7 +148,8 @@ namespace nogdb {
                                           unsigned int minDepth,
                                           unsigned int maxDepth,
                                           const adapter::relation::Direction &direction,
-                                          const GraphFilter &pathFilter) {
+                                          const GraphFilter &edgeFilter,
+                                          const GraphFilter &vertexFilter) {
       auto result = std::vector<RecordDescriptor>{};
       auto visited = std::unordered_set<RecordId, RecordIdHash>{};
       auto stack = std::vector<std::vector<RecordId>>{{recordDescriptor.rid}};
@@ -161,12 +163,11 @@ namespace nogdb {
             visited.insert(vertexId);
 
             if (currentLevel >= minDepth) {
-              auto rdesc = pathFilter.isSet() ?
-                           filterRecord(txn, vertexId, currentLevel ? pathFilter : GraphFilter{}) : RecordDescriptor{
-                      vertexId};
-              if (rdesc != RecordDescriptor{}) {
-                rdesc._depth = currentLevel;
-                result.emplace_back(rdesc);
+              auto vertexRdesc = compare::RecordCompare::filterRecord(
+                  txn, RecordDescriptor{vertexId}, currentLevel ? vertexFilter : GraphFilter{});
+              if (vertexRdesc != RecordDescriptor{}) {
+                vertexRdesc._depth = currentLevel;
+                result.emplace_back(vertexRdesc);
               }
             }
 
@@ -176,8 +177,9 @@ namespace nogdb {
                 stack.emplace_back(decltype(stack)::value_type());
               }
 
-              const auto edgeRecordDescriptors = filterIncidentEdges(txn, vertexId, direction, pathFilter);
-              for (auto it = edgeRecordDescriptors.crbegin(); it != edgeRecordDescriptors.crend(); ++it) {
+              const auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
+                  txn, vertexId, direction, edgeFilter);
+              for (auto it = incidentEdges.crbegin(); it != incidentEdges.crend(); ++it) {
                 const RecordDescriptor &edge = *it;
                 RecordId nextVertex;
                 auto srcDstVertex = txn._iGraph->getSrcDstVertices(edge.rid);
@@ -206,7 +208,7 @@ namespace nogdb {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
-          throw err;
+          throw NOGDB_FATAL_ERROR(err);
         }
       }
       return result;
@@ -218,10 +220,11 @@ namespace nogdb {
                                     const schema::ClassAccessInfo &dstVertexClassInfo,
                                     const RecordDescriptor &srcVertexRecordDescriptor,
                                     const RecordDescriptor &dstVertexRecordDescriptor,
-                                    const GraphFilter &pathFilter) {
+                                    const GraphFilter &edgeFilter,
+                                    const GraphFilter &vertexFilter) {
       const auto searchResultDescriptor = bfsShortestPathRdesc(
           txn, srcVertexClassInfo, dstVertexClassInfo,
-          srcVertexRecordDescriptor, dstVertexRecordDescriptor, pathFilter);
+          srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
 
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
@@ -241,7 +244,8 @@ namespace nogdb {
                                          const schema::ClassAccessInfo &dstVertexClassInfo,
                                          const RecordDescriptor &srcVertexRecordDescriptor,
                                          const RecordDescriptor &dstVertexRecordDescriptor,
-                                         const GraphFilter &pathFilter) {
+                                         const GraphFilter &edgeFilter,
+                                         const GraphFilter &vertexFilter) {
       auto result = std::vector<RecordDescriptor>{};
       try {
         if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
@@ -256,13 +260,14 @@ namespace nogdb {
             auto vertex = queue.front();
             queue.pop();
 
-            for (const auto &edge: filterIncidentEdges(txn, vertex, adapter::relation::Direction::OUT, pathFilter)) {
+            auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
+                txn, vertex, adapter::relation::Direction::OUT, edgeFilter);
+            for (const auto &edge: incidentEdges) {
               auto nextVertex = txn._iGraph->getSrcDstVertices(edge.rid).second;
               if (visited.find(nextVertex) == visited.cend()) {
-                auto rdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
-                             filterRecord(txn, nextVertex, pathFilter) : RecordDescriptor{nextVertex};
-                if (rdesc != RecordDescriptor{}) {
-                  visited.insert({nextVertex, {rdesc, vertex}});
+                auto vertexRdesc = compare::RecordCompare::filterRecord(txn, nextVertex, vertexFilter);
+                if (vertexRdesc != RecordDescriptor{}) {
+                  visited.insert({nextVertex, {vertexRdesc, vertex}});
                   queue.push(nextVertex);
                 }
               }
@@ -292,65 +297,10 @@ namespace nogdb {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
-          throw err;
+          throw NOGDB_FATAL_ERROR(err);
         }
       }
       return result;
-    }
-
-    RecordDescriptor
-    GraphTraversal::filterRecord(const Txn &txn,
-                                 const RecordDescriptor &recordDescriptor,
-                                 const GraphFilter &pathFilter) {
-      auto classInfo = txn._class->getInfo(recordDescriptor.rid.first);
-      auto record = txn._iRecord->getRecord(classInfo, recordDescriptor);
-      if (pathFilter.isSetVertex() && classInfo.type == ClassType::VERTEX) {
-        if ((*pathFilter.vertexFilter)(record)) {
-          return recordDescriptor;
-        } else {
-          return RecordDescriptor{};
-        }
-      } else if (pathFilter.isSetEdge() && classInfo.type == ClassType::EDGE) {
-        if ((*pathFilter.edgeFilter)(record)) {
-          return recordDescriptor;
-        } else {
-          return RecordDescriptor{};
-        }
-      } else {
-        return recordDescriptor;
-      }
-    }
-
-    std::vector<RecordDescriptor>
-    GraphTraversal::filterIncidentEdges(const Txn &txn,
-                                        const RecordId &vertex,
-                                        const adapter::relation::Direction &direction,
-                                        const GraphFilter &pathFilter) {
-      auto edgeRecordDescriptors = std::vector<RecordDescriptor>{};
-      auto edgeNeighbours = std::vector<RecordId>{};
-      switch (direction) {
-        case adapter::relation::Direction::IN:
-          edgeNeighbours = txn._iGraph->getInEdges(vertex);
-          break;
-        case adapter::relation::Direction::OUT:
-          edgeNeighbours = txn._iGraph->getOutEdges(vertex);
-          break;
-        case adapter::relation::Direction::ALL:
-          edgeNeighbours = txn._iGraph->getInEdges(vertex);
-          auto moreEdges = txn._iGraph->getOutEdges(vertex);
-          edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
-          break;
-      }
-
-      for (const auto &edge: edgeNeighbours) {
-        auto rdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
-                     filterRecord(txn, RecordDescriptor{edge}, pathFilter) : RecordDescriptor{edge};
-        if (rdesc != RecordDescriptor{}) {
-          edgeRecordDescriptors.emplace_back(RecordDescriptor{edge});
-        }
-      }
-
-      return edgeRecordDescriptors;
     }
 
   }

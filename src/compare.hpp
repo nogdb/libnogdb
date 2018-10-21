@@ -50,6 +50,30 @@ namespace nogdb {
       static bool
       compareRecordByCondition(const Record &record, const PropertyType &propertyType, const Condition &condition);
 
+      static bool
+      compareRecordByCondition(const Record &record,
+                               const schema::PropertyNameMapInfo &propertyNameMapInfo,
+                               const Condition &condition);
+
+      static bool
+      compareRecordByMultiCondition(const Record &record,
+                                    const schema::PropertyNameMapInfo &propertyNameMapInfo,
+                                    const MultiCondition &multiCondition);
+
+      static RecordDescriptor filterRecord(const Txn &txn,
+                                           const RecordDescriptor &recordDescriptor,
+                                           const GraphFilter &filter);
+
+      static Result filterResult(const Txn &txn,
+                                 const RecordDescriptor &recordDescriptor,
+                                 const GraphFilter &filter);
+
+      static std::vector<RecordDescriptor>
+      filterIncidentEdges(const Txn &txn,
+                          const RecordId &vertex,
+                          const adapter::relation::Direction &direction,
+                          const GraphFilter &filter);
+
       static std::vector<RecordId>
       resolveEdgeRecordIds(const Txn &txn, const RecordId &recordId, const Direction &direction);
 

@@ -166,7 +166,7 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
     if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_PROPERTY) {
       ClassDescriptor classDescriptor = DB::getClass(this->txn, tClassName.toString());
       vector<PropertyDescriptor> properties = DB::getProperties(this->txn, classDescriptor);
-      for(const auto& property: properties) {
+      for (const auto &property: properties) {
         if (property.name == tPropName.toString()) {
           result = property;
           break;
@@ -345,12 +345,16 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
           case WhereType::NO_COND:
             edges = Vertex::getOutEdge(this->txn, src.descriptor);
             break;
-          case WhereType::CONDITION:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<Condition>());
+          case WhereType::CONDITION: {
+            const auto condition = args.where.get<Condition>();
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{}.where(&condition));
             break;
-          case WhereType::MULTI_COND:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, args.where.get<MultiCondition>());
+          }
+          case WhereType::MULTI_COND: {
+            const auto multiCondition = args.where.get<MultiCondition>();
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{}.where(&multiCondition));
             break;
+          }
         }
         // edgeDescs += edges;
         for (auto &edge: edges) {
@@ -367,12 +371,16 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
             case WhereType::NO_COND:
               edges = Vertex::getInEdge(this->txn, dest.descriptor);
               break;
-            case WhereType::CONDITION:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<Condition>());
+            case WhereType::CONDITION: {
+              const auto condition = args.where.get<Condition>();
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{}.where(&condition));
               break;
-            case WhereType::MULTI_COND:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, args.where.get<MultiCondition>());
+            }
+            case WhereType::MULTI_COND: {
+              const auto multiCondition = args.where.get<MultiCondition>();
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{}.where(&multiCondition));
               break;
+            }
           }
           // inEdgeDescs += edges
           for (auto &edge: edges) {
@@ -632,7 +640,8 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
 }
 
 ResultSet Context::traversePrivate(const TraverseArgs &args) {
-  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int, const GraphFilter&);
+  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int,
+                                               const GraphFilter &, const GraphFilter &);
   static const auto mapFunc = map<string, TraverseFunction, StringCaseCompare>(
       {
           {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
@@ -667,7 +676,8 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     }
   }
 
-  return func(this->txn, args.root, args.minDepth, args.maxDepth, GraphFilter{});
+  return func(this->txn, args.root, args.minDepth, args.maxDepth,
+              GraphFilter{}.only(args.filter), GraphFilter{}.only(args.filter));
 }
 
 Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {

@@ -34,6 +34,7 @@
 #include "schema.hpp"
 #include "datarecord.hpp"
 #include "relation.hpp"
+#include "compare.hpp"
 
 #include "nogdb_compare.h"
 #include "nogdb_types.h"
@@ -55,7 +56,8 @@ namespace nogdb {
                                           unsigned int minDepth,
                                           unsigned int maxDepth,
                                           const adapter::relation::Direction &direction,
-                                          const GraphFilter &pathFilter);
+                                          const GraphFilter &edgeFilter,
+                                          const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
       breadthFirstSearchRdesc(const Txn &txn,
@@ -64,7 +66,8 @@ namespace nogdb {
                               unsigned int minDepth,
                               unsigned int maxDepth,
                               const adapter::relation::Direction &direction,
-                              const GraphFilter &pathFilter);
+                              const GraphFilter &edgeFilter,
+                              const GraphFilter &vertexFilter);
 
       static ResultSet depthFirstSearch(const Txn &txn,
                                         const schema::ClassAccessInfo &classInfo,
@@ -72,7 +75,8 @@ namespace nogdb {
                                         unsigned int minDepth,
                                         unsigned int maxDepth,
                                         const adapter::relation::Direction &direction,
-                                        const GraphFilter &pathFilter);
+                                        const GraphFilter &edgeFilter,
+                                        const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
       depthFirstSearchRdesc(const Txn &txn,
@@ -81,14 +85,16 @@ namespace nogdb {
                             unsigned int minDepth,
                             unsigned int maxDepth,
                             const adapter::relation::Direction &direction,
-                            const GraphFilter &pathFilter);
+                            const GraphFilter &edgeFilter,
+                            const GraphFilter &vertexFilter);
 
       static ResultSet bfsShortestPath(const Txn &txn,
                                        const schema::ClassAccessInfo &srcVertexClassInfo,
                                        const schema::ClassAccessInfo &dstVertexClassInfo,
                                        const RecordDescriptor &srcVertexRecordDescriptor,
                                        const RecordDescriptor &dstVertexRecordDescriptor,
-                                       const GraphFilter &pathFilter);
+                                       const GraphFilter &edgeFilter,
+                                       const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
       bfsShortestPathRdesc(const Txn &txn,
@@ -96,7 +102,8 @@ namespace nogdb {
                            const schema::ClassAccessInfo &dstVertexClassInfo,
                            const RecordDescriptor &srcVertexRecordDescriptor,
                            const RecordDescriptor &dstVertexRecordDescriptor,
-                           const GraphFilter &pathFilter);
+                           const GraphFilter &edgeFilter,
+                           const GraphFilter &vertexFilter);
 
     private:
 
@@ -105,16 +112,6 @@ namespace nogdb {
           return (static_cast<uint64_t>(rid.first) << 32) + static_cast<uint64_t>(rid.second);
         }
       };
-
-      static RecordDescriptor filterRecord(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const GraphFilter &pathFilter);
-
-      static std::vector<RecordDescriptor>
-      filterIncidentEdges(const Txn &txn,
-                          const RecordId &vertex,
-                          const adapter::relation::Direction &direction,
-                          const GraphFilter &pathFilter);
 
     };
   }

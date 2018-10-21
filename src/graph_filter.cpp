@@ -27,18 +27,21 @@ namespace nogdb {
     cmpCondition = condition;
     cmpMultiCondition = nullptr;
     cmpFunction = nullptr;
+    return *this;
   }
 
   GraphFilter &GraphFilter::where(const MultiCondition* multiCondition) {
     cmpCondition = nullptr;
     cmpMultiCondition = multiCondition;
     cmpFunction = nullptr;
+    return *this;
   }
 
   GraphFilter &GraphFilter::where(bool (*function)(const Record &record)) {
     cmpCondition = nullptr;
     cmpMultiCondition = nullptr;
     cmpFunction = function;
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::initializer_list<std::string> &initializerList) {
@@ -46,6 +49,7 @@ namespace nogdb {
     for (const auto &value: initializerList) {
       onlyClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::vector<std::string> &classNames) {
@@ -53,6 +57,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       onlyClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::list<std::string> &classNames) {
@@ -60,6 +65,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       onlyClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::set<std::string> &classNames) {
@@ -67,6 +73,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       onlyClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::vector<std::string>::const_iterator &begin,
@@ -75,6 +82,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       onlyClasses.insert(*it);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::list<std::string>::const_iterator &begin,
@@ -83,6 +91,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       onlyClasses.insert(*it);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::set<std::string>::const_iterator &begin,
@@ -91,6 +100,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       onlyClasses.insert(*it);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::initializer_list<std::string> &initializerList) {
@@ -98,6 +108,7 @@ namespace nogdb {
     for (const auto &value: initializerList) {
       ignoreClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::vector<std::string> &classNames) {
@@ -105,6 +116,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       ignoreClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::list<std::string> &classNames) {
@@ -112,6 +124,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       ignoreClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::set<std::string> &classNames) {
@@ -119,6 +132,7 @@ namespace nogdb {
     for (const auto &value: classNames) {
       ignoreClasses.insert(value);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::vector<std::string>::const_iterator &begin,
@@ -127,6 +141,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       ignoreClasses.insert(*it);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::list<std::string>::const_iterator &begin,
@@ -135,6 +150,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       ignoreClasses.insert(*it);
     }
+    return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::set<std::string>::const_iterator &begin,
@@ -143,6 +159,7 @@ namespace nogdb {
     for (auto it = begin; it != end; ++it) {
       ignoreClasses.insert(*it);
     }
+    return *this;
   }
 
 }

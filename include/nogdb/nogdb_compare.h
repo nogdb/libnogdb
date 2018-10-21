@@ -355,9 +355,15 @@ namespace nogdb {
 
   class GraphFilter {
   public:
-    friend class algorithm::GraphTraversal;
+    friend class compare::RecordCompare;
 
     GraphFilter() = default;
+
+    GraphFilter(const Condition* condition): cmpCondition{condition} {}
+
+    GraphFilter(const MultiCondition* multiCondition): cmpMultiCondition{multiCondition} {}
+
+    GraphFilter(bool (*function)(const Record &record)): cmpFunction{function} {}
 
     virtual ~GraphFilter() noexcept = default;
 
