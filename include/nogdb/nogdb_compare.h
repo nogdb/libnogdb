@@ -354,26 +354,38 @@ namespace nogdb {
   };
 
   class GraphFilter {
+  private:
+
+    enum FilterMode {
+      CONDITION, MULTI_CONDITION, COMPARE_FUNCTION
+    };
+
   public:
     friend class compare::RecordCompare;
 
-    GraphFilter() = default;
+    GraphFilter(const Condition& condition);
 
-    GraphFilter(const Condition* condition): cmpCondition{condition} {}
+    GraphFilter(const MultiCondition& multiCondition);
 
-    GraphFilter(const MultiCondition* multiCondition): cmpMultiCondition{multiCondition} {}
+    GraphFilter(bool (*function)(const Record &record));
 
-    GraphFilter(bool (*function)(const Record &record)): cmpFunction{function} {}
+    ~GraphFilter() noexcept;
 
-    virtual ~GraphFilter() noexcept = default;
+    GraphFilter(const GraphFilter& other);
 
-    GraphFilter &where(const Condition* condition);
+    GraphFilter& operator=(const GraphFilter& other);
 
-    GraphFilter &where(const MultiCondition* multiCondition);
+    GraphFilter(GraphFilter&& other) noexcept;
 
-    GraphFilter &where(bool (*function)(const Record &record));
+    GraphFilter& operator=(GraphFilter&& other) noexcept;
 
-    GraphFilter &only(const std::initializer_list<std::string> &initializerList);
+    GraphFilter &only(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &only(const std::string &className, const T&... classNames) {
+      only(className);
+      only(classNames...);
+    }
 
     GraphFilter &only(const std::vector<std::string> &classNames);
 
@@ -390,7 +402,13 @@ namespace nogdb {
     GraphFilter &only(const std::set<std::string>::const_iterator &begin,
                       const std::set<std::string>::const_iterator &end);
 
-    GraphFilter &exclude(const std::initializer_list<std::string> &initializerList);
+    GraphFilter &exclude(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &exclude(const std::string &className, const T&... classNames) {
+      exclude(className);
+      exclude(classNames...);
+    }
 
     GraphFilter &exclude(const std::vector<std::string> &classNames);
 
@@ -407,11 +425,18 @@ namespace nogdb {
     GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
                          const std::set<std::string>::const_iterator &end);
 
-  protected:
+  private:
 
-    const Condition *cmpCondition{nullptr};
-    const MultiCondition *cmpMultiCondition{nullptr};
-    bool (*cmpFunction)(const Record &record){nullptr};
+    union CmpFilter {
+      Condition _condition;
+      MultiCondition _multiCondition;
+      bool (*_function)(const Record &record);
+      CmpFilter() {}
+      ~CmpFilter() {}
+    };
+
+    FilterMode mode;
+    CmpFilter filter;
 
     std::set<std::string> onlyClasses{};
     std::set<std::string> ignoreClasses{};
