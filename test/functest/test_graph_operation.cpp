@@ -2279,12 +2279,12 @@ void test_shortest_path_with_condition() {
 
   try {
     auto res = nogdb::Traverse::shortestPath(txn, a, f,
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return (record.get("distance").toIntU() <= 120U);
-        }),
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return (record.get("population").toBigIntU() >= 1000ULL);
-        }));
+                                             nogdb::GraphFilter([](const nogdb::Record &record) {
+                                               return (record.get("distance").toIntU() <= 120U);
+                                             }),
+                                             nogdb::GraphFilter([](const nogdb::Record &record) {
+                                               return (record.get("population").toBigIntU() >= 1000ULL);
+                                             }));
     assertSize(res, 5);
     assert(res[0].record.get("name").toText() == "A");
     assert(res[0].record.getDepth() == 0);
@@ -2298,12 +2298,12 @@ void test_shortest_path_with_condition() {
     assert(res[4].record.getDepth() == 4);
 
     res = nogdb::Traverse::shortestPath(txn, a, f,
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return (record.get("distance").toIntU() <= 200U);
-        }),
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return (record.get("population").toBigIntU() < 5000ULL);
-        }));
+                                        nogdb::GraphFilter([](const nogdb::Record &record) {
+                                          return (record.get("distance").toIntU() <= 200U);
+                                        }),
+                                        nogdb::GraphFilter([](const nogdb::Record &record) {
+                                          return (record.get("population").toBigIntU() < 5000ULL);
+                                        }));
     assertSize(res, 4);
     assert(res[0].record.get("name").toText() == "A");
     assert(res[0].record.getDepth() == 0);
@@ -2315,9 +2315,9 @@ void test_shortest_path_with_condition() {
     assert(res[3].record.getDepth() == 3);
 
     res = nogdb::Traverse::shortestPath(txn, a, f,
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return (record.get("distance").toIntU() <= 200U);
-        }));
+                                        nogdb::GraphFilter([](const nogdb::Record &record) {
+                                          return (record.get("distance").toIntU() <= 200U);
+                                        }));
     assertSize(res, 4);
     assert(res[0].record.get("name").toText() == "A");
     assert(res[0].record.getDepth() == 0);
@@ -2329,9 +2329,10 @@ void test_shortest_path_with_condition() {
     assert(res[3].record.getDepth() == 3);
 
     res = nogdb::Traverse::shortestPath(txn, a, f,
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return record.get("distance").toIntU() >= 100U && record.get("distance").toIntU() != 150U;
-        }));
+                                        nogdb::GraphFilter([](const nogdb::Record &record) {
+                                          return record.get("distance").toIntU() >= 100U &&
+                                                 record.get("distance").toIntU() != 150U;
+                                        }));
     assertSize(res, 4);
     assert(res[0].record.get("name").toText() == "A");
     assert(res[0].record.getDepth() == 0);
@@ -2343,9 +2344,9 @@ void test_shortest_path_with_condition() {
     assert(res[3].record.getDepth() == 3);
 
     res = nogdb::Traverse::shortestPath(txn, a, f,
-        nogdb::GraphFilter([](const nogdb::Record &record) {
-          return record.get("distance").toIntU() >= 1000U;
-        }));
+                                        nogdb::GraphFilter([](const nogdb::Record &record) {
+                                          return record.get("distance").toIntU() >= 1000U;
+                                        }));
     assert(res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
