@@ -23,6 +23,7 @@
 
 #include <iostream> // for debugging
 #include <string>
+#include <memory>
 #include <algorithm>
 #include <vector>
 #include <list>
@@ -38,7 +39,107 @@ namespace nogdb {
     class IndexInterface;
   }
 
+  class Condition;
+
   class MultiCondition;
+
+  class GraphFilter {
+  private:
+
+    enum FilterMode {
+      CONDITION,
+      MULTI_CONDITION,
+      COMPARE_FUNCTION
+    };
+
+  public:
+    friend class compare::RecordCompare;
+
+    GraphFilter();
+
+    explicit GraphFilter(const Condition &condition);
+
+    explicit GraphFilter(const MultiCondition &multiCondition);
+
+    explicit GraphFilter(bool (*function)(const Record &record));
+
+    ~GraphFilter() noexcept = default;
+
+    GraphFilter(const GraphFilter &other);
+
+    GraphFilter &operator=(const GraphFilter &other);
+
+    GraphFilter(GraphFilter &&other) noexcept;
+
+    GraphFilter &operator=(GraphFilter &&other) noexcept;
+
+    GraphFilter &only(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &only(const std::string &className, const T &... classNames) {
+      only(className);
+      only(classNames...);
+      return *this;
+    }
+
+    GraphFilter &only(const std::vector<std::string> &classNames);
+
+    GraphFilter &only(const std::list<std::string> &classNames);
+
+    GraphFilter &only(const std::set<std::string> &classNames);
+
+    GraphFilter &only(const std::vector<std::string>::const_iterator &begin,
+                      const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::list<std::string>::const_iterator &begin,
+                      const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::set<std::string>::const_iterator &begin,
+                      const std::set<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &exclude(const std::string &className, const T &... classNames) {
+      exclude(className);
+      exclude(classNames...);
+    }
+
+    GraphFilter &exclude(const std::vector<std::string> &classNames);
+
+    GraphFilter &exclude(const std::list<std::string> &classNames);
+
+    GraphFilter &exclude(const std::set<std::string> &classNames);
+
+    GraphFilter &exclude(const std::vector<std::string>::const_iterator &begin,
+                         const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::list<std::string>::const_iterator &begin,
+                         const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
+                         const std::set<std::string>::const_iterator &end);
+
+  private:
+
+    union CmpFilter {
+      std::shared_ptr<Condition> _condition;
+      std::shared_ptr<MultiCondition> _multiCondition;
+
+      bool (*_function)(const Record &record);
+
+      CmpFilter() {}
+
+      ~CmpFilter() {}
+    };
+
+    FilterMode mode;
+    CmpFilter filter;
+
+    std::set<std::string> onlyClasses{};
+    std::set<std::string> ignoreClasses{};
+
+  };
 
   class Condition {
   private:
@@ -57,6 +158,8 @@ namespace nogdb {
     Condition(const std::string &propName_);
 
     ~Condition() noexcept = default;
+
+    operator GraphFilter() { return GraphFilter(*this); }
 
     template<typename T>
     Condition eq(T value_) const {
@@ -288,6 +391,8 @@ namespace nogdb {
 
     MultiCondition operator!() const;
 
+    operator GraphFilter() { return GraphFilter(*this); }
+
     bool execute(const Record &r, const PropertyMapType &propType) const;
 
   private:
@@ -351,96 +456,6 @@ namespace nogdb {
       Operator opt;
       bool isNegative;
     };
-  };
-
-  class GraphFilter {
-  private:
-
-    enum FilterMode {
-      CONDITION, MULTI_CONDITION, COMPARE_FUNCTION
-    };
-
-  public:
-    friend class compare::RecordCompare;
-
-    GraphFilter(const Condition& condition);
-
-    GraphFilter(const MultiCondition& multiCondition);
-
-    GraphFilter(bool (*function)(const Record &record));
-
-    ~GraphFilter() noexcept;
-
-    GraphFilter(const GraphFilter& other);
-
-    GraphFilter& operator=(const GraphFilter& other);
-
-    GraphFilter(GraphFilter&& other) noexcept;
-
-    GraphFilter& operator=(GraphFilter&& other) noexcept;
-
-    GraphFilter &only(const std::string &className);
-
-    template<typename ...T>
-    GraphFilter &only(const std::string &className, const T&... classNames) {
-      only(className);
-      only(classNames...);
-    }
-
-    GraphFilter &only(const std::vector<std::string> &classNames);
-
-    GraphFilter &only(const std::list<std::string> &classNames);
-
-    GraphFilter &only(const std::set<std::string> &classNames);
-
-    GraphFilter &only(const std::vector<std::string>::const_iterator &begin,
-                      const std::vector<std::string>::const_iterator &end);
-
-    GraphFilter &only(const std::list<std::string>::const_iterator &begin,
-                      const std::list<std::string>::const_iterator &end);
-
-    GraphFilter &only(const std::set<std::string>::const_iterator &begin,
-                      const std::set<std::string>::const_iterator &end);
-
-    GraphFilter &exclude(const std::string &className);
-
-    template<typename ...T>
-    GraphFilter &exclude(const std::string &className, const T&... classNames) {
-      exclude(className);
-      exclude(classNames...);
-    }
-
-    GraphFilter &exclude(const std::vector<std::string> &classNames);
-
-    GraphFilter &exclude(const std::list<std::string> &classNames);
-
-    GraphFilter &exclude(const std::set<std::string> &classNames);
-
-    GraphFilter &exclude(const std::vector<std::string>::const_iterator &begin,
-                         const std::vector<std::string>::const_iterator &end);
-
-    GraphFilter &exclude(const std::list<std::string>::const_iterator &begin,
-                         const std::list<std::string>::const_iterator &end);
-
-    GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
-                         const std::set<std::string>::const_iterator &end);
-
-  private:
-
-    union CmpFilter {
-      Condition _condition;
-      MultiCondition _multiCondition;
-      bool (*_function)(const Record &record);
-      CmpFilter() {}
-      ~CmpFilter() {}
-    };
-
-    FilterMode mode;
-    CmpFilter filter;
-
-    std::set<std::string> onlyClasses{};
-    std::set<std::string> ignoreClasses{};
-
   };
 
 }

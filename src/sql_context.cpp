@@ -347,12 +347,12 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
             break;
           case WhereType::CONDITION: {
             const auto condition = args.where.get<Condition>();
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{}.where(&condition));
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{condition});
             break;
           }
           case WhereType::MULTI_COND: {
             const auto multiCondition = args.where.get<MultiCondition>();
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{}.where(&multiCondition));
+            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{multiCondition});
             break;
           }
         }
@@ -373,12 +373,12 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
               break;
             case WhereType::CONDITION: {
               const auto condition = args.where.get<Condition>();
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{}.where(&condition));
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{condition});
               break;
             }
             case WhereType::MULTI_COND: {
               const auto multiCondition = args.where.get<MultiCondition>();
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{}.where(&multiCondition));
+              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{multiCondition});
               break;
             }
           }

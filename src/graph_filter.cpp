@@ -23,32 +23,24 @@
 
 namespace nogdb {
 
+  GraphFilter::GraphFilter() {
+    filter._function = nullptr;
+    mode = FilterMode::COMPARE_FUNCTION;
+  }
+
   GraphFilter::GraphFilter(const Condition& condition) {
-    filter._condition = condition;
+    filter._condition = std::make_shared<Condition>(condition);
     mode = FilterMode::CONDITION;
   }
 
   GraphFilter::GraphFilter(const MultiCondition& multiCondition) {
-    filter._multiCondition = multiCondition;
+    filter._multiCondition = std::make_shared<MultiCondition>(multiCondition);
     mode = FilterMode::MULTI_CONDITION;
   }
 
   GraphFilter::GraphFilter(bool (*function)(const Record &record)) {
     filter._function = function;
     mode = FilterMode::COMPARE_FUNCTION;
-  }
-
-  GraphFilter::~GraphFilter() noexcept {
-    switch(mode) {
-      case FilterMode::CONDITION:
-        filter._condition.~Condition();
-        break;
-      case FilterMode::MULTI_CONDITION:
-        filter._multiCondition.~MultiCondition();
-        break;
-      default:
-        break;
-    }
   }
 
   GraphFilter::GraphFilter(const GraphFilter& other)

@@ -132,21 +132,23 @@ namespace nogdb {
       }
 
       auto record = txn._iRecord->getRecord(classInfo, recordDescriptor);
-      if (filter.cmpCondition) {
-        auto condition = *filter.cmpCondition;
+      if (filter.mode == GraphFilter::FilterMode::CONDITION) {
+        auto condition = filter.filter._condition.get();
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, condition);
+        auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
-      } else if (filter.cmpMultiCondition) {
-        auto multiCondition = *filter.cmpMultiCondition;
+      } else if (filter.mode == GraphFilter::FilterMode::MULTI_CONDITION) {
+        auto multiCondition = filter.filter._multiCondition.get();
         auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
-            record, propertyNameMapInfo, multiCondition);
+            record, propertyNameMapInfo, *multiCondition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
-      } else if (filter.cmpFunction) {
-        return (*filter.cmpFunction)(record) ? Result{recordDescriptor, record} : Result{};;
       } else {
-        return Result{};
+        if (filter.filter._function != nullptr) {
+          return (*filter.filter._function)(record) ? Result{recordDescriptor, record} : Result{};
+        } else {
+          return Result{};
+        }
       }
     }
 
