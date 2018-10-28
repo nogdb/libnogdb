@@ -22,8 +22,8 @@
 #include <iterator>
 
 #include "schema.hpp"
+#include "datarecord.hpp"
 
-#include <nogdb.h>
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
 
@@ -73,7 +73,8 @@ namespace nogdb {
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    result = Result{recordDescriptor, DB::getRecord(*txn, recordDescriptor)};
+    auto classInfo = txn->_iSchema->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_iRecord->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 
@@ -90,7 +91,8 @@ namespace nogdb {
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    result = Result{recordDescriptor, DB::getRecord(*txn, recordDescriptor)};
+    auto classInfo = txn->_iSchema->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_iRecord->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 
@@ -114,7 +116,8 @@ namespace nogdb {
       currentIndex = 0;
       auto cursor = metadata.begin();
       auto recordDescriptor = *(cursor);
-      result = Result{recordDescriptor, DB::getRecord(*txn, recordDescriptor)};
+      auto classInfo = txn->_iSchema->getExistingClass(recordDescriptor.rid.first);
+      result = Result{recordDescriptor, txn->_iRecord->getRecord(classInfo, recordDescriptor)};
     }
   }
 
@@ -126,7 +129,8 @@ namespace nogdb {
       currentIndex = static_cast<long long>(metadata.size() - 1);
       auto cursor = metadata.end() - 1;
       auto recordDescriptor = *(cursor);
-      result = Result{recordDescriptor, DB::getRecord(*txn, recordDescriptor)};
+      auto classInfo = txn->_iSchema->getExistingClass(recordDescriptor.rid.first);
+      result = Result{recordDescriptor, txn->_iRecord->getRecord(classInfo, recordDescriptor)};
     }
   }
 
@@ -140,7 +144,8 @@ namespace nogdb {
     currentIndex = index;
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    result = Result{recordDescriptor, DB::getRecord(*txn, recordDescriptor)};
+    auto classInfo = txn->_iSchema->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_iRecord->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 
