@@ -24,6 +24,6 @@
 #include <string>
 
 const std::string DATABASE_PATH{"./runtest.db"};
-constexpr unsigned int COLUMN_ID_OFFSET	= 13;
+constexpr unsigned int COLUMN_ID_OFFSET = 13;
 constexpr unsigned int COLUMN_NAME_OFFSET = 25;
 constexpr unsigned int COLUMN_TYPE_OFFSET = 13;

@@ -94,10 +94,11 @@ void test_alter_class() {
     assert(cdesc.name == "file");
     auto properties = nogdb::DB::getProperties(txn, cdesc);
     assert(properties.size() == 2);
-    for(const auto& property: properties) {
+    for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::INTEGER);
       else if (property.name == "prop2") assert(property.type == nogdb::PropertyType::TEXT);
-      else assert(false);
+      else
+        assert(false);
     }
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -286,11 +287,12 @@ void test_add_property() {
     assert(schema.name == "files");
     auto properties = nogdb::DB::getProperties(txn, schema);
     assert(properties.size() == 3);
-    for(const auto& property: properties) {
+    for (const auto &property: properties) {
       if (property.name == "filename") assert(property.type == nogdb::PropertyType::TEXT);
       else if (property.name == "filesize") assert(property.type == nogdb::PropertyType::UNSIGNED_INTEGER);
       else if (property.name == "ctime") assert(property.type == nogdb::PropertyType::UNSIGNED_INTEGER);
-      else assert(false);
+      else
+        assert(false);
     }
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -368,11 +370,12 @@ void test_add_invalid_property() {
     assert(schema.name == "files");
     auto properties = nogdb::DB::getProperties(txn, schema);
     assert(properties.size() == 3);
-    for(const auto& property: properties) {
+    for (const auto &property: properties) {
       if (property.name == "filename") assert(property.type == nogdb::PropertyType::TEXT);
       else if (property.name == "filesize") assert(property.type == nogdb::PropertyType::UNSIGNED_INTEGER);
       else if (property.name == "ctime") assert(property.type == nogdb::PropertyType::UNSIGNED_INTEGER);
-      else assert(false);
+      else
+        assert(false);
     }
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -454,11 +457,12 @@ void test_alter_property() {
     assert(schema.name == "links");
     auto properties = nogdb::DB::getProperties(txn, schema);
     assert(properties.size() == 3);
-    for(const auto& property: properties) {
+    for (const auto &property: properties) {
       if (property.name == "type") assert(property.type == nogdb::PropertyType::BLOB);
       else if (property.name == "comments") assert(property.type == nogdb::PropertyType::TEXT);
       else if (property.name == "expired") assert(property.type == nogdb::PropertyType::INTEGER);
-      else assert(false);
+      else
+        assert(false);
     }
     txn.commit();
   } catch (const nogdb::Error &ex) {

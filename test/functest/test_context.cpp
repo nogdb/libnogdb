@@ -106,7 +106,7 @@ void test_ctx_move() {
     nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txn, "files", "property", nogdb::PropertyType::TEXT);
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -124,7 +124,7 @@ void test_ctx_move() {
     try {
       auto txn = nogdb::Txn{tmp1, nogdb::Txn::Mode::READ_ONLY};
       auto schema_r = std::vector<ClassSchema>{};
-      for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+      for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
         schema_r.emplace_back(ClassSchema{txn, cdesc});
       }
       auto info_r = nogdb::DB::getDBInfo(txn);
@@ -143,7 +143,7 @@ void test_ctx_move() {
     try {
       auto txn = nogdb::Txn{tmp2, nogdb::Txn::Mode::READ_ONLY};
       schema_r.clear();
-      for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+      for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
         schema_r.emplace_back(ClassSchema{txn, cdesc});
       }
       auto info_r = nogdb::DB::getDBInfo(txn);
@@ -180,7 +180,7 @@ void test_reopen_ctx() {
     nogdb::Property::add(txn, "folders", "property1", nogdb::PropertyType::BLOB);
     nogdb::Property::add(txn, "folders", "property2", nogdb::PropertyType::BIGINT);
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -204,7 +204,7 @@ void test_reopen_ctx() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -258,7 +258,7 @@ void test_reopen_ctx_v2() {
                                                          nogdb::Bytes{myobject{42U, 42424242424242ULL, 42.42}});
     nogdb::Vertex::create(txn, "test2", r);
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -282,7 +282,7 @@ void test_reopen_ctx_v2() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -351,7 +351,7 @@ void test_reopen_ctx_v3() {
     auto e = nogdb::Edge::create(txn, "test3", v1, v2, r2);
 
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -375,7 +375,7 @@ void test_reopen_ctx_v3() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -457,7 +457,7 @@ void test_reopen_ctx_v4() {
     auto e = nogdb::Edge::create(txn, "test3", v1, v2, r2);
 
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -482,7 +482,7 @@ void test_reopen_ctx_v4() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -493,7 +493,7 @@ void test_reopen_ctx_v4() {
     nogdb::Property::alter(txn, "test2", "property1", "property01");
 
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -517,7 +517,7 @@ void test_reopen_ctx_v4() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     schema_rr.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_rr.emplace_back(ClassSchema{txn, cdesc});
     }
     info_rr = nogdb::DB::getDBInfo(txn);
@@ -577,7 +577,7 @@ void test_reopen_ctx_v5() {
     nogdb::Edge::create(txn, "edge3", v2, v1, nogdb::Record{}.set("prop1", 200).set("prop3", -41.42));
 
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -601,7 +601,7 @@ void test_reopen_ctx_v5() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -655,7 +655,7 @@ void test_reopen_ctx_v6() {
     e_index3 = nogdb::Property::createIndex(txn, "index_edge2", "prop2", true);
 
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -686,7 +686,7 @@ void test_reopen_ctx_v6() {
 
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);
@@ -697,7 +697,7 @@ void test_reopen_ctx_v6() {
     nogdb::Property::dropIndex(txn, "index_edge2", "prop1");
 
     schema.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
     }
     info = nogdb::DB::getDBInfo(txn);
@@ -717,7 +717,7 @@ void test_reopen_ctx_v6() {
     ctx = new nogdb::Context(DATABASE_PATH);
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
-    for(const auto& cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
     info_r = nogdb::DB::getDBInfo(txn);

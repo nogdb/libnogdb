@@ -566,7 +566,7 @@ void test_drop_and_find_extended_class() {
 
     auto classDesc = nogdb::DB::getClass(txn, "vertex1");
     auto count = size_t{0};
-    for(const auto& classDesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &classDesc: nogdb::DB::getClasses(txn)) {
       if (classDesc.base == classDesc.id) {
         assert(classDesc.name == "vertex3" || classDesc.name == "vertex4");
       }

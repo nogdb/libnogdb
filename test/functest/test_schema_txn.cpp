@@ -28,7 +28,7 @@ size_t getSizeOfSubClasses(const nogdb::Txn &txn, const nogdb::ClassDescriptor &
   return size;
 }
 
-bool propertyExists(const nogdb::Txn &txn, const std::string &className, const std::string& propertyName) {
+bool propertyExists(const nogdb::Txn &txn, const std::string &className, const std::string &propertyName) {
   try {
     return nogdb::DB::getProperty(txn, className, propertyName).id != nogdb::PropertyDescriptor{}.id;
   } catch (const nogdb::Error &error) {
@@ -36,7 +36,7 @@ bool propertyExists(const nogdb::Txn &txn, const std::string &className, const s
   }
 }
 
-bool indexExists(const nogdb::Txn& txn, const std::string &className, const std::string& propertyName) {
+bool indexExists(const nogdb::Txn &txn, const std::string &className, const std::string &propertyName) {
   try {
     return nogdb::DB::getIndex(txn, className, propertyName).id != nogdb::IndexDescriptor{}.id;
   } catch (const nogdb::Error &error) {
@@ -464,7 +464,7 @@ void test_schema_txn_create_class_extend_commit() {
     auto res12 = nogdb::DB::getClass(txnRw1, "test_12");
     assert(res12.id != nogdb::ClassDescriptor{}.id);
     assert(res12.base == res10.id);
-    assert(getSizeOfSubClasses(txnRw1, res12)== 0);
+    assert(getSizeOfSubClasses(txnRw1, res12) == 0);
     auto res13 = nogdb::DB::getClass(txnRw1, "test_13");
     assert(res13.id != nogdb::ClassDescriptor{}.id);
     assert(res13.base == res11.id);
@@ -477,7 +477,7 @@ void test_schema_txn_create_class_extend_commit() {
 
     auto res = nogdb::DB::getClass(txnRo1, "test_10");
     assert(getSizeOfSubClasses(txnRo1, res) == 0);
-      try {
+    try {
       nogdb::DB::getClass(txnRo1, "test_11");
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
