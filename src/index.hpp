@@ -128,7 +128,7 @@ namespace nogdb {
                          T(*valueRetrieve)(const Bytes &)) {
         auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
         auto indexAccess = openIndexRecordPositive(indexInfo);
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
@@ -149,7 +149,7 @@ namespace nogdb {
         auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
         auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
         auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
               auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);

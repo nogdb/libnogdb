@@ -426,19 +426,19 @@ namespace nogdb {
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo &indexInfo) const {
       auto indexFlags = INDEX_POSITIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
-      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase.get(), indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordNegative(const IndexAccessInfo &indexInfo) const {
       auto indexFlags = INDEX_NEGATIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
-      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase.get(), indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordString(const IndexAccessInfo &indexInfo) const {
       auto indexFlags = INDEX_STRING_UNIQUE(indexInfo.isUnique);
-      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase.get(), indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
@@ -446,7 +446,7 @@ namespace nogdb {
                                       const ClassType &classType) {
       auto propertyIdMapInfo = _txn->_property->getIdMapInfo(indexInfo.classId);
       auto indexAccess = openIndexRecordString(indexInfo);
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), indexInfo.classId, classType);
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo,

@@ -61,7 +61,7 @@ namespace nogdb {
       // source
       for (const auto &relInfo: _inRel->getInfos(rid)) {
         std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-          return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+          return std::make_shared<DataRecord>(_txn->_txnBase.get(), relInfo.edgeId.first, ClassType::EDGE);
         };
         try {
           _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
@@ -76,7 +76,7 @@ namespace nogdb {
       // destination
       for (const auto &relInfo: _outRel->getInfos(rid)) {
         std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-          return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+          return std::make_shared<DataRecord>(_txn->_txnBase.get(), relInfo.edgeId.first, ClassType::EDGE);
         };
         try {
           _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
@@ -100,7 +100,7 @@ namespace nogdb {
 
     std::pair<RecordId, RecordId> GraphInterface::getSrcDstVertices(const RecordId &recordId) const {
       std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-        return std::make_shared<DataRecord>(_txn->_txnBase, recordId.first, ClassType::EDGE);
+        return std::make_shared<DataRecord>(_txn->_txnBase.get(), recordId.first, ClassType::EDGE);
       };
       try {
         auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);

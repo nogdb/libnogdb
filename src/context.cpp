@@ -21,6 +21,7 @@
 
 #include <iostream> // for debugging
 #include <string>
+#include <memory>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -53,24 +54,39 @@ namespace nogdb {
     if (!utils::io::fileExists(dbPath)) {
       mkdir(dbPath.c_str(), 0755);
     }
-    _envHandler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+    _envHandler = std::make_shared<storage_engine::LMDBEnv>(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
   }
 
-  Context::~Context() noexcept {
-    if (_envHandler) {
-      delete _envHandler;
-      _envHandler = nullptr;
+  Context::Context(const Context &ctx)
+      : _dbPath{ctx._dbPath},
+        _maxDB{ctx._maxDB},
+        _maxDBSize{ctx._maxDBSize},
+        _envHandler{ctx._envHandler} {}
+
+  Context &Context::operator=(const Context &ctx) {
+    if (this != &ctx) {
+      auto tmp(ctx);
+      using std::swap;
+      swap(*this, tmp);
     }
+    return *this;
   }
 
   Context::Context(Context &&ctx) noexcept
-      : _envHandler{std::move(ctx._envHandler)} {}
+      : _dbPath{ctx._dbPath},
+      _maxDB{ctx._maxDB},
+      _maxDBSize{ctx._maxDBSize},
+      _envHandler{std::move(ctx._envHandler)} {}
 
   Context &Context::operator=(Context &&ctx) noexcept {
     if (this != &ctx) {
-      delete _envHandler;
-      _envHandler = ctx._envHandler;
-      ctx._envHandler = nullptr;
+      _envHandler = std::move(ctx._envHandler);
+      _dbPath = ctx._dbPath;
+      _maxDB = ctx._maxDB;
+      _maxDBSize = ctx._maxDBSize;
+      ctx._dbPath = std::string{};
+      ctx._maxDB = 0;
+      ctx._maxDBSize = 0;
     }
     return *this;
   }

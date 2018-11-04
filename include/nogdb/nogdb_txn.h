@@ -56,9 +56,13 @@ namespace nogdb {
 
     Txn(Context &ctx, Mode mode);
 
-    ~Txn() noexcept;
+    ~Txn() noexcept = default;
+
+    Txn(const Txn &txn);
 
     Txn(Txn &&txn) noexcept;
+
+    Txn &operator=(const Txn &txn);
 
     Txn &operator=(Txn &&txn) noexcept;
 
@@ -72,17 +76,17 @@ namespace nogdb {
 
   private:
     Context &_txnCtx;
-    adapter::metadata::DBInfoAccess *_dbInfo;
-    adapter::schema::ClassAccess *_class;
-    adapter::schema::PropertyAccess *_property;
-    adapter::schema::IndexAccess *_index;
-    schema::SchemaInterface *_iSchema;
-    index::IndexInterface *_iIndex;
-    relation::GraphInterface *_iGraph;
-    datarecord::DataRecordInterface *_iRecord;
+    std::shared_ptr<storage_engine::LMDBTxn> _txnBase;
+    std::shared_ptr<adapter::metadata::DBInfoAccess> _dbInfo;
+    std::shared_ptr<adapter::schema::ClassAccess> _class;
+    std::shared_ptr<adapter::schema::PropertyAccess> _property;
+    std::shared_ptr<adapter::schema::IndexAccess> _index;
+    std::shared_ptr<schema::SchemaInterface> _iSchema;
+    std::shared_ptr<index::IndexInterface> _iIndex;
+    std::shared_ptr<relation::GraphInterface> _iGraph;
+    std::shared_ptr<datarecord::DataRecordInterface> _iRecord;
 
     Mode _txnMode;
-    mutable storage_engine::LMDBTxn *_txnBase;
     mutable bool _completed; // throw error if working with isCompleted = true
   };
 

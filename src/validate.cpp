@@ -143,7 +143,7 @@ namespace nogdb {
     Validator &Validator::isExistingSrcVertex(const RecordDescriptor &vertex) {
       auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
         } catch (const Error &error) {
@@ -162,7 +162,7 @@ namespace nogdb {
     Validator &Validator::isExistingDstVertex(const RecordDescriptor &vertex) {
       auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
         } catch (const Error &error) {
@@ -181,7 +181,7 @@ namespace nogdb {
     Validator &Validator::isExistingVertex(const RecordDescriptor &vertex) {
       auto foundClass = _txn->_iSchema->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
         } catch (const Error &error) {

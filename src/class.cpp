@@ -54,7 +54,7 @@ namespace nogdb {
       txn._class->create(ClassAccessInfo{className, classId, ClassId{0}, type});
       txn._dbInfo->setMaxClassId(classId);
       txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
-      DataRecord(txn._txnBase, classId, type).init();
+      DataRecord(txn._txnBase.get(), classId, type).init();
       return ClassDescriptor{classId, className, ClassId{0}, type};
     } catch (const Error &err) {
       txn.rollback();
@@ -80,7 +80,7 @@ namespace nogdb {
       txn._class->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
       txn._dbInfo->setMaxClassId(classId);
       txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
-      DataRecord(txn._txnBase, classId, superClassInfo.type).init();
+      DataRecord(txn._txnBase.get(), classId, superClassInfo.type).init();
       return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
     } catch (const Error &err) {
       txn.rollback();
@@ -115,7 +115,7 @@ namespace nogdb {
         //TODO: implement existing index deletion if needed
       }
       // delete all associated relations
-      auto table = DataRecord(txn._txnBase, foundClass.id, foundClass.type);
+      auto table = DataRecord(txn._txnBase.get(), foundClass.id, foundClass.type);
       auto cursorHandler = table.getCursor();
       for (auto keyValue = cursorHandler.getNext();
            !keyValue.empty();

@@ -48,7 +48,7 @@ namespace nogdb {
 
     Context() = default;
 
-    ~Context() noexcept;
+    ~Context() noexcept = default;
 
     Context(const std::string &dbPath);
 
@@ -58,7 +58,11 @@ namespace nogdb {
 
     Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
 
+    Context(const Context &ctx);
+
     Context(Context &&ctx) noexcept;
+
+    Context &operator=(const Context &ctx);
 
     Context &operator=(Context &&ctx) noexcept;
 
@@ -72,7 +76,7 @@ namespace nogdb {
     std::string _dbPath{};
     unsigned int _maxDB{};
     unsigned long _maxDBSize{};
-    storage_engine::LMDBEnv *_envHandler;
+    std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
   };
 
 }

@@ -50,7 +50,7 @@ namespace nogdb {
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-      auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+      auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
       auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
                                                               dstVertexRecordDescriptor.rid);
       auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
@@ -69,7 +69,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
     auto existingRecordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
@@ -94,7 +94,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -117,7 +117,7 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::EDGE);
     try {
-      auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+      auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto result = std::map<RecordId, std::pair<RecordId, RecordId>>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
@@ -143,7 +143,7 @@ namespace nogdb {
         .isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
       auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
@@ -166,7 +166,7 @@ namespace nogdb {
         .isExistingSrcVertex(newDstVertexDescriptor);
 
     auto edgeClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
       auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());

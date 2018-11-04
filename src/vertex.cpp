@@ -40,7 +40,7 @@ namespace nogdb {
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
       auto positionId = vertexDataRecord.insert(recordBlob);
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
       txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
@@ -56,7 +56,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
     auto existingRecordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
@@ -80,7 +80,7 @@ namespace nogdb {
         .isTransactionValid();
 
     auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
     auto recordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
     try {
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -102,7 +102,7 @@ namespace nogdb {
 
     auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
     try {
-      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
       auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto result = std::map<RecordId, std::pair<RecordId, RecordId>>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =

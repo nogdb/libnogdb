@@ -20,6 +20,7 @@
  */
 
 #include <iostream> // for debugging
+#include <memory>
 
 #include "lmdb_engine.hpp"
 #include "dbinfo_adapter.hpp"
@@ -38,17 +39,17 @@ namespace nogdb {
         _txnMode{mode},
         _completed{false} {
     try {
-      _txnBase = new storage_engine::LMDBTxn(
-          ctx._envHandler,
+      _txnBase = std::make_shared<storage_engine::LMDBTxn>(
+          ctx._envHandler.get(),
           (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
-      _dbInfo = new adapter::metadata::DBInfoAccess{_txnBase};
-      _class = new adapter::schema::ClassAccess{_txnBase};
-      _property = new adapter::schema::PropertyAccess{_txnBase};
-      _index = new adapter::schema::IndexAccess{_txnBase};
-      _iSchema = new schema::SchemaInterface(this);
-      _iIndex = new index::IndexInterface(this);
-      _iGraph = new relation::GraphInterface(this);
-      _iRecord = new datarecord::DataRecordInterface(this);
+      _dbInfo = std::make_shared<adapter::metadata::DBInfoAccess>(_txnBase.get());
+      _class = std::make_shared<adapter::schema::ClassAccess>(_txnBase.get());
+      _property = std::make_shared<adapter::schema::PropertyAccess>(_txnBase.get());
+      _index = std::make_shared<adapter::schema::IndexAccess>(_txnBase.get());
+      _iSchema = std::make_shared<schema::SchemaInterface>(this);
+      _iIndex = std::make_shared<index::IndexInterface>(this);
+      _iGraph = std::make_shared<relation::GraphInterface>(this);
+      _iRecord = std::make_shared<datarecord::DataRecordInterface>(this);
     } catch (const Error &err) {
       try { rollback(); } catch (...) {}
       throw NOGDB_FATAL_ERROR(err);
@@ -58,74 +59,49 @@ namespace nogdb {
     }
   }
 
-  Txn::~Txn() noexcept {
-    if (_txnBase) {
-      try { rollback(); } catch (...) {}
+  Txn::Txn(const Txn &txn)
+      : _txnCtx{txn._txnCtx},
+      _txnBase{txn._txnBase},
+      _dbInfo{txn._dbInfo},
+      _class{txn._class},
+      _property{txn._property},
+      _index{txn._index},
+      _iSchema{txn._iSchema},
+      _iIndex{txn._iIndex},
+      _iGraph{txn._iGraph},
+      _iRecord{txn._iRecord},
+      _txnMode{txn._txnMode},
+      _completed{txn._completed} {}
+
+  Txn &Txn::operator=(const Txn &txn) {
+    if (this != &txn) {
+      auto tmp(txn);
+      using std::swap;
+      swap(tmp, *this);
     }
-    if (_dbInfo) {
-      delete _dbInfo;
-      _dbInfo = nullptr;
-    }
-    if (_class) {
-      delete _class;
-      _class = nullptr;
-    }
-    if (_property) {
-      delete _property;
-      _property = nullptr;
-    }
-    if (_index) {
-      delete _index;
-      _index = nullptr;
-    }
-    if (_iSchema) {
-      delete _iSchema;
-      _iSchema = nullptr;
-    }
-    if (_iIndex) {
-      delete _iIndex;
-      _iIndex = nullptr;
-    }
-    if (_iGraph) {
-      delete _iGraph;
-      _iGraph = nullptr;
-    }
-    if (_iRecord) {
-      delete _iRecord;
-      _iRecord = nullptr;
-    }
+    return *this;
   }
 
   Txn::Txn(Txn &&txn) noexcept
-      : _txnCtx{txn._txnCtx} {
-    *this = std::move(txn);
+      : _txnCtx{txn._txnCtx},
+        _txnMode{txn._txnMode},
+        _completed{txn._completed} {
+    _txnBase = std::move(txn._txnBase);
+    _dbInfo = std::move(txn._dbInfo);
+    _class = std::move(txn._class);
+    _property = std::move(txn._property);
+    _index = std::move(txn._index);
+    _iSchema = std::move(txn._iSchema);
+    _iIndex = std::move(txn._iIndex);
+    _iGraph = std::move(txn._iGraph);
+    _iRecord = std::move(txn._iRecord);
   }
 
   Txn &Txn::operator=(Txn &&txn) noexcept {
     if (this != &txn) {
-      delete _txnBase;
-      _txnCtx = std::move(txn._txnCtx);
-      _txnMode = txn._txnMode;
-      _txnBase = txn._txnBase;
-      _completed = txn._completed;
-      _dbInfo = txn._dbInfo;
-      _class = txn._class;
-      _property = txn._property;
-      _index = txn._index;
-      _iSchema = txn._iSchema;
-      _iIndex = txn._iIndex;
-      _iGraph = txn._iGraph;
-      _iRecord = txn._iRecord;
-      txn._txnBase = nullptr;
-      txn._dbInfo = nullptr;
-      txn._class = nullptr;
-      txn._property = nullptr;
-      txn._index = nullptr;
-      txn._iSchema = nullptr;
-      txn._iIndex = nullptr;
-      txn._iGraph = nullptr;
-      txn._iRecord = nullptr;
-      txn._completed = true;
+      auto tmp(std::move(txn));
+      using std::swap;
+      swap(tmp, *this);
     }
     return *this;
   }
@@ -133,9 +109,6 @@ namespace nogdb {
   void Txn::commit() const {
     try {
       _txnBase->commit();
-      delete _txnBase;
-      _txnBase = nullptr;
-      _completed = true;
     } catch (const Error &err) {
       try { rollback(); } catch (...) {}
       throw NOGDB_FATAL_ERROR(err);
@@ -143,13 +116,12 @@ namespace nogdb {
       try { rollback(); } catch (...) {}
       std::rethrow_exception(std::current_exception());
     }
+    _completed = true;
   }
 
   void Txn::rollback() const noexcept {
-    if (_txnBase) {
+    if (!_completed) {
       _txnBase->rollback();
-      delete _txnBase;
-      _txnBase = nullptr;
       _completed = true;
     }
   }
