@@ -43,4 +43,7 @@ unittest
 unittest_all
 apitest_*
 apitest_all
+functest_*
+functest_all
 *_debug_address
+gtest_installer.sh

@@ -62,7 +62,7 @@ namespace nogdb {
         ClassAccess() = default;
 
         ClassAccess(const storage_engine::LMDBTxn *const txn)
-            : LMDBKeyValAccess(txn, TB_CLASSES, true, true, false, true) {}
+            : LMDBKeyValAccess(txn, TB_CLASSES, false, true, false, true) {}
 
         virtual ~ClassAccess() noexcept = default;
 

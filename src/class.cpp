@@ -51,12 +51,11 @@ namespace nogdb {
 
     try {
       auto classId = txn._dbInfo->getMaxClassId() + ClassId{1};
-      auto classProps = ClassAccessInfo{className, classId, ClassId{0}, type};
-      txn._class->create(classProps);
-      DataRecord(txn._txnBase, classId, type).init();
+      txn._class->create(ClassAccessInfo{className, classId, ClassId{0}, type});
       txn._dbInfo->setMaxClassId(classId);
       txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
-      return ClassDescriptor{classProps.id, className, ClassId{0}, type};
+      DataRecord(txn._txnBase, classId, type).init();
+      return ClassDescriptor{classId, className, ClassId{0}, type};
     } catch (const Error &err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
@@ -78,12 +77,11 @@ namespace nogdb {
     auto superClassInfo = txn._iSchema->getExistingClass(superClass);
     try {
       auto classId = txn._dbInfo->getMaxClassId() + ClassId{1};
-      auto classProps = ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type};
-      txn._class->create(classProps);
-      DataRecord(txn._txnBase, classId, superClassInfo.type).init();
+      txn._class->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
       txn._dbInfo->setMaxClassId(classId);
       txn._dbInfo->setNumClassId(txn._dbInfo->getNumClassId() + ClassId{1});
-      return ClassDescriptor{classProps.id, className, superClassInfo.id, superClassInfo.type};
+      DataRecord(txn._txnBase, classId, superClassInfo.type).init();
+      return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
     } catch (const Error &err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);

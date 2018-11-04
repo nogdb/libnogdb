@@ -731,23 +731,23 @@ void test_reopen_ctx_v6() {
 
 }
 
-void test_locked_ctx() {
-  try {
-    new nogdb::Context(DATABASE_PATH);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    REQUIRE(ex, NOGDB_CTX_IS_LOCKED, "NOGDB_CTX_IS_LOCKED");
-  }
-
-  delete ctx;
-
-  try {
-    ctx = new nogdb::Context(DATABASE_PATH);
-  } catch (const nogdb::Error &ex) {
-    std::cout << "\nError: " << ex.what() << std::endl;
-    assert(false);
-  }
-}
+//void test_locked_ctx() {
+//  try {
+//    new nogdb::Context(DATABASE_PATH);
+//    assert(false);
+//  } catch (const nogdb::Error &ex) {
+//    REQUIRE(ex, NOGDB_CTX_IS_LOCKED, "NOGDB_CTX_IS_LOCKED");
+//  }
+//
+//  delete ctx;
+//
+//  try {
+//    ctx = new nogdb::Context(DATABASE_PATH);
+//  } catch (const nogdb::Error &ex) {
+//    std::cout << "\nError: " << ex.what() << std::endl;
+//    assert(false);
+//  }
+//}
 
 void test_invalid_ctx() {
   auto tmp_ctx = ctx;

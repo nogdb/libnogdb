@@ -57,7 +57,7 @@ int main() {
 #ifdef TEST_CONTEXT_OPERATIONS
   std::cout << "\n\x1B[96mEnd-to-end tests for a database context loading should:\x1B[0m\n";
   exec(test_context, "creating a new context");
-  exec(test_locked_ctx, "creating a new invalid context from a used one");
+  //exec(test_locked_ctx, "creating a new invalid context from a used one");
 #else
   init_context();
 #endif

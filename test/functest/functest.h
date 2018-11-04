@@ -47,7 +47,7 @@ extern void test_reopen_ctx_v3(); // with records and relations
 extern void test_reopen_ctx_v4(); // with records, relations, and renaming class/property
 extern void test_reopen_ctx_v5(); // with records, relations, and extended classes
 extern void test_reopen_ctx_v6(); // with records, extended classes, and indexing
-extern void test_locked_ctx();
+//extern void test_locked_ctx();
 extern void test_invalid_ctx();
 
 #endif

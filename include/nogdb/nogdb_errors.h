@@ -63,7 +63,7 @@
 #define NOGDB_CTX_DUPLICATE_INDEX               0x6020
 #define NOGDB_CTX_INVALID_INDEX_CONSTRAINT      0x6030
 #define NOGDB_CTX_UNIQUE_CONSTRAINT             0x6040
-#define NOGDB_CTX_IS_LOCKED                     0x9fc0
+//#define NOGDB_CTX_IS_LOCKED                     0x9fc0
 #define NOGDB_CTX_LIMIT_DBSCHEMA                0x9fd0
 #define NOGDB_CTX_INTERNAL_ERR                  0x9fe0
 #define NOGDB_CTX_UNKNOWN_ERR                   0x9ff0
@@ -213,8 +213,8 @@ namespace nogdb {
           return "NOGDB_CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
         case NOGDB_CTX_INVALID_PROPERTYNAME:
           return "NOGDB_CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
-        case NOGDB_CTX_IS_LOCKED:
-          return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
+        //case NOGDB_CTX_IS_LOCKED:
+        //  return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
         case NOGDB_CTX_LIMIT_DBSCHEMA:
           return "NOGDB_CTX_LIMIT_DBSCHEMA: A limitation of a database schema has been reached";
         case NOGDB_CTX_NOT_IMPLEMENTED:
