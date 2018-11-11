@@ -75,7 +75,7 @@ namespace nogdb {
     bool isCompleted() const { return _completed; }
 
   private:
-    Context &_txnCtx;
+    const Context *_txnCtx;
     std::shared_ptr<storage_engine::LMDBTxn> _txnBase;
     std::shared_ptr<adapter::metadata::DBInfoAccess> _dbInfo;
     std::shared_ptr<adapter::schema::ClassAccess> _class;

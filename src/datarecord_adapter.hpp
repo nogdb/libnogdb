@@ -38,20 +38,20 @@ namespace nogdb {
         DataRecord(const storage_engine::LMDBTxn *const txn,
                    const ClassId &classId,
                    const ClassType &classType = ClassType::UNDEFINED)
-            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true) ,
+            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true),
               _classId{classId},
               _classType{classType} {}
 
         virtual ~DataRecord() noexcept = default;
 
-        DataRecord(DataRecord &&other) noexcept {
-          *this = std::move(other);
-        }
+        DataRecord(DataRecord &&other) noexcept
+            : _classId{other._classId}, _classType{other._classType} {}
 
         DataRecord &operator=(DataRecord &&other) noexcept {
           if (this != &other) {
+            auto tmp(std::move(other));
             using std::swap;
-            swap(*this, other);
+            swap(*this, tmp);
           }
           return *this;
         }

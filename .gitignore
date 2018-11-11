@@ -41,8 +41,10 @@ lemon++
 *.gcda
 unittest
 unittest_all
+apitest
 apitest_*
 apitest_all
+functest
 functest_*
 functest_all
 *_debug_address

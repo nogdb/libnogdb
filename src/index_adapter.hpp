@@ -55,14 +55,14 @@ namespace nogdb {
 
         virtual ~IndexRecord() noexcept = default;
 
-        IndexRecord(IndexRecord &&other) noexcept {
-          *this = std::move(other);
-        }
+        IndexRecord(IndexRecord &&other) noexcept
+            : _positive{other._positive}, _numeric{other._numeric}, _unique{other._unique} {}
 
         IndexRecord &operator=(IndexRecord &&other) noexcept {
           if (this != &other) {
+            auto tmp(std::move(other));
             using std::swap;
-            swap(*this, other);
+            swap(*this, tmp);
           }
           return *this;
         }

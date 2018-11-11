@@ -68,6 +68,10 @@ namespace nogdb {
           _underlying.erase(key);
         }
 
+        void clear() noexcept {
+          _underlying.clear();
+        }
+
       private:
         mutable std::unordered_map<K, V> _underlying{};
       };

@@ -35,12 +35,12 @@
 namespace nogdb {
 
   Txn::Txn(Context &ctx, Mode mode)
-      : _txnCtx{ctx},
+      : _txnCtx{&ctx},
         _txnMode{mode},
         _completed{false} {
     try {
       _txnBase = std::make_shared<storage_engine::LMDBTxn>(
-          ctx._envHandler.get(),
+          _txnCtx->_envHandler.get(),
           (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
       _dbInfo = std::make_shared<adapter::metadata::DBInfoAccess>(_txnBase.get());
       _class = std::make_shared<adapter::schema::ClassAccess>(_txnBase.get());
@@ -84,24 +84,32 @@ namespace nogdb {
 
   Txn::Txn(Txn &&txn) noexcept
       : _txnCtx{txn._txnCtx},
+        _txnBase{std::move(txn._txnBase)},
+        _dbInfo{std::move(txn._dbInfo)},
+        _class{std::move(txn._class)},
+        _property{std::move(txn._property)},
+        _index{std::move(txn._index)},
+        _iSchema{std::move(txn._iSchema)},
+        _iIndex{std::move(txn._iIndex)},
+        _iGraph{std::move(txn._iGraph)},
+        _iRecord{std::move(txn._iRecord)},
         _txnMode{txn._txnMode},
-        _completed{txn._completed} {
-    _txnBase = std::move(txn._txnBase);
-    _dbInfo = std::move(txn._dbInfo);
-    _class = std::move(txn._class);
-    _property = std::move(txn._property);
-    _index = std::move(txn._index);
-    _iSchema = std::move(txn._iSchema);
-    _iIndex = std::move(txn._iIndex);
-    _iGraph = std::move(txn._iGraph);
-    _iRecord = std::move(txn._iRecord);
-  }
+        _completed{txn._completed} {}
 
   Txn &Txn::operator=(Txn &&txn) noexcept {
     if (this != &txn) {
-      auto tmp(std::move(txn));
-      using std::swap;
-      swap(tmp, *this);
+      _txnCtx = txn._txnCtx;
+      _txnBase = std::move(txn._txnBase);
+      _dbInfo = std::move(txn._dbInfo);
+      _class = std::move(txn._class);
+      _property = std::move(txn._property);
+      _index = std::move(txn._index);
+      _iSchema = std::move(txn._iSchema);
+      _iIndex = std::move(txn._iIndex);
+      _iGraph = std::move(txn._iGraph);
+      _iRecord = std::move(txn._iRecord);
+      _txnMode = txn._txnMode;
+      _completed = txn._completed;
     }
     return *this;
   }

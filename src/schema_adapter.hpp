@@ -67,13 +67,15 @@ namespace nogdb {
         virtual ~ClassAccess() noexcept = default;
 
         ClassAccess(ClassAccess &&other) noexcept {
-          *this = std::move(other);
+          _classCache = other._classCache;
+          other._classCache.clear();
         }
 
         ClassAccess &operator=(ClassAccess &&other) noexcept {
           if (this != &other) {
+            auto tmp(std::move(other));
             using std::swap;
-            swap(_classCache, other._classCache);
+            swap(*this, tmp);
           }
           return *this;
         }
@@ -286,17 +288,9 @@ namespace nogdb {
 
         virtual ~PropertyAccess() noexcept = default;
 
-        PropertyAccess(PropertyAccess &&other) noexcept {
-          *this = std::move(other);
-        }
+        PropertyAccess(PropertyAccess &&other) noexcept = default;
 
-        PropertyAccess &operator=(PropertyAccess &&other) noexcept {
-          if (this != &other) {
-            using std::swap;
-            swap(*this, other);
-          }
-          return *this;
-        }
+        PropertyAccess &operator=(PropertyAccess &&other) noexcept = default;
 
         void create(const PropertyAccessInfo &props) {
           auto propertyKey = buildKey(props.classId, props.name);
@@ -482,17 +476,9 @@ namespace nogdb {
 
         virtual ~IndexAccess() noexcept = default;
 
-        IndexAccess(IndexAccess &&other) noexcept {
-          *this = std::move(other);
-        }
+        IndexAccess(IndexAccess &&other) noexcept = default;
 
-        IndexAccess &operator=(IndexAccess &&other) noexcept {
-          if (this != &other) {
-            using std::swap;
-            swap(*this, other);
-          }
-          return *this;
-        }
+        IndexAccess &operator=(IndexAccess &&other) noexcept = default;
 
         void create(const IndexAccessInfo &props) {
           auto indexKey = buildKey(props.classId, props.propertyId);

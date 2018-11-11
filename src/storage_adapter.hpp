@@ -48,9 +48,10 @@ namespace nogdb {
         virtual ~LMDBKeyValAccess() noexcept = default;
 
         LMDBKeyValAccess(LMDBKeyValAccess &&other) noexcept
-            : _txn{nullptr} {
-          *this = std::move(other);
-        }
+            : _txn{other._txn},
+            _dbi{std::move(other._dbi)},
+            _append{other._append},
+            _overwrite{other._overwrite} {}
 
         LMDBKeyValAccess &operator=(LMDBKeyValAccess &&other) noexcept {
           if (this != &other) {
