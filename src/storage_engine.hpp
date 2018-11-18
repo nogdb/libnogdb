@@ -130,10 +130,12 @@ namespace nogdb {
 
       void commit() {
         _txn.commit();
+        _txn = nullptr;
       }
 
-      void rollback() {
+      void rollback() noexcept {
         _txn.abort();
+        _txn = nullptr;
       }
 
       lmdb::TxnHandler *handle() const noexcept {

@@ -45,14 +45,14 @@ namespace nogdb {
 
     ~Class() noexcept = delete;
 
-    static const ClassDescriptor create(const Txn &txn, const std::string &className, ClassType type);
+    static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type);
 
     static const ClassDescriptor
-    createExtend(const Txn &txn, const std::string &className, const std::string &superClass);
+    createExtend(Txn &txn, const std::string &className, const std::string &superClass);
 
-    static void drop(const Txn &txn, const std::string &className);
+    static void drop(Txn &txn, const std::string &className);
 
-    static void alter(const Txn &txn, const std::string &oldClassName, const std::string &newClassName);
+    static void alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName);
   };
 
   //*************************************************************
@@ -65,17 +65,17 @@ namespace nogdb {
     ~Property() noexcept = delete;
 
     static const PropertyDescriptor
-    add(const Txn &txn, const std::string &className, const std::string &propertyName, PropertyType type);
+    add(Txn &txn, const std::string &className, const std::string &propertyName, PropertyType type);
 
-    static void alter(const Txn &txn, const std::string &className, const std::string &oldPropertyName,
+    static void alter(Txn &txn, const std::string &className, const std::string &oldPropertyName,
                       const std::string &newPropertyName);
 
-    static void remove(const Txn &txn, const std::string &className, const std::string &propertyName);
+    static void remove(Txn &txn, const std::string &className, const std::string &propertyName);
 
     static const IndexDescriptor
-    createIndex(const Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
+    createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
 
-    static void dropIndex(const Txn &txn, const std::string &className, const std::string &propertyName);
+    static void dropIndex(Txn &txn, const std::string &className, const std::string &propertyName);
   };
 
   //*************************************************************
@@ -118,13 +118,13 @@ namespace nogdb {
 
     ~Vertex() noexcept = delete;
 
-    static const RecordDescriptor create(const Txn &txn, const std::string &className, const Record &record = Record{});
+    static const RecordDescriptor create(Txn &txn, const std::string &className, const Record &record = Record{});
 
-    static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+    static void update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
 
-    static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static void destroy(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-    static void destroy(const Txn &txn, const std::string &className);
+    static void destroy(Txn &txn, const std::string &className);
 
     static ResultSet get(const Txn &txn, const std::string &className);
 
@@ -207,20 +207,20 @@ namespace nogdb {
     ~Edge() noexcept = delete;
 
     static const RecordDescriptor
-    create(const Txn &txn, const std::string &className, const RecordDescriptor &srcVertexRecordDescriptor,
+    create(Txn &txn, const std::string &className, const RecordDescriptor &srcVertexRecordDescriptor,
            const RecordDescriptor &dstVertexRecordDescriptor, const Record &record = Record{});
 
-    static void update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+    static void update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
 
-    static void updateSrc(const Txn &txn, const RecordDescriptor &recordDescriptor,
+    static void updateSrc(Txn &txn, const RecordDescriptor &recordDescriptor,
                           const RecordDescriptor &newSrcVertexRecordDescriptor);
 
     static void
-    updateDst(const Txn &txn, const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstRecordDescriptor);
+    updateDst(Txn &txn, const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstRecordDescriptor);
 
-    static void destroy(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    static void destroy(Txn &txn, const RecordDescriptor &recordDescriptor);
 
-    static void destroy(const Txn &txn, const std::string &className);
+    static void destroy(Txn &txn, const std::string &className);
 
     static ResultSet get(const Txn &txn, const std::string &className);
 

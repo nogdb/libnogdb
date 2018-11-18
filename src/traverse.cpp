@@ -38,7 +38,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::breadthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, edgeFilter, vertexFilter);
   }
@@ -53,7 +53,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -69,7 +69,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::breadthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, edgeFilter, vertexFilter);
   }
@@ -84,7 +84,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -100,7 +100,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::breadthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, edgeFilter, vertexFilter);
   }
@@ -115,7 +115,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -131,7 +131,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::depthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, edgeFilter, vertexFilter);
   }
@@ -146,7 +146,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::IN, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -162,7 +162,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::depthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, edgeFilter, vertexFilter);
   }
@@ -177,7 +177,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::OUT, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -193,7 +193,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::depthFirstSearch(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, edgeFilter, vertexFilter);
   }
@@ -208,7 +208,7 @@ namespace nogdb {
         .isTransactionValid()
         .isExistingVertex(recordDescriptor);
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
         txn, vertexClassInfo, recordDescriptor, minDepth, maxDepth, adapter::relation::Direction::ALL, edgeFilter, vertexFilter);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
@@ -224,8 +224,8 @@ namespace nogdb {
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
-    auto srcVertexClassInfo = txn._iSchema->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto dstVertexClassInfo = txn._iSchema->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto srcVertexClassInfo = txn._interface.schema()->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto dstVertexClassInfo = txn._interface.schema()->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::bfsShortestPath(
         txn, srcVertexClassInfo, dstVertexClassInfo,
         srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
@@ -241,8 +241,8 @@ namespace nogdb {
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
-    auto srcVertexClassInfo = txn._iSchema->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
-    auto dstVertexClassInfo = txn._iSchema->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto srcVertexClassInfo = txn._interface.schema()->getValidClassInfo(srcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+    auto dstVertexClassInfo = txn._interface.schema()->getValidClassInfo(dstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::bfsShortestPathRdesc(
         txn, srcVertexClassInfo, dstVertexClassInfo,
         srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);

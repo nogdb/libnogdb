@@ -32,18 +32,18 @@
 
 namespace nogdb {
 
-  const RecordDescriptor Vertex::create(const Txn &txn, const std::string &className, const Record &record) {
+  const RecordDescriptor Vertex::create(Txn &txn, const std::string &className, const Record &record) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
+      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
       auto positionId = vertexDataRecord.insert(recordBlob);
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
-      txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface.index()->insert(recordDescriptor, record, propertyNameMapInfo);
       return recordDescriptor;
     } catch (const Error &error) {
       txn.rollback();
@@ -51,68 +51,68 @@ namespace nogdb {
     }
   }
 
-  void Vertex::update(const Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
+  void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
     auto existingRecordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       // insert an updated record
       vertexDataRecord.insert(newRecordBlob);
       // remove index if applied in existing record
-      auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto propertyIdMapInfo = txn._interface.schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
-      txn._iIndex->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
+      txn._interface.index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
       // add index if applied in new record
-      txn._iIndex->insert(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface.index()->insert(recordDescriptor, record, propertyNameMapInfo);
     } catch (const Error &error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
   }
 
-  void Vertex::destroy(const Txn &txn, const RecordDescriptor &recordDescriptor) {
+  void Vertex::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
     auto recordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
     try {
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-      auto propertyIdMapInfo = txn._iSchema->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto propertyIdMapInfo = txn._interface.schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       vertexDataRecord.remove(recordDescriptor.rid.second);
-      txn._iGraph->removeRelFromVertex(recordDescriptor.rid);
+      txn._interface.graph()->removeRelFromVertex(recordDescriptor.rid);
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
-      txn._iIndex->remove(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface.index()->remove(recordDescriptor, record, propertyNameMapInfo);
     } catch (const Error &error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
   }
 
-  void Vertex::destroy(const Txn &txn, const std::string &className) {
+  void Vertex::destroy(Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     try {
-      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase.get(), vertexClassInfo.id, ClassType::VERTEX);
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto result = std::map<RecordId, std::pair<RecordId, RecordId>>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto recordId = RecordId{vertexClassInfo.id, positionId};
-            txn._iGraph->removeRelFromVertex(recordId);
+            txn._interface.graph()->removeRelFromVertex(recordId);
           };
       vertexDataRecord.resultSetIter(callback);
       vertexDataRecord.destroy();
-      txn._iIndex->drop(vertexClassInfo.id, propertyNameMapInfo);
+      txn._interface.index()->drop(vertexClassInfo.id, propertyNameMapInfo);
     } catch (const Error &error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
@@ -123,21 +123,21 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    return txn._iRecord->getResultSet(vertexClassInfo);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    return txn._interface.record()->getResultSet(vertexClassInfo);
   }
 
   ResultSet Vertex::getExtend(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._iRecord->getResultSet(classInfo);
+      auto resultSet = txn._interface.record()->getResultSet(classInfo);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -148,20 +148,20 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    return txn._iRecord->getResultSetCursor(vertexClassInfo);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    return txn._interface.record()->getResultSetCursor(vertexClassInfo);
   }
 
   ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
-      resultSetExtend.addMetadata(txn._iRecord->getResultSetCursor(classNameMapInfo.second));
+      resultSetExtend.addMetadata(txn._interface.record()->getResultSetCursor(classNameMapInfo.second));
     }
     return resultSetExtend;
   }
@@ -170,8 +170,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeRecordIds = txn._interface.graph()->getInEdges(recordDescriptor.rid);
     auto result = ResultSet{};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
@@ -187,8 +187,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeRecordIds = txn._interface.graph()->getOutEdges(recordDescriptor.rid);
     auto result = ResultSet{};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
@@ -204,10 +204,10 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};
-    auto inEdgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
-    auto outEdgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+    auto inEdgeRecordIds = txn._interface.graph()->getInEdges(recordDescriptor.rid);
+    auto outEdgeRecordIds = txn._interface.graph()->getOutEdges(recordDescriptor.rid);
     edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
     edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
     auto result = ResultSet{};
@@ -225,8 +225,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeRecordIds = txn._interface.graph()->getInEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
@@ -242,8 +242,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
-    auto edgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto edgeRecordIds = txn._interface.graph()->getOutEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
@@ -259,10 +259,10 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};
-    auto inEdgeRecordIds = txn._iGraph->getInEdges(recordDescriptor.rid);
-    auto outEdgeRecordIds = txn._iGraph->getOutEdges(recordDescriptor.rid);
+    auto inEdgeRecordIds = txn._interface.graph()->getInEdges(recordDescriptor.rid);
+    auto outEdgeRecordIds = txn._interface.graph()->getOutEdges(recordDescriptor.rid);
     edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
     edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
     auto result = ResultSetCursor{txn};
@@ -280,8 +280,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     return compare::RecordCompare::compareCondition(txn, vertexClassInfo, propertyNameMapInfo, condition);
   }
 
@@ -289,17 +289,17 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-    return txn._iRecord->getResultSetByCmpFunction(vertexClassInfo, condition);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    return txn._interface.record()->getResultSetByCmpFunction(vertexClassInfo, condition);
   }
 
   ResultSet Vertex::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     return compare::RecordCompare::compareMultiCondition(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
   }
 
@@ -307,13 +307,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
@@ -324,13 +324,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._iRecord->getResultSetByCmpFunction(classInfo, condition);
+      auto resultSet = txn._interface.record()->getResultSetByCmpFunction(classInfo, condition);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
     return resultSetExtend;
@@ -340,13 +340,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
@@ -357,8 +357,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto result = compare::RecordCompare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
@@ -367,8 +367,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto result = txn._iRecord->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto result = txn._interface.record()->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
 
@@ -377,8 +377,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto result = compare::RecordCompare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
@@ -387,13 +387,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
       resultSetExtend.addMetadata(resultSet);
     }
@@ -405,12 +405,12 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
-      resultSetExtend.addMetadata(txn._iRecord->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
+      resultSetExtend.addMetadata(txn._interface.record()->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
     }
     return resultSetExtend;
   }
@@ -420,13 +420,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
       resultSetExtend.addMetadata(resultSet);
     }
@@ -437,8 +437,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     return compare::RecordCompare::compareCondition(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
   }
 
@@ -446,8 +446,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     return compare::RecordCompare::compareMultiCondition(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
   }
 
@@ -455,13 +455,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
@@ -472,13 +472,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
       resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     }
@@ -489,8 +489,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto result = compare::RecordCompare::compareConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, condition, true);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
@@ -500,8 +500,8 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
+    auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto result = compare::RecordCompare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyNameMapInfo, multiCondition, true);
     return std::move(ResultSetCursor{txn}.addMetadata(result));
   }
@@ -511,13 +511,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
       resultSetExtend.addMetadata(resultSet);
     }
@@ -529,13 +529,13 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto vertexClassInfo = txn._iSchema->getValidClassInfo(className, ClassType::VERTEX);
+    auto vertexClassInfo = txn._interface.schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._iSchema->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    vertexClassInfoExtend = txn._interface.schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
       resultSetExtend.addMetadata(resultSet);
     }

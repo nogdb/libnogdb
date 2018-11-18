@@ -44,14 +44,14 @@ namespace nogdb {
 
         virtual ~DataRecord() noexcept = default;
 
-        DataRecord(DataRecord &&other) noexcept
-            : _classId{other._classId}, _classType{other._classType} {}
+        DataRecord(DataRecord &&other) noexcept {
+          *this = std::move(other);
+        }
 
         DataRecord &operator=(DataRecord &&other) noexcept {
           if (this != &other) {
-            auto tmp(std::move(other));
             using std::swap;
-            swap(*this, tmp);
+            swap(*this, other);
           }
           return *this;
         }

@@ -56,38 +56,91 @@ namespace nogdb {
 
     Txn(Context &ctx, Mode mode);
 
-    ~Txn() noexcept = default;
+    ~Txn() noexcept;
 
-    Txn(const Txn &txn);
+    Txn(const Txn &txn) = delete;
 
     Txn(Txn &&txn) noexcept;
 
-    Txn &operator=(const Txn &txn);
+    Txn &operator=(const Txn &txn) = delete;
 
     Txn &operator=(Txn &&txn) noexcept;
 
-    void commit() const;
+    void commit();
 
-    void rollback() const noexcept;
+    void rollback() noexcept;
 
     Mode getTxnMode() const { return _txnMode; }
 
-    bool isCompleted() const { return _completed; }
+    bool isCompleted() const { return _txnBase == nullptr; }
 
   private:
-    const Context *_txnCtx;
-    std::shared_ptr<storage_engine::LMDBTxn> _txnBase;
-    std::shared_ptr<adapter::metadata::DBInfoAccess> _dbInfo;
-    std::shared_ptr<adapter::schema::ClassAccess> _class;
-    std::shared_ptr<adapter::schema::PropertyAccess> _property;
-    std::shared_ptr<adapter::schema::IndexAccess> _index;
-    std::shared_ptr<schema::SchemaInterface> _iSchema;
-    std::shared_ptr<index::IndexInterface> _iIndex;
-    std::shared_ptr<relation::GraphInterface> _iGraph;
-    std::shared_ptr<datarecord::DataRecordInterface> _iRecord;
+
+    class Adapter {
+    public:
+      Adapter();
+
+      Adapter(const storage_engine::LMDBTxn *txn);
+
+      ~Adapter() noexcept;
+
+      Adapter(Adapter &&other) noexcept;
+
+      Adapter& operator=(Adapter &&other) noexcept;
+
+      adapter::metadata::DBInfoAccess *dbInfo() const { return _dbInfo; }
+
+      adapter::schema::ClassAccess *dbClass() const { return _class; }
+
+      adapter::schema::PropertyAccess *dbProperty() const { return _property; }
+
+      adapter::schema::IndexAccess *dbIndex() const { return _index; }
+
+    private:
+      adapter::metadata::DBInfoAccess *_dbInfo;
+      adapter::schema::ClassAccess *_class;
+      adapter::schema::PropertyAccess *_property;
+      adapter::schema::IndexAccess *_index;
+    };
+
+    class Interface {
+    public:
+      Interface();
+
+      Interface(const Txn *txn);
+
+      ~Interface() noexcept;
+
+      Interface(Interface &&other) noexcept;
+
+      Interface& operator=(Interface &&other) noexcept;
+
+      schema::SchemaInterface *schema() const { return _schema; }
+
+      index::IndexInterface *index() const { return _index; }
+
+      relation::GraphInterface *graph() const { return _graph; }
+
+      datarecord::DataRecordInterface *record() const { return _record; }
+
+      void init();
+
+      void destroy();
+
+    private:
+      const Txn* _txn;
+      schema::SchemaInterface *_schema;
+      datarecord::DataRecordInterface *_record;
+      relation::GraphInterface *_graph;
+      index::IndexInterface *_index;
+    };
 
     Mode _txnMode;
-    mutable bool _completed; // throw error if working with isCompleted = true
+    const Context *_txnCtx;
+    storage_engine::LMDBTxn *_txnBase;
+    Adapter _adapter;
+    Interface _interface;
+
   };
 
 }

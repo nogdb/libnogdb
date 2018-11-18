@@ -26,7 +26,7 @@ namespace nogdb {
   namespace schema {
 
     ClassAccessInfo SchemaInterface::getExistingClass(const std::string &className) {
-      auto foundClass = _txn->_class->getInfo(className);
+      auto foundClass = _txn->_adapter.dbClass()->getInfo(className);
       if (foundClass.type == ClassType::UNDEFINED) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
       }
@@ -34,7 +34,7 @@ namespace nogdb {
     }
 
     ClassAccessInfo SchemaInterface::getExistingClass(const ClassId &classId) {
-      auto foundClass = _txn->_class->getInfo(classId);
+      auto foundClass = _txn->_adapter.dbClass()->getInfo(classId);
       if (foundClass.type == ClassType::UNDEFINED) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
       }
@@ -42,7 +42,7 @@ namespace nogdb {
     }
 
     PropertyAccessInfo SchemaInterface::getExistingProperty(const ClassId &classId, const std::string &propertyName) {
-      auto foundProperty = _txn->_property->getInfo(classId, propertyName);
+      auto foundProperty = _txn->_adapter.dbProperty()->getInfo(classId, propertyName);
       if (foundProperty.type == PropertyType::UNDEFINED) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
       }
@@ -51,9 +51,9 @@ namespace nogdb {
 
     PropertyAccessInfo
     SchemaInterface::getExistingPropertyExtend(const ClassId &classId, const std::string &propertyName) {
-      auto foundProperty = _txn->_property->getInfo(classId, propertyName);
+      auto foundProperty = _txn->_adapter.dbProperty()->getInfo(classId, propertyName);
       if (foundProperty.type == PropertyType::UNDEFINED) {
-        auto superClassId = _txn->_class->getSuperClassId(classId);
+        auto superClassId = _txn->_adapter.dbClass()->getSuperClassId(classId);
         if (superClassId != ClassId{}) {
           return getExistingPropertyExtend(classId, propertyName);
         } else {
@@ -66,7 +66,7 @@ namespace nogdb {
 
     std::map<std::string, ClassAccessInfo>
     SchemaInterface::getSubClassInfos(const ClassId &classId, std::map<std::string, ClassAccessInfo> &result) {
-      for (const auto &subClassInfo: _txn->_class->getSubClassInfos(classId)) {
+      for (const auto &subClassInfo: _txn->_adapter.dbClass()->getSubClassInfos(classId)) {
         result.emplace(subClassInfo.name, subClassInfo);
         getSubClassInfos(subClassInfo.id, result);
       }
@@ -76,7 +76,7 @@ namespace nogdb {
     std::vector<PropertyAccessInfo>
     SchemaInterface::getNativePropertyInfo(const ClassId &classId) {
       auto result = std::vector<PropertyAccessInfo>{};
-      for (const auto &propertyInfo: _txn->_property->getInfos(classId)) {
+      for (const auto &propertyInfo: _txn->_adapter.dbProperty()->getInfos(classId)) {
         result.emplace_back(propertyInfo);
       }
       return result;
@@ -85,9 +85,9 @@ namespace nogdb {
     std::vector<PropertyAccessInfo>
     SchemaInterface::getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result) {
       if (superClassId != ClassId{}) {
-        auto partialResult = _txn->_property->getInfos(superClassId);
+        auto partialResult = _txn->_adapter.dbProperty()->getInfos(superClassId);
         result.insert(result.cend(), partialResult.cbegin(), partialResult.cend());
-        getInheritPropertyInfo(_txn->_class->getSuperClassId(superClassId), result);
+        getInheritPropertyInfo(_txn->_adapter.dbClass()->getSuperClassId(superClassId), result);
       }
       return std::move(result);
     }
@@ -120,7 +120,7 @@ namespace nogdb {
 
     IndexAccessInfo
     SchemaInterface::getIndexInfo(const ClassId &classId, const PropertyId &propertyId) {
-      auto foundIndexInfo = _txn->_index->getInfo(classId, propertyId);
+      auto foundIndexInfo = _txn->_adapter.dbIndex()->getInfo(classId, propertyId);
       if (foundIndexInfo.id == IndexId{}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
       }

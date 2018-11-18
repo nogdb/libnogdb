@@ -27,8 +27,8 @@ namespace nogdb {
 
     Record DataRecordInterface::getRecord(const schema::ClassAccessInfo &classInfo,
                                           const RecordDescriptor &recordDescriptor) const {
-      auto propertyInfos = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-      auto result = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type)
+      auto propertyInfos = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
           .getResult(recordDescriptor.rid.second);
       return parser::RecordParser::parseRawDataWithBasicInfo(
           classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
@@ -37,8 +37,8 @@ namespace nogdb {
     ResultSet DataRecordInterface::getResultSet(const schema::ClassAccessInfo &classInfo,
                                                 const std::vector<RecordDescriptor> &recordDescriptors) const {
       auto resultSet = ResultSet{};
-      auto propertyInfos = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
+      auto propertyInfos = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
       for (const auto &recordDescriptor: recordDescriptors) {
         auto result = dataRecord.getResult(recordDescriptor.rid.second);
         auto record = parser::RecordParser::parseRawDataWithBasicInfo(
@@ -49,8 +49,8 @@ namespace nogdb {
     }
 
     ResultSet DataRecordInterface::getResultSet(const schema::ClassAccessInfo &classInfo) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = ResultSet{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
@@ -63,8 +63,8 @@ namespace nogdb {
     }
 
     ResultSetCursor DataRecordInterface::getResultSetCursor(const schema::ClassAccessInfo &classInfo) const {
-      auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSetCursor = ResultSetCursor{*_txn};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
@@ -78,8 +78,8 @@ namespace nogdb {
     DataRecordInterface::getResultSetByCondition(const schema::ClassAccessInfo &classInfo,
                                                  const PropertyType &propertyType,
                                                  const Condition &condition) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = ResultSet{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
@@ -99,8 +99,8 @@ namespace nogdb {
     DataRecordInterface::getRecordDescriptorByCondition(const schema::ClassAccessInfo &classInfo,
                                                         const PropertyType &propertyType,
                                                         const Condition &condition) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto recordDescriptors = std::vector<RecordDescriptor>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
@@ -120,8 +120,8 @@ namespace nogdb {
     DataRecordInterface::getResultSetByMultiCondition(const schema::ClassAccessInfo &classInfo,
                                                       const schema::PropertyNameMapInfo &propertyInfos,
                                                       const MultiCondition &multiCondition) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto propertyTypes = PropertyMapType{};
       for (const auto &property: propertyInfos) {
         propertyTypes.emplace(property.first, property.second.type);
@@ -144,8 +144,8 @@ namespace nogdb {
     DataRecordInterface::getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo &classInfo,
                                                              const schema::PropertyNameMapInfo &propertyInfos,
                                                              const MultiCondition &multiCondition) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto propertyTypes = PropertyMapType{};
       for (const auto &property: propertyInfos) {
         propertyTypes.emplace(property.first, property.second.type);
@@ -167,8 +167,8 @@ namespace nogdb {
     ResultSet
     DataRecordInterface::getResultSetByCmpFunction(const schema::ClassAccessInfo &classInfo,
                                                    bool (*condition)(const Record &record)) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto resultSet = ResultSet{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
@@ -186,8 +186,8 @@ namespace nogdb {
     std::vector<RecordDescriptor>
     DataRecordInterface::getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo &classInfo,
                                                           bool (*condition)(const Record &record)) const {
-      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase.get(), classInfo.id, classInfo.type);
-      auto propertyIdMapInfo = _txn->_iSchema->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+      auto propertyIdMapInfo = _txn->_interface.schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto recordDescriptors = std::vector<RecordDescriptor>{};
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {

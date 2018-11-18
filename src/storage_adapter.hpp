@@ -68,29 +68,56 @@ namespace nogdb {
 
         template<typename K, typename V>
         void put(const K &key, const V &val) {
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           _dbi.put(key, val, _append, _overwrite);
         }
 
         template<typename K>
         lmdb::Result get(const K &key) const {
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           return _dbi.get(key);
         }
 
         template<typename K>
         void del(const K &key) {
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           _dbi.del(key);
         }
 
         template<typename K, typename V>
         void del(const K &key, const V &val) {
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           _dbi.del(key, val);
         };
 
         void drop(const bool del = false) {
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           _dbi.drop(del);
         }
 
         lmdb::Cursor cursor() const {
+          if (_txn == nullptr) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_NULL_TXN);
+          }
+          if (_dbi == 0) {
+            throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+          }
+
           return _txn->openCursor(_dbi);
         }
 

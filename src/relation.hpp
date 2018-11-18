@@ -42,8 +42,8 @@ namespace nogdb {
     public:
       explicit GraphInterface(const Txn *txn)
           : _txn{txn},
-            _inRel{new RelationAccess(txn->_txnBase.get(), Direction::IN)},
-            _outRel{new RelationAccess(txn->_txnBase.get(), Direction::OUT)} {}
+            _inRel{new RelationAccess(txn->_txnBase, Direction::IN)},
+            _outRel{new RelationAccess(txn->_txnBase, Direction::OUT)} {}
 
       virtual ~GraphInterface() noexcept {
         if (_inRel) {

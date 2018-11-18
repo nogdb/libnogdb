@@ -67,15 +67,14 @@ namespace nogdb {
         virtual ~ClassAccess() noexcept = default;
 
         ClassAccess(ClassAccess &&other) noexcept {
-          _classCache = other._classCache;
-          other._classCache.clear();
+          *this = std::move(other);
         }
 
         ClassAccess &operator=(ClassAccess &&other) noexcept {
           if (this != &other) {
-            auto tmp(std::move(other));
             using std::swap;
-            swap(*this, tmp);
+            swap(_classCache, other._classCache);
+            other._classCache.clear();
           }
           return *this;
         }

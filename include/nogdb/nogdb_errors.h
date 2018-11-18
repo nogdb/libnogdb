@@ -40,8 +40,12 @@
 #define NOGDB_GRAPH_NOEXST_EDGE                 0x201
 #define NOGDB_GRAPH_UNKNOWN_ERR                 0x9ff
 
-#define NOGDB_TXN_INVALID_MODE                  0xa00
-#define NOGDB_TXN_COMPLETED                     0xa01
+#define NOGDB_INTERNAL_NULL_TXN                 0xa00
+#define NOGDB_INTERNAL_EMPTY_DBI                0xa01
+#define NOGDB_INTERNAL_UNKNOWN_ERROR            0xcff
+
+#define NOGDB_TXN_INVALID_MODE                  0xd00
+#define NOGDB_TXN_COMPLETED                     0xd01
 #define NOGDB_TXN_UNKNOWN_ERR                   0xfff
 
 #define NOGDB_CTX_INVALID_CLASSTYPE             0x1000
@@ -132,6 +136,26 @@ namespace nogdb {
     const std::string _func{};
     const std::string _file{};
     const int _line;
+  };
+
+  /**
+   * NogDB internal error definition
+   */
+  class InternalError : public Error {
+  public:
+    using Error::Error;
+
+    virtual const char *what() const noexcept {
+      switch (_code) {
+        case NOGDB_INTERNAL_NULL_TXN:
+          return "NOGDB_INTERNAL_NULL_TXN: An underlying txn is NULL";
+        case NOGDB_INTERNAL_EMPTY_DBI:
+          return "NOGDB_INTERNAL_EMPTY_DBI: An underlying database interface is empty";
+        case NOGDB_INTERNAL_UNKNOWN_ERROR:
+        default:
+          return "NOGDB_INTERNAL_UNKNOWN_ERR: Unknown";
+      }
+    }
   };
 
   /**
@@ -319,6 +343,7 @@ namespace nogdb {
   };
 
 #define NOGDB_ERROR(error)              nogdb::Error(error,__FUNCTION__, __FILE__,__LINE__)
+#define NOGDB_INTERNAL_ERROR(error)     nogdb::InternalError(error, __FUNCTION__, __FILE__, __LINE__)
 #define NOGDB_STORAGE_ERROR(error)      nogdb::StorageError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_GRAPH_ERROR(error)        nogdb::GraphError(error,__FUNCTION__, __FILE__,__LINE__)
 #define NOGDB_CONTEXT_ERROR(error)      nogdb::ContextError(error,__FUNCTION__, __FILE__,__LINE__)

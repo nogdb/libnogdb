@@ -117,7 +117,7 @@ namespace nogdb {
     Result RecordCompare::filterResult(const Txn &txn,
                                        const RecordDescriptor &recordDescriptor,
                                        const GraphFilter &filter) {
-      auto classInfo = txn._class->getInfo(recordDescriptor.rid.first);
+      auto classInfo = txn._adapter.dbClass()->getInfo(recordDescriptor.rid.first);
       // filter classes
       if (!filter.onlyClasses.empty()) {
         if (filter.onlyClasses.find(classInfo.name) == filter.onlyClasses.cend()) {
@@ -131,15 +131,15 @@ namespace nogdb {
         }
       }
 
-      auto record = txn._iRecord->getRecord(classInfo, recordDescriptor);
+      auto record = txn._interface.record()->getRecord(classInfo, recordDescriptor);
       if (filter.mode == GraphFilter::FilterMode::CONDITION) {
         auto condition = filter.filter._condition.get();
-        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
       } else if (filter.mode == GraphFilter::FilterMode::MULTI_CONDITION) {
         auto multiCondition = filter.filter._multiCondition.get();
-        auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
             record, propertyNameMapInfo, *multiCondition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
@@ -161,14 +161,14 @@ namespace nogdb {
       auto edgeNeighbours = std::vector<RecordId>{};
       switch (direction) {
         case adapter::relation::Direction::IN:
-          edgeNeighbours = txn._iGraph->getInEdges(vertex);
+          edgeNeighbours = txn._interface.graph()->getInEdges(vertex);
           break;
         case adapter::relation::Direction::OUT:
-          edgeNeighbours = txn._iGraph->getOutEdges(vertex);
+          edgeNeighbours = txn._interface.graph()->getOutEdges(vertex);
           break;
         case adapter::relation::Direction::ALL:
-          edgeNeighbours = txn._iGraph->getInEdges(vertex);
-          auto moreEdges = txn._iGraph->getOutEdges(vertex);
+          edgeNeighbours = txn._interface.graph()->getInEdges(vertex);
+          auto moreEdges = txn._interface.graph()->getOutEdges(vertex);
           edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
           break;
       }
@@ -188,14 +188,14 @@ namespace nogdb {
       auto edgeRecordIds = std::vector<RecordId>{};
       switch (direction) {
         case Direction::IN :
-          edgeRecordIds = txn._iGraph->getInEdges(recordId);
+          edgeRecordIds = txn._interface.graph()->getInEdges(recordId);
           break;
         case Direction::OUT :
-          edgeRecordIds = txn._iGraph->getOutEdges(recordId);
+          edgeRecordIds = txn._interface.graph()->getOutEdges(recordId);
           break;
         default:
-          edgeRecordIds = txn._iGraph->getInEdges(recordId);
-          auto outEdges = txn._iGraph->getOutEdges(recordId);
+          edgeRecordIds = txn._interface.graph()->getInEdges(recordId);
+          auto outEdges = txn._interface.graph()->getOutEdges(recordId);
           edgeRecordIds.insert(edgeRecordIds.cend(), outEdges.cbegin(), outEdges.cend());
           break;
       }
@@ -212,13 +212,13 @@ namespace nogdb {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
       }
       auto propertyInfo = foundProperty->second;
-      auto foundIndex = txn._iIndex->hasIndex(classInfo, propertyInfo, condition);
+      auto foundIndex = txn._interface.index()->hasIndex(classInfo, propertyInfo, condition);
       if (foundIndex.first) {
-        auto indexedRecords = txn._iIndex->getRecord(propertyInfo, foundIndex.second, condition);
-        return txn._iRecord->getResultSet(classInfo, indexedRecords);
+        auto indexedRecords = txn._interface.index()->getRecord(propertyInfo, foundIndex.second, condition);
+        return txn._interface.record()->getResultSet(classInfo, indexedRecords);
       } else {
         if (!searchIndexOnly) {
-          return txn._iRecord->getResultSetByCondition(classInfo, propertyInfo.type, condition);
+          return txn._interface.record()->getResultSetByCondition(classInfo, propertyInfo.type, condition);
         }
       }
       return ResultSet{};
@@ -244,13 +244,13 @@ namespace nogdb {
         }
       }
 
-      auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, multiCondition);
+      auto foundIndex = txn._interface.index()->hasIndex(classInfo, conditionProperties, multiCondition);
       if (foundIndex.first) {
-        auto indexedRecords = txn._iIndex->getRecord(conditionProperties, foundIndex.second, multiCondition);
-        return txn._iRecord->getResultSet(classInfo, indexedRecords);
+        auto indexedRecords = txn._interface.index()->getRecord(conditionProperties, foundIndex.second, multiCondition);
+        return txn._interface.record()->getResultSet(classInfo, indexedRecords);
       } else {
         if (!searchIndexOnly) {
-          return txn._iRecord->getResultSetByMultiCondition(classInfo, conditionProperties, multiCondition);
+          return txn._interface.record()->getResultSetByMultiCondition(classInfo, conditionProperties, multiCondition);
         }
       }
       return ResultSet{};
@@ -267,12 +267,12 @@ namespace nogdb {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
       }
       auto propertyInfo = foundProperty->second;
-      auto foundIndex = txn._iIndex->hasIndex(classInfo, propertyInfo, condition);
+      auto foundIndex = txn._interface.index()->hasIndex(classInfo, propertyInfo, condition);
       if (foundIndex.first) {
-        return txn._iIndex->getRecord(propertyInfo, foundIndex.second, condition);
+        return txn._interface.index()->getRecord(propertyInfo, foundIndex.second, condition);
       } else {
         if (!searchIndexOnly) {
-          return txn._iRecord->getRecordDescriptorByCondition(classInfo, propertyInfo.type, condition);
+          return txn._interface.record()->getRecordDescriptorByCondition(classInfo, propertyInfo.type, condition);
         }
       }
       return std::vector<RecordDescriptor>{};
@@ -299,12 +299,12 @@ namespace nogdb {
         }
       }
 
-      auto foundIndex = txn._iIndex->hasIndex(classInfo, conditionProperties, conditions);
+      auto foundIndex = txn._interface.index()->hasIndex(classInfo, conditionProperties, conditions);
       if (foundIndex.first) {
-        return txn._iIndex->getRecord(conditionProperties, foundIndex.second, conditions);
+        return txn._interface.index()->getRecord(conditionProperties, foundIndex.second, conditions);
       } else {
         if (!searchIndexOnly) {
-          return txn._iRecord->getRecordDescriptorByMultiCondition(classInfo, conditionProperties, conditions);
+          return txn._interface.record()->getRecordDescriptorByMultiCondition(classInfo, conditionProperties, conditions);
         }
       }
       return std::vector<RecordDescriptor>{};
@@ -323,8 +323,8 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
-          auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id,
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
+          auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(edgeClassInfo.id,
                                                                           edgeClassInfo.superClassId);
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
           if (foundProperty == propertyNameMapInfo.cend()) {
@@ -337,7 +337,7 @@ namespace nogdb {
           propertyType = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -357,13 +357,13 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
           edgeInfos.emplace(std::make_pair(edgeRecordId.first, edgeClassInfo));
         } else {
           edgeClassInfo = foundEdgeInfo->second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (condition(edgeRecord)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -384,8 +384,8 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
-          auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id,
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
+          auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(edgeClassInfo.id,
                                                                           edgeClassInfo.superClassId);
           for (const auto &property: propertyNameMapInfo) {
             propertyTypes.emplace(property.first, property.second.type);
@@ -396,7 +396,7 @@ namespace nogdb {
           propertyTypes = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (multiCondition.execute(edgeRecord, propertyTypes)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -418,8 +418,8 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
-          auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id,
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
+          auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(edgeClassInfo.id,
                                                                           edgeClassInfo.superClassId);
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
           if (foundProperty == propertyNameMapInfo.cend()) {
@@ -432,7 +432,7 @@ namespace nogdb {
           propertyType = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }
@@ -453,13 +453,13 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
           edgeInfos.emplace(std::make_pair(edgeRecordId.first, edgeClassInfo));
         } else {
           edgeClassInfo = foundEdgeInfo->second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (condition(edgeRecord)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }
@@ -481,8 +481,8 @@ namespace nogdb {
 
         auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
         if (foundEdgeInfo == edgeInfos.cend()) {
-          edgeClassInfo = txn._class->getInfo(edgeRecordId.first);
-          auto propertyNameMapInfo = txn._iSchema->getPropertyNameMapInfo(edgeClassInfo.id,
+          edgeClassInfo = txn._adapter.dbClass()->getInfo(edgeRecordId.first);
+          auto propertyNameMapInfo = txn._interface.schema()->getPropertyNameMapInfo(edgeClassInfo.id,
                                                                           edgeClassInfo.superClassId);
           for (const auto &property: propertyNameMapInfo) {
             propertyTypes.emplace(property.first, property.second.type);
@@ -493,7 +493,7 @@ namespace nogdb {
           propertyTypes = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._iRecord->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface.record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
         if (multiCondition.execute(edgeRecord, propertyTypes)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }
