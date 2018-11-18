@@ -29,7 +29,7 @@
 #include "lmdb_engine.hpp"
 #include "schema.hpp"
 
-#include "nogdb_types.h"
+#include "nogdb/nogdb_types.h"
 #include "schema_adapter.hpp"
 
 namespace nogdb {

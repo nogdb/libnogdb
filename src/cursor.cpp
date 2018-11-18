@@ -24,8 +24,8 @@
 #include "schema.hpp"
 #include "datarecord.hpp"
 
-#include "nogdb_errors.h"
-#include "nogdb_types.h"
+#include "nogdb/nogdb_errors.h"
+#include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 

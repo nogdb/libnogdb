@@ -32,7 +32,7 @@
 #include "lmdb_engine.hpp"
 #include "utils.hpp"
 
-#include "nogdb_context.h"
+#include "nogdb/nogdb_context.h"
 
 #define DEFAULT_NOGDB_MAX_DATABASE_NUMBER   1024U
 #define DEFAULT_NOGDB_MAX_DATABASE_SIZE     1073741824UL  // 1GB

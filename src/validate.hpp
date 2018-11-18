@@ -23,9 +23,9 @@
 
 #include <regex>
 
-#include "nogdb_errors.h"
-#include "nogdb_context.h"
-#include "nogdb_txn.h"
+#include "nogdb/nogdb_errors.h"
+#include "nogdb/nogdb_context.h"
+#include "nogdb/nogdb_txn.h"
 
 #define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
 #define CLASS_ID_UPPER_LIMIT      UINT16_MAX - 1

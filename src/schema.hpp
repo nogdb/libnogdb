@@ -26,8 +26,8 @@
 #include "schema_adapter.hpp"
 #include "validate.hpp"
 
-#include "nogdb_types.h"
-#include "nogdb_txn.h"
+#include "nogdb/nogdb_types.h"
+#include "nogdb/nogdb_txn.h"
 
 namespace nogdb {
 

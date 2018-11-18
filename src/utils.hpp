@@ -34,7 +34,7 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 
-#include "nogdb_errors.h"
+#include "nogdb/nogdb_errors.h"
 
 namespace nogdb {
 

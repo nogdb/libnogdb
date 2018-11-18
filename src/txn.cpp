@@ -30,7 +30,7 @@
 #include "datarecord.hpp"
 #include "relation.hpp"
 
-#include "nogdb_txn.h"
+#include "nogdb/nogdb_txn.h"
 
 namespace nogdb {
 

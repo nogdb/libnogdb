@@ -27,7 +27,7 @@
 #include "lmdb/lmdb.h"
 #include "datatype.hpp"
 
-#include "nogdb_errors.h"
+#include "nogdb/nogdb_errors.h"
 
 namespace nogdb {
 

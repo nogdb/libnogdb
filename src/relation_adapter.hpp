@@ -28,7 +28,7 @@
 #include "constant.hpp"
 #include "storage_adapter.hpp"
 
-#include "nogdb_txn.h"
+#include "nogdb/nogdb_txn.h"
 
 namespace nogdb {
 

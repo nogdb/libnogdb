@@ -34,7 +34,7 @@
 #include "validate.hpp"
 #include "schema.hpp"
 
-#include "nogdb_context.h"
+#include "nogdb/nogdb_context.h"
 
 using namespace nogdb::utils::assertion;
 

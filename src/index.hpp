@@ -34,9 +34,9 @@
 #include "index_adapter.hpp"
 #include "datarecord_adapter.hpp"
 
-#include "nogdb_types.h"
-#include "nogdb_txn.h"
-#include "nogdb_compare.h"
+#include "nogdb/nogdb_types.h"
+#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb_compare.h"
 
 #define UNIQUE_FLAG(_unique)                        (_unique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE
 #define INDEX_POSITIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)

@@ -29,8 +29,8 @@
 #include "datarecord.hpp"
 #include "relation.hpp"
 
-#include "nogdb_types.h"
-#include "nogdb_compare.h"
+#include "nogdb/nogdb_types.h"
+#include "nogdb/nogdb_compare.h"
 #include "nogdb.h"
 
 namespace nogdb {
