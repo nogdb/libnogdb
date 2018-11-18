@@ -44,21 +44,21 @@ namespace nogdb {
     }
 
     Validator &Validator::isClassIdMaxReach() {
-      if ((_txn->_adapter.dbInfo()->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
+      if ((_txn->_adapter->dbInfo()->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
       }
       return *this;
     }
 
     Validator &Validator::isPropertyIdMaxReach() {
-      if ((_txn->_adapter.dbInfo()->getMaxPropertyId() >= UINT16_MAX)) {
+      if ((_txn->_adapter->dbInfo()->getMaxPropertyId() >= UINT16_MAX)) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
       }
       return *this;
     }
 
     Validator &Validator::isIndexIdMaxReach() {
-      if ((_txn->_adapter.dbInfo()->getMaxIndexId() >= UINT32_MAX)) {
+      if ((_txn->_adapter->dbInfo()->getMaxIndexId() >= UINT32_MAX)) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
       }
       return *this;
@@ -108,7 +108,7 @@ namespace nogdb {
     }
 
     Validator &Validator::isNotDuplicatedClass(const std::string &className) {
-      auto foundClass = _txn->_adapter.dbClass()->getId(className);
+      auto foundClass = _txn->_adapter->dbClass()->getId(className);
       if (foundClass != ClassId{}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_CLASS);
       }
@@ -116,11 +116,11 @@ namespace nogdb {
     }
 
     Validator &Validator::isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName) {
-      auto foundProperty = _txn->_adapter.dbProperty()->getId(classId, propertyName);
+      auto foundProperty = _txn->_adapter->dbProperty()->getId(classId, propertyName);
       if (foundProperty != PropertyId{}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
       }
-      auto superClassId = _txn->_adapter.dbClass()->getSuperClassId(classId);
+      auto superClassId = _txn->_adapter->dbClass()->getSuperClassId(classId);
       if (superClassId != ClassId{}) {
         isNotDuplicatedProperty(superClassId, propertyName);
       }
@@ -128,11 +128,11 @@ namespace nogdb {
     }
 
     Validator &Validator::isNotOverridenProperty(const ClassId &classId, const std::string &propertyName) {
-      auto foundProperty = _txn->_adapter.dbProperty()->getId(classId, propertyName);
+      auto foundProperty = _txn->_adapter->dbProperty()->getId(classId, propertyName);
       if (foundProperty != PropertyId{}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
       }
-      for (const auto &subClassId: _txn->_adapter.dbClass()->getSubClassIds(classId)) {
+      for (const auto &subClassId: _txn->_adapter->dbClass()->getSubClassIds(classId)) {
         if (subClassId != ClassId{}) {
           isNotOverridenProperty(subClassId, propertyName);
         }
@@ -141,7 +141,7 @@ namespace nogdb {
     }
 
     Validator &Validator::isExistingSrcVertex(const RecordDescriptor &vertex) {
-      auto foundClass = _txn->_interface.schema()->getExistingClass(vertex.rid.first);
+      auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {
@@ -160,7 +160,7 @@ namespace nogdb {
     }
 
     Validator &Validator::isExistingDstVertex(const RecordDescriptor &vertex) {
-      auto foundClass = _txn->_interface.schema()->getExistingClass(vertex.rid.first);
+      auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {
@@ -179,7 +179,7 @@ namespace nogdb {
     }
 
     Validator &Validator::isExistingVertex(const RecordDescriptor &vertex) {
-      auto foundClass = _txn->_interface.schema()->getExistingClass(vertex.rid.first);
+      auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
       if (foundClass.type == ClassType::VERTEX) {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {

@@ -71,7 +71,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           _dbi.put(key, val, _append, _overwrite);
         }
 
@@ -80,7 +79,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           return _dbi.get(key);
         }
 
@@ -89,7 +87,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           _dbi.del(key);
         }
 
@@ -98,7 +95,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           _dbi.del(key, val);
         };
 
@@ -106,7 +102,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           _dbi.drop(del);
         }
 
@@ -117,7 +112,6 @@ namespace nogdb {
           if (_dbi == 0) {
             throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
           }
-
           return _txn->openCursor(_dbi);
         }
 

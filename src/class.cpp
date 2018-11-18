@@ -50,10 +50,10 @@ namespace nogdb {
         .isNotDuplicatedClass(className);
 
     try {
-      auto classId = txn._adapter.dbInfo()->getMaxClassId() + ClassId{1};
-      txn._adapter.dbClass()->create(ClassAccessInfo{className, classId, ClassId{0}, type});
-      txn._adapter.dbInfo()->setMaxClassId(classId);
-      txn._adapter.dbInfo()->setNumClassId(txn._adapter.dbInfo()->getNumClassId() + ClassId{1});
+      auto classId = txn._adapter->dbInfo()->getMaxClassId() + ClassId{1};
+      txn._adapter->dbClass()->create(ClassAccessInfo{className, classId, ClassId{0}, type});
+      txn._adapter->dbInfo()->setMaxClassId(classId);
+      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
       DataRecord(txn._txnBase, classId, type).init();
       return ClassDescriptor{classId, className, ClassId{0}, type};
     } catch (const Error &err) {
@@ -74,12 +74,12 @@ namespace nogdb {
         .isClassNameValid(superClass)
         .isNotDuplicatedClass(className);
 
-    auto superClassInfo = txn._interface.schema()->getExistingClass(superClass);
+    auto superClassInfo = txn._interface->schema()->getExistingClass(superClass);
     try {
-      auto classId = txn._adapter.dbInfo()->getMaxClassId() + ClassId{1};
-      txn._adapter.dbClass()->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
-      txn._adapter.dbInfo()->setMaxClassId(classId);
-      txn._adapter.dbInfo()->setNumClassId(txn._adapter.dbInfo()->getNumClassId() + ClassId{1});
+      auto classId = txn._adapter->dbInfo()->getMaxClassId() + ClassId{1};
+      txn._adapter->dbClass()->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
+      txn._adapter->dbInfo()->setMaxClassId(classId);
+      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
       DataRecord(txn._txnBase, classId, superClassInfo.type).init();
       return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
     } catch (const Error &err) {
@@ -95,12 +95,12 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid();
 
-    auto foundClass = txn._interface.schema()->getExistingClass(className);
+    auto foundClass = txn._interface->schema()->getExistingClass(className);
     // retrieve relevant properties information
-    auto propertyInfos = txn._adapter.dbProperty()->getInfos(foundClass.id);
+    auto propertyInfos = txn._adapter->dbProperty()->getInfos(foundClass.id);
     for (const auto &property: propertyInfos) {
       // check if all index tables associated with the column have been removed beforehand
-      auto foundIndex = txn._adapter.dbIndex()->getInfo(foundClass.id, property.id);
+      auto foundIndex = txn._adapter->dbIndex()->getInfo(foundClass.id, property.id);
       if (foundIndex.id != IndexId{0}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
       }
@@ -108,10 +108,10 @@ namespace nogdb {
     try {
       auto rids = std::vector<RecordId>{};
       // delete class from schema
-      txn._adapter.dbClass()->remove(className);
+      txn._adapter->dbClass()->remove(className);
       // delete properties from schema
       for (const auto &property : propertyInfos) {
-        txn._adapter.dbProperty()->remove(property.classId, property.name);
+        txn._adapter->dbProperty()->remove(property.classId, property.name);
         //TODO: implement existing index deletion if needed
       }
       // delete all associated relations
@@ -125,16 +125,16 @@ namespace nogdb {
         auto recordId = RecordId{foundClass.id, key};
         if (foundClass.type == ClassType::EDGE) {
           auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(keyValue.val.data.blob());
-          txn._interface.graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
+          txn._interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
         } else {
-          txn._interface.graph()->removeRelFromVertex(recordId);
+          txn._interface->graph()->removeRelFromVertex(recordId);
         }
       }
       // drop the actual table
       table.destroy();
       // update a superclass of subclasses if existing
-      for (const auto &subClassInfo: txn._adapter.dbClass()->getSubClassInfos(foundClass.id)) {
-        txn._adapter.dbClass()->update(
+      for (const auto &subClassInfo: txn._adapter->dbClass()->getSubClassInfos(foundClass.id)) {
+        txn._adapter->dbClass()->update(
             ClassAccessInfo{
                 subClassInfo.name,
                 subClassInfo.id,
@@ -143,9 +143,9 @@ namespace nogdb {
             });
       }
       // update database info
-      txn._adapter.dbInfo()->setNumClassId(txn._adapter.dbInfo()->getNumClassId() - ClassId{1});
-      txn._adapter.dbInfo()->setNumPropertyId(
-          txn._adapter.dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
+      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() - ClassId{1});
+      txn._adapter->dbInfo()->setNumPropertyId(
+          txn._adapter->dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
     } catch (const Error &err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
@@ -161,9 +161,9 @@ namespace nogdb {
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);
 
-    auto foundClass = txn._interface.schema()->getExistingClass(oldClassName);
+    auto foundClass = txn._interface->schema()->getExistingClass(oldClassName);
     try {
-      txn._adapter.dbClass()->alterClassName(oldClassName, newClassName);
+      txn._adapter->dbClass()->alterClassName(oldClassName, newClassName);
     } catch (const Error &err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);

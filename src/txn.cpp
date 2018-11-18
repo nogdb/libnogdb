@@ -62,30 +62,6 @@ namespace nogdb {
     }
   }
 
-  Txn::Adapter::Adapter(Txn::Adapter &&other) noexcept {
-    *this = std::move(other);
-  }
-
-  Txn::Adapter& Txn::Adapter::operator=(Txn::Adapter &&other) noexcept {
-    if (this != &other) {
-      delete _dbInfo;
-      delete _class;
-      delete _property;
-      delete _index;
-
-      _dbInfo = other._dbInfo;
-      _class = other._class;
-      _property = other._property;
-      _index = other._index;
-
-      other._dbInfo = nullptr;
-      other._class = nullptr;
-      other._property = nullptr;
-      other._index = nullptr;
-    }
-    return *this;
-  }
-
   Txn::Interface::Interface()
     : _txn{nullptr}, _schema{nullptr}, _record{nullptr}, _graph{nullptr}, _index{nullptr} {}
 
@@ -98,32 +74,10 @@ namespace nogdb {
       _index{new index::IndexInterface(_txn)} {}
 
   Txn::Interface::~Interface() noexcept {
-    _txn = nullptr;
-    destroy();
-  }
-
-  Txn::Interface::Interface(nogdb::Txn::Interface &&other) noexcept {
-    *this = std::move(other);
-  }
-
-  Txn::Interface& Txn::Interface::operator=(Txn::Interface &&other) noexcept {
-    if (this != &other) {
+    if (_txn) {
       destroy();
-
-      _txn = other._txn;
-      init();
-
-      other.destroy();
-      other._txn = nullptr;
+      _txn = nullptr;
     }
-    return *this;
-  }
-
-  void Txn::Interface::init() {
-    _schema = new schema::SchemaInterface(_txn);
-    _record = new datarecord::DataRecordInterface(_txn);
-    _graph = new relation::GraphInterface(_txn);
-    _index = new index::IndexInterface(_txn);
   }
 
   void Txn::Interface::destroy() {
@@ -151,8 +105,8 @@ namespace nogdb {
       _txnBase = new storage_engine::LMDBTxn(
           _txnCtx->_envHandler.get(),
           (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
-      _adapter = Adapter(_txnBase);
-      _interface = Interface(this);
+      _adapter = new Adapter(_txnBase);
+      _interface = new Interface(this);
     } catch (const Error &err) {
       try { rollback(); } catch (...) {}
       throw NOGDB_FATAL_ERROR(err);
@@ -177,10 +131,14 @@ namespace nogdb {
       _txnCtx = txn._txnCtx;
       _txnMode = txn._txnMode;
       _txnBase = txn._txnBase;
-      _adapter = std::move(txn._adapter);
-      _interface = std::move(txn._interface);
+      _adapter = txn._adapter;
+      _interface = new Interface(this);
 
-      txn.rollback();
+      txn._txnCtx = nullptr;
+      txn._txnBase = nullptr;
+      txn._adapter = nullptr;
+      txn._interface->destroy();
+      txn._interface = nullptr;
     }
     return *this;
   }

@@ -97,8 +97,7 @@ void test_alter_class() {
     for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::INTEGER);
       else if (property.name == "prop2") assert(property.type == nogdb::PropertyType::TEXT);
-      else
-        assert(false);
+      else assert(false);
     }
     txn.commit();
   } catch (const nogdb::Error &ex) {

@@ -39,8 +39,8 @@ namespace nogdb {
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
-                       const auto edgeClassInfo = txn._adapter.dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface.record()->getRecord(edgeClassInfo, descriptor);
+                       const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });
@@ -94,7 +94,7 @@ namespace nogdb {
           }
 
           for (const auto &edge: compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter)) {
-            auto srcDstVertex = txn._interface.graph()->getSrcDstVertices(edge.rid);
+            auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
             switch (direction) {
               case adapter::relation::Direction::IN:
                 addUniqueVertex(srcDstVertex.first);
@@ -132,8 +132,8 @@ namespace nogdb {
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
-                       const auto edgeClassInfo = txn._adapter.dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface.record()->getRecord(edgeClassInfo, descriptor);
+                       const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });
@@ -182,7 +182,7 @@ namespace nogdb {
               for (auto it = incidentEdges.crbegin(); it != incidentEdges.crend(); ++it) {
                 const RecordDescriptor &edge = *it;
                 RecordId nextVertex;
-                auto srcDstVertex = txn._interface.graph()->getSrcDstVertices(edge.rid);
+                auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
                 switch (direction) {
                   case adapter::relation::Direction::IN:
                     nextVertex = srcDstVertex.first;
@@ -229,8 +229,8 @@ namespace nogdb {
       ResultSet result(searchResultDescriptor.size());
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
-                       const auto edgeClassInfo = txn._adapter.dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface.record()->getRecord(edgeClassInfo, descriptor);
+                       const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });
@@ -263,7 +263,7 @@ namespace nogdb {
             auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
                 txn, vertex, adapter::relation::Direction::OUT, edgeFilter);
             for (const auto &edge: incidentEdges) {
-              auto nextVertex = txn._interface.graph()->getSrcDstVertices(edge.rid).second;
+              auto nextVertex = txn._interface->graph()->getSrcDstVertices(edge.rid).second;
               if (visited.find(nextVertex) == visited.cend()) {
                 auto vertexRdesc = compare::RecordCompare::filterRecord(txn, nextVertex, vertexFilter);
                 if (vertexRdesc != RecordDescriptor{}) {

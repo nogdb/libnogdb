@@ -110,7 +110,7 @@ namespace nogdb {
 
     void IndexInterface::drop(const ClassId &classId, const PropertyNameMapInfo &propertyNameMapInfo) {
       for (const auto &property: propertyNameMapInfo) {
-        auto indexInfo = _txn->_adapter.dbIndex()->getInfo(classId, property.second.id);
+        auto indexInfo = _txn->_adapter->dbIndex()->getInfo(classId, property.second.id);
         if (indexInfo.id != IndexId{}) {
           drop(property.second, indexInfo);
         }
@@ -178,7 +178,7 @@ namespace nogdb {
         if (foundProperty == propertyNameMapInfo.cend()) {
           throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         } else {
-          auto indexInfo = _txn->_adapter.dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
           if (indexInfo.id != IndexId{}) {
             insert(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
           }
@@ -239,7 +239,7 @@ namespace nogdb {
         if (foundProperty == propertyNameMapInfo.cend()) {
           throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         } else {
-          auto indexInfo = _txn->_adapter.dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
           if (indexInfo.id != IndexId{}) {
             remove(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
           }
@@ -256,7 +256,7 @@ namespace nogdb {
         if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
           return std::make_pair(false, IndexAccessInfo{});
         }
-        auto indexInfo = _txn->_adapter.dbIndex()->getInfo(classInfo.id, propertyInfo.id);
+        auto indexInfo = _txn->_adapter->dbIndex()->getInfo(classInfo.id, propertyInfo.id);
         return std::make_pair(indexInfo.id != IndexId{}, indexInfo);
       }
       return std::make_pair(false, IndexAccessInfo{});
@@ -278,7 +278,7 @@ namespace nogdb {
             require(propertyInfo != propertyInfos.cend());
             auto searchIndexResult = hasIndex(classInfo, propertyInfo->second, conditionPtr->getCondition());
             if (searchIndexResult.first) {
-              auto propertyId = _txn->_adapter.dbProperty()->getId(classInfo.id, propertyName);
+              auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
               result.emplace(propertyId, searchIndexResult.second);
             } else {
               isFoundAll = false;
@@ -444,7 +444,7 @@ namespace nogdb {
 
     void IndexInterface::createString(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
                                       const ClassType &classType) {
-      auto propertyIdMapInfo = _txn->_adapter.dbProperty()->getIdMapInfo(indexInfo.classId);
+      auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
       auto indexAccess = openIndexRecordString(indexInfo);
       auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =

@@ -73,8 +73,8 @@ namespace nogdb {
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface.schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface.record()->getRecord(classInfo, recordDescriptor)};
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 
@@ -91,8 +91,8 @@ namespace nogdb {
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface.schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface.record()->getRecord(classInfo, recordDescriptor)};
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 
@@ -116,8 +116,8 @@ namespace nogdb {
       currentIndex = 0;
       auto cursor = metadata.begin();
       auto recordDescriptor = *(cursor);
-      auto classInfo = txn->_interface.schema()->getExistingClass(recordDescriptor.rid.first);
-      result = Result{recordDescriptor, txn->_interface.record()->getRecord(classInfo, recordDescriptor)};
+      auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+      result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
     }
   }
 
@@ -129,8 +129,8 @@ namespace nogdb {
       currentIndex = static_cast<long long>(metadata.size() - 1);
       auto cursor = metadata.end() - 1;
       auto recordDescriptor = *(cursor);
-      auto classInfo = txn->_interface.schema()->getExistingClass(recordDescriptor.rid.first);
-      result = Result{recordDescriptor, txn->_interface.record()->getRecord(classInfo, recordDescriptor)};
+      auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+      result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
     }
   }
 
@@ -144,8 +144,8 @@ namespace nogdb {
     currentIndex = index;
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface.schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface.record()->getRecord(classInfo, recordDescriptor)};
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
     return true;
   }
 

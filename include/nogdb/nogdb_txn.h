@@ -84,9 +84,9 @@ namespace nogdb {
 
       ~Adapter() noexcept;
 
-      Adapter(Adapter &&other) noexcept;
+      Adapter(Adapter &&other) noexcept = delete;
 
-      Adapter& operator=(Adapter &&other) noexcept;
+      Adapter& operator=(Adapter &&other) noexcept = delete;
 
       adapter::metadata::DBInfoAccess *dbInfo() const { return _dbInfo; }
 
@@ -111,9 +111,9 @@ namespace nogdb {
 
       ~Interface() noexcept;
 
-      Interface(Interface &&other) noexcept;
+      Interface(Interface &&other) noexcept = delete;
 
-      Interface& operator=(Interface &&other) noexcept;
+      Interface& operator=(Interface &&other) noexcept = delete;
 
       schema::SchemaInterface *schema() const { return _schema; }
 
@@ -122,8 +122,6 @@ namespace nogdb {
       relation::GraphInterface *graph() const { return _graph; }
 
       datarecord::DataRecordInterface *record() const { return _record; }
-
-      void init();
 
       void destroy();
 
@@ -138,8 +136,8 @@ namespace nogdb {
     Mode _txnMode;
     const Context *_txnCtx;
     storage_engine::LMDBTxn *_txnBase;
-    Adapter _adapter;
-    Interface _interface;
+    Adapter *_adapter;
+    Interface *_interface;
 
   };
 

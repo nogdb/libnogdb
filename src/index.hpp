@@ -126,7 +126,7 @@ namespace nogdb {
                          const IndexAccessInfo &indexInfo,
                          const ClassType &classType,
                          T(*valueRetrieve)(const Bytes &)) {
-        auto propertyIdMapInfo = _txn->_adapter.dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
         auto indexAccess = openIndexRecordPositive(indexInfo);
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
@@ -146,7 +146,7 @@ namespace nogdb {
                                const IndexAccessInfo &indexInfo,
                                const ClassType &classType,
                                T(*valueRetrieve)(const Bytes &)) {
-        auto propertyIdMapInfo = _txn->_adapter.dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
         auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
         auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
