@@ -115,8 +115,8 @@ namespace nogdb {
           if (!result.empty) {
             auto newResult = get(newName);
             if (newResult.empty) {
-              del(oldName);
               auto blob = result.data.blob();
+              del(oldName);
               put(newName, blob);
               auto info = parse(newName, blob);
               _classCache.set(info.id, info);
@@ -318,8 +318,9 @@ namespace nogdb {
             auto newPropertyKey = buildKey(classId, newName);
             auto newResult = get(newPropertyKey);
             if (newResult.empty) {
+              auto props = parse(classId, newName, result.data.blob());
               del(propertyKey);
-              put(newPropertyKey, result.data.blob());
+              createOrUpdate(props);
             } else {
               throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_PROPERTY);
             }

@@ -61,6 +61,35 @@ namespace nogdb {
     return result;
   }
 
+  const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const std::string &className) {
+    auto result = std::vector<PropertyDescriptor>{};
+    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    // native properties
+    for (const auto &property: txn._interface->schema()->getNativePropertyInfo(foundClass.id)) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              false
+          });
+    }
+    // inherited properties
+    auto inheritResult = std::vector<schema::PropertyAccessInfo>{};
+    for (const auto &property: txn._interface->schema()->getInheritPropertyInfo(
+        txn._adapter->dbClass()->getSuperClassId(foundClass.id),
+        inheritResult)) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              true
+          });
+    }
+    return result;
+  }
+
   const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor &classDescriptor) {
     auto result = std::vector<PropertyDescriptor>{};
     auto foundClass = txn._interface->schema()->getExistingClass(classDescriptor.id);
@@ -76,8 +105,9 @@ namespace nogdb {
     }
     // inherited properties
     auto inheritResult = std::vector<schema::PropertyAccessInfo>{};
-    for (const auto &property: txn._interface->schema()->getInheritPropertyInfo(txn._adapter->dbClass()->getSuperClassId(foundClass.id),
-                                                                    inheritResult)) {
+    for (const auto &property: txn._interface->schema()->getInheritPropertyInfo(
+        txn._adapter->dbClass()->getSuperClassId(foundClass.id),
+        inheritResult)) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,
@@ -115,12 +145,12 @@ namespace nogdb {
     try {
       auto propertyInfo = txn._interface->schema()->getExistingProperty(classInfo.id, propertyName);
       return PropertyDescriptor{
-        propertyInfo.id,
-        propertyInfo.name,
-        propertyInfo.type,
-        false
+          propertyInfo.id,
+          propertyInfo.name,
+          propertyInfo.type,
+          false
       };
-    } catch(const Error& error) {
+    } catch (const Error &error) {
       if (error.code() == NOGDB_CTX_NOEXST_PROPERTY) {
         auto propertyInfo = txn._interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
         return PropertyDescriptor{
@@ -135,16 +165,16 @@ namespace nogdb {
     }
   }
 
-  const std::vector<IndexDescriptor> DB::getIndexes(const Txn& txn, const ClassDescriptor& classDescriptor) {
+  const std::vector<IndexDescriptor> DB::getIndexes(const Txn &txn, const ClassDescriptor &classDescriptor) {
     auto classInfo = txn._interface->schema()->getExistingClass(classDescriptor.id);
     auto indexInfos = txn._adapter->dbIndex()->getInfos(classInfo.id);
     auto indexDescriptors = std::vector<IndexDescriptor>{};
-    for(const auto& indexInfo: indexInfos) {
+    for (const auto &indexInfo: indexInfos) {
       indexDescriptors.emplace_back(IndexDescriptor{
-        indexInfo.id,
-        indexInfo.classId,
-        indexInfo.propertyId,
-        indexInfo.isUnique
+          indexInfo.id,
+          indexInfo.classId,
+          indexInfo.propertyId,
+          indexInfo.isUnique
       });
     }
     return indexDescriptors;

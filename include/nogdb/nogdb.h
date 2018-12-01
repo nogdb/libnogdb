@@ -93,6 +93,8 @@ namespace nogdb {
 
     static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
 
+    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const std::string &className);
+
     static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
 
     static const std::vector<IndexDescriptor> getIndexes(const Txn &txn, const ClassDescriptor &classDescriptor);

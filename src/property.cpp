@@ -39,16 +39,16 @@ namespace nogdb {
                                          const std::string &className,
                                          const std::string &propertyName,
                                          PropertyType type) {
-
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
-
-    BEGIN_VALIDATION(&txn)
+    auto validators = BEGIN_VALIDATION(&txn)
         .isTransactionValid()
+        .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
         .isPropertyTypeValid(type)
-        .isPropertyIdMaxReach()
-        .isNotDuplicatedProperty(foundClass.id, propertyName)
-        .isNotOverridenProperty(foundClass.id, propertyName);
+        .isPropertyIdMaxReach();
+
+    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    validators.isNotDuplicatedProperty(foundClass.id, propertyName);
+    validators.isNotOverridenProperty(foundClass.id, propertyName);
 
     try {
       auto propertyId = txn._adapter->dbInfo()->getMaxPropertyId() + PropertyId{1};
@@ -70,14 +70,15 @@ namespace nogdb {
                        const std::string &className,
                        const std::string &oldPropertyName,
                        const std::string &newPropertyName) {
+    auto validators = BEGIN_VALIDATION(&txn)
+        .isTransactionValid()
+        .isClassNameValid(className)
+        .isPropertyNameValid(oldPropertyName)
+        .isPropertyNameValid(newPropertyName);
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
-
-    BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
-        .isPropertyNameValid(newPropertyName)
-        .isNotDuplicatedProperty(foundClass.id, newPropertyName)
-        .isNotOverridenProperty(foundClass.id, newPropertyName);
+    validators.isNotDuplicatedProperty(foundClass.id, newPropertyName);
+    validators.isNotOverridenProperty(foundClass.id, newPropertyName);
 
     auto foundOldProperty = txn._interface->schema()->getExistingProperty(foundClass.id, oldPropertyName);
     try {
@@ -93,7 +94,9 @@ namespace nogdb {
 
   void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTransactionValid()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName);
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
     auto foundProperty = txn._interface->schema()->getExistingProperty(foundClass.id, propertyName);
@@ -118,6 +121,8 @@ namespace nogdb {
   Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName)
         .isIndexIdMaxReach();
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
@@ -159,7 +164,9 @@ namespace nogdb {
 
   void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTransactionValid()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName);
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
     auto foundProperty = txn._interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);

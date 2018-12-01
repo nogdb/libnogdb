@@ -93,7 +93,8 @@ namespace nogdb {
 
   void Class::drop(Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTransactionValid()
+        .isClassNameValid(className);
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
     // retrieve relevant properties information
@@ -158,6 +159,7 @@ namespace nogdb {
   void Class::alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
     BEGIN_VALIDATION(&txn)
         .isTransactionValid()
+        .isClassNameValid(oldClassName)
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);
 
