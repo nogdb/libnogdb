@@ -58,7 +58,7 @@ namespace nogdb {
       txn._interface->graph()->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
       return recordDescriptor;
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -83,7 +83,7 @@ namespace nogdb {
       txn._interface->index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
       // add index if applied in new record
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -105,7 +105,7 @@ namespace nogdb {
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       txn._interface->index()->remove(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -129,7 +129,7 @@ namespace nogdb {
       edgeDataRecord.resultSetIter(callback);
       edgeDataRecord.destroy();
       txn._interface->index()->drop(edgeClassInfo.id, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -152,7 +152,7 @@ namespace nogdb {
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
       auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
       edgeDataRecord.insert(newVertexBlob + dataBlob);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -175,7 +175,7 @@ namespace nogdb {
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
       auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
       edgeDataRecord.insert(newVertexBlob + dataBlob);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }

@@ -45,7 +45,7 @@ namespace nogdb {
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
       return recordDescriptor;
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -69,7 +69,7 @@ namespace nogdb {
       txn._interface->index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
       // add index if applied in new record
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -90,7 +90,7 @@ namespace nogdb {
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       txn._interface->index()->remove(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -113,7 +113,7 @@ namespace nogdb {
       vertexDataRecord.resultSetIter(callback);
       vertexDataRecord.destroy();
       txn._interface->index()->drop(vertexClassInfo.id, propertyNameMapInfo);
-    } catch (const Error &error) {
+    } catch (const Error *error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }

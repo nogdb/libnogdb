@@ -95,20 +95,25 @@ namespace nogdb {
   /**
    *  NogDB generic error definition
    */
+
+  enum class ErrorType {
+    INTERNAL_ERROR, STORAGE_ERROR, GRAPH_ERROR, CONTEXT_ERROR, TXN_ERROR, SQL_ERROR, FATAL_ERROR
+  };
+
   class Error : public std::runtime_error {
   public:
     /**
      * Constructor
      */
-    explicit Error(const int code, const std::string &func, const std::string &file, const int line)
+    explicit Error(const int code, const std::string &func, const std::string &file, const int line, const ErrorType& type)
         : std::runtime_error{func + " in " + file + ":" + std::to_string(line)},
-        _code{code}, _func{func}, _file{file}, _line{line} {}
+          _code{code}, _func{func}, _file{file}, _line{line}, _type{type} {}
 
-    Error(const Error& error) noexcept
+    Error(const Error &error) noexcept
         : std::runtime_error{error._func + " in " + error._file + ":" + std::to_string(error._line)},
-          _code{error._code}, _func{error._func}, _file{error._file}, _line{error._line} {}
+          _code{error._code}, _func{error._func}, _file{error._file}, _line{error._line}, _type{error._type} {}
 
-    Error& operator=(const Error& error) noexcept {
+    Error &operator=(const Error &error) noexcept {
       if (this != &error) {
         auto tmp = Error(error);
         using std::swap;
@@ -131,11 +136,28 @@ namespace nogdb {
       return "NOGDB_UNKNOWN_ERR: Unknown";
     }
 
+    const ErrorType& type() const noexcept {
+      return _type;
+    }
+
+    const std::string func() const noexcept {
+      return _func;
+    }
+
+    const std::string file() const noexcept {
+      return _file;
+    }
+
+    int line() const noexcept {
+      return _line;
+    }
+
   protected:
     const int _code;
     const std::string _func{};
     const std::string _file{};
     const int _line;
+    const ErrorType _type;
   };
 
   /**
@@ -237,8 +259,8 @@ namespace nogdb {
           return "NOGDB_CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
         case NOGDB_CTX_INVALID_PROPERTYNAME:
           return "NOGDB_CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
-        //case NOGDB_CTX_IS_LOCKED:
-        //  return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
+          //case NOGDB_CTX_IS_LOCKED:
+          //  return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
         case NOGDB_CTX_LIMIT_DBSCHEMA:
           return "NOGDB_CTX_LIMIT_DBSCHEMA: A limitation of a database schema has been reached";
         case NOGDB_CTX_NOT_IMPLEMENTED:
@@ -332,23 +354,59 @@ namespace nogdb {
    */
   class FatalError : public Error {
   public:
-    explicit FatalError(const Error &error) : Error{error}, _error{&error} {}
+    explicit FatalError(const Error *error)
+        : Error{error->code(), error->func(), error->file(), error->line(), ErrorType::FATAL_ERROR} {}
+
+    virtual ~FatalError() noexcept = default;
 
     virtual const char *what() const noexcept {
-      return (std::string{"(FATAL)"} + std::string{_error->what()}).c_str();
+      auto what = std::string{"NOGDB_FATAL_UNKNOWN_ERR: Unknown"};
+      switch (type()) {
+        case ErrorType::INTERNAL_ERROR : {
+          auto e = dynamic_cast<const InternalError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        case ErrorType::STORAGE_ERROR : {
+          auto e = dynamic_cast<const StorageError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        case ErrorType::GRAPH_ERROR : {
+          auto e = dynamic_cast<const GraphError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        case ErrorType::CONTEXT_ERROR : {
+          auto e = dynamic_cast<const ContextError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        case ErrorType::TXN_ERROR : {
+          auto e = dynamic_cast<const TxnError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        case ErrorType::SQL_ERROR : {
+          auto e = dynamic_cast<const SQLError *>(_error);
+          what = std::string{e->what()};
+          break;
+        }
+        default: break;
+      }
+      return what.c_str();
     }
 
   private:
-    const Error *const _error;
+    const Error* _error;
   };
 
-#define NOGDB_ERROR(error)              nogdb::Error(error,__FUNCTION__, __FILE__,__LINE__)
-#define NOGDB_INTERNAL_ERROR(error)     nogdb::InternalError(error, __FUNCTION__, __FILE__, __LINE__)
-#define NOGDB_STORAGE_ERROR(error)      nogdb::StorageError(error,__FUNCTION__, __FILE__,__LINE__)
-#define NOGDB_GRAPH_ERROR(error)        nogdb::GraphError(error,__FUNCTION__, __FILE__,__LINE__)
-#define NOGDB_CONTEXT_ERROR(error)      nogdb::ContextError(error,__FUNCTION__, __FILE__,__LINE__)
-#define NOGDB_TXN_ERROR(error)          nogdb::TxnError(error,__FUNCTION__, __FILE__,__LINE__)
-#define NOGDB_SQL_ERROR(error)          nogdb::SQLError(error,__FUNCTION__, __FILE__,__LINE__)
+#define NOGDB_INTERNAL_ERROR(error)     nogdb::InternalError(error, __FUNCTION__, __FILE__, __LINE__, nogdb::ErrorType::INTERNAL_ERROR)
+#define NOGDB_STORAGE_ERROR(error)      nogdb::StorageError(error,__FUNCTION__, __FILE__,__LINE__, nogdb::ErrorType::STORAGE_ERROR)
+#define NOGDB_GRAPH_ERROR(error)        nogdb::GraphError(error,__FUNCTION__, __FILE__,__LINE__, nogdb::ErrorType::GRAPH_ERROR)
+#define NOGDB_CONTEXT_ERROR(error)      nogdb::ContextError(error,__FUNCTION__, __FILE__,__LINE__, nogdb::ErrorType::CONTEXT_ERROR)
+#define NOGDB_TXN_ERROR(error)          nogdb::TxnError(error,__FUNCTION__, __FILE__,__LINE__, nogdb::ErrorType::TXN_ERROR)
+#define NOGDB_SQL_ERROR(error)          nogdb::SQLError(error,__FUNCTION__, __FILE__,__LINE__, nogdb::ErrorType::SQL_ERROR)
 #define NOGDB_FATAL_ERROR(error)        nogdb::FatalError(error)
 
 }

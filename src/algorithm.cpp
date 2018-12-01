@@ -108,8 +108,8 @@ namespace nogdb {
             }
           }
         }
-      } catch (const Error &err) {
-        if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+      } catch (const Error *err) {
+        if (err->code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
           throw NOGDB_FATAL_ERROR(err);
@@ -204,8 +204,8 @@ namespace nogdb {
             --currentLevel;
           }
         }
-      } catch (const Error &err) {
-        if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+      } catch (const Error *err) {
+        if (err->code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
           throw NOGDB_FATAL_ERROR(err);
@@ -293,8 +293,8 @@ namespace nogdb {
             }
           }
         }
-      } catch (const Error &err) {
-        if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+      } catch (const Error *err) {
+        if (err->code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
           throw NOGDB_FATAL_ERROR(err);

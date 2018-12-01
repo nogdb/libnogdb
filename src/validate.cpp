@@ -146,8 +146,8 @@ namespace nogdb {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
-        } catch (const Error &error) {
-          if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+        } catch (const Error *error) {
+          if (error->code() == NOGDB_CTX_NOEXST_RECORD) {
             throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
           } else {
             throw NOGDB_FATAL_ERROR(error);
@@ -165,8 +165,8 @@ namespace nogdb {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
-        } catch (const Error &error) {
-          if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+        } catch (const Error *error) {
+          if (error->code() == NOGDB_CTX_NOEXST_RECORD) {
             throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
           } else {
             throw NOGDB_FATAL_ERROR(error);
@@ -184,8 +184,8 @@ namespace nogdb {
         auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
         try {
           vertexDataRecord.getBlob(vertex.rid.second);
-        } catch (const Error &error) {
-          if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+        } catch (const Error *error) {
+          if (error->code() == NOGDB_CTX_NOEXST_RECORD) {
             throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
           } else {
             throw NOGDB_FATAL_ERROR(error);
