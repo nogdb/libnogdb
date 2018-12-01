@@ -183,7 +183,8 @@ namespace nogdb {
         for (const auto &property: properties) {
           auto propertyId = static_cast<PropertyId>(property.second.id);
           auto rawData = record.get(property.first);
-          require(property.second.id < std::pow(2, UINT16_BITS_COUNT));
+          if (rawData.empty()) continue;
+          require(propertyId < std::pow(2, UINT16_BITS_COUNT));
           require(rawData.size() < std::pow(2, UINT32_BITS_COUNT - 1));
           buildRawData(value, propertyId, rawData);
         }

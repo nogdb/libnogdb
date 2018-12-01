@@ -38,7 +38,7 @@ namespace nogdb {
         DataRecord(const storage_engine::LMDBTxn *const txn,
                    const ClassId &classId,
                    const ClassType &classType = ClassType::UNDEFINED)
-            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, true, true),
+            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, false, true),
               _classId{classId},
               _classType{classType} {}
 
