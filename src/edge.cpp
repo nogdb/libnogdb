@@ -58,7 +58,8 @@ namespace nogdb {
       auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
       auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
       txn._interface->graph()->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
-      txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->insert(recordDescriptor, record, indexInfos);
       return recordDescriptor;
     } catch (const Error& error) {
       txn.rollback();
@@ -83,9 +84,10 @@ namespace nogdb {
       // remove index if applied in existing record
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
-      txn._interface->index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->remove(recordDescriptor, existingRecord, indexInfos);
       // add index if applied in new record
-      txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->insert(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
@@ -108,7 +110,8 @@ namespace nogdb {
       txn._interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
-      txn._interface->index()->remove(recordDescriptor, record, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->remove(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);

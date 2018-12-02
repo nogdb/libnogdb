@@ -45,7 +45,8 @@ namespace nogdb {
       auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
       auto positionId = vertexDataRecord.insert(recordBlob);
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
-      txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->insert(recordDescriptor, record, indexInfos);
       return recordDescriptor;
     } catch (const Error& error) {
       txn.rollback();
@@ -69,9 +70,10 @@ namespace nogdb {
       // remove index if applied in existing record
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
-      txn._interface->index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->remove(recordDescriptor, existingRecord, indexInfos);
       // add index if applied in new record
-      txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->insert(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
@@ -93,7 +95,8 @@ namespace nogdb {
       txn._interface->graph()->removeRelFromVertex(recordDescriptor.rid);
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
-      txn._interface->index()->remove(recordDescriptor, record, propertyNameMapInfo);
+      auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
+      txn._interface->index()->remove(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);

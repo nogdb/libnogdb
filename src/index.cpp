@@ -171,18 +171,12 @@ namespace nogdb {
 
     void IndexInterface::insert(const RecordDescriptor &recordDescriptor,
                                 const Record &record,
-                                const PropertyNameMapInfo &propertyNameMapInfo) {
-      for (const auto &property: record.getAll()) {
-        if (property.second.empty()) continue;
-        auto foundProperty = propertyNameMapInfo.find(property.first);
-        if (foundProperty == propertyNameMapInfo.cend()) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-        } else {
-          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
-          if (indexInfo.id != IndexId{}) {
-            insert(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
-          }
-        }
+                                const PropertyNameMapIndex &propertyNameMapIndex) {
+      for(const auto &info: propertyNameMapIndex) {
+        auto propertyName = info.first;
+        auto propertyInfo = info.second.first;
+        auto indexInfo = info.second.second;
+        insert(propertyInfo, indexInfo, recordDescriptor.rid.second, record.get(propertyName));
       }
     }
 
@@ -232,18 +226,12 @@ namespace nogdb {
 
     void IndexInterface::remove(const RecordDescriptor &recordDescriptor,
                                 const Record &record,
-                                const PropertyNameMapInfo &propertyNameMapInfo) {
-      for (const auto &property: record.getAll()) {
-        if (property.second.empty()) continue;
-        auto foundProperty = propertyNameMapInfo.find(property.first);
-        if (foundProperty == propertyNameMapInfo.cend()) {
-          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
-        } else {
-          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
-          if (indexInfo.id != IndexId{}) {
-            remove(foundProperty->second, indexInfo, recordDescriptor.rid.second, property.second);
-          }
-        }
+                                const PropertyNameMapIndex &propertyNameMapIndex) {
+      for(const auto &info: propertyNameMapIndex) {
+        auto propertyName = info.first;
+        auto propertyInfo = info.second.first;
+        auto indexInfo = info.second.second;
+        remove(propertyInfo, indexInfo, recordDescriptor.rid.second, record.get(propertyName));
       }
     }
 
@@ -260,6 +248,25 @@ namespace nogdb {
         return std::make_pair(indexInfo.id != IndexId{}, indexInfo);
       }
       return std::make_pair(false, IndexAccessInfo{});
+    }
+
+    PropertyNameMapIndex IndexInterface::getIndexInfos(const RecordDescriptor &recordDescriptor,
+                                                       const Record& record,
+                                                       const PropertyNameMapInfo &propertyNameMapInfo) {
+      auto result = std::map<std::string, std::pair<PropertyAccessInfo, IndexAccessInfo>>{};
+      for (const auto &property: record.getAll()) {
+        if (property.second.empty()) continue;
+        auto foundProperty = propertyNameMapInfo.find(property.first);
+        if (foundProperty == propertyNameMapInfo.cend()) {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        } else {
+          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+          if (indexInfo.id != IndexId{}) {
+            result.emplace(property.first, std::make_pair(foundProperty->second, indexInfo));
+          }
+        }
+      }
+      return result;
     }
 
     std::pair<bool, PropertyIdMapIndex>

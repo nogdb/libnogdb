@@ -51,6 +51,8 @@ namespace nogdb {
 
     typedef std::map<PropertyId, IndexAccessInfo> PropertyIdMapIndex;
 
+    typedef std::map<std::string, std::pair<PropertyAccessInfo, IndexAccessInfo>> PropertyNameMapIndex;
+
     class IndexInterface {
     public:
 
@@ -68,15 +70,19 @@ namespace nogdb {
                   const PositionId &posId, const Bytes &value);
 
       void insert(const RecordDescriptor &recordDescriptor,
-                  const Record &record,
-                  const PropertyNameMapInfo &propertyNameMapInfo);
+                  const Record& record,
+                  const PropertyNameMapIndex& propertyNameMapIndex);
 
       void remove(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
                   const PositionId &posId, const Bytes &value);
 
       void remove(const RecordDescriptor &recordDescriptor,
-                  const Record &record,
-                  const PropertyNameMapInfo &propertyNameMapInfo);
+                  const Record& record,
+                  const PropertyNameMapIndex& propertyNameMapIndex);
+
+      PropertyNameMapIndex getIndexInfos(const RecordDescriptor &recordDescriptor,
+                                         const Record& record,
+                                         const PropertyNameMapInfo &propertyNameMapInfo);
 
       std::pair<bool, IndexAccessInfo>
       hasIndex(const ClassAccessInfo &classInfo,
