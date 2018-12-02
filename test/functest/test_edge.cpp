@@ -192,7 +192,7 @@ void test_get_edge() {
     for (const auto &it: res) {
       auto &record = it.record;
       assert(record.getText("@className") == "authors");
-      assert(record.getBigIntU("@version") == 1UL);
+      //assert(record.getBigIntU("@version") == 1UL);
       if (count == 0) {
         assert(record.get("time_used").toIntU() == 365U);
         assert(record.getText("@recordId") == nogdb::rid2str(e1.rid));
@@ -690,7 +690,7 @@ void test_update_edge() {
     assert(res[0].record.get("time_used").toIntU() == 400U);
     assert(res[0].record.getText("@className") == "authors");
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(e1.rid));
-    assert(res[0].record.getBigIntU("@version") == 1ULL);
+    //assert(res[0].record.getBigIntU("@version") == 1ULL);
     //assert(res[0].record.getVersion() == 1ULL);
 
     // update 10 times

@@ -35,6 +35,8 @@ namespace nogdb {
 
       Blob(const Byte *value, const size_t capacity);
 
+      Blob(const Byte *value, const size_t capacity, const size_t size);
+
       ~Blob() noexcept;
 
       Blob(const Blob &binaryObject);

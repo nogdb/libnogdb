@@ -297,6 +297,6 @@ void test_invalid_record_with_bytes() {
 
 void test_invalid_record_property_name() {
   nogdb::Record r{};
-  r.set("hello", 1).set("_hello", 2).set("@className", "not allowed").set("@version", -1).set("@recordId", "-1:-1");
+  r.set("hello", 1).set("_hello", 2).set("@className", "not allowed").set("@recordId", "-1:-1");
   assert(r.size() == 2);
 }

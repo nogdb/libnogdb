@@ -40,11 +40,11 @@ namespace nogdb {
                                          const std::string &propertyName,
                                          PropertyType type) {
     auto validators = BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
         .isPropertyTypeValid(type)
-        .isPropertyIdMaxReach();
+        .isTxnValid();
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
     validators.isNotDuplicatedProperty(foundClass.id, propertyName);
@@ -71,7 +71,7 @@ namespace nogdb {
                        const std::string &oldPropertyName,
                        const std::string &newPropertyName) {
     auto validators = BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isPropertyNameValid(oldPropertyName)
         .isPropertyNameValid(newPropertyName);
@@ -94,7 +94,7 @@ namespace nogdb {
 
   void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
@@ -120,10 +120,10 @@ namespace nogdb {
   const IndexDescriptor
   Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
-        .isIndexIdMaxReach();
+        .isTxnValid();
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
     auto foundProperty = txn._interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);
@@ -164,7 +164,7 @@ namespace nogdb {
 
   void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 

@@ -223,7 +223,7 @@ void test_get_vertex_v2() {
     assert(obj_tmp.z == 424242);
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(rdesc.rid));
     assert(res[0].record.getText("@className") == "test");
-    assert(res[0].record.getBigIntU("@version") == 1UL);
+    //assert(res[0].record.getBigIntU("@version") == 1UL);
     assert(res[0].record.getIntU("@depth") == 0U);
 
     txn.commit();
@@ -392,14 +392,14 @@ void test_update_vertex() {
     assert(res[0].record.get("pages").toInt() == 400);
     assert(res[0].record.get("words").toBigIntU() == 90000ULL);
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(rdesc1.rid));
-    assert(res[0].record.getBigIntU("@version") == 1ULL);
+    //assert(res[0].record.getBigIntU("@version") == 1ULL);
     //assert(res[0].record.getVersion() == 1ULL);
 
     assert(res[1].record.get("title").toText() == "Tarzan");
     assert(res[1].record.get("price").toReal() == 60);
     assert(res[1].record.get("pages").toInt() == 360);
     assert(res[1].record.getText("@recordId") == nogdb::rid2str(rdesc2.rid));
-    assert(res[1].record.getBigIntU("@version") == 1ULL);
+    //assert(res[1].record.getBigIntU("@version") == 1ULL);
     //assert(res[1].record.getVersion() == 1ULL);
 
     nogdb::Vertex::update(txn, rdesc1, nogdb::Record{});

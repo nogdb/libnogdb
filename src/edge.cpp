@@ -42,7 +42,9 @@ namespace nogdb {
                                       const RecordDescriptor &dstVertexRecordDescriptor,
                                       const Record &record) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
+        .isTxnCompleted()
+        .isClassNameValid(className)
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
@@ -52,7 +54,7 @@ namespace nogdb {
     try {
       auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
       auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
-                                                              dstVertexRecordDescriptor.rid);
+                                                                    dstVertexRecordDescriptor.rid);
       auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
       auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
       txn._interface->graph()->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
@@ -66,7 +68,8 @@ namespace nogdb {
 
   void Edge::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
@@ -91,7 +94,8 @@ namespace nogdb {
 
   void Edge::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
@@ -113,7 +117,9 @@ namespace nogdb {
 
   void Edge::destroy(Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     try {
@@ -139,7 +145,8 @@ namespace nogdb {
                        const RecordDescriptor &recordDescriptor,
                        const RecordDescriptor &newSrcVertexRecordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
+        .isTxnCompleted()
         .isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
@@ -162,7 +169,8 @@ namespace nogdb {
                        const RecordDescriptor &recordDescriptor,
                        const RecordDescriptor &newDstVertexDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
+        .isTxnCompleted()
         .isExistingSrcVertex(newDstVertexDescriptor);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
@@ -183,7 +191,8 @@ namespace nogdb {
 
   ResultSet Edge::get(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     return txn._interface->record()->getResultSet(edgeClassInfo);
@@ -191,7 +200,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtend(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -207,7 +217,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     return txn._interface->record()->getResultSetCursor(edgeClassInfo);
@@ -215,7 +226,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -229,7 +241,7 @@ namespace nogdb {
 
   Result Edge::getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -240,7 +252,7 @@ namespace nogdb {
 
   Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -251,7 +263,7 @@ namespace nogdb {
 
   ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -269,7 +281,8 @@ namespace nogdb {
 
   ResultSet Edge::get(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -278,7 +291,8 @@ namespace nogdb {
 
   ResultSet Edge::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -287,7 +301,8 @@ namespace nogdb {
 
   ResultSet Edge::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -296,7 +311,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -313,7 +329,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -329,7 +346,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtend(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -346,7 +364,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -356,7 +375,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto result = txn._interface->record()->getRecordDescriptorByCmpFunction(edgeClassInfo, condition);
@@ -365,7 +385,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -375,7 +396,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -393,7 +415,8 @@ namespace nogdb {
   ResultSetCursor
   Edge::getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -408,7 +431,8 @@ namespace nogdb {
   ResultSetCursor
   Edge::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -425,7 +449,8 @@ namespace nogdb {
 
   ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -434,7 +459,8 @@ namespace nogdb {
 
   ResultSet Edge::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -443,7 +469,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -460,7 +487,8 @@ namespace nogdb {
 
   ResultSet Edge::getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -477,7 +505,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -488,7 +517,8 @@ namespace nogdb {
   ResultSetCursor
   Edge::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
@@ -498,7 +528,8 @@ namespace nogdb {
 
   ResultSetCursor Edge::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -516,7 +547,8 @@ namespace nogdb {
   ResultSetCursor
   Edge::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};

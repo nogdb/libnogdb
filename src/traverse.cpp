@@ -35,7 +35,7 @@ namespace nogdb {
                                 const GraphFilter &edgeFilter,
                                 const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -50,7 +50,7 @@ namespace nogdb {
                                             const GraphFilter &edgeFilter,
                                             const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -66,7 +66,7 @@ namespace nogdb {
                                  const GraphFilter &edgeFilter,
                                  const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -81,7 +81,7 @@ namespace nogdb {
                                              const GraphFilter &edgeFilter,
                                              const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -97,7 +97,7 @@ namespace nogdb {
                                  const GraphFilter &edgeFilter,
                                  const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -112,7 +112,7 @@ namespace nogdb {
                                              const GraphFilter &edgeFilter,
                                              const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -128,7 +128,7 @@ namespace nogdb {
                                 const GraphFilter &edgeFilter,
                                 const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -143,7 +143,7 @@ namespace nogdb {
                                             const GraphFilter &edgeFilter,
                                             const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -159,7 +159,7 @@ namespace nogdb {
                                  const GraphFilter &edgeFilter,
                                  const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -174,7 +174,7 @@ namespace nogdb {
                                              const GraphFilter &edgeFilter,
                                              const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -190,7 +190,7 @@ namespace nogdb {
                                  const GraphFilter &edgeFilter,
                                  const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -205,7 +205,7 @@ namespace nogdb {
                                              const GraphFilter &edgeFilter,
                                              const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
@@ -220,7 +220,7 @@ namespace nogdb {
                                    const GraphFilter &edgeFilter,
                                    const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
@@ -237,7 +237,7 @@ namespace nogdb {
                                                const GraphFilter &edgeFilter,
                                                const GraphFilter &vertexFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnCompleted()
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 

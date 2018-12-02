@@ -44,6 +44,12 @@ namespace nogdb {
       std::copy(value, value + capacity, _value);
     }
 
+    Blob::Blob(const Byte *value, const size_t capacity, const size_t size)
+        : _capacity{capacity}, _size{size}, _value{nullptr} {
+      _value = new(std::nothrow) Byte[capacity]{};
+      std::copy(value, value + size, _value);
+    }
+
     Blob::~Blob() noexcept {
       delete[] _value;
     }
@@ -100,7 +106,7 @@ namespace nogdb {
 
     Blob Blob::operator+(const Blob &suffix) const {
       auto capacity = _capacity + suffix._capacity;
-      auto blob = Blob{_value, capacity};
+      auto blob = Blob{_value, capacity, _size};
       blob.append(suffix._value, suffix._size);
       return blob;
     }

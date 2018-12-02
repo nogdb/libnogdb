@@ -42,7 +42,9 @@ namespace nogdb {
 
       virtual ~Validator() noexcept = default;
 
-      Validator &isTransactionValid();
+      Validator &isTxnValid();
+
+      Validator &isTxnCompleted();
 
       Validator &isClassIdMaxReach();
 

@@ -33,10 +33,14 @@ namespace nogdb {
     using namespace adapter::schema;
 
 
-    Validator &Validator::isTransactionValid() {
+    Validator &Validator::isTxnValid() {
       if (_txn->getTxnMode() == Txn::Mode::READ_ONLY) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
       }
+      return *this;
+    }
+
+    Validator &Validator::isTxnCompleted() {
       if (_txn->isCompleted()) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
       }

@@ -43,8 +43,8 @@ namespace nogdb {
 
   const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
-        .isClassIdMaxReach()
+        .isTxnValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isClassTypeValid(type)
         .isNotDuplicatedClass(className);
@@ -68,8 +68,8 @@ namespace nogdb {
   const ClassDescriptor
   Class::createExtend(Txn &txn, const std::string &className, const std::string &superClass) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
-        .isClassIdMaxReach()
+        .isTxnValid()
+        .isTxnValid()
         .isClassNameValid(className)
         .isClassNameValid(superClass)
         .isNotDuplicatedClass(className);
@@ -93,7 +93,7 @@ namespace nogdb {
 
   void Class::drop(Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(className);
 
     auto foundClass = txn._interface->schema()->getExistingClass(className);
@@ -158,7 +158,7 @@ namespace nogdb {
 
   void Class::alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid()
+        .isTxnValid()
         .isClassNameValid(oldClassName)
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);

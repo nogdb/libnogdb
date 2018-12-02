@@ -252,7 +252,7 @@ namespace nogdb {
         case NOGDB_CTX_MISMATCH_CLASSTYPE:
           return "NOGDB_CTX_MISMATCH_CLASSTYPE: A type of a class does not match as expected";
         case NOGDB_CTX_INTERNAL_ERR:
-          return "NOGDB_CTX_INTERNAL_ERROR: Oops! there might be some errors internally";
+          return "NOGDB_CTX_INTERNAL_ERROR: Oops! there might be some internal errors";
         case NOGDB_CTX_INVALID_COMPARATOR:
           return "NOGDB_CTX_INVALID_COMPARATOR: A comparator is not defined";
         case NOGDB_CTX_INVALID_CLASSNAME:
@@ -394,7 +394,7 @@ namespace nogdb {
         }
         default: break;
       }
-      return what.c_str();
+      return (std::string{"(FATAL) "} + what).c_str();
     }
 
   private:

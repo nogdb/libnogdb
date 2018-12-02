@@ -34,7 +34,9 @@ namespace nogdb {
 
   const RecordDescriptor Vertex::create(Txn &txn, const std::string &className, const Record &record) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -53,7 +55,8 @@ namespace nogdb {
 
   void Vertex::update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
@@ -77,7 +80,8 @@ namespace nogdb {
 
   void Vertex::destroy(Txn &txn, const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
@@ -98,7 +102,9 @@ namespace nogdb {
 
   void Vertex::destroy(Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnValid()
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     try {
@@ -121,7 +127,8 @@ namespace nogdb {
 
   ResultSet Vertex::get(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     return txn._interface->record()->getResultSet(vertexClassInfo);
@@ -129,7 +136,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtend(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -146,7 +154,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     return txn._interface->record()->getResultSetCursor(vertexClassInfo);
@@ -154,7 +163,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -168,7 +178,7 @@ namespace nogdb {
 
   ResultSet Vertex::getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
@@ -185,7 +195,7 @@ namespace nogdb {
 
   ResultSet Vertex::getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
@@ -202,7 +212,7 @@ namespace nogdb {
 
   ResultSet Vertex::getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};
@@ -223,7 +233,7 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
@@ -240,7 +250,7 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
@@ -257,7 +267,7 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted();
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};
@@ -278,7 +288,8 @@ namespace nogdb {
 
   ResultSet Vertex::get(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -287,7 +298,8 @@ namespace nogdb {
 
   ResultSet Vertex::get(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -296,7 +308,8 @@ namespace nogdb {
 
   ResultSet Vertex::get(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -305,7 +318,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -322,7 +336,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -338,7 +353,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtend(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -355,7 +371,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -365,7 +382,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto result = txn._interface->record()->getRecordDescriptorByCmpFunction(vertexClassInfo, condition);
@@ -375,7 +393,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -385,7 +404,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -403,7 +423,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &)) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -418,7 +439,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -435,7 +457,8 @@ namespace nogdb {
 
   ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -444,7 +467,8 @@ namespace nogdb {
 
   ResultSet Vertex::getIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -453,7 +477,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -470,7 +495,8 @@ namespace nogdb {
 
   ResultSet Vertex::getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -487,7 +513,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -498,7 +525,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
@@ -509,7 +537,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
@@ -527,7 +556,8 @@ namespace nogdb {
   ResultSetCursor
   Vertex::getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &multiCondition) {
     BEGIN_VALIDATION(&txn)
-        .isTransactionValid();
+        .isTxnCompleted()
+        .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
