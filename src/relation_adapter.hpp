@@ -63,7 +63,7 @@ namespace nogdb {
 
         RelationAccess(const storage_engine::LMDBTxn *const txn, const Direction &direction)
             : LMDBKeyValAccess(txn, (direction == Direction::IN) ? TB_RELATIONS_IN : TB_RELATIONS_OUT,
-                               true, false, false, false),
+                               true, false, false, true),
               _direction{direction} {}
 
         virtual ~RelationAccess() noexcept = default;

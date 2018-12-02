@@ -107,7 +107,7 @@ namespace nogdb {
           (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
       _adapter = new Adapter(_txnBase);
       _interface = new Interface(this);
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       try { rollback(); } catch (...) {}
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -148,7 +148,7 @@ namespace nogdb {
       try {
         _txnBase->commit();
         _txnBase = nullptr;
-      } catch (const Error *err) {
+      } catch (const Error& err) {
         try { rollback(); } catch (...) {}
         throw NOGDB_FATAL_ERROR(err);
       } catch (...) {

@@ -159,8 +159,8 @@ namespace nogdb {
             default:
               break;
           }
-        } catch (const Error *err) {
-          if (err->code() == MDB_KEYEXIST) {
+        } catch (const Error& err) {
+          if (err.code() == MDB_KEYEXIST) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNIQUE_CONSTRAINT);
           } else {
             throw NOGDB_FATAL_ERROR(err);

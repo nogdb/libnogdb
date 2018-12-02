@@ -146,10 +146,9 @@ namespace nogdb {
       } else {
         if (filter.filter._function != nullptr) {
           return (*filter.filter._function)(record) ? Result{recordDescriptor, record} : Result{};
-        } else {
-          return Result{};
         }
       }
+      return Result{recordDescriptor, record};
     }
 
     std::vector<RecordDescriptor>

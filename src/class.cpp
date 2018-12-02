@@ -56,7 +56,7 @@ namespace nogdb {
       txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
       DataRecord(txn._txnBase, classId, type).init();
       return ClassDescriptor{classId, className, ClassId{0}, type};
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -82,7 +82,7 @@ namespace nogdb {
       txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
       DataRecord(txn._txnBase, classId, superClassInfo.type).init();
       return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -147,7 +147,7 @@ namespace nogdb {
       txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() - ClassId{1});
       txn._adapter->dbInfo()->setNumPropertyId(
           txn._adapter->dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -166,7 +166,7 @@ namespace nogdb {
     auto foundClass = txn._interface->schema()->getExistingClass(oldClassName);
     try {
       txn._adapter->dbClass()->alterClassName(oldClassName, newClassName);
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {

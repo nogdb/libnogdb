@@ -47,7 +47,7 @@ namespace nogdb {
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
       return recordDescriptor;
-    } catch (const Error *error) {
+    } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -65,14 +65,14 @@ namespace nogdb {
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       // insert an updated record
-      vertexDataRecord.insert(newRecordBlob);
+      vertexDataRecord.update(recordDescriptor.rid.second, newRecordBlob);
       // remove index if applied in existing record
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
       txn._interface->index()->remove(recordDescriptor, existingRecord, propertyNameMapInfo);
       // add index if applied in new record
       txn._interface->index()->insert(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error *error) {
+    } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -94,7 +94,7 @@ namespace nogdb {
       // remove index if applied in the record
       auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       txn._interface->index()->remove(recordDescriptor, record, propertyNameMapInfo);
-    } catch (const Error *error) {
+    } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -119,7 +119,7 @@ namespace nogdb {
       vertexDataRecord.resultSetIter(callback);
       vertexDataRecord.destroy();
       txn._interface->index()->drop(vertexClassInfo.id, propertyNameMapInfo);
-    } catch (const Error *error) {
+    } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
     }
@@ -178,7 +178,8 @@ namespace nogdb {
 
   ResultSet Vertex::getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
@@ -195,7 +196,8 @@ namespace nogdb {
 
   ResultSet Vertex::getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
@@ -212,7 +214,8 @@ namespace nogdb {
 
   ResultSet Vertex::getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};
@@ -233,7 +236,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
@@ -250,7 +254,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
@@ -267,7 +272,8 @@ namespace nogdb {
 
   ResultSetCursor Vertex::getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter) {
     BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+        .isTxnCompleted()
+        .isExistingVertex(recordDescriptor);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::set<RecordId>{};

@@ -57,7 +57,7 @@ namespace nogdb {
       txn._adapter->dbInfo()->setMaxPropertyId(propertyId);
       txn._adapter->dbInfo()->setNumPropertyId(txn._adapter->dbInfo()->getNumPropertyId() + PropertyId{1});
       return PropertyDescriptor{propertyProps.id, propertyName, type, false};
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -83,7 +83,7 @@ namespace nogdb {
     auto foundOldProperty = txn._interface->schema()->getExistingProperty(foundClass.id, oldPropertyName);
     try {
       txn._adapter->dbProperty()->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -108,7 +108,7 @@ namespace nogdb {
     try {
       txn._adapter->dbProperty()->remove(foundClass.id, propertyName);
       txn._adapter->dbInfo()->setNumPropertyId(txn._adapter->dbInfo()->getNumPropertyId() - PropertyId{1});
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
@@ -149,8 +149,8 @@ namespace nogdb {
         foundProperty.id,
         isUnique
       };
-    } catch (const Error *err) {
-      if (err->code() == MDB_KEYEXIST) {
+    } catch (const Error& err) {
+      if (err.code() == MDB_KEYEXIST) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
       } else {
         txn.rollback();
@@ -180,7 +180,7 @@ namespace nogdb {
       // remove all index data from index database
       txn._interface->index()->drop(foundProperty, indexInfo);
       txn._adapter->dbInfo()->setNumIndexId(txn._adapter->dbInfo()->getNumIndexId() - IndexId{1});
-    } catch (const Error *err) {
+    } catch (const Error& err) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {

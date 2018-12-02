@@ -525,7 +525,7 @@ void test_update_invalid_vertex() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_VERTEX, "NOGDB_GRAPH_NOEXST_VERTEX");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
   destroy_edge_author();
   destroy_vertex_book();
@@ -547,7 +547,6 @@ void test_delete_vertex_only() {
     assert(res[0].record.get("title").toText() == "Tarzan");
     assert(res[0].record.get("price").toReal() == 60);
     assert(res[0].record.get("pages").toInt() == 360);
-    nogdb::Vertex::destroy(txn, rdesc1);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -676,8 +675,8 @@ void test_get_edge_in() {
     assert(in_edges.size() == 0);
     in_edges = nogdb::Vertex::getInEdge(txn, v2_1);
     assert(in_edges.size() == 2);
-    assert(in_edges[0].record.get("time_used").toIntU() == 180U);
-    assert(in_edges[1].record.get("time_used").toIntU() == 365U);
+    assert(in_edges[0].record.get("time_used").toIntU() == 365U);
+    assert(in_edges[1].record.get("time_used").toIntU() == 180U);
     in_edges = nogdb::Vertex::getInEdge(txn, v2_2);
     assert(in_edges.size() == 1);
     assert(in_edges[0].record.get("time_used").toIntU() == 430U);
@@ -1045,9 +1044,9 @@ void test_get_edge_in_cursor() {
     in_edges = nogdb::Vertex::getInEdgeCursor(txn, v2_1);
     assert(in_edges.size() == 2);
     in_edges.next();
-    assert(in_edges->record.get("time_used").toIntU() == 180U);
-    in_edges.next();
     assert(in_edges->record.get("time_used").toIntU() == 365U);
+    in_edges.next();
+    assert(in_edges->record.get("time_used").toIntU() == 180U);
     in_edges = nogdb::Vertex::getInEdgeCursor(txn, v2_2);
     assert(in_edges.size() == 1);
     in_edges.first();
