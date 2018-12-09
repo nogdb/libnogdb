@@ -55,7 +55,7 @@ namespace nogdb {
       if (foundProperty.type == PropertyType::UNDEFINED) {
         auto superClassId = _txn->_adapter->dbClass()->getSuperClassId(classId);
         if (superClassId != ClassId{}) {
-          return getExistingPropertyExtend(classId, propertyName);
+          return getExistingPropertyExtend(superClassId, propertyName);
         } else {
           throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
