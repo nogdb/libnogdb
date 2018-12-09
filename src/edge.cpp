@@ -80,7 +80,7 @@ namespace nogdb {
     try {
       // insert an updated record
       auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
-      edgeDataRecord.insert(vertexBlob + newRecordBlob);
+      edgeDataRecord.update(recordDescriptor.rid.second, vertexBlob + newRecordBlob);
       // remove index if applied in existing record
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
@@ -161,7 +161,7 @@ namespace nogdb {
                                 srcDstVertex.second);
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
       auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
-      edgeDataRecord.insert(newVertexBlob + dataBlob);
+      edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);
@@ -185,7 +185,7 @@ namespace nogdb {
                                 srcDstVertex.second);
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcDstVertex.first, newDstVertexDescriptor.rid);
       auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
-      edgeDataRecord.insert(newVertexBlob + dataBlob);
+      edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
     } catch (const Error& error) {
       txn.rollback();
       throw NOGDB_FATAL_ERROR(error);

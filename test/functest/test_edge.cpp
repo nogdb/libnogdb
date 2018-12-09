@@ -506,7 +506,7 @@ void test_get_invalid_vertex_src() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   destroy_edge_author();
@@ -579,7 +579,7 @@ void test_get_invalid_vertex_dst() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   destroy_edge_author();
@@ -652,7 +652,7 @@ void test_get_invalid_vertex_all() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   destroy_edge_author();
@@ -746,7 +746,7 @@ void test_update_invalid_edge() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -1353,7 +1353,6 @@ void test_get_edge_cursor() {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
-  txn.commit();
 
   destroy_edge_author();
   destroy_vertex_person();

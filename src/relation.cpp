@@ -102,17 +102,9 @@ namespace nogdb {
       std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
         return std::make_shared<DataRecord>(_txn->_txnBase, recordId.first, ClassType::EDGE);
       };
-      try {
-        auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
-        auto rawData = edgeDataRecord->getBlob(recordId.second);
-        return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData);
-      } catch (const Error &err) {
-        if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
-          throw err;
-        }
-      }
-      return {RecordId{}, RecordId{}};
+      auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
+      auto rawData = edgeDataRecord->getBlob(recordId.second);
+      return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData);
     }
-
   }
 }

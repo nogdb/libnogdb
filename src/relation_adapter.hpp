@@ -131,7 +131,7 @@ namespace nogdb {
       protected:
 
         static Blob convertToBlob(const RelationAccessInfo &props) {
-          auto totalLength = 2 * sizeof(ClassId) + 2 * sizeof(PositionId);
+          auto totalLength = 2 * (sizeof(ClassId) + sizeof(PositionId));
           auto value = Blob(totalLength);
           value.append(&props.edgeId.first, sizeof(ClassId));
           value.append(&props.edgeId.second, sizeof(PositionId));
