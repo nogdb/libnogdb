@@ -75,10 +75,10 @@ namespace nogdb {
           });
     }
     // inherited properties
-    auto inheritResult = std::vector<schema::PropertyAccessInfo>{};
-    for (const auto &property: txn._interface->schema()->getInheritPropertyInfo(
+    auto inheritResult = txn._interface->schema()->getInheritPropertyInfo(
         txn._adapter->dbClass()->getSuperClassId(foundClass.id),
-        inheritResult)) {
+        std::vector<schema::PropertyAccessInfo>{});
+    for (const auto &property: inheritResult) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,
@@ -104,10 +104,10 @@ namespace nogdb {
           });
     }
     // inherited properties
-    auto inheritResult = std::vector<schema::PropertyAccessInfo>{};
-    for (const auto &property: txn._interface->schema()->getInheritPropertyInfo(
+    auto inheritResult = txn._interface->schema()->getInheritPropertyInfo(
         txn._adapter->dbClass()->getSuperClassId(foundClass.id),
-        inheritResult)) {
+        std::vector<schema::PropertyAccessInfo>{});
+    for (const auto &property: inheritResult) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,

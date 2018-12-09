@@ -132,7 +132,7 @@ namespace nogdb {
       offset = blob.retrieve(&srcVertexRid.first, offset, sizeof(ClassId));
       offset = blob.retrieve(&srcVertexRid.second, offset, sizeof(PositionId));
       offset = blob.retrieve(&dstVertexRid.first, offset, sizeof(ClassId));
-      blob.retrieve(&dstVertexRid.first, offset, sizeof(PositionId));
+      offset = blob.retrieve(&dstVertexRid.second, offset, sizeof(PositionId));
       return std::make_pair(srcVertexRid, dstVertexRid);
     }
 

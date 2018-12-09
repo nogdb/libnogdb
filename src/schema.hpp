@@ -64,13 +64,12 @@ namespace nogdb {
         return foundClass;
       }
 
-      std::map<std::string, ClassAccessInfo>
-      getSubClassInfos(const ClassId &classId, std::map<std::string, ClassAccessInfo> &result);
+      std::map<std::string, ClassAccessInfo> getSubClassInfos(const ClassId &classId);
 
       std::vector<PropertyAccessInfo> getNativePropertyInfo(const ClassId &classId);
 
       std::vector<PropertyAccessInfo>
-      getInheritPropertyInfo(const ClassId &superClassId, std::vector<PropertyAccessInfo> &result);
+      getInheritPropertyInfo(const ClassId &superClassId, const std::vector<PropertyAccessInfo> &result);
 
       PropertyNameMapInfo
       getPropertyNameMapInfo(const ClassId &classId, const ClassId &superClassId);

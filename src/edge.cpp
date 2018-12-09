@@ -207,8 +207,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -233,8 +232,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(classNameMapInfo.second));
@@ -318,8 +316,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -336,8 +333,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -353,8 +349,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -403,8 +398,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -422,8 +416,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
@@ -438,8 +431,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -476,8 +468,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -494,8 +485,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -535,8 +525,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -554,8 +543,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto edgeClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id, edgeClassInfoExtend);
+    auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;

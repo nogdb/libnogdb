@@ -143,8 +143,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -170,8 +169,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(classNameMapInfo.second));
@@ -331,8 +329,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -349,8 +346,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -366,8 +362,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -417,8 +412,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -436,8 +430,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
@@ -452,8 +445,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -490,8 +482,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -508,8 +499,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -550,8 +540,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
@@ -569,8 +558,7 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto vertexClassInfoExtend = std::map<std::string, schema::ClassAccessInfo>{};
-    vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id, vertexClassInfoExtend);
+    auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
