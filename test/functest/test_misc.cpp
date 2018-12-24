@@ -32,12 +32,11 @@ void test_get_set_empty_value() {
     auto rdesc1 = nogdb::Vertex::create(txn, "persons", r_blank_name);
     auto r1 = nogdb::DB::getRecord(txn, rdesc1);
     assert(r1.get("name").toText() == "");
-    assert(r1.get("name").toText() == "\0");
     assert(r1.get("name").empty());
 
     auto rdesc2 = nogdb::Vertex::create(txn, "persons");
     auto r2 = nogdb::DB::getRecord(txn, rdesc2);
-    assert(r2.empty() == true);
+    assert(r2.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -534,6 +533,17 @@ void test_drop_class_with_relations() {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
+
+  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  try {
+    nogdb::Class::drop(txn, "myedge1");
+    nogdb::Class::drop(txn, "myedge2");
+    nogdb::Class::drop(txn, "myvertex2");
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 void test_drop_and_find_extended_class() {
@@ -566,9 +576,10 @@ void test_drop_and_find_extended_class() {
 
     auto classDesc = nogdb::DB::getClass(txn, "vertex1");
     auto count = size_t{0};
-    for (const auto &classDesc: nogdb::DB::getClasses(txn)) {
-      if (classDesc.base == classDesc.id) {
-        assert(classDesc.name == "vertex3" || classDesc.name == "vertex4");
+    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
+      if (cdesc.base == classDesc.id) {
+        ++count;
+        assert(cdesc.name == "vertex3" || cdesc.name == "vertex4");
       }
     }
     assert(count == 2);

@@ -69,9 +69,7 @@ namespace nogdb {
           break;
         default:
           if (!record.get(condition.propName).empty()) {
-            if (compareBytesValue(record.get(condition.propName), propertyType, condition)) {
-              return false;
-            }
+            return compareBytesValue(record.get(condition.propName), propertyType, condition);
           }
           break;
       }

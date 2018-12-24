@@ -54,8 +54,8 @@ namespace nogdb {
       if (isEdge) {
         offset = VERTEX_SRC_DST_RAW_DATA_LENGTH;
       }
-      if (rawDataBlob.capacity() == 0) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+      if (rawDataBlob.capacity() == 0 || rawDataBlob.size() - offset == 1) {
+        return Record{};
       } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
         //TODO: should be concerned about ENDIAN?
         // NOTE: each property block consists of property id, flag, size, and value
