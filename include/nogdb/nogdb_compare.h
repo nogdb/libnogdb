@@ -122,22 +122,15 @@ namespace nogdb {
 
   private:
 
-    union CmpFilter {
-      std::shared_ptr<Condition> _condition;
-      std::shared_ptr<MultiCondition> _multiCondition;
+    FilterMode _mode;
 
-      bool (*_function)(const Record &record);
+    //TODO: can be improved by using std::varient in c++17
+    std::shared_ptr<Condition> _condition{};
+    std::shared_ptr<MultiCondition> _multiCondition{};
+    bool (*_function)(const Record &record);
 
-      CmpFilter() {}
-
-      ~CmpFilter() {}
-    };
-
-    FilterMode mode;
-    CmpFilter filter;
-
-    std::set<std::string> onlyClasses{};
-    std::set<std::string> ignoreClasses{};
+    std::set<std::string> _onlyClasses{};
+    std::set<std::string> _ignoreClasses{};
 
   };
 

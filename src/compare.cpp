@@ -81,7 +81,7 @@ namespace nogdb {
                                                  const Condition &condition) {
       auto foundProperty = propertyNameMapInfo.find(condition.propName);
       if (foundProperty == propertyNameMapInfo.cend()) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        return false;
       }
       return compareRecordByCondition(record, foundProperty->second.type, condition);
     }
@@ -97,10 +97,9 @@ namespace nogdb {
         auto foundConditionProperty = propertyTypes.find(condition.propName);
         if (foundConditionProperty == propertyTypes.cend()) {
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
-          if (foundProperty == propertyNameMapInfo.cend()) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+          if (foundProperty != propertyNameMapInfo.cend()) {
+            propertyTypes.emplace(condition.propName, foundProperty->second.type);
           }
-          propertyTypes.emplace(condition.propName, foundProperty->second.type);
         }
       }
       return multiCondition.execute(record, propertyTypes);
@@ -117,33 +116,33 @@ namespace nogdb {
                                        const GraphFilter &filter) {
       auto classInfo = txn._adapter->dbClass()->getInfo(recordDescriptor.rid.first);
       // filter classes
-      if (!filter.onlyClasses.empty()) {
-        if (filter.onlyClasses.find(classInfo.name) == filter.onlyClasses.cend()) {
+      if (!filter._onlyClasses.empty()) {
+        if (filter._onlyClasses.find(classInfo.name) == filter._onlyClasses.cend()) {
           return Result{};
         }
       }
       // filter excluded classes
-      if (!filter.ignoreClasses.empty()) {
-        if (filter.ignoreClasses.find(classInfo.name) != filter.ignoreClasses.cend()) {
+      if (!filter._ignoreClasses.empty()) {
+        if (filter._ignoreClasses.find(classInfo.name) != filter._ignoreClasses.cend()) {
           return Result{};
         }
       }
 
       auto record = txn._interface->record()->getRecord(classInfo, recordDescriptor);
-      if (filter.mode == GraphFilter::FilterMode::CONDITION) {
-        auto condition = filter.filter._condition.get();
+      if (filter._mode == GraphFilter::FilterMode::CONDITION) {
+        auto condition = filter._condition.get();
         auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
-      } else if (filter.mode == GraphFilter::FilterMode::MULTI_CONDITION) {
-        auto multiCondition = filter.filter._multiCondition.get();
+      } else if (filter._mode == GraphFilter::FilterMode::MULTI_CONDITION) {
+        auto multiCondition = filter._multiCondition.get();
         auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
             record, propertyNameMapInfo, *multiCondition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
       } else {
-        if (filter.filter._function != nullptr) {
-          return (*filter.filter._function)(record) ? Result{recordDescriptor, record} : Result{};
+        if (filter._function != nullptr) {
+          return (*filter._function)(record) ? Result{recordDescriptor, record} : Result{};
         }
       }
       return Result{recordDescriptor, record};

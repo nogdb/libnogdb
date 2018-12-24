@@ -24,36 +24,36 @@
 namespace nogdb {
 
   GraphFilter::GraphFilter() {
-    filter._function = nullptr;
-    mode = FilterMode::COMPARE_FUNCTION;
+    _function = nullptr;
+    _mode = FilterMode::COMPARE_FUNCTION;
   }
 
   GraphFilter::GraphFilter(const Condition& condition) {
-    filter._condition = std::make_shared<Condition>(condition);
-    mode = FilterMode::CONDITION;
+    _condition = std::make_shared<Condition>(condition);
+    _mode = FilterMode::CONDITION;
   }
 
   GraphFilter::GraphFilter(const MultiCondition& multiCondition) {
-    filter._multiCondition = std::make_shared<MultiCondition>(multiCondition);
-    mode = FilterMode::MULTI_CONDITION;
+    _multiCondition = std::make_shared<MultiCondition>(multiCondition);
+    _mode = FilterMode::MULTI_CONDITION;
   }
 
   GraphFilter::GraphFilter(bool (*function)(const Record &record)) {
-    filter._function = function;
-    mode = FilterMode::COMPARE_FUNCTION;
+    _function = function;
+    _mode = FilterMode::COMPARE_FUNCTION;
   }
 
   GraphFilter::GraphFilter(const GraphFilter& other)
-    : mode{other.mode}, onlyClasses{other.onlyClasses}, ignoreClasses{other.ignoreClasses} {
-    switch(mode) {
+    : _mode{other._mode}, _onlyClasses{other._onlyClasses}, _ignoreClasses{other._ignoreClasses} {
+    switch(_mode) {
       case FilterMode::CONDITION:
-        filter._condition = other.filter._condition;
+        _condition = other._condition;
         break;
       case FilterMode::MULTI_CONDITION:
-        filter._multiCondition = other.filter._multiCondition;
+        _multiCondition = other._multiCondition;
         break;
       case FilterMode::COMPARE_FUNCTION:
-        filter._function = other.filter._function;
+        _function = other._function;
         break;
     }
   }
@@ -75,19 +75,19 @@ namespace nogdb {
 
   GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept {
     if (this != &other) {
-      mode = other.mode;
-      onlyClasses = std::move(other.onlyClasses);
-      ignoreClasses = std::move(other.ignoreClasses);
-      switch(mode) {
+      _mode = other._mode;
+      _onlyClasses = std::move(other._onlyClasses);
+      _ignoreClasses = std::move(other._ignoreClasses);
+      switch(_mode) {
         case FilterMode::CONDITION:
-          filter._condition = std::move(other.filter._condition);
+          _condition = std::move(other._condition);
           break;
         case FilterMode::MULTI_CONDITION:
-          filter._multiCondition = std::move(other.filter._multiCondition);
+          _multiCondition = std::move(other._multiCondition);
           break;
         case FilterMode::COMPARE_FUNCTION:
-          filter._function = other.filter._function;
-          other.filter._function = nullptr;
+          _function = other._function;
+          other._function = nullptr;
           break;
       }
     }
@@ -95,27 +95,27 @@ namespace nogdb {
   }
 
   GraphFilter &GraphFilter::only(const std::string &className) {
-    onlyClasses.insert(className);
+    _onlyClasses.insert(className);
     return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::vector<std::string> &classNames) {
     for (const auto &value: classNames) {
-      onlyClasses.insert(value);
+      _onlyClasses.insert(value);
     }
     return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::list<std::string> &classNames) {
     for (const auto &value: classNames) {
-      onlyClasses.insert(value);
+      _onlyClasses.insert(value);
     }
     return *this;
   }
 
   GraphFilter &GraphFilter::only(const std::set<std::string> &classNames) {
     for (const auto &value: classNames) {
-      onlyClasses.insert(value);
+      _onlyClasses.insert(value);
     }
     return *this;
   }
@@ -123,7 +123,7 @@ namespace nogdb {
   GraphFilter &GraphFilter::only(const std::vector<std::string>::const_iterator &begin,
                                  const std::vector<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      onlyClasses.insert(*it);
+      _onlyClasses.insert(*it);
     }
     return *this;
   }
@@ -131,7 +131,7 @@ namespace nogdb {
   GraphFilter &GraphFilter::only(const std::list<std::string>::const_iterator &begin,
                                  const std::list<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      onlyClasses.insert(*it);
+      _onlyClasses.insert(*it);
     }
     return *this;
   }
@@ -139,33 +139,33 @@ namespace nogdb {
   GraphFilter &GraphFilter::only(const std::set<std::string>::const_iterator &begin,
                                  const std::set<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      onlyClasses.insert(*it);
+      _onlyClasses.insert(*it);
     }
     return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::string &className) {
-    ignoreClasses.insert(className);
+    _ignoreClasses.insert(className);
     return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::vector<std::string> &classNames) {
     for (const auto &value: classNames) {
-      ignoreClasses.insert(value);
+      _ignoreClasses.insert(value);
     }
     return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::list<std::string> &classNames) {
     for (const auto &value: classNames) {
-      ignoreClasses.insert(value);
+      _ignoreClasses.insert(value);
     }
     return *this;
   }
 
   GraphFilter &GraphFilter::exclude(const std::set<std::string> &classNames) {
     for (const auto &value: classNames) {
-      ignoreClasses.insert(value);
+      _ignoreClasses.insert(value);
     }
     return *this;
   }
@@ -173,7 +173,7 @@ namespace nogdb {
   GraphFilter &GraphFilter::exclude(const std::vector<std::string>::const_iterator &begin,
                                     const std::vector<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      ignoreClasses.insert(*it);
+      _ignoreClasses.insert(*it);
     }
     return *this;
   }
@@ -181,7 +181,7 @@ namespace nogdb {
   GraphFilter &GraphFilter::exclude(const std::list<std::string>::const_iterator &begin,
                                     const std::list<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      ignoreClasses.insert(*it);
+      _ignoreClasses.insert(*it);
     }
     return *this;
   }
@@ -189,7 +189,7 @@ namespace nogdb {
   GraphFilter &GraphFilter::exclude(const std::set<std::string>::const_iterator &begin,
                                     const std::set<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
-      ignoreClasses.insert(*it);
+      _ignoreClasses.insert(*it);
     }
     return *this;
   }
