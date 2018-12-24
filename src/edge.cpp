@@ -174,7 +174,7 @@ namespace nogdb {
     BEGIN_VALIDATION(&txn)
         .isTxnValid()
         .isTxnCompleted()
-        .isExistingSrcVertex(newDstVertexDescriptor);
+        .isExistingDstVertex(newDstVertexDescriptor);
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);

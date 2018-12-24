@@ -76,12 +76,28 @@ namespace nogdb {
           del(rid2str(vertexId));
         }
 
+        //TODO: doesn't work as expected
         void remove(const RelationAccessInfo &props) {
           del(rid2str(props.vertexId), convertToBlob(props));
         }
 
-        //TODO: get by cursor and remove by the current cursor
-        //std::vector<RelationAccessInfo> getInfosAndRemove(const RecordId& vertexId) {}
+        //TODO: this method was created for a temporary fix of the above method (but having worse performance)
+        void removeByCursor(const RelationAccessInfo &props) {
+          auto result = std::vector<RecordId>{};
+          auto cursorHandler = cursor();
+          for (auto keyValue = cursorHandler.find(rid2str(props.vertexId));
+               !keyValue.empty();
+               keyValue = cursorHandler.getNext()) {
+            auto key = str2rid(keyValue.key.data.string());
+            if (key != props.vertexId) break;
+            auto neighbor = parseNeighborId(keyValue.val.data.blob());
+            if (neighbor != props.neighborId) continue;
+            auto edgeId = parseEdgeId(keyValue.val.data.blob());
+            if (edgeId != props.edgeId) continue;
+            cursorHandler.del();
+            break;
+          }
+        }
 
         std::vector<RelationAccessInfo> getInfos(const RecordId &vertexId) const {
           auto result = std::vector<RelationAccessInfo>{};

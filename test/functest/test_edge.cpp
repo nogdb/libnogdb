@@ -949,7 +949,7 @@ void test_update_invalid_edge_src() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -1019,7 +1019,7 @@ void test_update_invalid_edge_dst() {
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
-    REQUIRE(ex, NOGDB_GRAPH_NOEXST_EDGE, "NOGDB_GRAPH_NOEXST_EDGE");
+    REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -1089,7 +1089,6 @@ void test_delete_edge() {
     nogdb::Edge::destroy(txn, e1);
     auto res = nogdb::Edge::get(txn, "authors");
     assertSize(res, 0);
-    nogdb::Edge::destroy(txn, e1);
 
     auto v1 = nogdb::Vertex::get(txn, "books")[0];
     auto v2 = nogdb::Vertex::get(txn, "persons")[0];

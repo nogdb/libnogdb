@@ -36,9 +36,9 @@ namespace nogdb {
                                       const RecordId &newSrcRid,
                                       const RecordId &srcRid,
                                       const RecordId &dstRid) {
-      _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
       _outRel->create(RelationAccessInfo{newSrcRid, edgeRid, dstRid});
-      _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
+      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
       _inRel->create(RelationAccessInfo{dstRid, edgeRid, newSrcRid});
     }
 
@@ -46,15 +46,15 @@ namespace nogdb {
                                       const RecordId &newDstRid,
                                       const RecordId &srcRid,
                                       const RecordId &dstRid) {
-      _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
       _outRel->create(RelationAccessInfo{srcRid, edgeRid, newDstRid});
-      _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
+      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
       _inRel->create(RelationAccessInfo{newDstRid, edgeRid, srcRid});
     }
 
     void GraphInterface::removeRelFromEdge(const RecordId &edgeRid, const RecordId &srcRid, const RecordId &dstRid) {
-      _inRel->remove(RelationAccessInfo{dstRid, edgeRid, srcRid});
-      _outRel->remove(RelationAccessInfo{srcRid, edgeRid, dstRid});
+      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
+      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
     }
 
     void GraphInterface::removeRelFromVertex(const RecordId &rid) {
@@ -70,7 +70,7 @@ namespace nogdb {
             throw err;
           }
         }
-        _outRel->remove(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+        _outRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
       }
       _inRel->remove(rid);
       // destination
@@ -85,7 +85,7 @@ namespace nogdb {
             throw err;
           }
         }
-        _inRel->remove(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+        _inRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
       }
       _outRel->remove(rid);
     }
