@@ -1126,7 +1126,7 @@ void test_find_edge_in_with_expression() {
   auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto vertices = nogdb::Vertex::get(txn, "locations", nogdb::Condition("name").eq("Dubai Building"));
-    assert(vertices.size() == 1);
+    ASSERT_SIZE(vertices, 1);
     auto &vertex = vertices[0];
     auto expr = nogdb::Condition("distance").ge(80.0)
                 or nogdb::Condition("capacity").gt(400U)

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <string>
+#include <regex>
 
 namespace nogdb {
 
@@ -58,5 +59,7 @@ namespace nogdb {
   const std::string NUM_PROPERTY_KEY = "?num_property_id";
   const std::string MAX_INDEX_ID_KEY = "?max_index_id";
   const std::string NUM_INDEX_KEY = "?num_index_id";
+
+  const std::regex GLOBAL_VALID_NAME_PATTERN = std::regex("^[A-Za-z_][A-Za-z0-9_]*$");
 
 }

@@ -146,6 +146,35 @@ void test_get_set_large_record() {
   destroy_vertex_book();
 }
 
+void test_overwrite_basic_info() {
+  init_vertex_book();
+
+  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  try {
+    auto v1 = nogdb::Vertex::create(txn, "books", nogdb::Record{}.set("@className", "bookybooky").set("@recordId", "-1:-1"));
+    auto v2 = nogdb::Vertex::create(txn, "books", nogdb::Record{});
+    nogdb::Vertex::update(txn, v2, nogdb::Record{}.set("@className", "bookybookyss").set("@recordId", "-999:-999"));
+
+    auto res = nogdb::Vertex::get(txn, "books");
+    for(const auto &r: res) {
+      assert(r.record.getClassName() == "books");
+      assert(r.record.getText("@className") == "books");
+    }
+
+    auto res1 = nogdb::Vertex::get(txn, "books", nogdb::Condition("@className").eq("bookybooky"));
+    ASSERT_SIZE(res1, 0);
+    auto res2 = nogdb::Vertex::get(txn, "books", nogdb::Condition("@className").eq("books"));
+    ASSERT_SIZE(res2, 2);
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  destroy_vertex_book();
+}
+
 void test_standalone_vertex() {
   init_vertex_book();
   auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};

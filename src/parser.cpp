@@ -25,9 +25,6 @@ namespace nogdb {
 
   namespace parser {
 
-    //-------------------------
-    // Common parsers
-    //-------------------------
     Blob RecordParser::parseRecord(const Record &record, const adapter::schema::PropertyNameMapInfo &properties) {
       auto dataSize = size_t{0};
       // calculate a raw data size of properties in a record
@@ -58,15 +55,17 @@ namespace nogdb {
         return Record{};
       } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
         //TODO: should be concerned about ENDIAN?
-        // NOTE: each property block consists of property id, flag, size, and value
-        // when option flag = 0
-        // +----------------------+--------------------+-----------------------+-----------+
-        // | propertyId (16bits)  | option flag (1bit) | propertySize (7bits)  |   value   | (next block) ...
-        // +----------------------+--------------------+-----------------------+-----------+
-        // when option flag = 1 (for extra large size of value)
-        // +----------------------+--------------------+------------------------+-----------+
-        // | propertyId (16bits)  | option flag (1bit) | propertySize (31bits)  |   value   | (next block) ...
-        // +----------------------+--------------------+------------------------+-----------+
+        /**
+         * NOTE: each property block consists of property id, flag, size, and value
+         * when option flag = 0
+         * +----------------------+--------------------+-----------------------+-----------+
+         * | propertyId (16bits)  | option flag (1bit) | propertySize (7bits)  |   value   | (next block) ...
+         * +----------------------+--------------------+-----------------------+-----------+
+         * when option flag = 1 (for extra large size of value)
+         * +----------------------+--------------------+------------------------+-----------+
+         * | propertyId (16bits)  | option flag (1bit) | propertySize (31bits)  |   value   | (next block) ...
+         * +----------------------+--------------------+------------------------+-----------+
+         */
         while (offset < rawDataBlob.size()) {
           auto propertyId = PropertyId{};
           auto optionFlag = uint8_t{};
@@ -112,9 +111,6 @@ namespace nogdb {
           .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
     }
 
-    //-------------------------
-    // Edge only parsers
-    //-------------------------
     Blob RecordParser::parseEdgeVertexSrcDst(const RecordId &srcRid, const RecordId &dstRid) {
       auto value = Blob(VERTEX_SRC_DST_RAW_DATA_LENGTH);
       value.append(&srcRid.first, sizeof(ClassId));

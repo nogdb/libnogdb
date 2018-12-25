@@ -22,6 +22,7 @@
 #pragma once
 
 #include <regex>
+#include "constant.hpp"
 
 #include "nogdb/nogdb_errors.h"
 #include "nogdb/nogdb_context.h"
@@ -77,7 +78,7 @@ namespace nogdb {
       const Txn *_txn;
 
       inline static bool isNameValid(const std::string &name) {
-        return std::regex_match(name, std::regex("^[A-Za-z_][A-Za-z0-9_]*$"));
+        return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);
       }
 
     };

@@ -61,7 +61,7 @@ namespace nogdb {
           if (_cache.maxClassId == 0) {
             auto result = get(MAX_CLASS_ID_KEY);
             if (result.empty) {
-              return ClassId{0};
+              return ClassId{INIT_NUM_CLASSES};
             } else {
               auto maxClassId = result.data.numeric<ClassId>();
               _cache.maxClassId = maxClassId;
@@ -99,7 +99,7 @@ namespace nogdb {
           if (_cache.maxPropertyId == 0) {
             auto result = get(MAX_PROPERTY_ID_KEY);
             if (result.empty) {
-              return PropertyId{0};
+              return PropertyId{INIT_NUM_PROPERTIES};
             } else {
               auto maxPropertyId = result.data.numeric<PropertyId>();
               _cache.maxPropertyId = maxPropertyId;

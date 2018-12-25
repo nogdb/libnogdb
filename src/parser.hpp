@@ -28,9 +28,9 @@
 #include "datatype.hpp"
 #include "lmdb_engine.hpp"
 #include "schema.hpp"
+#include "schema_adapter.hpp"
 
 #include "nogdb/nogdb_types.h"
-#include "schema_adapter.hpp"
 
 namespace nogdb {
 
