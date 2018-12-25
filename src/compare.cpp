@@ -81,6 +81,10 @@ namespace nogdb {
                                                  const Condition &condition) {
       auto foundProperty = propertyNameMapInfo.find(condition.propName);
       if (foundProperty == propertyNameMapInfo.cend()) {
+        /**
+         * do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+         * multiple edge comparison with a different set of properties
+         */
         return false;
       }
       return compareRecordByCondition(record, foundProperty->second.type, condition);
@@ -97,6 +101,10 @@ namespace nogdb {
         auto foundConditionProperty = propertyTypes.find(condition.propName);
         if (foundConditionProperty == propertyTypes.cend()) {
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
+          /**
+           * do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+           * multiple edge comparison with a different set of properties
+           */
           if (foundProperty != propertyNameMapInfo.cend()) {
             propertyTypes.emplace(condition.propName, foundProperty->second.type);
           }
@@ -131,12 +139,14 @@ namespace nogdb {
       auto record = txn._interface->record()->getRecord(classInfo, recordDescriptor);
       if (filter._mode == GraphFilter::FilterMode::CONDITION) {
         auto condition = filter._condition.get();
-        auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id,
+                                                                                    classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
       } else if (filter._mode == GraphFilter::FilterMode::MULTI_CONDITION) {
         auto multiCondition = filter._multiCondition.get();
-        auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id,
+                                                                                    classInfo.superClassId);
         auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
             record, propertyNameMapInfo, *multiCondition);
         return cmpResult ? Result{recordDescriptor, record} : Result{};
@@ -242,7 +252,8 @@ namespace nogdb {
 
       auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, multiCondition);
       if (foundIndex.first) {
-        auto indexedRecords = txn._interface->index()->getRecord(conditionProperties, foundIndex.second, multiCondition);
+        auto indexedRecords = txn._interface->index()->getRecord(conditionProperties, foundIndex.second,
+                                                                 multiCondition);
         return txn._interface->record()->getResultSet(classInfo, indexedRecords);
       } else {
         if (!searchIndexOnly) {
@@ -300,7 +311,8 @@ namespace nogdb {
         return txn._interface->index()->getRecord(conditionProperties, foundIndex.second, conditions);
       } else {
         if (!searchIndexOnly) {
-          return txn._interface->record()->getRecordDescriptorByMultiCondition(classInfo, conditionProperties, conditions);
+          return txn._interface->record()->getRecordDescriptorByMultiCondition(classInfo, conditionProperties,
+                                                                               conditions);
         }
       }
       return std::vector<RecordDescriptor>{};
@@ -321,7 +333,7 @@ namespace nogdb {
         if (foundEdgeInfo == edgeInfos.cend()) {
           edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
           auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id,
-                                                                          edgeClassInfo.superClassId);
+                                                                                      edgeClassInfo.superClassId);
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
           if (foundProperty == propertyNameMapInfo.cend()) {
             continue;
@@ -382,7 +394,7 @@ namespace nogdb {
         if (foundEdgeInfo == edgeInfos.cend()) {
           edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
           auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id,
-                                                                          edgeClassInfo.superClassId);
+                                                                                      edgeClassInfo.superClassId);
           for (const auto &property: propertyNameMapInfo) {
             propertyTypes.emplace(property.first, property.second.type);
           }
@@ -416,7 +428,7 @@ namespace nogdb {
         if (foundEdgeInfo == edgeInfos.cend()) {
           edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
           auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id,
-                                                                          edgeClassInfo.superClassId);
+                                                                                      edgeClassInfo.superClassId);
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
           if (foundProperty == propertyNameMapInfo.cend()) {
             continue;
@@ -479,7 +491,7 @@ namespace nogdb {
         if (foundEdgeInfo == edgeInfos.cend()) {
           edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
           auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id,
-                                                                          edgeClassInfo.superClassId);
+                                                                                      edgeClassInfo.superClassId);
           for (const auto &property: propertyNameMapInfo) {
             propertyTypes.emplace(property.first, property.second.type);
           }

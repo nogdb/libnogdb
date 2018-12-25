@@ -1088,7 +1088,7 @@ void test_delete_edge() {
 
     nogdb::Edge::destroy(txn, e1);
     auto res = nogdb::Edge::get(txn, "authors");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
 
     auto v1 = nogdb::Vertex::get(txn, "books")[0];
     auto v2 = nogdb::Vertex::get(txn, "persons")[0];
@@ -1235,19 +1235,19 @@ void test_delete_all_edges() {
 
   try {
     auto res = nogdb::Edge::get(txn, "authors");
-    assertSize(res, 4);
+    ASSERT_SIZE(res, 4);
     res = nogdb::Vertex::getOutEdge(txn, v1);
-    assertSize(res, 4);
+    ASSERT_SIZE(res, 4);
     res = nogdb::Vertex::getInEdge(txn, v2);
-    assertSize(res, 4);
+    ASSERT_SIZE(res, 4);
 
     nogdb::Edge::destroy(txn, "authors");
     res = nogdb::Edge::get(txn, "authors");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getOutEdge(txn, v1);
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getInEdge(txn, v2);
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);

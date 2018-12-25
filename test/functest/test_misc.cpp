@@ -126,15 +126,15 @@ void test_get_set_large_record() {
     }
 
     res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString1));
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 10);
 
     res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString2));
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 20);
 
     res = nogdb::Vertex::get(txn, "books", nogdb::Condition("title").eq(testString3));
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 30);
 
     txn.rollback();
@@ -482,11 +482,11 @@ void test_drop_class_with_relations() {
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     auto res = nogdb::Vertex::getOutEdge(txn, v1);
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     res = nogdb::Vertex::getOutEdge(txn, v2);
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     res = nogdb::Vertex::getOutEdge(txn, v3);
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -500,13 +500,13 @@ void test_drop_class_with_relations() {
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     auto res = nogdb::Vertex::getInEdge(txn, v4);
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getAllEdge(txn, v4);
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     res = nogdb::Vertex::getOutEdge(txn, v5);
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getAllEdge(txn, v5);
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -516,9 +516,9 @@ void test_drop_class_with_relations() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     auto res = nogdb::Edge::get(txn, "myedge1");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Edge::get(txn, "myedge2");
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -596,7 +596,7 @@ void test_drop_and_find_extended_class() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     auto res = nogdb::Vertex::get(txn, "vertex1");
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     for (const auto &r: res) {
       assert(r.record.get("prop0").toIntU() == 0U);
       assert(r.record.get("prop1").toIntU() == 1U);
@@ -618,11 +618,11 @@ void test_drop_and_find_extended_class() {
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     auto res = nogdb::Vertex::get(txn, "vertex1", nogdb::Condition("prop0").eq(0U));
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     res = nogdb::Vertex::get(txn, "vertex3", nogdb::Condition("prop0").eq(0U));
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     res = nogdb::Vertex::get(txn, "vertex4", nogdb::Condition("prop0").eq(0U));
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     txn.commit();
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -694,7 +694,7 @@ void test_drop_and_find_extended_class() {
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Vertex::get(txn, "vertex6");
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     assert(res[0].record.get("prop1").empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;

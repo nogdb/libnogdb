@@ -142,7 +142,7 @@ void test_get_vertex() {
   }
   try {
     auto res = nogdb::Vertex::get(txn, "books");
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
 
     assert(res[0].record.get("title").toText() == "Percy Jackson");
     assert(res[0].record.get("pages").toInt() == 456);
@@ -160,7 +160,7 @@ void test_get_vertex() {
   }
   try {
     auto res = getVertexMultipleClass(txn, std::set<std::string>{"books", "persons"});
-    assertSize(res, 3);
+    ASSERT_SIZE(res, 3);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -543,7 +543,7 @@ void test_delete_vertex_only() {
     nogdb::Vertex::destroy(txn, rdesc1);
 
     auto res = nogdb::Vertex::get(txn, "books");
-    assertSize(res, 1);
+    ASSERT_SIZE(res, 1);
     assert(res[0].record.get("title").toText() == "Tarzan");
     assert(res[0].record.get("price").toReal() == 60);
     assert(res[0].record.get("pages").toInt() == 360);
@@ -619,10 +619,10 @@ void test_delete_all_vertices() {
       nogdb::Vertex::create(txn, "books", record);
     }
     auto res = nogdb::Vertex::get(txn, "books");
-    assertSize(res, 3);
+    ASSERT_SIZE(res, 3);
     nogdb::Vertex::destroy(txn, "books");
     res = nogdb::Vertex::get(txn, "books");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);

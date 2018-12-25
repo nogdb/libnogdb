@@ -58,8 +58,7 @@ inline void require(const nogdb::Error &err,
                     const std::string &msg,
                     const std::string &funcName,
                     const int lineNumber,
-                    const std::string &fileName
-) {
+                    const std::string &fileName) {
   if (err.code() != expect) {
     std::cout << "\x1B[31m" << "\n[error] Expect:\t" << msg
               << " to be returned in " << funcName
@@ -71,18 +70,33 @@ inline void require(const nogdb::Error &err,
   }
 }
 
-inline void assertSize(const nogdb::ResultSet &rs, size_t expectedSize) {
+#define ASSERT_SIZE(_rs, _exp) \
+        assertSize(_rs, _exp, __FUNCTION__, __LINE__, __FILE__)
+
+inline void assertSize(const nogdb::ResultSet &rs,
+                       const size_t expectedSize,
+                       const std::string &funcName,
+                       const int lineNumber,
+                       const std::string &fileName) {
   if (rs.size() != expectedSize) {
-    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedSize << "\n"
+    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedSize << " in "
+              << funcName << ", file " << fileName
+              << ", line " << std::dec << lineNumber << ".\n"
               << "        Actual:\t" << rs.size()
               << ".\x1B[0m\n";
     assert(0);
   }
 }
 
-inline void assertSize(const nogdb::ResultSetCursor &rs, size_t expectedSize) {
+inline void assertSize(const nogdb::ResultSetCursor &rs,
+                       const size_t expectedSize,
+                       const std::string &funcName,
+                       const int lineNumber,
+                       const std::string &fileName) {
   if (rs.size() != expectedSize) {
-    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedSize << "\n"
+    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expectedSize << " in "
+              << funcName << ", file " << fileName
+              << ", line " << std::dec << lineNumber << ".\n"
               << "        Actual:\t" << rs.size()
               << ".\x1B[0m\n";
     assert(0);

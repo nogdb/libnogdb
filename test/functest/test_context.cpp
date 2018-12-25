@@ -410,7 +410,7 @@ void test_reopen_ctx_v3() {
     assert(res2.record.get("property1").toReal() == 42.42);
 
     res = nogdb::Vertex::getInEdge(txn, tmp);
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     assert(res[0].record.get("property1").toInt() == 42);
     assert(res[1].record.get("property1").toInt() == 24);
 
@@ -612,13 +612,13 @@ void test_reopen_ctx_v5() {
     assert_schema(schema, schema_r);
 
     auto res = nogdb::Vertex::get(txn, "vertex1");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getExtend(txn, "vertex1");
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
     res = nogdb::Edge::get(txn, "edge1");
-    assertSize(res, 0);
+    ASSERT_SIZE(res, 0);
     res = nogdb::Edge::getExtend(txn, "edge1");
-    assertSize(res, 2);
+    ASSERT_SIZE(res, 2);
 
     nogdb::Class::drop(txn, "vertex1");
     nogdb::Class::drop(txn, "vertex2");

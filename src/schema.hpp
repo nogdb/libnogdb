@@ -83,6 +83,26 @@ namespace nogdb {
     private:
       const Txn *_txn;
 
+      inline PropertyNameMapInfo &addBasicInfo(PropertyNameMapInfo& propertyInfo) {
+        propertyInfo[CLASS_NAME_PROPERTY] = PropertyAccessInfo(
+            0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
+        propertyInfo[RECORD_ID_PROPERTY] = PropertyAccessInfo(
+            0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+        propertyInfo[DEPTH_PROPERTY] = PropertyAccessInfo(
+            0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+        return propertyInfo;
+      }
+
+      inline PropertyIdMapInfo &addBasicInfo(PropertyIdMapInfo& propertyInfo) {
+        propertyInfo[CLASS_NAME_PROPERTY_ID] = PropertyAccessInfo(
+            0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
+        propertyInfo[RECORD_ID_PROPERTY_ID] = PropertyAccessInfo(
+            0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+        propertyInfo[DEPTH_PROPERTY_ID] = PropertyAccessInfo(
+            0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+        return propertyInfo;
+      }
+
     };
 
   }

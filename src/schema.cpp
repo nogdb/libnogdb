@@ -104,7 +104,7 @@ namespace nogdb {
       for (const auto &property: inheritResult) {
         result[property.name] = property;
       }
-      return result;
+      return addBasicInfo(result);
     }
 
     PropertyIdMapInfo
@@ -117,7 +117,7 @@ namespace nogdb {
       for (const auto &property: inheritResult) {
         result[property.id] = property;
       }
-      return result;
+      return addBasicInfo(result);
     }
 
     IndexAccessInfo
