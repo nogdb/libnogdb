@@ -61,6 +61,10 @@ namespace nogdb {
                                  const adapter::schema::PropertyIdMapInfo &propertyInfos,
                                  bool isEdge = false);
 
+      static Record parseRawData(const storage_engine::lmdb::Result &rawData,
+                                 const adapter::schema::PropertyIdMapInfo &propertyInfos,
+                                 const ClassType &classType);
+
       static Record parseRawDataWithBasicInfo(const std::string &className,
                                               const RecordId &rid,
                                               const storage_engine::lmdb::Result &rawData,

@@ -40,7 +40,7 @@ namespace nogdb {
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
                        const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
+                       const auto &record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });
@@ -133,7 +133,7 @@ namespace nogdb {
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
                        const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
+                       const auto &record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });
@@ -230,7 +230,7 @@ namespace nogdb {
       std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
                      [&txn](const RecordDescriptor &descriptor) {
                        const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                       const auto &record = txn._interface->record()->getRecord(edgeClassInfo, descriptor);
+                       const auto &record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
                        record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                        return Result(descriptor, record);
                      });

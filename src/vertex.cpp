@@ -61,15 +61,17 @@ namespace nogdb {
 
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto vertexDataRecord = adapter::datarecord::DataRecord(txn._txnBase, vertexClassInfo.id, ClassType::VERTEX);
-    auto existingRecordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
+    auto recordResult = vertexDataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
+      auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto existingRecord = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, false);
+
       // insert an updated record
       vertexDataRecord.update(recordDescriptor.rid.second, newRecordBlob);
+
       // remove index if applied in existing record
-      auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
-      auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
       auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
       txn._interface->index()->remove(recordDescriptor, existingRecord, indexInfos);
       // add index if applied in new record
@@ -91,10 +93,12 @@ namespace nogdb {
     try {
       auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+      auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, false);
+
       vertexDataRecord.remove(recordDescriptor.rid.second);
       txn._interface->graph()->removeRelFromVertex(recordDescriptor.rid);
+
       // remove index if applied in the record
-      auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
       txn._interface->index()->remove(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {

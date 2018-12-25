@@ -74,16 +74,18 @@ namespace nogdb {
 
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = adapter::datarecord::DataRecord(txn._txnBase, edgeClassInfo.id, ClassType::EDGE);
-    auto existingRecordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
+    auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
     auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-      // insert an updated record
-      auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(existingRecordResult.data.blob());
-      edgeDataRecord.update(recordDescriptor.rid.second, vertexBlob + newRecordBlob);
-      // remove index if applied in existing record
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
-      auto existingRecord = parser::RecordParser::parseRawData(existingRecordResult, propertyIdMapInfo, true);
+      auto existingRecord = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
+
+      // insert an updated record
+      auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(recordResult.data.blob());
+      edgeDataRecord.update(recordDescriptor.rid.second, vertexBlob + newRecordBlob);
+
+      // remove index if applied in existing record
       auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
       txn._interface->index()->remove(recordDescriptor, existingRecord, indexInfos);
       // add index if applied in new record
@@ -106,10 +108,12 @@ namespace nogdb {
       auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto propertyIdMapInfo = txn._interface->schema()->getPropertyIdMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
       auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
+
       edgeDataRecord.remove(recordDescriptor.rid.second);
       txn._interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+
       // remove index if applied in the record
-      auto record = parser::RecordParser::parseRawData(recordResult, propertyIdMapInfo, true);
       auto indexInfos = txn._interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
       txn._interface->index()->remove(recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
@@ -248,7 +252,8 @@ namespace nogdb {
     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(recordDescriptor.rid);
     auto srcVertexRecordDescriptor = RecordDescriptor{srcDstVertex.first};
     auto srcVertexClassInfo = txn._interface->schema()->getExistingClass(srcVertexRecordDescriptor.rid.first);
-    return Result{srcVertexRecordDescriptor, txn._interface->record()->getRecord(srcVertexClassInfo, srcVertexRecordDescriptor)};
+    return Result{srcVertexRecordDescriptor,
+                  txn._interface->record()->getRecordWithBasicInfo(srcVertexClassInfo, srcVertexRecordDescriptor)};
   }
 
   Result Edge::getDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -259,7 +264,8 @@ namespace nogdb {
     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(recordDescriptor.rid);
     auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
     auto dstVertexClassInfo = txn._interface->schema()->getExistingClass(dstVertexRecordDescriptor.rid.first);
-    return Result{dstVertexRecordDescriptor, txn._interface->record()->getRecord(dstVertexClassInfo, dstVertexRecordDescriptor)};
+    return Result{dstVertexRecordDescriptor,
+                  txn._interface->record()->getRecordWithBasicInfo(dstVertexClassInfo, dstVertexRecordDescriptor)};
   }
 
   ResultSet Edge::getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor) {
@@ -272,8 +278,10 @@ namespace nogdb {
     auto srcVertexClassInfo = txn._interface->schema()->getExistingClass(srcVertexRecordDescriptor.rid.first);
     auto dstVertexRecordDescriptor = RecordDescriptor{srcDstVertex.second};
     auto dstVertexClassInfo = txn._interface->schema()->getExistingClass(dstVertexRecordDescriptor.rid.first);
-    auto srcVertexResult = txn._interface->record()->getRecord(srcVertexClassInfo, srcVertexRecordDescriptor);
-    auto dstVertexResult = txn._interface->record()->getRecord(dstVertexClassInfo, dstVertexRecordDescriptor);
+    auto srcVertexResult = txn._interface->record()->getRecordWithBasicInfo(srcVertexClassInfo,
+                                                                            srcVertexRecordDescriptor);
+    auto dstVertexResult = txn._interface->record()->getRecordWithBasicInfo(dstVertexClassInfo,
+                                                                            dstVertexRecordDescriptor);
     return ResultSet{
         Result{srcVertexRecordDescriptor, srcVertexResult},
         Result{dstVertexRecordDescriptor, dstVertexResult}

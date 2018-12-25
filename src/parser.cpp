@@ -100,6 +100,12 @@ namespace nogdb {
       return Record(properties);
     }
 
+    Record RecordParser::parseRawData(const storage_engine::lmdb::Result &rawData,
+                                      const adapter::schema::PropertyIdMapInfo &propertyInfos,
+                                      const ClassType &classType) {
+      return parseRawData(rawData, propertyInfos, classType == ClassType::EDGE);
+    }
+
     Record RecordParser::parseRawDataWithBasicInfo(const std::string &className,
                                                    const RecordId &rid,
                                                    const storage_engine::lmdb::Result &rawData,

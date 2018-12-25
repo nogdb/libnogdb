@@ -30,6 +30,14 @@ namespace nogdb {
       auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
           .getResult(recordDescriptor.rid.second);
+      return parser::RecordParser::parseRawData(result, propertyInfos, classInfo.type);
+    }
+
+    Record DataRecordInterface::getRecordWithBasicInfo(const schema::ClassAccessInfo &classInfo,
+                                                       const RecordDescriptor &recordDescriptor) const {
+      auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+      auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
+          .getResult(recordDescriptor.rid.second);
       return parser::RecordParser::parseRawDataWithBasicInfo(
           classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
     }

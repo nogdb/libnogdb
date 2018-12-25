@@ -24,8 +24,8 @@
 void assert_class(const nogdb::Txn &txn, const std::string &className, const std::string &superClassName,
                   size_t sizeOfSubClasses, size_t sizeOfProperties) {
   auto res = nogdb::DB::getClass(txn, className);
-  auto super = nogdb::DB::getClass(txn, superClassName);
-  assert(res.base == super.id);
+  auto superId = (superClassName == "")? 0 : nogdb::DB::getClass(txn, superClassName).id;
+  assert(res.base == superId);
   auto properties = nogdb::DB::getProperties(txn, res);
   assert(properties.size() == sizeOfProperties);
   auto subClassCount = size_t{0};

@@ -136,7 +136,7 @@ namespace nogdb {
         }
       }
 
-      auto record = txn._interface->record()->getRecord(classInfo, recordDescriptor);
+      auto record = txn._interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
       if (filter._mode == GraphFilter::FilterMode::CONDITION) {
         auto condition = filter._condition.get();
         auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id,
@@ -345,7 +345,8 @@ namespace nogdb {
           propertyType = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -371,7 +372,8 @@ namespace nogdb {
           edgeClassInfo = foundEdgeInfo->second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (condition(edgeRecord)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -404,7 +406,8 @@ namespace nogdb {
           propertyTypes = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (multiCondition.execute(edgeRecord, propertyTypes)) {
           resultSet.emplace_back(Result{RecordDescriptor{edgeRecordId}, edgeRecord});
         }
@@ -440,7 +443,8 @@ namespace nogdb {
           propertyType = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }
@@ -467,7 +471,8 @@ namespace nogdb {
           edgeClassInfo = foundEdgeInfo->second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (condition(edgeRecord)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }
@@ -501,7 +506,8 @@ namespace nogdb {
           propertyTypes = foundEdgeInfo->second.second;
         }
 
-        auto edgeRecord = txn._interface->record()->getRecord(edgeClassInfo, RecordDescriptor{edgeRecordId});
+        auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo,
+                                                                           RecordDescriptor{edgeRecordId});
         if (multiCondition.execute(edgeRecord, propertyTypes)) {
           recordDescriptors.emplace_back(RecordDescriptor{edgeRecordId});
         }

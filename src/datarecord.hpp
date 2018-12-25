@@ -41,6 +41,9 @@ namespace nogdb {
 
       Record getRecord(const schema::ClassAccessInfo &classInfo, const RecordDescriptor &recordDescriptor) const;
 
+      Record getRecordWithBasicInfo(const schema::ClassAccessInfo &classInfo,
+                                    const RecordDescriptor &recordDescriptor) const;
+
       ResultSet getResultSet(const schema::ClassAccessInfo &classInfo,
                              const std::vector<RecordDescriptor> &recordDescriptors) const;
 

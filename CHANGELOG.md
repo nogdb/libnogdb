@@ -2,7 +2,7 @@
 ## v0.12.0-beta [2018-??-??]
 * General changes:
   * Adding a prefix `NOGDB_` for all NogDB exception code.
-  * `nogdb::DB::getRecord(...)` now throws an exception `NOGDB_CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
+  * `nogdb::DB::getRecordWithBasicInfo(...)` now throws an exception `NOGDB_CTX_NOEXST_RECORD` when `rid` in a given record descriptor can't be found in the datastore.
 * New features:
   * Implementing a feature request [#37](https://github.com/nogdb/nogdb/issues/37). Collections such as `std::pair`, `std::array`, `std::vector`, `std::map`, `std::set` can now be parsed to `nogdb::Bytes`, which allows users to store them in record, through static API function `nogdb::Bytes nogdb::Bytes::toBytes<T>(const T&)`.
 * Implemented enhancements:
