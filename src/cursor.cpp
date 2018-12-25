@@ -74,7 +74,9 @@ namespace nogdb {
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
+    auto record = txn->_interface->record()->getRecord(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result{recordDescriptor, record};
     return true;
   }
 
@@ -92,7 +94,9 @@ namespace nogdb {
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
+    auto record = txn->_interface->record()->getRecord(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result{recordDescriptor, record};
     return true;
   }
 
@@ -117,7 +121,9 @@ namespace nogdb {
       auto cursor = metadata.begin();
       auto recordDescriptor = *(cursor);
       auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-      result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
+      auto record = txn->_interface->record()->getRecord(classInfo, recordDescriptor);
+      record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+      result = Result{recordDescriptor, record};
     }
   }
 
@@ -130,7 +136,9 @@ namespace nogdb {
       auto cursor = metadata.end() - 1;
       auto recordDescriptor = *(cursor);
       auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-      result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
+      auto record = txn->_interface->record()->getRecord(classInfo, recordDescriptor);
+      record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+      result = Result{recordDescriptor, record};
     }
   }
 
@@ -145,7 +153,9 @@ namespace nogdb {
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    result = Result{recordDescriptor, txn->_interface->record()->getRecord(classInfo, recordDescriptor)};
+    auto record = txn->_interface->record()->getRecord(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result{recordDescriptor, record};
     return true;
   }
 

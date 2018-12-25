@@ -561,38 +561,42 @@ void test_invalid_bfs_traverse_in() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -688,37 +692,41 @@ void test_invalid_bfs_traverse_out() {
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -812,37 +820,41 @@ void test_invalid_bfs_traverse_all() {
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1407,38 +1419,42 @@ void test_invalid_dfs_traverse_in() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1531,38 +1547,42 @@ void test_invalid_dfs_traverse_out() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeDfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -2875,38 +2895,42 @@ void test_invalid_bfs_traverse_in_cursor() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3003,38 +3027,42 @@ void test_invalid_bfs_traverse_out_cursor() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3129,38 +3157,42 @@ void test_invalid_bfs_traverse_all_cursor() {
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
+    ASSERT_SIZE(res, 1);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
+    ASSERT_SIZE(res, 9);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};

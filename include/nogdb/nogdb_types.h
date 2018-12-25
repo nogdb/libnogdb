@@ -547,6 +547,8 @@ namespace nogdb {
     }
   };
 
+  class ResultSetCursor;
+
   class Record {
   public:
 
@@ -625,6 +627,8 @@ namespace nogdb {
 
     friend class sql_parser::Record;
 
+    friend class ResultSetCursor;
+
     Record(PropertyToBytesMap properties);
 
     Record(PropertyToBytesMap properties, PropertyToBytesMap basicProperties)
@@ -675,6 +679,8 @@ namespace nogdb {
 
   private:
     friend class algorithm::GraphTraversal;
+
+    friend class ResultSetCursor;
 
     unsigned int _depth{0};
 
