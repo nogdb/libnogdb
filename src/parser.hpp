@@ -89,6 +89,10 @@ namespace nogdb {
         return sizeof(PropertyId) + size +
                ((size >= std::pow(2, UINT8_BITS_COUNT - 1)) ? sizeof(uint32_t) : sizeof(uint8_t));
       };
+
+      inline static bool isNameValid(const std::string &name) {
+        return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);
+      }
     };
   }
 

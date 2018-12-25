@@ -87,10 +87,11 @@ void test_expression() {
 
   try {
     auto tmp = !nogdb::Condition("invalid"); // equivalent to null()
-    (tmp && c10).execute(r, propTypes);
-    assert(false);
+    auto res = (tmp && c10).execute(r, propTypes);
+    assert(res == false);
   } catch (const nogdb::Error &ex) {
-    REQUIRE(ex, NOGDB_CTX_UNKNOWN_ERR, "NOGDB_CTX_UNKNOWN_ERR");
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   try {

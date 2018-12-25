@@ -1139,10 +1139,11 @@ void test_find_edge_in_with_expression() {
     assert(res[2].record.get("name").toText() == "George Street");
 
     res = nogdb::Vertex::getInEdge(txn, vertex.descriptor, nogdb::GraphFilter{}.only("street"));
-    ASSERT_SIZE(res, 2);
+    ASSERT_SIZE(res, 3);
     std::sort(res.begin(), res.end(), cmp);
     assert(res[0].record.get("name").toText() == "Andrew Street");
-    assert(res[1].record.get("name").toText() == "George Street");
+    assert(res[1].record.get("name").toText() == "Cowboy Road");
+    assert(res[2].record.get("name").toText() == "George Street");
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1264,10 +1265,11 @@ void test_find_invalid_edge_in_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getInEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1275,20 +1277,22 @@ void test_find_invalid_edge_in_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getInEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 3);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getInEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 2);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1345,10 +1349,11 @@ void test_find_invalid_edge_out_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getOutEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1356,20 +1361,22 @@ void test_find_invalid_edge_out_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getOutEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 3);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getOutEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 2);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1426,10 +1433,11 @@ void test_find_invalid_edge_all_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getAllEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -1437,20 +1445,22 @@ void test_find_invalid_edge_all_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getAllEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 6);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getAllEdge(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 4);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3415,10 +3425,11 @@ void test_find_invalid_edge_in_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getInEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3426,20 +3437,22 @@ void test_find_invalid_edge_in_cursor_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getInEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 3);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getInEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 2);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3496,10 +3509,11 @@ void test_find_invalid_edge_out_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getOutEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3507,20 +3521,22 @@ void test_find_invalid_edge_out_cursor_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getOutEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 3);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getOutEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 2);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3577,10 +3593,11 @@ void test_find_invalid_edge_all_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getAllEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("streets"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -3588,20 +3605,22 @@ void test_find_invalid_edge_all_cursor_with_expression() {
     auto expr = nogdb::Condition("name").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
     auto edges = nogdb::Vertex::getAllEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only(classNames));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 6);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto expr = nogdb::Condition("names").endWith("Street").ignoreCase() or nogdb::Condition("distance");
     auto edges = nogdb::Vertex::getAllEdgeCursor(txn, vertex.descriptor, nogdb::GraphFilter{expr}.only("street"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(edges, 4);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};

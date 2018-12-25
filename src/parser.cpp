@@ -177,6 +177,7 @@ namespace nogdb {
         // create properties as a raw data for a class
         auto value = Blob(dataSize);
         for (const auto &property: properties) {
+          if (!isNameValid(property.first)) continue;
           auto propertyId = static_cast<PropertyId>(property.second.id);
           auto rawData = record.get(property.first);
           if (rawData.empty()) continue;

@@ -82,7 +82,7 @@ namespace nogdb {
       auto foundProperty = propertyNameMapInfo.find(condition.propName);
       if (foundProperty == propertyNameMapInfo.cend()) {
         /**
-         * do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+         * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
          * multiple edge comparison with a different set of properties
          */
         return false;
@@ -102,7 +102,7 @@ namespace nogdb {
         if (foundConditionProperty == propertyTypes.cend()) {
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
           /**
-           * do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+           * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
            * multiple edge comparison with a different set of properties
            */
           if (foundProperty != propertyNameMapInfo.cend()) {

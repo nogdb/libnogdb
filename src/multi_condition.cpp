@@ -154,7 +154,7 @@ namespace nogdb {
     auto value = r.get(cond.propName);
     auto type = propType.find(cond.propName);
     if (type == propType.cend()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+      return false;
     }
     if (cond.comp != Condition::Comparator::IS_NULL && cond.comp != Condition::Comparator::NOT_NULL) {
       if (!value.empty()) {
