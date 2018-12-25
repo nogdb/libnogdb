@@ -44,6 +44,26 @@ bool indexExists(const nogdb::Txn &txn, const std::string &className, const std:
   }
 }
 
+void test_schema_txn_commit_simple() {
+  try {
+    auto txnRw1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto cdesc = nogdb::Class::create(txnRw1, "test_0", nogdb::ClassType::VERTEX);
+    txnRw1.commit();
+
+    auto txnRo1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txnRo2 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    txnRo1.rollback();
+    txnRo2.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
+  }
+
+}
+
 void test_schema_txn_create_class_commit() {
   try {
     nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
@@ -108,6 +128,9 @@ void test_schema_txn_create_class_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -160,6 +183,9 @@ void test_schema_txn_create_class_rollback() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -211,6 +237,9 @@ void test_schema_txn_drop_class_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -256,6 +285,9 @@ void test_schema_txn_drop_class_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -353,6 +385,9 @@ void test_schema_txn_alter_class_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -426,6 +461,9 @@ void test_schema_txn_alter_class_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -628,6 +666,9 @@ void test_schema_txn_create_class_extend_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -793,6 +834,9 @@ void test_schema_txn_create_class_extend_rollback() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -925,6 +969,9 @@ void test_schema_txn_drop_class_extend_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1024,6 +1071,9 @@ void test_schema_txn_drop_class_extend_rollback() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1078,6 +1128,9 @@ void test_schema_txn_add_property_commit() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1137,6 +1190,9 @@ void test_schema_txn_add_property_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1203,6 +1259,9 @@ void test_schema_txn_drop_property_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1255,6 +1314,9 @@ void test_schema_txn_drop_property_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1332,6 +1394,9 @@ void test_schema_txn_alter_property_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1398,6 +1463,9 @@ void test_schema_txn_alter_property_rollback() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1435,8 +1503,8 @@ void test_schema_txn_create_index_commit() {
     nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
     nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    res = nogdb::DB::getClass(txnRw1, "test_106");
-    assert(indexExists(txnRw1, "test_106", "prop1"));
+    res = nogdb::DB::getClass(txnRw2, "test_106");
+    assert(indexExists(txnRw2, "test_106", "prop1"));
     res = nogdb::DB::getClass(txnRo4, "test_106");
     assert(indexExists(txnRo4, "test_106", "prop1"));
 
@@ -1449,6 +1517,9 @@ void test_schema_txn_create_index_commit() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1480,8 +1551,8 @@ void test_schema_txn_create_index_rollback() {
     nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
     nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    res = nogdb::DB::getClass(txnRw1, "test_107");
-    assert(!indexExists(txnRw1, "test_107", "prop1"));
+    res = nogdb::DB::getClass(txnRw2, "test_107");
+    assert(!indexExists(txnRw2, "test_107", "prop1"));
     res = nogdb::DB::getClass(txnRo4, "test_107");
     assert(!indexExists(txnRo4, "test_107", "prop1"));
 
@@ -1494,6 +1565,9 @@ void test_schema_txn_create_index_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1533,8 +1607,8 @@ void test_schema_txn_drop_index_commit() {
     nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
     nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    res = nogdb::DB::getClass(txnRw1, "test_108");
-    assert(!indexExists(txnRw1, "test_108", "prop1"));
+    res = nogdb::DB::getClass(txnRw2, "test_108");
+    assert(!indexExists(txnRw2, "test_108", "prop1"));
     res = nogdb::DB::getClass(txnRo4, "test_108");
     assert(!indexExists(txnRo4, "test_108", "prop1"));
 
@@ -1547,6 +1621,9 @@ void test_schema_txn_drop_index_commit() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1579,8 +1656,8 @@ void test_schema_txn_drop_index_rollback() {
     nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
     nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    res = nogdb::DB::getClass(txnRw1, "test_109");
-    assert(indexExists(txnRw1, "test_109", "prop1"));
+    res = nogdb::DB::getClass(txnRw2, "test_109");
+    assert(indexExists(txnRw2, "test_109", "prop1"));
     res = nogdb::DB::getClass(txnRo4, "test_109");
     assert(indexExists(txnRo4, "test_109", "prop1"));
 
@@ -1593,6 +1670,9 @@ void test_schema_txn_drop_index_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1662,6 +1742,9 @@ void test_schema_txn_create_class_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1722,6 +1805,9 @@ void test_schema_txn_create_class_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1791,6 +1877,9 @@ void test_schema_txn_drop_class_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -1852,6 +1941,9 @@ void test_schema_txn_drop_class_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -1944,6 +2036,9 @@ void test_schema_txn_alter_class_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2027,6 +2122,9 @@ void test_schema_txn_alter_class_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -2142,6 +2240,9 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2233,6 +2334,9 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -2339,6 +2443,9 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2422,6 +2529,9 @@ void test_schema_txn_drop_class_extend_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -2512,6 +2622,9 @@ void test_schema_txn_add_property_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2590,6 +2703,9 @@ void test_schema_txn_add_property_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -2682,6 +2798,9 @@ void test_schema_txn_drop_property_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2752,6 +2871,9 @@ void test_schema_txn_drop_property_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -2861,6 +2983,9 @@ void test_schema_txn_alter_property_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -2957,6 +3082,9 @@ void test_schema_txn_alter_property_multiversion_rollback() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -3021,6 +3149,9 @@ void test_schema_txn_create_index_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -3078,6 +3209,9 @@ void test_schema_txn_create_index_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }
@@ -3145,6 +3279,9 @@ void test_schema_txn_drop_index_multiversion_commit() {
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
     assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
+    assert(false);
   }
 }
 
@@ -3204,6 +3341,9 @@ void test_schema_txn_drop_index_multiversion_rollback() {
 
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
+    assert(false);
+  } catch (const nogdb::FatalError &err) {
+    std::cout << "Fatal Error: " << err.what() << std::endl;
     assert(false);
   }
 }

@@ -392,11 +392,11 @@ int main() {
   // schema txn
 #ifdef TEST_SCHEMA_TXN_OPERATIONS
   std::cout << "\n\x1B[96mEnd-to-end tests for a database schema with transaction should:\x1B[0m\n";
+  exec(test_schema_txn_commit_simple, "committing schema txn with simple changes");
   exec(test_schema_txn_create_class_commit, "committing schema txn when creating a new class");
   exec(test_schema_txn_create_class_rollback, "aborting schema txn when creating a new class");
   exec(test_schema_txn_drop_class_commit, "committing schema txn when dropping an existing class");
   exec(test_schema_txn_drop_class_rollback, "aborting schema txn when dropping an existing class");
-  exec(test_schema_txn_create_class_commit, "committing schema txn when creating a new class");
   exec(test_schema_txn_alter_class_commit, "committing schema txn when altering a class name");
   exec(test_schema_txn_alter_class_rollback, "aborting schema txn when altering a class name");
   exec(test_schema_txn_create_class_extend_commit, "committing schema txn when creating new sub class");

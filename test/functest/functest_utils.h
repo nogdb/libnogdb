@@ -122,7 +122,7 @@ inline void assertEqual(const T& value,
   }
 }
 
-#define ASSERT_NOT_EQ(_val, _exp) \
+#define ASSERT_NE(_val, _exp) \
         assertNotEqual(_val, _exp,  __FUNCTION__, __LINE__, __FILE__)
 
 template<typename T>

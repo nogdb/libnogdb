@@ -1766,7 +1766,7 @@ void test_txn_invalid_operations() {
     nogdb::Vertex::get(txn, "islands");
     assert(false);
   } catch (const nogdb::Error &ex) {
-    REQUIRE(ex, MDB_BAD_TXN, "MDB_BAD_TXN");
+    REQUIRE(ex, NOGDB_TXN_COMPLETED, "NOGDB_TXN_COMPLETED");
   }
 
   try {
@@ -1776,7 +1776,7 @@ void test_txn_invalid_operations() {
     nogdb::Vertex::get(txn, "islands");
     assert(false);
   } catch (const nogdb::Error &ex) {
-    REQUIRE(ex, MDB_BAD_TXN, "MDB_BAD_TXN");
+    REQUIRE(ex, NOGDB_TXN_COMPLETED, "NOGDB_TXN_COMPLETED");
   }
 
   try {

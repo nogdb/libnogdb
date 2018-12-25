@@ -384,6 +384,7 @@ extern void test_search_by_index_extended_class_cursor_multicondition();
 
 // schema transaction testing
 #ifdef TEST_SCHEMA_TXN_OPERATIONS
+extern void test_schema_txn_commit_simple();
 extern void test_schema_txn_create_class_commit();
 extern void test_schema_txn_create_class_rollback();
 extern void test_schema_txn_drop_class_commit();

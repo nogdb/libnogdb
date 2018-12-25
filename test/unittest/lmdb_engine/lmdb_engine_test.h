@@ -24,6 +24,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "../../../src/storage_engine.hpp"
+#include "../../../src/utils.hpp"
 
 class LMDBCommonOperations: public ::testing::Test {
 public:

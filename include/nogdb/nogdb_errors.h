@@ -355,10 +355,32 @@ namespace nogdb {
   class FatalError : public std::runtime_error {
   public:
     explicit FatalError(const Error &error)
-        : std::runtime_error{error.func() + " in " + error.file() + ":" + std::to_string(error.line())}, _error{error} {}
+        : std::runtime_error{error.func() + " in " + error.file() + ":" + std::to_string(error.line())} {
+      switch (error.type()) {
+        case ErrorType::INTERNAL_ERROR :
+          _error = new InternalError(dynamic_cast<const InternalError&>(error));
+          break;
+        case ErrorType::STORAGE_ERROR :
+          _error = new StorageError(dynamic_cast<const StorageError&>(error));
+          break;
+        case ErrorType::GRAPH_ERROR :
+          _error = new GraphError(dynamic_cast<const GraphError&>(error));
+          break;
+        case ErrorType::CONTEXT_ERROR :
+          _error = new ContextError(dynamic_cast<const ContextError&>(error));
+          break;
+        case ErrorType::TXN_ERROR :
+          _error = new TxnError(dynamic_cast<const TxnError&>(error));
+          break;
+        case ErrorType::SQL_ERROR :
+          _error = new SQLError(dynamic_cast<const SQLError&>(error));
+          break;
+        default: break;
+      }
+    }
 
     FatalError(const FatalError &error) noexcept
-        : std::runtime_error{error._error.func() + " in " + error._error.file() + ":" + std::to_string(error._error.line())},
+        : std::runtime_error{error._error->func() + " in " + error._error->file() + ":" + std::to_string(error._error->line())},
           _error{error._error} {}
 
     FatalError &operator=(const FatalError &error) noexcept {
@@ -370,48 +392,20 @@ namespace nogdb {
       return *this;
     }
 
-    virtual ~FatalError() noexcept = default;
+    virtual ~FatalError() noexcept {
+      if (_error) {
+        delete _error;
+        _error = nullptr;
+      }
+    }
 
     virtual const char *what() const noexcept {
-      auto what = std::string{"NOGDB_FATAL_UNKNOWN_ERR: Unknown"};
-      switch (_error.type()) {
-        case ErrorType::INTERNAL_ERROR : {
-          auto e = dynamic_cast<const InternalError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        case ErrorType::STORAGE_ERROR : {
-          auto e = dynamic_cast<const StorageError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        case ErrorType::GRAPH_ERROR : {
-          auto e = dynamic_cast<const GraphError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        case ErrorType::CONTEXT_ERROR : {
-          auto e = dynamic_cast<const ContextError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        case ErrorType::TXN_ERROR : {
-          auto e = dynamic_cast<const TxnError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        case ErrorType::SQL_ERROR : {
-          auto e = dynamic_cast<const SQLError&>(_error);
-          what = std::string{e.what()};
-          break;
-        }
-        default: break;
-      }
+      auto what = std::string{_error->what()};
       return (std::string{"(FATAL) "} + what).c_str();
     }
 
   private:
-    const Error& _error;
+    const Error* _error;
   };
 
 #define NOGDB_INTERNAL_ERROR(error)     nogdb::InternalError(error, __FUNCTION__, __FILE__, __LINE__, nogdb::ErrorType::INTERNAL_ERROR)

@@ -159,6 +159,7 @@ if(nogdb_BuildTests)
         ${nogdb_UNIT_TEST_LMDB_HEADER}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     )
     target_include_directories(unittest_all
         PRIVATE
