@@ -144,6 +144,56 @@ namespace nogdb {
     return *this;
   }
 
+  GraphFilter &GraphFilter::onlySubClassOf(const std::string &className) {
+    _onlySubOfClasses.insert(className);
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::vector<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _onlySubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::list<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _onlySubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::set<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _onlySubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                           const std::vector<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _onlySubOfClasses.insert(*it);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::list<std::string>::const_iterator &begin,
+                                           const std::list<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _onlySubOfClasses.insert(*it);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::onlySubClassOf(const std::set<std::string>::const_iterator &begin,
+                                           const std::set<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _onlySubOfClasses.insert(*it);
+    }
+    return *this;
+  }
+
   GraphFilter &GraphFilter::exclude(const std::string &className) {
     _ignoreClasses.insert(className);
     return *this;
@@ -190,6 +240,56 @@ namespace nogdb {
                                     const std::set<std::string>::const_iterator &end) {
     for (auto it = begin; it != end; ++it) {
       _ignoreClasses.insert(*it);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::string &className) {
+    _ignoreSubOfClasses.insert(className);
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::vector<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _ignoreSubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::list<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _ignoreSubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::set<std::string> &classNames) {
+    for (const auto &value: classNames) {
+      _ignoreSubOfClasses.insert(value);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                              const std::vector<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _ignoreSubOfClasses.insert(*it);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::list<std::string>::const_iterator &begin,
+                                              const std::list<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _ignoreSubOfClasses.insert(*it);
+    }
+    return *this;
+  }
+
+  GraphFilter &GraphFilter::excludeSubClassOf(const std::set<std::string>::const_iterator &begin,
+                                              const std::set<std::string>::const_iterator &end) {
+    for (auto it = begin; it != end; ++it) {
+      _ignoreSubOfClasses.insert(*it);
     }
     return *this;
   }

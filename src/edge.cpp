@@ -213,10 +213,12 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto resultSet = txn._interface->record()->getResultSet(edgeClassInfo);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._interface->record()->getResultSet(classInfo);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto partialResultSet = txn._interface->record()->getResultSet(classInfo);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }

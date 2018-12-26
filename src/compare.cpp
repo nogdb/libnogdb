@@ -113,25 +113,54 @@ namespace nogdb {
       return multiCondition.execute(record, propertyTypes);
     }
 
+    ClassFilter RecordCompare::getFilterClasses(const Txn &txn, const GraphFilter &filter) {
+      auto classFilter = ClassFilter{};
+      classFilter.onlyClasses.insert(filter._onlyClasses.cbegin(), filter._onlyClasses.cend());
+      for(const auto &onlySubOfClass: filter._onlySubOfClasses) {
+        auto superClassInfo = txn._adapter->dbClass()->getInfo(onlySubOfClass);
+        if (superClassInfo.type != ClassType::UNDEFINED) {
+          classFilter.onlyClasses.insert(superClassInfo.name);
+          auto subClassesInfo = txn._adapter->dbClass()->getSubClassInfos(superClassInfo.id);
+          for(const auto &subClassInfo: subClassesInfo) {
+            classFilter.onlyClasses.insert(subClassInfo.name);
+          }
+        }
+      }
+      classFilter.ignoreClasses.insert(filter._ignoreClasses.cbegin(), filter._ignoreClasses.cend());
+      for(const auto &ignoreSubOfClass: filter._ignoreSubOfClasses) {
+        auto superClassInfo = txn._adapter->dbClass()->getInfo(ignoreSubOfClass);
+        if (superClassInfo.type != ClassType::UNDEFINED) {
+          classFilter.ignoreClasses.insert(superClassInfo.name);
+          auto subClassesInfo = txn._adapter->dbClass()->getSubClassInfos(superClassInfo.id);
+          for(const auto &subClassInfo: subClassesInfo) {
+            classFilter.ignoreClasses.insert(subClassInfo.name);
+          }
+        }
+      }
+      return classFilter;
+    }
+
     RecordDescriptor RecordCompare::filterRecord(const Txn &txn,
                                                  const RecordDescriptor &recordDescriptor,
-                                                 const GraphFilter &filter) {
-      return filterResult(txn, recordDescriptor, filter).descriptor;
+                                                 const GraphFilter &filter,
+                                                 const ClassFilter &classFilter) {
+      return filterResult(txn, recordDescriptor, filter, classFilter).descriptor;
     }
 
     Result RecordCompare::filterResult(const Txn &txn,
                                        const RecordDescriptor &recordDescriptor,
-                                       const GraphFilter &filter) {
+                                       const GraphFilter &filter,
+                                       const ClassFilter &classFilter) {
       auto classInfo = txn._adapter->dbClass()->getInfo(recordDescriptor.rid.first);
       // filter classes
-      if (!filter._onlyClasses.empty()) {
-        if (filter._onlyClasses.find(classInfo.name) == filter._onlyClasses.cend()) {
+      if (!classFilter.onlyClasses.empty()) {
+        if (classFilter.onlyClasses.find(classInfo.name) == classFilter.onlyClasses.cend()) {
           return Result{};
         }
       }
       // filter excluded classes
-      if (!filter._ignoreClasses.empty()) {
-        if (filter._ignoreClasses.find(classInfo.name) != filter._ignoreClasses.cend()) {
+      if (!classFilter.ignoreClasses.empty()) {
+        if (classFilter.ignoreClasses.find(classInfo.name) != classFilter.ignoreClasses.cend()) {
           return Result{};
         }
       }
@@ -162,7 +191,8 @@ namespace nogdb {
     RecordCompare::filterIncidentEdges(const Txn &txn,
                                        const RecordId &vertex,
                                        const adapter::relation::Direction &direction,
-                                       const GraphFilter &filter) {
+                                       const GraphFilter &filter,
+                                       const ClassFilter &classFilter) {
       auto edgeRecordDescriptors = std::vector<RecordDescriptor>{};
       auto edgeNeighbours = std::vector<RecordId>{};
       switch (direction) {
@@ -181,7 +211,7 @@ namespace nogdb {
 
       for (const auto &edge: edgeNeighbours) {
         auto edgeRdesc = RecordDescriptor{edge};
-        if (filterRecord(txn, edgeRdesc, filter) != RecordDescriptor{}) {
+        if (filterRecord(txn, edgeRdesc, filter, classFilter) != RecordDescriptor{}) {
           edgeRecordDescriptors.emplace_back(edgeRdesc);
         }
       }

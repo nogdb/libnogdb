@@ -97,6 +97,30 @@ namespace nogdb {
     GraphFilter &only(const std::set<std::string>::const_iterator &begin,
                       const std::set<std::string>::const_iterator &end);
 
+    GraphFilter &onlySubClassOf(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &onlySubClassOf(const std::string &className, const T &... classNames) {
+      onlySubClassOf(className);
+      onlySubClassOf(classNames...);
+      return *this;
+    }
+
+    GraphFilter &onlySubClassOf(const std::vector<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::list<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::set<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &onlySubClassOf(const std::list<std::string>::const_iterator &begin,
+                                const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &onlySubClassOf(const std::set<std::string>::const_iterator &begin,
+                                const std::set<std::string>::const_iterator &end);
+
     GraphFilter &exclude(const std::string &className);
 
     template<typename ...T>
@@ -120,6 +144,29 @@ namespace nogdb {
     GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
                          const std::set<std::string>::const_iterator &end);
 
+    GraphFilter &excludeSubClassOf(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &excludeSubClassOf(const std::string &className, const T &... classNames) {
+      excludeSubClassOf(className);
+      excludeSubClassOf(classNames...);
+    }
+
+    GraphFilter &excludeSubClassOf(const std::vector<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::list<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::set<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                   const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &excludeSubClassOf(const std::list<std::string>::const_iterator &begin,
+                                   const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &excludeSubClassOf(const std::set<std::string>::const_iterator &begin,
+                                   const std::set<std::string>::const_iterator &end);
+
   private:
 
     FilterMode _mode;
@@ -130,7 +177,9 @@ namespace nogdb {
     bool (*_function)(const Record &record);
 
     std::set<std::string> _onlyClasses{};
+    std::set<std::string> _onlySubOfClasses{};
     std::set<std::string> _ignoreClasses{};
+    std::set<std::string> _ignoreSubOfClasses{};
 
   };
 

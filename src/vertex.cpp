@@ -149,10 +149,12 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto resultSet = txn._interface->record()->getResultSet(vertexClassInfo);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._interface->record()->getResultSet(classInfo);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto partialResultSet = txn._interface->record()->getResultSet(classInfo);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -189,9 +191,10 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
     auto result = ResultSet{};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterResult.descriptor != RecordDescriptor{}) {
         result.emplace_back(filterResult);
       }
@@ -207,9 +210,10 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
     auto result = ResultSet{};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterResult.descriptor != RecordDescriptor{}) {
         result.emplace_back(filterResult);
       }
@@ -229,9 +233,10 @@ namespace nogdb {
     edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
     edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
     auto result = ResultSet{};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterResult = compare::RecordCompare::filterResult(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterResult.descriptor != RecordDescriptor{}) {
         result.emplace_back(filterResult);
       }
@@ -247,9 +252,10 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getInEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterRecord != RecordDescriptor{}) {
         result.addMetadata(filterRecord);
       }
@@ -265,9 +271,10 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = txn._interface->graph()->getOutEdges(recordDescriptor.rid);
     auto result = ResultSetCursor{txn};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterRecord != RecordDescriptor{}) {
         result.addMetadata(filterRecord);
       }
@@ -287,9 +294,10 @@ namespace nogdb {
     edgeRecordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
     edgeRecordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
     auto result = ResultSetCursor{txn};
+    auto classFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
     for (const auto &recordId: edgeRecordIds) {
       auto edgeRecordDescriptor = RecordDescriptor{recordId};
-      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter);
+      auto filterRecord = compare::RecordCompare::filterRecord(txn, edgeRecordDescriptor, edgeFilter, classFilter);
       if (filterRecord != RecordDescriptor{}) {
         result.addMetadata(filterRecord);
       }

@@ -39,8 +39,15 @@ namespace nogdb {
   using adapter::relation::Direction;
 
   namespace compare {
+
+    struct ClassFilter {
+      std::set<std::string> onlyClasses;
+      std::set<std::string> ignoreClasses;
+    };
+
     class RecordCompare {
     public:
+
       RecordCompare() = delete;
 
       ~RecordCompare() noexcept = delete;
@@ -60,19 +67,24 @@ namespace nogdb {
                                     const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                     const MultiCondition &multiCondition);
 
+      static ClassFilter getFilterClasses(const Txn &txn, const GraphFilter& filter);
+
       static RecordDescriptor filterRecord(const Txn &txn,
                                            const RecordDescriptor &recordDescriptor,
-                                           const GraphFilter &filter);
+                                           const GraphFilter &filter,
+                                           const ClassFilter &classFilter);
 
       static Result filterResult(const Txn &txn,
                                  const RecordDescriptor &recordDescriptor,
-                                 const GraphFilter &filter);
+                                 const GraphFilter &filter,
+                                 const ClassFilter &classFilter);
 
       static std::vector<RecordDescriptor>
       filterIncidentEdges(const Txn &txn,
                           const RecordId &vertex,
                           const adapter::relation::Direction &direction,
-                          const GraphFilter &filter);
+                          const GraphFilter &filter,
+                          const ClassFilter &classFilter);
 
       static std::vector<RecordId>
       resolveEdgeRecordIds(const Txn &txn, const RecordId &recordId, const Direction &direction);

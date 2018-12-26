@@ -65,9 +65,12 @@ namespace nogdb {
       queue.push(recordDescriptor.rid);
 
       try {
+        auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
+        auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
         auto addUniqueVertex = [&](const RecordId &vertex) {
           if (visited.find(vertex) != visited.cend()) return;
-          auto vertexRdesc = compare::RecordCompare::filterRecord(txn, RecordDescriptor{vertex}, vertexFilter);
+          auto vertexRdesc = compare::RecordCompare::filterRecord(txn, RecordDescriptor{vertex}, vertexFilter,
+                                                                  vertexClassFilter);
           if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor{})) {
             vertexRdesc._depth = currentLevel + 1;
             result.emplace_back(vertexRdesc);
@@ -93,7 +96,8 @@ namespace nogdb {
             firstRecordId = RecordId{};
           }
 
-          for (const auto &edge: compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter)) {
+          for (const auto &edge: compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter,
+                                                                             edgeClassFilter)) {
             auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
             switch (direction) {
               case adapter::relation::Direction::IN:
@@ -108,7 +112,7 @@ namespace nogdb {
             }
           }
         }
-      } catch (const Error& err) {
+      } catch (const Error &err) {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
@@ -155,6 +159,8 @@ namespace nogdb {
       auto stack = std::vector<std::vector<RecordId>>{{recordDescriptor.rid}};
       auto currentLevel = 0U;
       try {
+        auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
+        auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
         while (!stack[currentLevel].empty()) {
           const RecordId vertexId = stack[currentLevel].back();
           stack[currentLevel].pop_back();
@@ -164,7 +170,8 @@ namespace nogdb {
 
             if (currentLevel >= minDepth) {
               auto vertexRdesc = compare::RecordCompare::filterRecord(
-                  txn, RecordDescriptor{vertexId}, currentLevel ? vertexFilter : GraphFilter{});
+                  txn, RecordDescriptor{vertexId}, currentLevel ? vertexFilter : GraphFilter{},
+                  currentLevel ? vertexClassFilter : compare::ClassFilter{});
               if (vertexRdesc != RecordDescriptor{}) {
                 vertexRdesc._depth = currentLevel;
                 result.emplace_back(vertexRdesc);
@@ -178,7 +185,7 @@ namespace nogdb {
               }
 
               const auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
-                  txn, vertexId, direction, edgeFilter);
+                  txn, vertexId, direction, edgeFilter, edgeClassFilter);
               for (auto it = incidentEdges.crbegin(); it != incidentEdges.crend(); ++it) {
                 const RecordDescriptor &edge = *it;
                 RecordId nextVertex;
@@ -204,7 +211,7 @@ namespace nogdb {
             --currentLevel;
           }
         }
-      } catch (const Error& err) {
+      } catch (const Error &err) {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {
@@ -251,6 +258,8 @@ namespace nogdb {
         if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
           result.emplace_back(srcVertexRecordDescriptor);
         } else {
+          auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
+          auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
           auto found = false;
           auto visited = std::unordered_map<RecordId, std::pair<RecordDescriptor, RecordId>, RecordIdHash>{};
           visited.insert({srcVertexRecordDescriptor.rid, {RecordDescriptor{}, RecordId{}}});
@@ -261,11 +270,12 @@ namespace nogdb {
             queue.pop();
 
             auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
-                txn, vertex, adapter::relation::Direction::OUT, edgeFilter);
+                txn, vertex, adapter::relation::Direction::OUT, edgeFilter, edgeClassFilter);
             for (const auto &edge: incidentEdges) {
               auto nextVertex = txn._interface->graph()->getSrcDstVertices(edge.rid).second;
               if (visited.find(nextVertex) == visited.cend()) {
-                auto vertexRdesc = compare::RecordCompare::filterRecord(txn, nextVertex, vertexFilter);
+                auto vertexRdesc = compare::RecordCompare::filterRecord(txn, nextVertex, vertexFilter,
+                                                                        vertexClassFilter);
                 if (vertexRdesc != RecordDescriptor{}) {
                   visited.insert({nextVertex, {vertexRdesc, vertex}});
                   queue.push(nextVertex);
@@ -293,7 +303,7 @@ namespace nogdb {
             }
           }
         }
-      } catch (const Error& err) {
+      } catch (const Error &err) {
         if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
           throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
         } else {

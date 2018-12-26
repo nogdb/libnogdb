@@ -547,27 +547,31 @@ void test_get_class_extend() {
   }
   try {
     auto res = nogdb::Vertex::get(txn, "employees");
-    ASSERT_SIZE(res, 6);
-    res = getVertexMultipleClass(txn, std::set<std::string>{"admins", "backends", "frontends"});
-    ASSERT_SIZE(res, 5);
-    res = nogdb::Edge::get(txn, "action");
-    ASSERT_SIZE(res, 12);
-    res = nogdb::Edge::get(txn, "manage");
-    ASSERT_SIZE(res, 2);
-    res = getEdgeMultipleClass(txn, std::set<std::string>{"collaborate", "manage"});
-    ASSERT_SIZE(res, 12);
-    res = nogdb::Edge::get(txn, "inter");
+    ASSERT_SIZE(res, 1);
 
-    res = nogdb::Vertex::get(txn, "backends");
+    res = nogdb::Vertex::getExtend(txn, "employees");
+    ASSERT_SIZE(res, 6);
+    res = getVertexMultipleClassExtend(txn, std::set<std::string>{"admins", "backends", "frontends"});
+    ASSERT_SIZE(res, 5);
+    res = nogdb::Edge::getExtend(txn, "action");
+    ASSERT_SIZE(res, 12);
+    res = nogdb::Edge::getExtend(txn, "manage");
+    ASSERT_SIZE(res, 2);
+    res = getEdgeMultipleClassExtend(txn, std::set<std::string>{"collaborate", "manage"});
+    ASSERT_SIZE(res, 12);
+    res = nogdb::Edge::getExtend(txn, "inter");
+    ASSERT_SIZE(res, 3);
+
+    res = nogdb::Vertex::getExtend(txn, "backends");
     for (const auto &r: res) {
       if (r.record.get("name").toText() == "Bill") {
-        auto edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
-        assert(edges.size() == 3);
+        auto edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.exclude("collaborate"));
+        ASSERT_SIZE(edges, 3);
         edges = nogdb::Vertex::getAllEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("inter", "manage"));
-        assert(edges.size() == 3);
+        ASSERT_SIZE(edges, 3);
       } else if (r.record.get("name").toText() == "Charon") {
         auto edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
-        assert(edges.size() == 2);
+        ASSERT_SIZE(edges, 2);
       }
     }
 

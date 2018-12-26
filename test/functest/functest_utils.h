@@ -201,6 +201,24 @@ inline nogdb::ResultSet getEdgeMultipleClass(nogdb::Txn &txn, const std::set<std
   return res;
 }
 
+inline nogdb::ResultSet getVertexMultipleClassExtend(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+  auto res = nogdb::ResultSet{};
+  for (const auto &className: classNames) {
+    auto tmp = nogdb::Vertex::getExtend(txn, className);
+    res.insert(res.end(), tmp.cbegin(), tmp.cend());
+  }
+  return res;
+}
+
+inline nogdb::ResultSet getEdgeMultipleClassExtend(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+  auto res = nogdb::ResultSet{};
+  for (const auto &className: classNames) {
+    auto tmp = nogdb::Edge::getExtend(txn, className);
+    res.insert(res.end(), tmp.cbegin(), tmp.cend());
+  }
+  return res;
+}
+
 inline bool rdescCompare(const std::string &propertyName,
                          const nogdb::ResultSet &res,
                          const std::vector<nogdb::RecordDescriptor> &expectedResult) {
