@@ -655,18 +655,18 @@ void test_find_class_extend() {
 void test_traverse_class_extend() {
   auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto b = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Bill"));
-    auto c = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Charon"));
-    auto f = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Falcao"));
+    auto b = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Bill"));
+    auto c = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Charon"));
+    auto f = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Falcao"));
     auto res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1);
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1, nogdb::GraphFilter{}.only("collaborate"));
+    res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 1, nogdb::GraphFilter{}.only("collaborate"));
+    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 1, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 2);
-    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 2, nogdb::GraphFilter{}.only("collaborate"));
+    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 2, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::allEdgeBfs(txn, c[0].descriptor, 0, 100, nogdb::GraphFilter{}.only("collaborate", "manage"));
+    res = nogdb::Traverse::allEdgeBfs(txn, c[0].descriptor, 0, 100, nogdb::GraphFilter{}.onlySubClassOf("collaborate", "manage"));
     ASSERT_SIZE(res, 4);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -678,9 +678,9 @@ void test_traverse_class_extend() {
 void test_shortest_path_class_extend() {
   auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto b = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Bill"));
-    auto c = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Charon"));
-    auto d = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Don"));
+    auto b = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Bill"));
+    auto c = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Charon"));
+    auto d = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Don"));
     auto res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor);
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
@@ -688,21 +688,21 @@ void test_shortest_path_class_extend() {
     assert(res[2].record.get("name").toText() == "Don");
 
     res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.only("collaborate"));
+                                        nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
     res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.only("collaborate"));
+                                        nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Bill");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
     res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.only("inter", "manage"));
+                                        nogdb::GraphFilter{}.onlySubClassOf("inter", "manage"));
     ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
