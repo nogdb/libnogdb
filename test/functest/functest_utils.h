@@ -113,10 +113,10 @@ inline void assertEqual(const T& value,
                         const int lineNumber,
                         const std::string &fileName) {
   if (value != expected) {
-    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << value << " in "
+    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expected << " in "
               << funcName << ", file " << fileName
               << ", line " << std::dec << lineNumber << ".\n"
-              << "        Actual:\t" << expected
+              << "        Actual:\t" << value
               << ".\x1B[0m\n";
     assert(0);
   }
@@ -132,10 +132,10 @@ inline void assertNotEqual(const T& value,
                            const int lineNumber,
                            const std::string &fileName) {
   if (value == expected) {
-    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << value << " in "
+    std::cout << "\x1B[31m" << "\n[error] Expect:\t" << expected << " in "
               << funcName << ", file " << fileName
               << ", line " << std::dec << lineNumber << ".\n"
-              << "        Actual:\t" << expected
+              << "        Actual:\t" << value
               << ".\x1B[0m\n";
     assert(0);
   }

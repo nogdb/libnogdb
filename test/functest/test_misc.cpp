@@ -624,7 +624,7 @@ void test_drop_and_find_extended_class() {
 
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    auto res = nogdb::Vertex::get(txn, "vertex1");
+    auto res = nogdb::Vertex::getExtend(txn, "vertex1");
     ASSERT_SIZE(res, 2);
     for (const auto &r: res) {
       assert(r.record.get("prop0").toIntU() == 0U);
@@ -646,11 +646,11 @@ void test_drop_and_find_extended_class() {
 
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    auto res = nogdb::Vertex::get(txn, "vertex1", nogdb::Condition("prop0").eq(0U));
+    auto res = nogdb::Vertex::getExtend(txn, "vertex1", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 2);
-    res = nogdb::Vertex::get(txn, "vertex3", nogdb::Condition("prop0").eq(0U));
+    res = nogdb::Vertex::getExtend(txn, "vertex3", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 1);
-    res = nogdb::Vertex::get(txn, "vertex4", nogdb::Condition("prop0").eq(0U));
+    res = nogdb::Vertex::getExtend(txn, "vertex4", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 1);
     txn.commit();
 
@@ -661,28 +661,31 @@ void test_drop_and_find_extended_class() {
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
       auto res = nogdb::Vertex::get(txn, "vertex1", nogdb::Condition("prop0").eq(0U));
-      assert(false);
-    } catch (const nogdb::Error &ex) {
+      ASSERT_SIZE(res, 0);
       txn.rollback();
-      REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+    } catch (const nogdb::Error &ex) {
+      std::cout << "\nError: " << ex.what() << std::endl;
+      assert(false);
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
       auto res = nogdb::Vertex::get(txn, "vertex3", nogdb::Condition("prop0").eq(0U));
-      assert(false);
-    } catch (const nogdb::Error &ex) {
+      ASSERT_SIZE(res, 0);
       txn.rollback();
-      REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+    } catch (const nogdb::Error &ex) {
+      std::cout << "\nError: " << ex.what() << std::endl;
+      assert(false);
     }
 
     txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     try {
       auto res = nogdb::Vertex::get(txn, "vertex4", nogdb::Condition("prop0").eq(0U));
-      assert(false);
-    } catch (const nogdb::Error &ex) {
+      ASSERT_SIZE(res, 0);
       txn.rollback();
-      REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+    } catch (const nogdb::Error &ex) {
+      std::cout << "\nError: " << ex.what() << std::endl;
+      assert(false);
     }
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -734,10 +737,11 @@ void test_drop_and_find_extended_class() {
   txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
     auto res = nogdb::Vertex::get(txn, "vertex6", nogdb::Condition("prop1").eq("hello"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    ASSERT_SIZE(res, 0);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   try {
@@ -762,22 +766,32 @@ void test_conflict_property() {
     nogdb::Property::add(txn, "vertex2", "prop2", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "vertex3", "vertex1");
     nogdb::Property::add(txn, "vertex3", "prop2", nogdb::PropertyType::TEXT);
+    nogdb::Class::createExtend(txn, "vertex4", "vertex1");
+    nogdb::Property::add(txn, "vertex4", "prop2", nogdb::PropertyType::REAL);
 
     nogdb::Vertex::create(txn, "vertex2", nogdb::Record{}.set("prop2", 97));
     nogdb::Vertex::create(txn, "vertex3", nogdb::Record{}.set("prop2", "a"));
+    nogdb::Vertex::create(txn, "vertex4", nogdb::Record{}.set("prop2", 97.97));
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Vertex::get(txn, "vertex1", nogdb::Condition("prop2").eq(97));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
+    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto res = nogdb::Vertex::getExtend(txn, "vertex1", nogdb::Condition("prop2").eq(97));
+    ASSERT_SIZE(res, 1);
+    ASSERT_EQ(res[0].record.getInt("prop2"), 97);
+    res = nogdb::Vertex::getExtend(txn, "vertex1", nogdb::Condition("prop2").eq("a"));
+    ASSERT_SIZE(res, 2);
+    res = nogdb::Vertex::getExtend(txn, "vertex1", nogdb::Condition("prop2").eq(97.97));
+    ASSERT_SIZE(res, 1);
+    ASSERT_EQ(res[0].record.getReal("prop2"), 97.97);
     txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_CONFLICT_PROPTYPE, "NOGDB_CTX_CONFLICT_PROPTYPE");
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
   }
 
   try {
@@ -785,6 +799,7 @@ void test_conflict_property() {
     nogdb::Class::drop(txn, "vertex1");
     nogdb::Class::drop(txn, "vertex2");
     nogdb::Class::drop(txn, "vertex3");
+    nogdb::Class::drop(txn, "vertex4");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
