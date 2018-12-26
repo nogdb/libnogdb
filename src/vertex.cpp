@@ -177,6 +177,7 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(vertexClassInfo));
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(classNameMapInfo.second));
     }
@@ -343,11 +344,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareCondition(txn, vertexClassInfo, propertyInfo, condition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareCondition(txn, classInfo, currentPropertyInfo, condition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -360,10 +364,12 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto resultSet = txn._interface->record()->getResultSetByCmpFunction(vertexClassInfo, condition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._interface->record()->getResultSetByCmpFunction(classInfo, condition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto partialResultSet = txn._interface->record()->getResultSetByCmpFunction(classInfo, condition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -376,11 +382,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiCondition(txn, vertexClassInfo, propertyInfo, multiCondition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, currentPropertyInfo, multiCondition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -426,11 +435,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, vertexClassInfo, propertyInfo, condition);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, currentPropertyInfo, condition);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -444,6 +456,7 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(vertexClassInfo, condition));
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
     }
@@ -459,11 +472,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyInfo, multiCondition);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, currentPropertyInfo, multiCondition);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -496,11 +512,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet =  compare::RecordCompare::compareCondition(txn, vertexClassInfo, propertyInfo, condition, true);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareCondition(txn, classInfo, currentPropertyInfo, condition, true);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -513,11 +532,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet =  compare::RecordCompare::compareMultiCondition(txn, vertexClassInfo, propertyInfo, multiCondition, true);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, currentPropertyInfo, multiCondition, true);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -554,11 +576,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, vertexClassInfo, propertyInfo, condition, true);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, currentPropertyInfo, condition, true);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -572,11 +597,14 @@ namespace nogdb {
     auto vertexClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto vertexClassInfoExtend = txn._interface->schema()->getSubClassInfos(vertexClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, vertexClassInfo, propertyInfo, multiCondition, true);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: vertexClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, currentPropertyInfo, multiCondition, true);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }

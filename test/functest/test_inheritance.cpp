@@ -567,11 +567,19 @@ void test_get_class_extend() {
       if (r.record.get("name").toText() == "Bill") {
         auto edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.exclude("collaborate"));
         ASSERT_SIZE(edges, 3);
+        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.excludeSubClassOf("collaborate"));
+        ASSERT_SIZE(edges, 1);
         edges = nogdb::Vertex::getAllEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("inter", "manage"));
         ASSERT_SIZE(edges, 3);
       } else if (r.record.get("name").toText() == "Charon") {
-        auto edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        auto edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
         ASSERT_SIZE(edges, 2);
+        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+        ASSERT_SIZE(edges, 2);
+        edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        ASSERT_SIZE(edges, 0);
+        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        ASSERT_SIZE(edges, 1);
       }
     }
 
@@ -585,21 +593,21 @@ void test_get_class_extend() {
 void test_find_class_extend() {
   auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
   try {
-    auto res = nogdb::Vertex::get(txn, "systems", nogdb::Condition("age").le(30U));
+    auto res = nogdb::Vertex::getExtend(txn, "systems", nogdb::Condition("age").le(30U));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "Charon");
-    res = nogdb::Vertex::get(txn, "employees", nogdb::Condition("age").le(30U));
+    res = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("age").le(30U));
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "Charon" || res[0].record.get("name").toText() == "Adam");
     assert(res[1].record.get("name").toText() == "Charon" || res[1].record.get("name").toText() == "Adam");
-    res = nogdb::Vertex::get(txn, "backends", nogdb::Condition("cpp_skills").eq(8));
+    res = nogdb::Vertex::getExtend(txn, "backends", nogdb::Condition("cpp_skills").eq(8));
 
-    res = nogdb::Edge::get(txn, "collaborate", nogdb::Condition("name").endWith("provider").ignoreCase());
+    res = nogdb::Edge::getExtend(txn, "collaborate", nogdb::Condition("name").endWith("provider").ignoreCase());
     ASSERT_SIZE(res, 4);
-    res = nogdb::Edge::get(txn, "action", nogdb::Condition("priority"));
+    res = nogdb::Edge::getExtend(txn, "action", nogdb::Condition("priority"));
     ASSERT_SIZE(res, 2);
 
-    auto b = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Bill"));
+    auto b = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Bill"));
     assert(b.size() == 1);
     res = nogdb::Vertex::getInEdge(txn, b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase());
     ASSERT_SIZE(res, 2);
@@ -608,8 +616,8 @@ void test_find_class_extend() {
     assert(res[1].record.get("name").toText() == "ui provider" ||
            res[1].record.get("name").toText() == "system provider");
     res = nogdb::Vertex::getInEdge(txn, b[0].descriptor,
-                                   nogdb::GraphFilter{nogdb::Condition("name").endWith("provider").ignoreCase()}.only(
-                                       "collaborate"));
+                                   nogdb::GraphFilter{nogdb::Condition("name").endWith("provider").ignoreCase()}
+                                   .onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui provider" ||
            res[0].record.get("name").toText() == "system provider");
@@ -623,16 +631,16 @@ void test_find_class_extend() {
     assert(res[1].record.get("name").toText() == "ui creator" ||
            res[1].record.get("name").toText() == "team leader");
 
-    auto c = nogdb::Vertex::get(txn, "employees", nogdb::Condition("name").eq("Charon"));
+    auto c = nogdb::Vertex::getExtend(txn, "employees", nogdb::Condition("name").eq("Charon"));
     assert(c.size() == 1);
     res = nogdb::Vertex::getOutEdge(txn, c[0].descriptor,
-                                    nogdb::GraphFilter{nogdb::Condition("name").beginWith("team").ignoreCase()}.only(
-                                        "action"));
+                                    nogdb::GraphFilter{nogdb::Condition("name").beginWith("team").ignoreCase()}
+                                    .onlySubClassOf("action"));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "team leader");
     res = nogdb::Vertex::getAllEdge(txn, b[0].descriptor,
-                                    nogdb::GraphFilter{nogdb::Condition("name").contain("team").ignoreCase()}.only(
-                                        "collaborate"));
+                                    nogdb::GraphFilter{nogdb::Condition("name").contain("team").ignoreCase()}
+                                    .onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "team member");
 

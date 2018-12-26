@@ -280,9 +280,9 @@ namespace nogdb {
         if (auto conditionPtr = condition.lock()) {
           auto propertyName = conditionPtr->getCondition().propName;
           if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
-            conditionPropNames.emplace(propertyName);
             auto propertyInfo = propertyInfos.find(propertyName);
-            require(propertyInfo != propertyInfos.cend());
+            if (propertyInfo == propertyInfos.cend()) continue;
+            conditionPropNames.emplace(propertyName);
             auto searchIndexResult = hasIndex(classInfo, propertyInfo->second, conditionPtr->getCondition());
             if (searchIndexResult.first) {
               auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);

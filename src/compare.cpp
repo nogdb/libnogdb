@@ -245,7 +245,7 @@ namespace nogdb {
                                               bool searchIndexOnly) {
       auto foundProperty = propertyNameMapInfo.find(condition.propName);
       if (foundProperty == propertyNameMapInfo.cend()) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        return ResultSet{};
       }
       auto propertyInfo = foundProperty->second;
       auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
@@ -273,10 +273,9 @@ namespace nogdb {
         auto foundConditionProperty = conditionProperties.find(condition.propName);
         if (foundConditionProperty == conditionProperties.cend()) {
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
-          if (foundProperty == propertyNameMapInfo.cend()) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+          if (foundProperty != propertyNameMapInfo.cend()) {
+            conditionProperties.emplace(condition.propName, foundProperty->second);
           }
-          conditionProperties.emplace(condition.propName, foundProperty->second);
         }
       }
 
@@ -301,7 +300,7 @@ namespace nogdb {
                                          bool searchIndexOnly) {
       auto foundProperty = propertyNameMapInfo.find(condition.propName);
       if (foundProperty == propertyNameMapInfo.cend()) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        return std::vector<RecordDescriptor>{};
       }
       auto propertyInfo = foundProperty->second;
       auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
@@ -329,10 +328,9 @@ namespace nogdb {
         auto foundConditionProperty = conditionProperties.find(condition.propName);
         if (foundConditionProperty == conditionProperties.cend()) {
           auto foundProperty = propertyNameMapInfo.find(condition.propName);
-          if (foundProperty == propertyNameMapInfo.cend()) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+          if (foundProperty != propertyNameMapInfo.cend()) {
+            conditionProperties.emplace(condition.propName, foundProperty->second);
           }
-          conditionProperties.emplace(condition.propName, foundProperty->second);
         }
       }
 

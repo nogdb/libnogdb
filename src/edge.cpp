@@ -240,6 +240,7 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(edgeClassInfo));
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getResultSetCursor(classNameMapInfo.second));
     }
@@ -328,11 +329,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareCondition(txn, edgeClassInfo, propertyInfo, condition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareCondition(txn, classInfo, currentPropertyInfo, condition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -345,10 +349,12 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto resultSet = txn._interface->record()->getResultSetByCmpFunction(edgeClassInfo, condition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto resultSet = txn._interface->record()->getResultSetByCmpFunction(classInfo, condition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto partialResultSet = txn._interface->record()->getResultSetByCmpFunction(classInfo, condition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -361,11 +367,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiCondition(txn, edgeClassInfo, propertyInfo, multiCondition);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, currentPropertyInfo, multiCondition);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -410,11 +419,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, edgeClassInfo, propertyInfo, condition);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, currentPropertyInfo, condition);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -428,6 +440,7 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(edgeClassInfo, condition));
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       resultSetExtend.addMetadata(txn._interface->record()->getRecordDescriptorByCmpFunction(classNameMapInfo.second, condition));
     }
@@ -443,11 +456,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyInfo, multiCondition);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, currentPropertyInfo, multiCondition);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -480,11 +496,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet =  compare::RecordCompare::compareCondition(txn, edgeClassInfo, propertyInfo, condition, true);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareCondition(txn, classInfo, propertyNameMapInfo, condition, true);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareCondition(txn, classInfo, currentPropertyInfo, condition, true);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -497,11 +516,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSet{};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet =  compare::RecordCompare::compareMultiCondition(txn, edgeClassInfo, propertyInfo, multiCondition, true);
+    resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-      resultSetExtend.insert(resultSetExtend.cend(), resultSet.cbegin(), resultSet.cend());
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiCondition(txn, classInfo, currentPropertyInfo, multiCondition, true);
+      resultSetExtend.insert(resultSetExtend.cend(), partialResultSet.cbegin(), partialResultSet.cend());
     }
     return resultSetExtend;
   }
@@ -537,11 +559,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, edgeClassInfo, propertyInfo, condition, true);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, propertyNameMapInfo, condition, true);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareConditionRdesc(txn, classInfo, currentPropertyInfo, condition, true);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
@@ -555,11 +580,14 @@ namespace nogdb {
     auto edgeClassInfo = txn._interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto edgeClassInfoExtend = txn._interface->schema()->getSubClassInfos(edgeClassInfo.id);
     auto resultSetExtend = ResultSetCursor{txn};
+    auto propertyInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, edgeClassInfo, propertyInfo, multiCondition, true);
+    resultSetExtend.addMetadata(resultSet);
     for (const auto &classNameMapInfo: edgeClassInfoExtend) {
       auto &classInfo = classNameMapInfo.second;
-      auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-      auto resultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, propertyNameMapInfo, multiCondition, true);
-      resultSetExtend.addMetadata(resultSet);
+      auto currentPropertyInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+      auto partialResultSet = compare::RecordCompare::compareMultiConditionRdesc(txn, classInfo, currentPropertyInfo, multiCondition, true);
+      resultSetExtend.addMetadata(partialResultSet);
     }
     return resultSetExtend;
   }
