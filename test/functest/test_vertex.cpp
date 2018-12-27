@@ -223,7 +223,6 @@ void test_get_vertex_v2() {
     assert(obj_tmp.z == 424242);
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(rdesc.rid));
     assert(res[0].record.getText("@className") == "test");
-    //assert(res[0].record.getBigIntU("@version") == 1UL);
     assert(res[0].record.getIntU("@depth") == 0U);
 
     txn.commit();

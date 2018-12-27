@@ -193,28 +193,14 @@ int main() {
   exec(test_invalid_bfs_traverse_out_cursor, "traversing a graph and returning a cursor using bfs algorithm with outgoing edges and invalid parameters");
   exec(test_bfs_traverse_all_cursor, "traversing a graph and returning a cursor using bfs algorithm with incoming and outgoing edges");
   exec(test_invalid_bfs_traverse_all_cursor, "traversing a graph and returning a cursor using bfs algorithm with incoming and outgoing edges and invalid parameters");
-  exec(test_dfs_traverse_in, "traversing a graph using dfs algorithm with incoming edges");
-  exec(test_invalid_dfs_traverse_in, "traversing a graph using dfs algorithm with incoming edges and invalid parameters");
-  exec(test_dfs_traverse_out, "traversing a graph using dfs algorithm with outgoing edges");
-  exec(test_invalid_dfs_traverse_out, "traversing a graph using dfs algorithm with outgoing edges and invalid parameters");
-  exec(test_dfs_traverse_all, "traversing a graph using dfs algorithm with incoming and outgoing edges");
-  exec(test_invalid_dfs_traverse_all, "traversing a graph using dfs algorithm with incoming and outgoing edges and invalid parameters");
-  exec(test_dfs_traverse_in_cursor, "traversing a graph and returning a cursor using dfs algorithm with incoming edges");
-  exec(test_invalid_dfs_traverse_in_cursor, "traversing a graph and returning a cursor using dfs algorithm with incoming edges and invalid parameters");
-  exec(test_dfs_traverse_out_cursor, "traversing a graph and returning a cursor using dfs algorithm with outgoing edges");
-  exec(test_invalid_dfs_traverse_out_cursor, "traversing a graph and returning a cursor using dfs algorithm with outgoing edges and invalid parameters");
-  exec(test_dfs_traverse_all_cursor, "traversing a graph and returning a cursor using dfs algorithm with incoming and outgoing edges");
-  exec(test_invalid_dfs_traverse_all_cursor, "traversing a graph and returning a cursor using dfs algorithm with incoming and outgoing edges and invalid parameters");
   exec(test_shortest_path, "finding the shortest path in a graph");
   exec(test_invalid_shortest_path, "finding the shortest path with invalid parameters");
   exec(test_shortest_path_cursor, "finding a cursor of the shortest path in a graph");
   exec(test_invalid_shortest_path_cursor, "finding a cursor of the shortest path with invalid parameters");
   // exec(test_shortest_path_dijkstra, "finding the shortest path with dijkstra's algorithm");
   exec(test_bfs_traverse_with_condition, "traversing a graph using bfs algorithm with conditional functions");
-  exec(test_dfs_traverse_with_condition, "traversing a graph using dfs algorithm with conditional functions");
   exec(test_shortest_path_with_condition, "finding the shortest path in a graph with conditional functions");
   exec(test_bfs_traverse_cursor_with_condition, "traversing a graph and returning a cursor using bfs algorithm with conditional functions");
-  exec(test_dfs_traverse_cursor_with_condition, "traversing a graph and returning a cursor using dfs algorithm with conditional functions");
   exec(test_shortest_path_cursor_with_condition, "finding a cursor of the shortest path in a graph with conditional functions");
   exec(destroy_test_graph, "destroying the graph for testing graph operations");
 #endif
