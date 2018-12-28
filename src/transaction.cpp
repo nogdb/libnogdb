@@ -30,20 +30,20 @@
 #include "datarecord.hpp"
 #include "relation.hpp"
 
-#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
-  Txn::Adapter::Adapter()
+  Transaction::Adapter::Adapter()
     : _dbInfo{nullptr}, _class{nullptr}, _property{nullptr}, _index{nullptr} {}
 
-  Txn::Adapter::Adapter(const storage_engine::LMDBTxn *txn)
+  Transaction::Adapter::Adapter(const storage_engine::LMDBTxn *txn)
     : _dbInfo{new adapter::metadata::DBInfoAccess(txn)},
       _class{new adapter::schema::ClassAccess(txn)},
       _property{new adapter::schema::PropertyAccess(txn)},
       _index{new adapter::schema::IndexAccess(txn)} {}
 
-  Txn::Adapter::~Adapter() noexcept {
+  Transaction::Adapter::~Adapter() noexcept {
     if (_dbInfo) {
       delete _dbInfo;
       _dbInfo = nullptr;
@@ -62,25 +62,25 @@ namespace nogdb {
     }
   }
 
-  Txn::Interface::Interface()
+  Transaction::Interface::Interface()
     : _txn{nullptr}, _schema{nullptr}, _record{nullptr}, _graph{nullptr}, _index{nullptr} {}
 
 
-  Txn::Interface::Interface(const Txn *txn)
+  Transaction::Interface::Interface(const Transaction *txn)
     : _txn{txn},
       _schema{new schema::SchemaInterface(_txn)},
       _record{new datarecord::DataRecordInterface(_txn)},
       _graph{new relation::GraphInterface(_txn)},
       _index{new index::IndexInterface(_txn)} {}
 
-  Txn::Interface::~Interface() noexcept {
+  Transaction::Interface::~Interface() noexcept {
     if (_txn) {
       destroy();
       _txn = nullptr;
     }
   }
 
-  void Txn::Interface::destroy() {
+  void Transaction::Interface::destroy() {
     if (_schema) {
       delete _schema;
       _schema = nullptr;
@@ -99,12 +99,12 @@ namespace nogdb {
     }
   }
 
-  Txn::Txn(Context &ctx, Mode mode)
+  Transaction::Transaction(Context &ctx, const TxnMode &mode)
     : _txnMode{mode}, _txnCtx{&ctx} {
     try {
       _txnBase = new storage_engine::LMDBTxn(
           _txnCtx->_envHandler.get(),
-          (mode == READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
+          (mode == TxnMode::READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
       _adapter = new Adapter(_txnBase);
       _interface = new Interface(this);
     } catch (const Error& err) {
@@ -116,15 +116,15 @@ namespace nogdb {
     }
   }
 
-  Txn::~Txn() noexcept {
+  Transaction::~Transaction() noexcept {
     try { rollback(); } catch (...) {}
   }
 
-  Txn::Txn(Txn &&txn) noexcept {
+  Transaction::Transaction(Transaction &&txn) noexcept {
     *this = std::move(txn);
   }
 
-  Txn &Txn::operator=(Txn &&txn) noexcept {
+  Transaction &Transaction::operator=(Transaction &&txn) noexcept {
     if (this != &txn) {
       try { rollback(); } catch (...) {}
 
@@ -143,7 +143,7 @@ namespace nogdb {
     return *this;
   }
 
-  void Txn::commit() {
+  void Transaction::commit() {
     if (_txnBase) {
       try {
         _txnBase->commit();
@@ -160,7 +160,7 @@ namespace nogdb {
     }
   }
 
-  void Txn::rollback() noexcept {
+  void Transaction::rollback() noexcept {
     if (_txnBase) {
       _txnBase->rollback();
       _txnBase = nullptr;

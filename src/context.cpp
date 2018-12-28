@@ -34,7 +34,7 @@
 #include "validate.hpp"
 #include "schema.hpp"
 
-#include "nogdb/nogdb_context.h"
+#include "nogdb/nogdb.h"
 
 using namespace nogdb::utils::assertion;
 
@@ -89,6 +89,10 @@ namespace nogdb {
       ctx._maxDBSize = 0;
     }
     return *this;
+  }
+
+  Transaction Context::beginTxn(const TxnMode &txnMode) {
+    return Transaction(*this, txnMode);
   }
 
 }

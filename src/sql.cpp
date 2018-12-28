@@ -30,7 +30,7 @@
 #include "sql.hpp"
 #include "utils.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 using namespace std;
 using namespace nogdb::sql_parser;
@@ -349,11 +349,11 @@ Function::Function(const string &name_, vector<Projection> &&args_)
   }
 }
 
-Bytes Function::execute(Txn &txn, const Result &input) const {
+Bytes Function::execute(Transaction &txn, const Result &input) const {
   require(this->isAggregateResult() == false);
   require(this->isExpand() == false);
 
-  function< Bytes(Txn &, const Result &, const vector<Projection> &)> func;
+  function< Bytes(Transaction &, const Result &, const vector<Projection> &)> func;
   switch (this->id) {
     case Id::IN:
       func = walkIn;
@@ -404,7 +404,7 @@ Bytes Function::executeAggregateResult(const ResultSet &input) const {
   return func(input, this->args);
 }
 
-Bytes Function::executeExpand(Txn &txn, ResultSet &input) const {
+Bytes Function::executeExpand(Transaction &txn, ResultSet &input) const {
   return expand(txn, input, args);
 }
 
@@ -459,80 +459,80 @@ Bytes Function::count(const ResultSet &input, const vector<Projection> &args) {
   }
 }
 
-//Bytes Function::min(Txn &txn, const ResultSet &input, const vector<Projection> &args) {
+//Bytes Function::min(Transaction &txn, const ResultSet &input, const vector<Projection> &args) {
 //}
 //
-//Bytes Function::max(Txn &txn, const ResultSet &input, const vector<Projection> &args) {
+//Bytes Function::max(Transaction &txn, const ResultSet &input, const vector<Projection> &args) {
 //}
 
-Bytes Function::walkIn(nogdb::Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkIn(nogdb::Transaction &txn, const Result &input, const vector<Projection> &args) {
   ResultSet results{};
   Bytes rTmp = walkInEdge(txn, input, args);
   for (const Result &input: rTmp.results()) {
-    results.push_back(Edge::getSrc(txn, input.descriptor));
+    results.push_back(txn.fetchSrc(input.descriptor));
   }
   return Bytes(move(results));
 }
 
-Bytes Function::walkInEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  return Bytes(Vertex::getInEdge(txn, input.descriptor, GraphFilter{}.only(argsToClassFilter(args))));
+Bytes Function::walkInEdge(Transaction &txn, const Result &input, const vector<Projection> &args) {
+  return Bytes(txn.findInEdge(input.descriptor).where(GraphFilter{}.only(argsToClassFilter(args))).get());
 }
 
-Bytes Function::walkInVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkInVertex(Transaction &txn, const Result &input, const vector<Projection> &args) {
   if (args.size() == 0) {
-    return Bytes(ResultSet{Edge::getDst(txn, input.descriptor)});
+    return Bytes(ResultSet{txn.fetchDst(input.descriptor)});
   } else {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
   }
 }
 
-Bytes Function::walkOut(nogdb::Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkOut(nogdb::Transaction &txn, const Result &input, const vector<Projection> &args) {
   ResultSet results{};
   Bytes rTmp = walkOutEdge(txn, input, args);
   for (const Result &input: rTmp.results()) {
-    results.push_back(Edge::getDst(txn, input.descriptor));
+    results.push_back(txn.fetchDst(input.descriptor));
   }
   return Bytes(move(results));
 }
 
-Bytes Function::walkOutEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  return Bytes(Vertex::getOutEdge(txn, input.descriptor, GraphFilter{}.only(argsToClassFilter(args))));
+Bytes Function::walkOutEdge(Transaction &txn, const Result &input, const vector<Projection> &args) {
+  return Bytes(txn.findOutEdge(input.descriptor).where(GraphFilter{}.only(argsToClassFilter(args))).get());
 }
 
-Bytes Function::walkOutVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkOutVertex(Transaction &txn, const Result &input, const vector<Projection> &args) {
   if (args.size() == 0) {
-    return Bytes(ResultSet{Edge::getSrc(txn, input.descriptor)});
+    return Bytes(ResultSet{txn.fetchSrc(input.descriptor)});
   } else {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
   }
 }
 
-Bytes Function::walkBoth(Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkBoth(Transaction &txn, const Result &input, const vector<Projection> &args) {
   ResultSet results{};
   Bytes rTmp = walkInEdge(txn, input, args);
   for (const Result &input: rTmp.results()) {
-    results.push_back(Edge::getSrc(txn, input.descriptor));
+    results.push_back(txn.fetchSrc(input.descriptor));
   }
   rTmp = walkOutEdge(txn, input, args);
   for (const Result &input: rTmp.results()) {
-    results.push_back(Edge::getDst(txn, input.descriptor));
+    results.push_back(txn.fetchDst(input.descriptor));
   }
   return Bytes(move(results));
 }
 
-Bytes Function::walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args) {
-  return Bytes(Vertex::getAllEdge(txn, input.descriptor, GraphFilter{}.only(argsToClassFilter(args))));
+Bytes Function::walkBothEdge(Transaction &txn, const Result &input, const vector<Projection> &args) {
+  return Bytes(txn.findEdge(input.descriptor).where(GraphFilter{}.only(argsToClassFilter(args))).get());
 }
 
-Bytes Function::walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args) {
+Bytes Function::walkBothVertex(Transaction &txn, const Result &input, const vector<Projection> &args) {
   if (args.size() == 0) {
-    return Bytes(Edge::getSrcDst(txn, input.descriptor));
+    return Bytes(txn.fetchSrcDst(input.descriptor));
   } else {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
   }
 }
 
-Bytes Function::expand(Txn &txn, ResultSet &input, const vector<Projection> &args) {
+Bytes Function::expand(Transaction &txn, ResultSet &input, const vector<Projection> &args) {
   if (args.size() != 1) {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_FUNCTION_ARGS);
   }
@@ -896,7 +896,7 @@ static int getTokenID(const unsigned char *z, int *tokenType) {
   return i;
 }
 
-const nogdb::SQL::Result nogdb::SQL::execute(Txn &txn, const std::string &sql) {
+const nogdb::SQL::Result nogdb::SQL::execute(Transaction &txn, const std::string &sql) {
   auto parser = sql_parser::Context::create(txn);
 
   const char *zSql = sql.c_str();

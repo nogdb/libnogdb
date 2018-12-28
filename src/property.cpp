@@ -29,162 +29,165 @@
 #include "schema.hpp"
 #include "parser.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
   using namespace adapter::schema;
 
-  const PropertyDescriptor Property::add(Txn &txn,
-                                         const std::string &className,
-                                         const std::string &propertyName,
-                                         PropertyType type) {
-    auto validators = BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  const PropertyDescriptor
+  Transaction::addProperty(const std::string &className, const std::string &propertyName, PropertyType type) {
+    auto validators = BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
         .isPropertyTypeValid(type)
-        .isTxnValid();
+        .isPropertyIdMaxReach();
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    auto foundClass = _interface->schema()->getExistingClass(className);
     validators.isNotDuplicatedProperty(foundClass.id, propertyName);
-    validators.isNotOverridenProperty(foundClass.id, propertyName);
+    validators.isNotOverriddenProperty(foundClass.id, propertyName);
 
     try {
-      auto propertyId = txn._adapter->dbInfo()->getMaxPropertyId() + PropertyId{1};
+      auto propertyId = _adapter->dbInfo()->getMaxPropertyId() + PropertyId{1};
       auto propertyProps = PropertyAccessInfo{foundClass.id, propertyName, propertyId, type};
-      txn._adapter->dbProperty()->create(propertyProps);
-      txn._adapter->dbInfo()->setMaxPropertyId(propertyId);
-      txn._adapter->dbInfo()->setNumPropertyId(txn._adapter->dbInfo()->getNumPropertyId() + PropertyId{1});
+      _adapter->dbProperty()->create(propertyProps);
+      _adapter->dbInfo()->setMaxPropertyId(propertyId);
+      _adapter->dbInfo()->setNumPropertyId(_adapter->dbInfo()->getNumPropertyId() + PropertyId{1});
       return PropertyDescriptor{propertyProps.id, propertyName, type, false};
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  void Property::alter(Txn &txn,
-                       const std::string &className,
-                       const std::string &oldPropertyName,
-                       const std::string &newPropertyName) {
-    auto validators = BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  void Transaction::renameProperty(const std::string &className,
+                                   const std::string &oldPropertyName,
+                                   const std::string &newPropertyName) {
+    auto validators = BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(oldPropertyName)
         .isPropertyNameValid(newPropertyName);
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    auto foundClass = _interface->schema()->getExistingClass(className);
     validators.isNotDuplicatedProperty(foundClass.id, newPropertyName);
-    validators.isNotOverridenProperty(foundClass.id, newPropertyName);
+    validators.isNotOverriddenProperty(foundClass.id, newPropertyName);
 
-    auto foundOldProperty = txn._interface->schema()->getExistingProperty(foundClass.id, oldPropertyName);
+    auto foundOldProperty = _interface->schema()->getExistingProperty(foundClass.id, oldPropertyName);
     try {
-      txn._adapter->dbProperty()->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
+      _adapter->dbProperty()->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  void Property::remove(Txn &txn, const std::string &className, const std::string &propertyName) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  void Transaction::dropProperty(const std::string &className, const std::string &propertyName) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
-    auto foundProperty = txn._interface->schema()->getExistingProperty(foundClass.id, propertyName);
+    auto foundClass = _interface->schema()->getExistingClass(className);
+    auto foundProperty = _interface->schema()->getExistingProperty(foundClass.id, propertyName);
     // check if all index tables associated with the column have bee removed beforehand
-    auto foundIndex = txn._adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
+    auto foundIndex = _adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
     if (foundIndex.id != IndexId{}) {
       throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
     }
     try {
-      txn._adapter->dbProperty()->remove(foundClass.id, propertyName);
-      txn._adapter->dbInfo()->setNumPropertyId(txn._adapter->dbInfo()->getNumPropertyId() - PropertyId{1});
+      _adapter->dbProperty()->remove(foundClass.id, propertyName);
+      _adapter->dbInfo()->setNumPropertyId(_adapter->dbInfo()->getNumPropertyId() - PropertyId{1});
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  const IndexDescriptor
-  Property::createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  const IndexDescriptor Transaction::addIndex(const std::string &className, 
+                                              const std::string &propertyName,
+                                              bool isUnique) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
-        .isTxnValid();
+        .isIndexIdMaxReach();
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
-    auto foundProperty = txn._interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);
+    auto foundClass = _interface->schema()->getExistingClass(className);
+    auto foundProperty = _interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);
     if (foundProperty.type == PropertyType::BLOB || foundProperty.type == PropertyType::UNDEFINED) {
       throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPTYPE_INDEX);
     }
-    auto indexInfo = txn._adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
+    auto indexInfo = _adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
     if (indexInfo.id != IndexId{}) {
       throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_DUPLICATE_INDEX);
     }
     try {
-      auto indexId = txn._adapter->dbInfo()->getMaxIndexId() + IndexId{1};
+      auto indexId = _adapter->dbInfo()->getMaxIndexId() + IndexId{1};
       auto indexProps = IndexAccessInfo{foundClass.id, foundProperty.id, indexId, isUnique};
       // create index metadata in schema
-      txn._adapter->dbIndex()->create(indexProps);
+      _adapter->dbIndex()->create(indexProps);
       // create index record in index database
-      txn._interface->index()->initialize(foundProperty, indexProps, foundClass.type);
-      txn._adapter->dbInfo()->setMaxIndexId(indexId);
-      txn._adapter->dbInfo()->setNumIndexId(txn._adapter->dbInfo()->getNumIndexId() + IndexId{1});
+      _interface->index()->initialize(foundProperty, indexProps, foundClass.type);
+      _adapter->dbInfo()->setMaxIndexId(indexId);
+      _adapter->dbInfo()->setNumIndexId(_adapter->dbInfo()->getNumIndexId() + IndexId{1});
       return IndexDescriptor{
-        indexId,
-        foundClass.id,
-        foundProperty.id,
-        isUnique
+          indexId,
+          foundClass.id,
+          foundProperty.id,
+          isUnique
       };
     } catch (const Error& err) {
       if (err.code() == MDB_KEYEXIST) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_INDEX_CONSTRAINT);
       } else {
-        txn.rollback();
+        rollback();
         throw NOGDB_FATAL_ERROR(err);
       }
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  void Property::dropIndex(Txn &txn, const std::string &className, const std::string &propertyName) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  void Transaction::dropIndex(const std::string &className, const std::string &propertyName) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
-    auto foundProperty = txn._interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);
-    auto indexInfo = txn._adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
+    auto foundClass = _interface->schema()->getExistingClass(className);
+    auto foundProperty = _interface->schema()->getExistingPropertyExtend(foundClass.id, propertyName);
+    auto indexInfo = _adapter->dbIndex()->getInfo(foundClass.id, foundProperty.id);
     if (indexInfo.id == IndexId{}) {
       throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
     }
     try {
       // remove index metadata from schema
-      txn._adapter->dbIndex()->remove(foundClass.id, foundProperty.id);
+      _adapter->dbIndex()->remove(foundClass.id, foundProperty.id);
       // remove all index data from index database
-      txn._interface->index()->drop(foundProperty, indexInfo);
-      txn._adapter->dbInfo()->setNumIndexId(txn._adapter->dbInfo()->getNumIndexId() - IndexId{1});
+      _interface->index()->drop(foundProperty, indexInfo);
+      _adapter->dbInfo()->setNumIndexId(_adapter->dbInfo()->getNumIndexId() - IndexId{1});
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }

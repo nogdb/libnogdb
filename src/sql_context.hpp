@@ -35,9 +35,9 @@ namespace nogdb {
     public:
       friend class Function;
 
-      Context(Txn &txn_) : txn(txn_) {}
+      Context(Transaction &txn_) : txn(txn_) {}
 
-      Txn &txn;
+      Transaction &txn;
       enum {
         SQL_OK,
         SQL_ERROR,
@@ -101,7 +101,7 @@ namespace nogdb {
 
 
     private:
-      void newTxnIfRootStmt(bool isRoot, Txn::Mode mode);
+      void newTxnIfRootStmt(bool isRoot, TxnMode mode);
 
       void commitIfRootStmt(bool isRoot);
 
@@ -127,31 +127,31 @@ namespace nogdb {
 
       ResultSet traversePrivate(const TraverseArgs &stmt);
 
-      static Bytes getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map);
+      static Bytes getProjectionItem(Transaction &txn, const Result &input, const Projection &proj, const PropertyMapType &map);
 
       static Bytes
-      getProjectionItemProperty(Txn &txn, const Result &input, const string &propName, const PropertyMapType &map);
+      getProjectionItemProperty(Transaction &txn, const Result &input, const string &propName, const PropertyMapType &map);
 
       static Bytes
-      getProjectionItemMethod(Txn &txn, const Result &input, const Projection &firstProj, const Projection &secondProj,
+      getProjectionItemMethod(Transaction &txn, const Result &input, const Projection &firstProj, const Projection &secondProj,
                               const PropertyMapType &map);
 
       static Bytes
-      getProjectionItemArraySelector(Txn &txn, const Result &input, const Projection &proj, unsigned long index,
+      getProjectionItemArraySelector(Transaction &txn, const Result &input, const Projection &proj, unsigned long index,
                                      const PropertyMapType &map);
 
       static Bytes
-      getProjectionItemCondition(Txn &txn, const Result &input, const Function &func, const Condition &cond);
+      getProjectionItemCondition(Transaction &txn, const Result &input, const Function &func, const Condition &cond);
 
-      static ClassType findClassType(Txn &txn, const string &className);
+      static ClassType findClassType(Transaction &txn, const string &className);
 
-      static PropertyMapType getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID);
+      static PropertyMapType getPropertyMapTypeFromClassDescriptor(Transaction &txn, ClassId classID);
 
-      static ResultSet executeCondition(Txn &txn, const ResultSet &input, const MultiCondition &conds);
+      static ResultSet executeCondition(Transaction &txn, const ResultSet &input, const MultiCondition &conds);
 
       /* LEMONXX base */
     public:
-      static std::unique_ptr<Context> create(Txn &txn);
+      static std::unique_ptr<Context> create(Transaction &txn);
     };
   }
 }

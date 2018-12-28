@@ -27,38 +27,30 @@
 #include "datarecord_adapter.hpp"
 #include "parser.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
-  DBInfo DB::getDBInfo(const Txn &txn) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+  const DbInfo Transaction::getDbInfo() {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
 
-    auto dbInfo = DBInfo{};
-    dbInfo.maxClassId = txn._adapter->dbInfo()->getMaxClassId();
-    dbInfo.maxPropertyId = txn._adapter->dbInfo()->getMaxPropertyId();
-    dbInfo.maxIndexId = txn._adapter->dbInfo()->getMaxIndexId();
-    dbInfo.numClass = txn._adapter->dbInfo()->getNumClassId();
-    dbInfo.numProperty = txn._adapter->dbInfo()->getNumPropertyId();
-    dbInfo.numIndex = txn._adapter->dbInfo()->getNumIndexId();
+    auto dbInfo = DbInfo{};
+    dbInfo.maxClassId = _adapter->dbInfo()->getMaxClassId();
+    dbInfo.maxPropertyId = _adapter->dbInfo()->getMaxPropertyId();
+    dbInfo.maxIndexId = _adapter->dbInfo()->getMaxIndexId();
+    dbInfo.numClass = _adapter->dbInfo()->getNumClassId();
+    dbInfo.numProperty = _adapter->dbInfo()->getNumPropertyId();
+    dbInfo.numIndex = _adapter->dbInfo()->getNumIndexId();
     return dbInfo;
   }
 
-  Record DB::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
-
-    auto classInfo = txn._interface->schema()->getValidClassInfo(recordDescriptor.rid.first);
-    return txn._interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
-  }
-
-  const std::vector<ClassDescriptor> DB::getClasses(const Txn &txn) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+  const std::vector<ClassDescriptor> Transaction::getClasses() {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
 
     auto result = std::vector<ClassDescriptor>{};
-    for (const auto &classInfo: txn._adapter->dbClass()->getAllInfos()) {
+    for (const auto &classInfo: _adapter->dbClass()->getAllInfos()) {
       result.emplace_back(
           ClassDescriptor{
               classInfo.id,
@@ -70,15 +62,15 @@ namespace nogdb {
     return result;
   }
 
-  const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const std::string &className) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted()
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const std::string &className) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted()
         .isClassNameValid(className);
 
     auto result = std::vector<PropertyDescriptor>{};
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    auto foundClass = _interface->schema()->getExistingClass(className);
     // native properties
-    for (const auto &property: txn._interface->schema()->getNativePropertyInfo(foundClass.id)) {
+    for (const auto &property: _interface->schema()->getNativePropertyInfo(foundClass.id)) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,
@@ -88,8 +80,8 @@ namespace nogdb {
           });
     }
     // inherited properties
-    auto inheritResult = txn._interface->schema()->getInheritPropertyInfo(
-        txn._adapter->dbClass()->getSuperClassId(foundClass.id),
+    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
+        _adapter->dbClass()->getSuperClassId(foundClass.id),
         std::vector<schema::PropertyAccessInfo>{});
     for (const auto &property: inheritResult) {
       result.emplace_back(
@@ -103,14 +95,14 @@ namespace nogdb {
     return result;
   }
 
-  const std::vector<PropertyDescriptor> DB::getProperties(const Txn &txn, const ClassDescriptor &classDescriptor) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDescriptor &classDescriptor) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
 
     auto result = std::vector<PropertyDescriptor>{};
-    auto foundClass = txn._interface->schema()->getExistingClass(classDescriptor.id);
+    auto foundClass = _interface->schema()->getExistingClass(classDescriptor.id);
     // native properties
-    for (const auto &property: txn._interface->schema()->getNativePropertyInfo(foundClass.id)) {
+    for (const auto &property: _interface->schema()->getNativePropertyInfo(foundClass.id)) {
       result.emplace_back(
           PropertyDescriptor{
               property.id,
@@ -120,8 +112,8 @@ namespace nogdb {
           });
     }
     // inherited properties
-    auto inheritResult = txn._interface->schema()->getInheritPropertyInfo(
-        txn._adapter->dbClass()->getSuperClassId(foundClass.id),
+    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
+        _adapter->dbClass()->getSuperClassId(foundClass.id),
         std::vector<schema::PropertyAccessInfo>{});
     for (const auto &property: inheritResult) {
       result.emplace_back(
@@ -135,70 +127,12 @@ namespace nogdb {
     return result;
   }
 
-  const ClassDescriptor DB::getClass(const Txn &txn, const std::string &className) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted()
-        .isClassNameValid(className);
+  const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor &classDescriptor) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
 
-    auto classInfo = txn._interface->schema()->getExistingClass(className);
-    return ClassDescriptor{
-        classInfo.id,
-        classInfo.name,
-        classInfo.superClassId,
-        classInfo.type
-    };
-  }
-
-  const ClassDescriptor DB::getClass(const Txn &txn, const ClassId &classId) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
-
-    auto classInfo = txn._interface->schema()->getExistingClass(classId);
-    return ClassDescriptor{
-        classInfo.id,
-        classInfo.name,
-        classInfo.superClassId,
-        classInfo.type
-    };
-  }
-
-  const PropertyDescriptor
-  DB::getProperty(const Txn &txn, const std::string &className, const std::string &propertyName) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted()
-        .isClassNameValid(className)
-        .isPropertyNameValid(propertyName);
-
-    auto classInfo = txn._interface->schema()->getExistingClass(className);
-    try {
-      auto propertyInfo = txn._interface->schema()->getExistingProperty(classInfo.id, propertyName);
-      return PropertyDescriptor{
-          propertyInfo.id,
-          propertyInfo.name,
-          propertyInfo.type,
-          false
-      };
-    } catch (const Error &error) {
-      if (error.code() == NOGDB_CTX_NOEXST_PROPERTY) {
-        auto propertyInfo = txn._interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
-        return PropertyDescriptor{
-            propertyInfo.id,
-            propertyInfo.name,
-            propertyInfo.type,
-            true
-        };
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  const std::vector<IndexDescriptor> DB::getIndexes(const Txn &txn, const ClassDescriptor &classDescriptor) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted();
-
-    auto classInfo = txn._interface->schema()->getExistingClass(classDescriptor.id);
-    auto indexInfos = txn._adapter->dbIndex()->getInfos(classInfo.id);
+    auto classInfo = _interface->schema()->getExistingClass(classDescriptor.id);
+    auto indexInfos = _adapter->dbIndex()->getInfos(classInfo.id);
     auto indexDescriptors = std::vector<IndexDescriptor>{};
     for (const auto &indexInfo: indexInfos) {
       indexDescriptors.emplace_back(IndexDescriptor{
@@ -211,15 +145,72 @@ namespace nogdb {
     return indexDescriptors;
   }
 
-  const IndexDescriptor DB::getIndex(const Txn &txn, const std::string &className, const std::string &propertyName) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnCompleted()
+  const ClassDescriptor Transaction::getClass(const std::string &className) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted()
+        .isClassNameValid(className);
+
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
+
+  const ClassDescriptor Transaction::getClass(const ClassId &classId) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
+
+    auto classInfo = _interface->schema()->getExistingClass(classId);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
+
+  const PropertyDescriptor Transaction::getProperty(const std::string &className, const std::string &propertyName) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
-    auto classInfo = txn._interface->schema()->getExistingClass(className);
-    auto propertyInfo = txn._interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
-    auto indexInfo = txn._interface->schema()->getIndexInfo(classInfo.id, propertyInfo.id);
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    try {
+      auto propertyInfo = _interface->schema()->getExistingProperty(classInfo.id, propertyName);
+      return PropertyDescriptor{
+          propertyInfo.id,
+          propertyInfo.name,
+          propertyInfo.type,
+          false
+      };
+    } catch (const Error &error) {
+      if (error.code() == NOGDB_CTX_NOEXST_PROPERTY) {
+        auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
+        return PropertyDescriptor{
+            propertyInfo.id,
+            propertyInfo.name,
+            propertyInfo.type,
+            true
+        };
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  const IndexDescriptor Transaction::getIndex(const std::string &className, const std::string &propertyName) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName);
+
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
+    auto indexInfo = _interface->schema()->getIndexInfo(classInfo.id, propertyInfo.id);
     return IndexDescriptor{
         indexInfo.id,
         indexInfo.classId,
@@ -227,6 +218,15 @@ namespace nogdb {
         indexInfo.isUnique
     };
   }
+
+  Record Transaction::fetchRecord(const RecordDescriptor &recordDescriptor) {
+    BEGIN_VALIDATION(this)
+        .isTransactionCompleted();
+
+    auto classInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first);
+    return _interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+  }
+
 }
 
 

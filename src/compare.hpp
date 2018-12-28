@@ -30,8 +30,7 @@
 #include "relation.hpp"
 
 #include "nogdb/nogdb_types.h"
-#include "nogdb/nogdb_compare.h"
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
@@ -67,83 +66,83 @@ namespace nogdb {
                                     const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                     const MultiCondition &multiCondition);
 
-      static ClassFilter getFilterClasses(const Txn &txn, const GraphFilter& filter);
+      static ClassFilter getFilterClasses(const Transaction &txn, const GraphFilter& filter);
 
-      static RecordDescriptor filterRecord(const Txn &txn,
+      static RecordDescriptor filterRecord(const Transaction &txn,
                                            const RecordDescriptor &recordDescriptor,
                                            const GraphFilter &filter,
                                            const ClassFilter &classFilter);
 
-      static Result filterResult(const Txn &txn,
+      static Result filterResult(const Transaction &txn,
                                  const RecordDescriptor &recordDescriptor,
                                  const GraphFilter &filter,
                                  const ClassFilter &classFilter);
 
       static std::vector<RecordDescriptor>
-      filterIncidentEdges(const Txn &txn,
+      filterIncidentEdges(const Transaction &txn,
                           const RecordId &vertex,
                           const adapter::relation::Direction &direction,
                           const GraphFilter &filter,
                           const ClassFilter &classFilter);
 
       static std::vector<RecordId>
-      resolveEdgeRecordIds(const Txn &txn, const RecordId &recordId, const Direction &direction);
+      resolveEdgeRecordIds(const Transaction &txn, const RecordId &recordId, const Direction &direction);
 
-      static ResultSet compareCondition(const Txn &txn,
+      static ResultSet compareCondition(const Transaction &txn,
                                         const schema::ClassAccessInfo &classInfo,
                                         const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                         const Condition &condition,
                                         bool searchIndexOnly = false);
 
-      static ResultSet compareMultiCondition(const Txn &txn,
+      static ResultSet compareMultiCondition(const Transaction &txn,
                                              const schema::ClassAccessInfo &classInfo,
                                              const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                              const MultiCondition &conditions,
                                              bool searchIndexOnly = false);
 
       static std::vector<RecordDescriptor>
-      compareConditionRdesc(const Txn &txn,
+      compareConditionRdesc(const Transaction &txn,
                             const schema::ClassAccessInfo &classInfo,
                             const schema::PropertyNameMapInfo &propertyNameMapInfo,
                             const Condition &condition,
                             bool searchIndexOnly = false);
 
       static std::vector<RecordDescriptor>
-      compareMultiConditionRdesc(const Txn &txn,
+      compareMultiConditionRdesc(const Transaction &txn,
                                  const schema::ClassAccessInfo &classInfo,
                                  const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                  const MultiCondition &conditions,
                                  bool searchIndexOnly = false);
 
-      static ResultSet compareEdgeCondition(const Txn &txn,
+      static ResultSet compareEdgeCondition(const Transaction &txn,
                                             const RecordDescriptor &recordDescriptor,
                                             const Direction &direction,
                                             const Condition &condition);
 
-      static ResultSet compareEdgeCondition(const Txn &txn,
+      static ResultSet compareEdgeCondition(const Transaction &txn,
                                             const RecordDescriptor &recordDescriptor,
                                             const Direction &direction,
                                             bool (*condition)(const Record &));
 
-      static ResultSet compareEdgeMultiCondition(const Txn &txn,
+      static ResultSet compareEdgeMultiCondition(const Transaction &txn,
                                                  const RecordDescriptor &recordDescriptor,
                                                  const Direction &direction,
                                                  const MultiCondition &multiCondition);
 
       static std::vector<RecordDescriptor>
-      compareEdgeConditionRdesc(const Txn &txn,
+      compareEdgeConditionRdesc(const Transaction &txn,
                                 const RecordDescriptor &recordDescriptor,
                                 const Direction &direction,
                                 const Condition &condition);
 
       static std::vector<RecordDescriptor>
-      compareEdgeConditionRdesc(const Txn &txn,
+      compareEdgeConditionRdesc(const Transaction &txn,
                                 const RecordDescriptor &recordDescriptor,
                                 const Direction &direction,
                                 bool (*condition)(const Record &));
 
       static std::vector<RecordDescriptor>
-      compareEdgeMultiConditionRdesc(const Txn &txn,
+      compareEdgeMultiConditionRdesc(const Transaction &txn,
                                      const RecordDescriptor &recordDescriptor,
                                      const Direction &direction,
                                      const MultiCondition &multiCondition);

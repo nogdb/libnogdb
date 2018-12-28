@@ -135,7 +135,7 @@ namespace nogdb {
       typedef unsigned int Flag;
       typedef mdb_mode_t Mode;
       typedef MDB_env EnvHandler;
-      typedef MDB_txn TxnHandler;
+      typedef MDB_txn TransactionHandler;
       typedef MDB_dbi DBHandler;
       typedef MDB_cursor CursorHandler;
 
@@ -236,35 +236,35 @@ namespace nogdb {
         EnvHandler *_handle{nullptr};
       };
 
-      class Txn {
+      class Transaction {
       public:
 
-        static Txn begin(EnvHandler *const env,
+        static Transaction begin(EnvHandler *const env,
                          const unsigned int flag,
-                         TxnHandler *const parent = nullptr) {
-          TxnHandler *handle = nullptr;
+                         TransactionHandler *const parent = nullptr) {
+          TransactionHandler *handle = nullptr;
           if (auto error = mdb_txn_begin(env, parent, flag, &handle)) {
             throw NOGDB_STORAGE_ERROR(error);
           }
-          return Txn{handle};
+          return Transaction{handle};
         }
 
-        Txn(TxnHandler *const handle) noexcept
+        Transaction(TransactionHandler *const handle) noexcept
             : _handle{handle} {}
 
-        ~Txn() noexcept {
+        ~Transaction() noexcept {
           if (_handle) {
             try { abort(); } catch (...) {}
             _handle = nullptr;
           }
         }
 
-        Txn(Txn &&other) noexcept {
+        Transaction(Transaction &&other) noexcept {
           using std::swap;
           swap(_handle, other._handle);
         }
 
-        Txn &operator=(Txn &&other) noexcept {
+        Transaction &operator=(Transaction &&other) noexcept {
           if (this != &other) {
             using std::swap;
             swap(_handle, other._handle);
@@ -272,11 +272,11 @@ namespace nogdb {
           return *this;
         }
 
-        operator TxnHandler *() const noexcept {
+        operator TransactionHandler *() const noexcept {
           return _handle;
         }
 
-        TxnHandler *handle() const noexcept {
+        TransactionHandler *handle() const noexcept {
           return _handle;
         }
 
@@ -307,13 +307,13 @@ namespace nogdb {
         }
 
       protected:
-        TxnHandler *_handle{nullptr};
+        TransactionHandler *_handle{nullptr};
       };
 
       class Dbi {
       public:
 
-        static Dbi open(TxnHandler *const txnHandler,
+        static Dbi open(TransactionHandler *const txnHandler,
                         const std::string &dbName,
                         bool numericKey = false,
                         bool unique = true) {
@@ -328,7 +328,7 @@ namespace nogdb {
 
         Dbi() = default;
 
-        Dbi(TxnHandler *const txnHandler, const DBHandler handle) noexcept
+        Dbi(TransactionHandler *const txnHandler, const DBHandler handle) noexcept
             : _handle{handle}, _txn{txnHandler} {}
 
         ~Dbi() noexcept {}
@@ -358,7 +358,7 @@ namespace nogdb {
           return _handle;
         }
 
-        TxnHandler *txn() const noexcept {
+        TransactionHandler *txn() const noexcept {
           return _txn;
         }
 
@@ -552,7 +552,7 @@ namespace nogdb {
 
       protected:
         DBHandler _handle{0};
-        TxnHandler *_txn{nullptr};
+        TransactionHandler *_txn{nullptr};
 
       private:
 
@@ -596,7 +596,7 @@ namespace nogdb {
       class Cursor {
       public:
 
-        static Cursor open(TxnHandler *const txn, const DBHandler dbi) {
+        static Cursor open(TransactionHandler *const txn, const DBHandler dbi) {
           CursorHandler *handle = nullptr;
           if (auto error = mdb_cursor_open(txn, dbi, &handle)) {
             throw NOGDB_STORAGE_ERROR(error);
@@ -604,7 +604,7 @@ namespace nogdb {
           return Cursor{txn, handle};
         }
 
-        Cursor(TxnHandler *const txn, CursorHandler *const handle) noexcept
+        Cursor(TransactionHandler *const txn, CursorHandler *const handle) noexcept
             : _handle{handle}, _txn{txn} {}
 
         Cursor(Cursor &&other) noexcept {
@@ -650,7 +650,7 @@ namespace nogdb {
           }
         }
 
-        TxnHandler *txn() const noexcept {
+        TransactionHandler *txn() const noexcept {
           return mdb_cursor_txn(_handle);
         }
 
@@ -692,7 +692,7 @@ namespace nogdb {
 
       protected:
         CursorHandler *_handle{nullptr};
-        TxnHandler *_txn{nullptr};
+        TransactionHandler *_txn{nullptr};
 
       private:
 

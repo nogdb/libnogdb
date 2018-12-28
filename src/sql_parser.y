@@ -53,7 +53,7 @@ using nogdb::MultiCondition;
 } // %include
 
 %code {
-unique_ptr<Context> Context::create(Txn &txn) {
+unique_ptr<Context> Context::create(Transaction &txn) {
     return unique_ptr<yypParser>(new yypParser(txn));
 }
 

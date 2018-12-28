@@ -26,7 +26,7 @@ namespace nogdb {
   namespace algorithm {
 
     ResultSet
-    GraphTraversal::breadthFirstSearch(const Txn &txn,
+    GraphTraversal::breadthFirstSearch(const Transaction &txn,
                                        const schema::ClassAccessInfo &classInfo,
                                        const RecordDescriptor &recordDescriptor,
                                        unsigned int minDepth,
@@ -49,7 +49,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    GraphTraversal::breadthFirstSearchRdesc(const Txn &txn,
+    GraphTraversal::breadthFirstSearchRdesc(const Transaction &txn,
                                             const schema::ClassAccessInfo &classInfo,
                                             const RecordDescriptor &recordDescriptor,
                                             unsigned int minDepth,
@@ -69,8 +69,8 @@ namespace nogdb {
         auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
         auto addUniqueVertex = [&](const RecordId &vertex) {
           if (visited.find(vertex) != visited.cend()) return;
-          auto vertexRdesc = compare::RecordCompare::filterRecord(txn, RecordDescriptor{vertex}, vertexFilter,
-                                                                  vertexClassFilter);
+          auto vertexRdesc = compare::RecordCompare::filterRecord(
+              txn, RecordDescriptor{vertex}, vertexFilter, vertexClassFilter);
           if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor{})) {
             vertexRdesc._depth = currentLevel + 1;
             result.emplace_back(vertexRdesc);
@@ -96,8 +96,8 @@ namespace nogdb {
             firstRecordId = RecordId{};
           }
 
-          for (const auto &edge: compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter,
-                                                                             edgeClassFilter)) {
+          for (const auto &edge:
+               compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
             auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
             switch (direction) {
               case adapter::relation::Direction::IN:
@@ -122,8 +122,9 @@ namespace nogdb {
       return result;
     }
 
+    //TODO: DO NOT USE UNTIL "depthFirstSearchRdesc" IS FIXED
     ResultSet
-    GraphTraversal::depthFirstSearch(const Txn &txn,
+    GraphTraversal::depthFirstSearch(const Transaction &txn,
                                      const schema::ClassAccessInfo &classInfo,
                                      const RecordDescriptor &recordDescriptor,
                                      unsigned int minDepth,
@@ -145,8 +146,9 @@ namespace nogdb {
       return result;
     }
 
+    //TODO: a buggy version of DFS, please fix this... DO NOT USE UNTIL IT IS FIXED
     std::vector<RecordDescriptor>
-    GraphTraversal::depthFirstSearchRdesc(const Txn &txn,
+    GraphTraversal::depthFirstSearchRdesc(const Transaction &txn,
                                           const schema::ClassAccessInfo &classInfo,
                                           const RecordDescriptor &recordDescriptor,
                                           unsigned int minDepth,
@@ -222,7 +224,7 @@ namespace nogdb {
     }
 
     ResultSet
-    GraphTraversal::bfsShortestPath(const Txn &txn,
+    GraphTraversal::bfsShortestPath(const Transaction &txn,
                                     const schema::ClassAccessInfo &srcVertexClassInfo,
                                     const schema::ClassAccessInfo &dstVertexClassInfo,
                                     const RecordDescriptor &srcVertexRecordDescriptor,
@@ -246,7 +248,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    GraphTraversal::bfsShortestPathRdesc(const Txn &txn,
+    GraphTraversal::bfsShortestPathRdesc(const Transaction &txn,
                                          const schema::ClassAccessInfo &srcVertexClassInfo,
                                          const schema::ClassAccessInfo &dstVertexClassInfo,
                                          const RecordDescriptor &srcVertexRecordDescriptor,
@@ -274,8 +276,8 @@ namespace nogdb {
             for (const auto &edge: incidentEdges) {
               auto nextVertex = txn._interface->graph()->getSrcDstVertices(edge.rid).second;
               if (visited.find(nextVertex) == visited.cend()) {
-                auto vertexRdesc = compare::RecordCompare::filterRecord(txn, nextVertex, vertexFilter,
-                                                                        vertexClassFilter);
+                auto vertexRdesc = compare::RecordCompare::filterRecord(
+                    txn, nextVertex, vertexFilter, vertexClassFilter);
                 if (vertexRdesc != RecordDescriptor{}) {
                   visited.insert({nextVertex, {vertexRdesc, vertex}});
                   queue.push(nextVertex);

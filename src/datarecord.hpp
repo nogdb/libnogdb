@@ -24,8 +24,7 @@
 #include "datarecord_adapter.hpp"
 #include "compare.hpp"
 
-#include "nogdb/nogdb_compare.h"
-#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
@@ -35,7 +34,7 @@ namespace nogdb {
 
     class DataRecordInterface {
     public:
-      DataRecordInterface(const Txn *txn) : _txn{txn} {}
+      DataRecordInterface(const Transaction *txn) : _txn{txn} {}
 
       virtual ~DataRecordInterface() noexcept = default;
 
@@ -77,7 +76,7 @@ namespace nogdb {
                                        bool (*condition)(const Record &record)) const;
 
     private:
-      const Txn *_txn;
+      const Transaction *_txn;
 
     };
 

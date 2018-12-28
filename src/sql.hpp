@@ -24,7 +24,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
@@ -245,11 +245,11 @@ namespace nogdb {
       Id id;
       vector<Projection> args;
 
-      Bytes execute(Txn &txn, const Result &input) const;
+      Bytes execute(Transaction &txn, const Result &input) const;
 
       Bytes executeAggregateResult(const ResultSet &input) const;
 
-      Bytes executeExpand(Txn &txn, ResultSet &input) const;
+      Bytes executeExpand(Transaction &txn, ResultSet &input) const;
 
       bool isAggregateResult() const;
 
@@ -262,25 +262,25 @@ namespace nogdb {
 
 //            static Bytes min(const ResultSet &input, const vector<Projection> &args);
 //            static Bytes max(const ResultSet &input, const vector<Projection> &args);
-      static Bytes walkIn(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkIn(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkInEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkInEdge(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkInVertex(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkInVertex(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkOut(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkOut(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkOutEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkOutEdge(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkOutVertex(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkOutVertex(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkBoth(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkBoth(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkBothEdge(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkBothEdge(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes walkBothVertex(Txn &txn, const Result &input, const vector<Projection> &args);
+      static Bytes walkBothVertex(Transaction &txn, const Result &input, const vector<Projection> &args);
 
-      static Bytes expand(Txn &txn, ResultSet &input, const vector<Projection> &args);
+      static Bytes expand(Transaction &txn, ResultSet &input, const vector<Projection> &args);
 
       static vector<string> argsToClassFilter(const vector<Projection> &args);
     };

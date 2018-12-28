@@ -113,7 +113,7 @@ namespace nogdb {
       return multiCondition.execute(record, propertyTypes);
     }
 
-    ClassFilter RecordCompare::getFilterClasses(const Txn &txn, const GraphFilter &filter) {
+    ClassFilter RecordCompare::getFilterClasses(const Transaction &txn, const GraphFilter &filter) {
       auto classFilter = ClassFilter{};
       classFilter.onlyClasses.insert(filter._onlyClasses.cbegin(), filter._onlyClasses.cend());
       for(const auto &onlySubOfClass: filter._onlySubOfClasses) {
@@ -140,14 +140,14 @@ namespace nogdb {
       return classFilter;
     }
 
-    RecordDescriptor RecordCompare::filterRecord(const Txn &txn,
+    RecordDescriptor RecordCompare::filterRecord(const Transaction &txn,
                                                  const RecordDescriptor &recordDescriptor,
                                                  const GraphFilter &filter,
                                                  const ClassFilter &classFilter) {
       return filterResult(txn, recordDescriptor, filter, classFilter).descriptor;
     }
 
-    Result RecordCompare::filterResult(const Txn &txn,
+    Result RecordCompare::filterResult(const Transaction &txn,
                                        const RecordDescriptor &recordDescriptor,
                                        const GraphFilter &filter,
                                        const ClassFilter &classFilter) {
@@ -188,7 +188,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::filterIncidentEdges(const Txn &txn,
+    RecordCompare::filterIncidentEdges(const Transaction &txn,
                                        const RecordId &vertex,
                                        const adapter::relation::Direction &direction,
                                        const GraphFilter &filter,
@@ -220,7 +220,7 @@ namespace nogdb {
     }
 
     std::vector<RecordId>
-    RecordCompare::resolveEdgeRecordIds(const Txn &txn, const RecordId &recordId, const Direction &direction) {
+    RecordCompare::resolveEdgeRecordIds(const Transaction &txn, const RecordId &recordId, const Direction &direction) {
       auto edgeRecordIds = std::vector<RecordId>{};
       switch (direction) {
         case Direction::IN :
@@ -238,7 +238,7 @@ namespace nogdb {
       return edgeRecordIds;
     }
 
-    ResultSet RecordCompare::compareCondition(const Txn &txn,
+    ResultSet RecordCompare::compareCondition(const Transaction &txn,
                                               const schema::ClassAccessInfo &classInfo,
                                               const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                               const Condition &condition,
@@ -260,7 +260,7 @@ namespace nogdb {
       return ResultSet{};
     }
 
-    ResultSet RecordCompare::compareMultiCondition(const Txn &txn,
+    ResultSet RecordCompare::compareMultiCondition(const Transaction &txn,
                                                    const schema::ClassAccessInfo &classInfo,
                                                    const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                                    const MultiCondition &multiCondition,
@@ -293,7 +293,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::compareConditionRdesc(const Txn &txn,
+    RecordCompare::compareConditionRdesc(const Transaction &txn,
                                          const schema::ClassAccessInfo &classInfo,
                                          const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                          const Condition &condition,
@@ -315,7 +315,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::compareMultiConditionRdesc(const Txn &txn,
+    RecordCompare::compareMultiConditionRdesc(const Transaction &txn,
                                               const schema::ClassAccessInfo &classInfo,
                                               const schema::PropertyNameMapInfo &propertyNameMapInfo,
                                               const MultiCondition &conditions,
@@ -346,7 +346,7 @@ namespace nogdb {
       return std::vector<RecordDescriptor>{};
     }
 
-    ResultSet RecordCompare::compareEdgeCondition(const Txn &txn,
+    ResultSet RecordCompare::compareEdgeCondition(const Transaction &txn,
                                                   const RecordDescriptor &recordDescriptor,
                                                   const Direction &direction,
                                                   const Condition &condition) {
@@ -382,7 +382,7 @@ namespace nogdb {
       return resultSet;
     }
 
-    ResultSet RecordCompare::compareEdgeCondition(const Txn &txn,
+    ResultSet RecordCompare::compareEdgeCondition(const Transaction &txn,
                                                   const RecordDescriptor &recordDescriptor,
                                                   const Direction &direction,
                                                   bool (*condition)(const Record &)) {
@@ -409,7 +409,7 @@ namespace nogdb {
       return resultSet;
     }
 
-    ResultSet RecordCompare::compareEdgeMultiCondition(const Txn &txn,
+    ResultSet RecordCompare::compareEdgeMultiCondition(const Transaction &txn,
                                                        const RecordDescriptor &recordDescriptor,
                                                        const Direction &direction,
                                                        const MultiCondition &multiCondition) {
@@ -444,7 +444,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Txn &txn,
+    RecordCompare::compareEdgeConditionRdesc(const Transaction &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const Direction &direction,
                                              const Condition &condition) {
@@ -481,7 +481,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Txn &txn,
+    RecordCompare::compareEdgeConditionRdesc(const Transaction &txn,
                                              const RecordDescriptor &recordDescriptor,
                                              const Direction &direction,
                                              bool (*condition)(const Record &)) {
@@ -509,7 +509,7 @@ namespace nogdb {
     }
 
     std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeMultiConditionRdesc(const Txn &txn,
+    RecordCompare::compareEdgeMultiConditionRdesc(const Transaction &txn,
                                                   const RecordDescriptor &recordDescriptor,
                                                   const Direction &direction,
                                                   const MultiCondition &multiCondition) {

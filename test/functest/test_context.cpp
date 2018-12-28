@@ -35,7 +35,7 @@ struct ClassSchema {
   std::vector<nogdb::IndexDescriptor> indexDescriptors{};
 };
 
-void assert_dbinfo(const nogdb::DBInfo &info1, const nogdb::DBInfo &info2) {
+void assert_dbinfo(const nogdb::DbInfo &info1, const nogdb::DbInfo &info2) {
   assert(info1.numClass == info2.numClass);
   assert(info1.numProperty == info2.numProperty);
   assert(info1.numIndex == info2.numIndex);
@@ -100,7 +100,7 @@ void test_context() {
 
 void test_ctx_move() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
@@ -170,7 +170,7 @@ void test_ctx_move() {
 /* reopening a database with schema only */
 void test_reopen_ctx() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
@@ -200,7 +200,7 @@ void test_reopen_ctx() {
   }
 
   auto schema_r = std::vector<ClassSchema>{};
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
     schema_r.clear();
@@ -240,7 +240,7 @@ struct myobject {
 
 void test_reopen_ctx_v2() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txn, "test1", nogdb::ClassType::VERTEX);
@@ -278,7 +278,7 @@ void test_reopen_ctx_v2() {
   }
 
   auto schema_r = std::vector<ClassSchema>{};
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     schema_r.clear();
@@ -328,7 +328,7 @@ void test_reopen_ctx_v2() {
 /* reopening a database with schema, records, and relations */
 void test_reopen_ctx_v3() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   auto tmp = nogdb::RecordDescriptor{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -370,7 +370,7 @@ void test_reopen_ctx_v3() {
     assert(false);
   }
 
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   auto schema_r = std::vector<ClassSchema>{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
@@ -438,7 +438,7 @@ void test_reopen_ctx_v4() {
   auto t1 = nogdb::ClassDescriptor{};
   auto p1 = nogdb::PropertyDescriptor{};
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     t1 = nogdb::Class::create(txn, "test1", nogdb::ClassType::VERTEX);
@@ -474,7 +474,7 @@ void test_reopen_ctx_v4() {
   delete ctx;
 
   auto schema_r = std::vector<ClassSchema>{};
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
   } catch (const nogdb::Error &ex) {
@@ -509,7 +509,7 @@ void test_reopen_ctx_v4() {
   delete ctx;
 
   auto schema_rr = std::vector<ClassSchema>{};
-  auto info_rr = nogdb::DBInfo{};
+  auto info_rr = nogdb::DbInfo{};
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
   } catch (const nogdb::Error &ex) {
@@ -557,7 +557,7 @@ void test_reopen_ctx_v4() {
 /* reopening a database with schema, records, relations, and extended classes */
 void test_reopen_ctx_v5() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   try {
     auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txn, "vertex1", nogdb::ClassType::VERTEX);
@@ -593,7 +593,7 @@ void test_reopen_ctx_v5() {
   delete ctx;
 
   auto schema_r = std::vector<ClassSchema>{};
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
   } catch (const nogdb::Error &ex) {
@@ -637,7 +637,7 @@ void test_reopen_ctx_v5() {
 /* reopening a database with schema, records, extended classes, and indexing */
 void test_reopen_ctx_v6() {
   auto schema = std::vector<ClassSchema>{};
-  auto info = nogdb::DBInfo{};
+  auto info = nogdb::DbInfo{};
   nogdb::ClassDescriptor vertex1, vertex2, edge1, edge2;
   nogdb::PropertyDescriptor propVertex1, propVertex2, propEdge1, propEdge2;
   nogdb::IndexDescriptor v_index1, v_index2, v_index3, e_index1, e_index2, e_index3;
@@ -683,7 +683,7 @@ void test_reopen_ctx_v6() {
   delete ctx;
 
   auto schema_r = std::vector<ClassSchema>{};
-  auto info_r = nogdb::DBInfo{};
+  auto info_r = nogdb::DbInfo{};
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
   } catch (const nogdb::Error &ex) {

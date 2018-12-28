@@ -79,6 +79,6 @@ namespace nogdb {
       std::shared_ptr<void> value;
     };
 
-    static const Result execute(Txn &txn, const std::string &sql);
+    static const Result execute(Transaction &txn, const std::string &sql);
   };
 }

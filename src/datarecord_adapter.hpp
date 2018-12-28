@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <nogdb_txn.h>
 #include "storage_adapter.hpp"
 #include "schema.hpp"
 #include "schema_adapter.hpp"

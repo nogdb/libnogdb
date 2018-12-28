@@ -32,15 +32,14 @@ namespace nogdb {
 
     using namespace adapter::schema;
 
-
-    Validator &Validator::isTxnValid() {
-      if (_txn->getTxnMode() == Txn::Mode::READ_ONLY) {
+    Validator &Validator::isTransactionValid() {
+      if (_txn->getTxnMode() == TxnMode::READ_ONLY) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
       }
       return *this;
     }
 
-    Validator &Validator::isTxnCompleted() {
+    Validator &Validator::isTransactionCompleted() {
       if (_txn->isCompleted()) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
       }
@@ -131,14 +130,14 @@ namespace nogdb {
       return *this;
     }
 
-    Validator &Validator::isNotOverridenProperty(const ClassId &classId, const std::string &propertyName) {
+    Validator &Validator::isNotOverriddenProperty(const ClassId &classId, const std::string &propertyName) {
       auto foundProperty = _txn->_adapter->dbProperty()->getId(classId, propertyName);
       if (foundProperty != PropertyId{}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_OVERRIDE_PROPERTY);
       }
       for (const auto &subClassId: _txn->_adapter->dbClass()->getSubClassIds(classId)) {
         if (subClassId != ClassId{}) {
-          isNotOverridenProperty(subClassId, propertyName);
+          isNotOverriddenProperty(subClassId, propertyName);
         }
       }
       return *this;

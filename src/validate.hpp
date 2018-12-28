@@ -25,8 +25,7 @@
 #include "constant.hpp"
 
 #include "nogdb/nogdb_errors.h"
-#include "nogdb/nogdb_context.h"
-#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb.h"
 
 #define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
 #define CLASS_ID_UPPER_LIMIT      UINT16_MAX - 1
@@ -39,13 +38,13 @@ namespace nogdb {
 
     class Validator {
     public:
-      Validator(const Txn *txn) : _txn{txn} {}
+      Validator(const Transaction *txn) : _txn{txn} {}
 
       virtual ~Validator() noexcept = default;
 
-      Validator &isTxnValid();
+      Validator &isTransactionValid();
 
-      Validator &isTxnCompleted();
+      Validator &isTransactionCompleted();
 
       Validator &isClassIdMaxReach();
 
@@ -65,7 +64,7 @@ namespace nogdb {
 
       Validator &isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName);
 
-      Validator &isNotOverridenProperty(const ClassId &classId, const std::string &propertyName);
+      Validator &isNotOverriddenProperty(const ClassId &classId, const std::string &propertyName);
 
       Validator &isExistingSrcVertex(const RecordDescriptor &vertex);
 
@@ -75,7 +74,7 @@ namespace nogdb {
 
     private:
 
-      const Txn *_txn;
+      const Transaction *_txn;
 
       inline static bool isNameValid(const std::string &name) {
         return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);

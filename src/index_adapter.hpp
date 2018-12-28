@@ -29,8 +29,6 @@
 #include "datarecord_adapter.hpp"
 #include "parser.hpp"
 
-#include "nogdb/nogdb_txn.h"
-
 #define INDEX_TYPE_POSITIVE     0   //0000
 #define INDEX_TYPE_NEGATIVE     1   //0001
 #define INDEX_TYPE_NUMERIC      0   //0000

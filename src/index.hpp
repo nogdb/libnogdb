@@ -35,8 +35,7 @@
 #include "datarecord_adapter.hpp"
 
 #include "nogdb/nogdb_types.h"
-#include "nogdb/nogdb_txn.h"
-#include "nogdb/nogdb_compare.h"
+#include "nogdb/nogdb.h"
 
 #define UNIQUE_FLAG(_unique)                        (_unique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE
 #define INDEX_POSITIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
@@ -56,7 +55,7 @@ namespace nogdb {
     class IndexInterface {
     public:
 
-      IndexInterface(const Txn *txn) : _txn{txn} {}
+      IndexInterface(const Transaction *txn) : _txn{txn} {}
 
       virtual ~IndexInterface() noexcept = default;
 
@@ -119,7 +118,7 @@ namespace nogdb {
 
     private:
 
-      const Txn *_txn;
+      const Transaction *_txn;
 
       adapter::index::IndexRecord openIndexRecordPositive(const IndexAccessInfo &indexInfo) const;
 

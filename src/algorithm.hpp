@@ -36,9 +36,8 @@
 #include "relation.hpp"
 #include "compare.hpp"
 
-#include "nogdb/nogdb_compare.h"
 #include "nogdb/nogdb_types.h"
-#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
@@ -50,7 +49,7 @@ namespace nogdb {
 
       ~GraphTraversal() noexcept = delete;
 
-      static ResultSet breadthFirstSearch(const Txn &txn,
+      static ResultSet breadthFirstSearch(const Transaction &txn,
                                           const schema::ClassAccessInfo &classInfo,
                                           const RecordDescriptor &recordDescriptor,
                                           unsigned int minDepth,
@@ -60,7 +59,7 @@ namespace nogdb {
                                           const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
-      breadthFirstSearchRdesc(const Txn &txn,
+      breadthFirstSearchRdesc(const Transaction &txn,
                               const schema::ClassAccessInfo &classInfo,
                               const RecordDescriptor &recordDescriptor,
                               unsigned int minDepth,
@@ -69,7 +68,7 @@ namespace nogdb {
                               const GraphFilter &edgeFilter,
                               const GraphFilter &vertexFilter);
 
-      static ResultSet depthFirstSearch(const Txn &txn,
+      static ResultSet depthFirstSearch(const Transaction &txn,
                                         const schema::ClassAccessInfo &classInfo,
                                         const RecordDescriptor &recordDescriptor,
                                         unsigned int minDepth,
@@ -79,7 +78,7 @@ namespace nogdb {
                                         const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
-      depthFirstSearchRdesc(const Txn &txn,
+      depthFirstSearchRdesc(const Transaction &txn,
                             const schema::ClassAccessInfo &classInfo,
                             const RecordDescriptor &recordDescriptor,
                             unsigned int minDepth,
@@ -88,7 +87,7 @@ namespace nogdb {
                             const GraphFilter &edgeFilter,
                             const GraphFilter &vertexFilter);
 
-      static ResultSet bfsShortestPath(const Txn &txn,
+      static ResultSet bfsShortestPath(const Transaction &txn,
                                        const schema::ClassAccessInfo &srcVertexClassInfo,
                                        const schema::ClassAccessInfo &dstVertexClassInfo,
                                        const RecordDescriptor &srcVertexRecordDescriptor,
@@ -97,7 +96,7 @@ namespace nogdb {
                                        const GraphFilter &vertexFilter);
 
       static std::vector<RecordDescriptor>
-      bfsShortestPathRdesc(const Txn &txn,
+      bfsShortestPathRdesc(const Transaction &txn,
                            const schema::ClassAccessInfo &srcVertexClassInfo,
                            const schema::ClassAccessInfo &dstVertexClassInfo,
                            const RecordDescriptor &srcVertexRecordDescriptor,

@@ -20,7 +20,7 @@
  */
 #include "compare.hpp"
 
-#include "nogdb/nogdb_compare.h"
+#include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 

@@ -21,347 +21,256 @@
 
 #pragma once
 
-#include <iostream>
 #include <map>
 #include <vector>
 #include <set>
 #include <utility>
+#include <memory>
 
 #include "nogdb_errors.h"
-#include "nogdb_compare.h"
 #include "nogdb_types.h"
-#include "nogdb_context.h"
-#include "nogdb_txn.h"
 #include "nogdb_sql.h"
 
 namespace nogdb {
 
-  //*************************************************************
-  //*  NogDB class operations.                                  *
-  //*************************************************************
+  class Context {
+  public:
+    friend class Transaction;
 
-  struct Class {
-    Class() = delete;
+    Context() = default;
 
-    ~Class() noexcept = delete;
+    ~Context() noexcept = default;
 
-    static const ClassDescriptor create(Txn &txn, const std::string &className, ClassType type);
+    Context(const std::string &dbPath);
 
-    static const ClassDescriptor
-    createExtend(Txn &txn, const std::string &className, const std::string &superClass);
+    explicit Context(const std::string &dbPath, unsigned int maxDbNum);
 
-    static void drop(Txn &txn, const std::string &className);
+    explicit Context(const std::string &dbPath, unsigned long maxDbSize);
 
-    static void alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName);
+    Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
+
+    Context(const Context &ctx);
+
+    Context(Context &&ctx) noexcept;
+
+    Context &operator=(const Context &ctx);
+
+    Context &operator=(Context &&ctx) noexcept;
+
+    std::string getDBPath() const { return _dbPath; }
+
+    unsigned int getMaxDB() const { return _maxDB; }
+
+    unsigned long getMaxDBSize() const { return _maxDBSize; }
+
+    Transaction beginTxn(const TxnMode &txnMode = TxnMode::READ_WRITE);
+
+  private:
+    std::string _dbPath{};
+    unsigned int _maxDB{};
+    unsigned long _maxDBSize{};
+    std::shared_ptr<storage_engine::LMDBEnv> _envHandler;
   };
 
-  //*************************************************************
-  //*  NogDB property operations.                               *
-  //*************************************************************
 
-  struct Property {
-    Property() = delete;
 
-    ~Property() noexcept = delete;
+  class Transaction {
+  public:
+    friend class ResultSetCursor;
 
-    static const PropertyDescriptor
-    add(Txn &txn, const std::string &className, const std::string &propertyName, PropertyType type);
+    friend class compare::RecordCompare;
 
-    static void alter(Txn &txn, const std::string &className, const std::string &oldPropertyName,
-                      const std::string &newPropertyName);
+    friend class validate::Validator;
 
-    static void remove(Txn &txn, const std::string &className, const std::string &propertyName);
+    friend class schema::SchemaInterface;
 
-    static const IndexDescriptor
-    createIndex(Txn &txn, const std::string &className, const std::string &propertyName, bool isUnique = false);
+    friend class relation::GraphInterface;
 
-    static void dropIndex(Txn &txn, const std::string &className, const std::string &propertyName);
-  };
+    friend class index::IndexInterface;
 
-  //*************************************************************
-  //*  NogDB database operations.                               *
-  //*************************************************************
+    friend class datarecord::DataRecordInterface;
 
-  struct DB {
-    DB() = delete;
+    friend class algorithm::GraphTraversal;
 
-    ~DB() noexcept = delete;
+    Transaction(Context &ctx, const TxnMode& mode);
 
-    static DBInfo getDBInfo(const Txn &txn);
+    ~Transaction() noexcept;
 
-    static Record getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    Transaction(const Transaction &txn) = delete;
 
-    static const std::vector<ClassDescriptor> getClasses(const Txn &txn);
+    Transaction(Transaction &&txn) noexcept;
 
-    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const std::string &className);
+    Transaction &operator=(const Transaction &txn) = delete;
 
-    static const std::vector<PropertyDescriptor> getProperties(const Txn &txn, const ClassDescriptor &classDescriptor);
+    Transaction &operator=(Transaction &&txn) noexcept;
 
-    static const std::vector<IndexDescriptor> getIndexes(const Txn &txn, const ClassDescriptor &classDescriptor);
+    void commit();
 
-    static const ClassDescriptor getClass(const Txn &txn, const std::string &className);
+    void rollback() noexcept;
 
-    static const ClassDescriptor getClass(const Txn &txn, const ClassId &classId);
+    TxnMode getTxnMode() const { return _txnMode; }
 
-    static const PropertyDescriptor
-    getProperty(const Txn &txn, const std::string &className, const std::string &propertyName);
+    bool isCompleted() const { return _txnBase == nullptr; }
 
-    static const IndexDescriptor
-    getIndex(const Txn &txn, const std::string &className, const std::string &propertyName);
+    const ClassDescriptor addClass(const std::string &className, ClassType type);
 
-  };
+    const ClassDescriptor addSubClassOf(const std::string &superClass, const std::string &className);
 
-  //*************************************************************
-  //*  NogDB vertex operations.                                 *
-  //*************************************************************
+    void dropClass(const std::string &className);
 
-  struct Vertex {
-    Vertex() = delete;
+    void renameClass(const std::string &oldClassName, const std::string &newClassName);
 
-    ~Vertex() noexcept = delete;
+    const PropertyDescriptor addProperty(const std::string &className,
+                                         const std::string &propertyName,
+                                         PropertyType type);
 
-    static const RecordDescriptor create(Txn &txn, const std::string &className, const Record &record = Record{});
+    void renameProperty(const std::string &className,
+                        const std::string &oldPropertyName,
+                        const std::string &newPropertyName);
 
-    static void update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+    void dropProperty(const std::string &className, const std::string &propertyName);
 
-    static void destroy(Txn &txn, const RecordDescriptor &recordDescriptor);
+    const IndexDescriptor addIndex(const std::string &className,
+                                   const std::string &propertyName,
+                                   bool isUnique = false);
 
-    static void destroy(Txn &txn, const std::string &className);
+    void dropIndex(const std::string &className, const std::string &propertyName);
 
-    static ResultSet get(const Txn &txn, const std::string &className);
+    const DbInfo getDbInfo();
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className);
+    const std::vector<ClassDescriptor> getClasses();
 
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
+    const std::vector<PropertyDescriptor> getProperties(const std::string &className);
 
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className);
+    const std::vector<PropertyDescriptor> getProperties(const ClassDescriptor &classDescriptor);
 
-    static ResultSet
-    getInEdge(const Txn &txn, const RecordDescriptor &recordDescriptor, const GraphFilter &edgeFilter = GraphFilter{});
+    const std::vector<IndexDescriptor> getIndexes(const ClassDescriptor &classDescriptor);
 
-    static ResultSet getOutEdge(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                                const GraphFilter &edgeFilter = GraphFilter{});
+    const ClassDescriptor getClass(const std::string &className);
 
-    static ResultSet getAllEdge(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                                const GraphFilter &edgeFilter = GraphFilter{});
+    const ClassDescriptor getClass(const ClassId &classId);
 
-    static ResultSetCursor getInEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                                           const GraphFilter &edgeFilter = GraphFilter{});
+    const PropertyDescriptor getProperty(const std::string &className, const std::string &propertyName);
 
-    static ResultSetCursor getOutEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                                            const GraphFilter &edgeFilter = GraphFilter{});
+    const IndexDescriptor getIndex(const std::string &className, const std::string &propertyName);
 
-    static ResultSetCursor getAllEdgeCursor(const Txn &txn, const RecordDescriptor &recordDescriptor,
-                                            const GraphFilter &edgeFilter = GraphFilter{});
+    Record fetchRecord(const RecordDescriptor &recordDescriptor);
 
-    static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+    const RecordDescriptor addVertex(const std::string &className, const Record &record = Record{});
 
-    static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    const RecordDescriptor addEdge(const std::string &className,
+                                   const RecordDescriptor &srcVertexRecordDescriptor,
+                                   const RecordDescriptor &dstVertexRecordDescriptor,
+                                   const Record &record = Record{});
 
-    static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    void update(const RecordDescriptor &recordDescriptor, const Record &record);
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
+    void updateSrc(const RecordDescriptor &recordDescriptor, const RecordDescriptor &newSrcVertexRecordDescriptor);
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    void updateDst(const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstVertexRecordDescriptor);
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    void remove(const RecordDescriptor &recordDescriptor);
 
-    static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    void removeAll(const std::string &className);
 
-    static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    FindOperationBuilder find(const std::string &className);
 
-    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    FindOperationBuilder findSubClassOf(const std::string &className);
 
-    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    FindEdgeOperationBuilder findInEdge(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    FindEdgeOperationBuilder findOutEdge(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    FindEdgeOperationBuilder findEdge(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    Result fetchSrc(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    Result fetchDst(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor
-    getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+    ResultSet fetchSrcDst(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    TraverseOperationBuilder traverseIn(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    TraverseOperationBuilder traverseOut(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    TraverseOperationBuilder traverse(const RecordDescriptor &recordDescriptor);
 
-    static ResultSetCursor
-    getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
+    ShortestPathOperationBuilder shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
+                                              const RecordDescriptor &dstVertexRecordDescriptor);
 
-    static ResultSetCursor
-    getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
+  private:
 
-  };
+    friend class FindOperationBuilder;
 
-  //*************************************************************
-  //*  NogDB edge operations.                                   *
-  //*************************************************************
+    friend class FindEdgeOperationBuilder;
 
-  struct Edge {
-    Edge() = delete;
+    friend class TraverseOperationBuilder;
 
-    ~Edge() noexcept = delete;
+    friend class ShortestPathOperationBuilder;
 
-    static const RecordDescriptor
-    create(Txn &txn, const std::string &className, const RecordDescriptor &srcVertexRecordDescriptor,
-           const RecordDescriptor &dstVertexRecordDescriptor, const Record &record = Record{});
+    class Adapter {
+    public:
+      Adapter();
 
-    static void update(Txn &txn, const RecordDescriptor &recordDescriptor, const Record &record);
+      Adapter(const storage_engine::LMDBTxn *txn);
 
-    static void updateSrc(Txn &txn, const RecordDescriptor &recordDescriptor,
-                          const RecordDescriptor &newSrcVertexRecordDescriptor);
+      ~Adapter() noexcept;
 
-    static void
-    updateDst(Txn &txn, const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstRecordDescriptor);
+      Adapter(Adapter &&other) noexcept = delete;
 
-    static void destroy(Txn &txn, const RecordDescriptor &recordDescriptor);
+      Adapter& operator=(Adapter &&other) noexcept = delete;
 
-    static void destroy(Txn &txn, const std::string &className);
+      adapter::metadata::DBInfoAccess *dbInfo() const { return _dbInfo; }
 
-    static ResultSet get(const Txn &txn, const std::string &className);
+      adapter::schema::ClassAccess *dbClass() const { return _class; }
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className);
+      adapter::schema::PropertyAccess *dbProperty() const { return _property; }
 
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className);
+      adapter::schema::IndexAccess *dbIndex() const { return _index; }
 
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className);
+    private:
+      adapter::metadata::DBInfoAccess *_dbInfo;
+      adapter::schema::ClassAccess *_class;
+      adapter::schema::PropertyAccess *_property;
+      adapter::schema::IndexAccess *_index;
+    };
 
-    static Result getSrc(const Txn &txn, const RecordDescriptor &recordDescriptor);
+    class Interface {
+    public:
+      Interface();
 
-    static Result getDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+      Interface(const Transaction *txn);
 
-    static ResultSet getSrcDst(const Txn &txn, const RecordDescriptor &recordDescriptor);
+      ~Interface() noexcept;
 
-    static ResultSet get(const Txn &txn, const std::string &className, const Condition &condition);
+      Interface(Interface &&other) noexcept = delete;
 
-    static ResultSet get(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+      Interface& operator=(Interface &&other) noexcept = delete;
 
-    static ResultSet get(const Txn &txn, const std::string &className, const MultiCondition &exp);
+      schema::SchemaInterface *schema() const { return _schema; }
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, const Condition &condition);
+      index::IndexInterface *index() const { return _index; }
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
+      relation::GraphInterface *graph() const { return _graph; }
 
-    static ResultSet getExtend(const Txn &txn, const std::string &className, const MultiCondition &exp);
+      datarecord::DataRecordInterface *record() const { return _record; }
 
-    static ResultSet getIndex(const Txn &txn, const std::string &className, const Condition &condition);
+      void destroy();
 
-    static ResultSet getIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
+    private:
+      const Transaction* _txn;
+      schema::SchemaInterface *_schema;
+      datarecord::DataRecordInterface *_record;
+      relation::GraphInterface *_graph;
+      index::IndexInterface *_index;
+    };
 
-    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const Condition &condition);
+    TxnMode _txnMode;
+    const Context *_txnCtx;
+    storage_engine::LMDBTxn *_txnBase;
+    Adapter *_adapter;
+    Interface *_interface;
 
-    static ResultSet getExtendIndex(const Txn &txn, const std::string &className, const MultiCondition &exp);
-
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const Condition &condition);
-
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
-
-    static ResultSetCursor getCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const Condition &condition);
-
-    static ResultSetCursor
-    getExtendCursor(const Txn &txn, const std::string &className, bool (*condition)(const Record &));
-
-    static ResultSetCursor getExtendCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-
-    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
-
-    static ResultSetCursor getIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-
-    static ResultSetCursor
-    getExtendIndexCursor(const Txn &txn, const std::string &className, const Condition &condition);
-
-    static ResultSetCursor
-    getExtendIndexCursor(const Txn &txn, const std::string &className, const MultiCondition &exp);
-  };
-
-  //*************************************************************
-  //*  NogDB graph traversal operations.                        *
-  //*************************************************************
-
-  struct Traverse {
-    Traverse() = delete;
-
-    ~Traverse() noexcept = delete;
-
-    static ResultSet
-    inEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-              const GraphFilter &edgeFilter = GraphFilter{},
-              const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet
-    outEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-               const GraphFilter &edgeFilter = GraphFilter{},
-               const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet
-    allEdgeBfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-               const GraphFilter &edgeFilter = GraphFilter{},
-               const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet
-    inEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-              const GraphFilter &edgeFilter = GraphFilter{},
-              const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet
-    outEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-               const GraphFilter &edgeFilter = GraphFilter{},
-               const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet
-    allEdgeDfs(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-               const GraphFilter &edgeFilter = GraphFilter{},
-               const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSet shortestPath(const Txn &txn,
-                                  const RecordDescriptor &srcVertexRecordDescriptor,
-                                  const RecordDescriptor &dstVertexRecordDescriptor,
-                                  const GraphFilter &edgeFilter = GraphFilter{},
-                                  const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    inEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                    const GraphFilter &edgeFilter = GraphFilter{},
-                    const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    outEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                     const GraphFilter &edgeFilter = GraphFilter{},
-                     const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    allEdgeBfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                     const GraphFilter &edgeFilter = GraphFilter{},
-                     const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    inEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                    const GraphFilter &edgeFilter = GraphFilter{},
-                    const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    outEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                     const GraphFilter &edgeFilter = GraphFilter{},
-                     const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor
-    allEdgeDfsCursor(const Txn &txn, const RecordDescriptor &recordDescriptor, unsigned int minDepth, unsigned int maxDepth,
-                     const GraphFilter &edgeFilter = GraphFilter{},
-                     const GraphFilter &vertexFilter = GraphFilter{});
-
-    static ResultSetCursor shortestPathCursor(const Txn &txn,
-                                              const RecordDescriptor &srcVertexRecordDescriptor,
-                                              const RecordDescriptor &dstVertexRecordDescriptor,
-                                              const GraphFilter &edgeFilter = GraphFilter{},
-                                              const GraphFilter &vertexFilter = GraphFilter{});
   };
 
 }

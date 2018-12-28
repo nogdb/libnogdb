@@ -27,7 +27,7 @@
 #include "validate.hpp"
 
 #include "nogdb/nogdb_types.h"
-#include "nogdb/nogdb_txn.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
@@ -41,7 +41,7 @@ namespace nogdb {
 
     class SchemaInterface {
     public:
-      SchemaInterface(const Txn *txn) : _txn{txn} {}
+      SchemaInterface(const Transaction *txn) : _txn{txn} {}
 
       virtual ~SchemaInterface() noexcept = default;
 
@@ -81,7 +81,7 @@ namespace nogdb {
       getIndexInfo(const ClassId &classId, const PropertyId &propertyId);
 
     private:
-      const Txn *_txn;
+      const Transaction *_txn;
 
       inline PropertyNameMapInfo &addBasicInfo(PropertyNameMapInfo& propertyInfo) {
         propertyInfo[CLASS_NAME_PROPERTY] = PropertyAccessInfo(

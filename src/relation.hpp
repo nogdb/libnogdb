@@ -40,7 +40,7 @@ namespace nogdb {
 
     class GraphInterface {
     public:
-      explicit GraphInterface(const Txn *txn)
+      explicit GraphInterface(const Transaction *txn)
           : _txn{txn},
             _inRel{new RelationAccess(txn->_txnBase, Direction::IN)},
             _outRel{new RelationAccess(txn->_txnBase, Direction::OUT)} {}
@@ -81,7 +81,7 @@ namespace nogdb {
       std::pair<RecordId, RecordId> getSrcDstVertices(const RecordId& recordId) const;
 
     private:
-      const Txn *_txn;
+      const Transaction *_txn;
       RelationAccess *_inRel;
       RelationAccess *_outRel;
 

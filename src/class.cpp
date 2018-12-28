@@ -19,7 +19,6 @@
  *
  */
 
-#include <iostream> // for debugging
 #include <memory>
 
 #include "constant.hpp"
@@ -32,76 +31,77 @@
 #include "validate.hpp"
 #include "utils.hpp"
 
-#include "nogdb.h"
-
-using namespace nogdb::utils::assertion;
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
 
+  using namespace utils::assertion;
   using namespace adapter::schema;
   using namespace adapter::datarecord;
 
-  const ClassDescriptor Class::create(Txn &txn, const std::string &className, ClassType type) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
-        .isTxnValid()
+  const ClassDescriptor Transaction::addClass(const std::string &className, ClassType type) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isClassTypeValid(type)
-        .isNotDuplicatedClass(className);
+        .isNotDuplicatedClass(className)
+        .isClassIdMaxReach();
 
     try {
-      auto classId = txn._adapter->dbInfo()->getMaxClassId() + ClassId{1};
-      txn._adapter->dbClass()->create(ClassAccessInfo{className, classId, ClassId{0}, type});
-      txn._adapter->dbInfo()->setMaxClassId(classId);
-      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
-      DataRecord(txn._txnBase, classId, type).init();
+      auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId{1};
+      _adapter->dbClass()->create(ClassAccessInfo{className, classId, ClassId{0}, type});
+      _adapter->dbInfo()->setMaxClassId(classId);
+      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId{1});
+      DataRecord(_txnBase, classId, type).init();
       return ClassDescriptor{classId, className, ClassId{0}, type};
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  const ClassDescriptor
-  Class::createExtend(Txn &txn, const std::string &className, const std::string &superClass) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
-        .isTxnValid()
+  const ClassDescriptor Transaction::addSubClassOf(const std::string &superClass, const std::string &className) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className)
         .isClassNameValid(superClass)
-        .isNotDuplicatedClass(className);
+        .isNotDuplicatedClass(className)
+        .isClassIdMaxReach();
 
-    auto superClassInfo = txn._interface->schema()->getExistingClass(superClass);
+    auto superClassInfo = _interface->schema()->getExistingClass(superClass);
     try {
-      auto classId = txn._adapter->dbInfo()->getMaxClassId() + ClassId{1};
-      txn._adapter->dbClass()->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
-      txn._adapter->dbInfo()->setMaxClassId(classId);
-      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() + ClassId{1});
-      DataRecord(txn._txnBase, classId, superClassInfo.type).init();
+      auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId{1};
+      _adapter->dbClass()->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
+      _adapter->dbInfo()->setMaxClassId(classId);
+      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId{1});
+      DataRecord(_txnBase, classId, superClassInfo.type).init();
       return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
 
-  void Class::drop(Txn &txn, const std::string &className) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  void Transaction::dropClass(const std::string &className) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(className);
 
-    auto foundClass = txn._interface->schema()->getExistingClass(className);
+    auto foundClass = _interface->schema()->getExistingClass(className);
     // retrieve relevant properties information
-    auto propertyInfos = txn._adapter->dbProperty()->getInfos(foundClass.id);
+    auto propertyInfos = _adapter->dbProperty()->getInfos(foundClass.id);
     for (const auto &property: propertyInfos) {
       // check if all index tables associated with the column have been removed beforehand
-      auto foundIndex = txn._adapter->dbIndex()->getInfo(foundClass.id, property.id);
+      auto foundIndex = _adapter->dbIndex()->getInfo(foundClass.id, property.id);
       if (foundIndex.id != IndexId{0}) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
       }
@@ -109,14 +109,14 @@ namespace nogdb {
     try {
       auto rids = std::vector<RecordId>{};
       // delete class from schema
-      txn._adapter->dbClass()->remove(className);
+      _adapter->dbClass()->remove(className);
       // delete properties from schema
       for (const auto &property : propertyInfos) {
-        txn._adapter->dbProperty()->remove(property.classId, property.name);
+        _adapter->dbProperty()->remove(property.classId, property.name);
         //TODO: implement existing index deletion if needed
       }
       // delete all associated relations
-      auto table = DataRecord(txn._txnBase, foundClass.id, foundClass.type);
+      auto table = DataRecord(_txnBase, foundClass.id, foundClass.type);
       auto cursorHandler = table.getCursor();
       for (auto keyValue = cursorHandler.getNext();
            !keyValue.empty();
@@ -126,16 +126,16 @@ namespace nogdb {
         auto recordId = RecordId{foundClass.id, key};
         if (foundClass.type == ClassType::EDGE) {
           auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(keyValue.val.data.blob());
-          txn._interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
+          _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
         } else {
-          txn._interface->graph()->removeRelFromVertex(recordId);
+          _interface->graph()->removeRelFromVertex(recordId);
         }
       }
       // drop the actual table
       table.destroy();
       // update a superclass of subclasses if existing
-      for (const auto &subClassInfo: txn._adapter->dbClass()->getSubClassInfos(foundClass.id)) {
-        txn._adapter->dbClass()->update(
+      for (const auto &subClassInfo: _adapter->dbClass()->getSubClassInfos(foundClass.id)) {
+        _adapter->dbClass()->update(
             ClassAccessInfo{
                 subClassInfo.name,
                 subClassInfo.id,
@@ -144,36 +144,37 @@ namespace nogdb {
             });
       }
       // update database info
-      txn._adapter->dbInfo()->setNumClassId(txn._adapter->dbInfo()->getNumClassId() - ClassId{1});
-      txn._adapter->dbInfo()->setNumPropertyId(
-          txn._adapter->dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
+      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() - ClassId{1});
+      _adapter->dbInfo()->setNumPropertyId(
+          _adapter->dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
+
   }
 
-  void Class::alter(Txn &txn, const std::string &oldClassName, const std::string &newClassName) {
-    BEGIN_VALIDATION(&txn)
-        .isTxnValid()
+  void Transaction::renameClass(const std::string &oldClassName, const std::string &newClassName) {
+    BEGIN_VALIDATION(this)
+        .isTransactionValid()
+        .isTransactionCompleted()
         .isClassNameValid(oldClassName)
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);
 
-    auto foundClass = txn._interface->schema()->getExistingClass(oldClassName);
+    auto foundClass = _interface->schema()->getExistingClass(oldClassName);
     try {
-      txn._adapter->dbClass()->alterClassName(oldClassName, newClassName);
+      _adapter->dbClass()->alterClassName(oldClassName, newClassName);
     } catch (const Error& err) {
-      txn.rollback();
+      rollback();
       throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      txn.rollback();
+      rollback();
       std::rethrow_exception(std::current_exception());
     }
   }
-
 }
 

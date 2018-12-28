@@ -28,8 +28,6 @@
 #include "constant.hpp"
 #include "storage_adapter.hpp"
 
-#include "nogdb/nogdb_txn.h"
-
 namespace nogdb {
 
   namespace adapter {

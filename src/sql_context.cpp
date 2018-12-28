@@ -28,7 +28,7 @@
 #include "sql_context.hpp"
 #include "utils.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 using namespace std;
 using namespace nogdb::sql_parser;
@@ -55,18 +55,18 @@ void Context::createClass(const Token &tName, const Token &tExtend, bool checkIf
   try {
     ClassType classType;
     if (tExtend.t == TK_VERTEX) {
-      result = Class::create(this->txn, name, ClassType::VERTEX);
+      result = this->txn.addClass(name, ClassType::VERTEX);
     } else if (tExtend.t == TK_EDGE) {
-      result = Class::create(this->txn, name, ClassType::EDGE);
+      result = this->txn.addClass(name, ClassType::EDGE);
     } else {
-      result = Class::createExtend(this->txn, name, tExtend.toString());
+      result = this->txn.addSubClassOf(tExtend.toString(), name);
     }
 
     this->rc = SQL_OK;
     this->result = SQL::Result(new ClassDescriptor(move(result)));
   } catch (const Error &e) {
     if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_CLASS) {
-      result = DB::getClass(this->txn, name);
+      result = this->txn.getClass(name);
       this->rc = SQL_OK;
       this->result = SQL::Result(new ClassDescriptor(move(result)));
     } else {
@@ -99,7 +99,7 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
 
     switch (attr) {
       case ALTER_NAME:
-        nogdb::Class::alter(this->txn, tName.toString(), value.toText());
+        this->txn.renameClass(tName.toString(), value.toText());
         this->rc = SQL_OK;
         this->result = SQL::Result();
         break;
@@ -116,7 +116,7 @@ void Context::alterClass(const Token &tName, const Token &tAttr, const Bytes &va
 
 void Context::dropClass(const Token &tName, bool checkIfExists) {
   try {
-    Class::drop(this->txn, tName.toString());
+    this->txn.dropClass(tName.toString());
     this->rc = SQL_OK;
     this->result = SQL::Result();
   } catch (const Error &e) {
@@ -158,14 +158,14 @@ Context::createProperty(const Token &tClassName, const Token &tPropName, const T
       t = nogdb::PropertyType::UNDEFINED;
     }
 
-    result = Property::add(this->txn, tClassName.toString(), tPropName.toString(), t);
+    result = this->txn.addProperty(tClassName.toString(), tPropName.toString(), t);
 
     this->rc = SQL_OK;
     this->result = SQL::Result(new PropertyDescriptor(move(result)));
   } catch (const Error &e) {
     if (checkIfNotExists && e.code() == NOGDB_CTX_DUPLICATE_PROPERTY) {
-      ClassDescriptor classDescriptor = DB::getClass(this->txn, tClassName.toString());
-      vector<PropertyDescriptor> properties = DB::getProperties(this->txn, classDescriptor);
+      ClassDescriptor classDescriptor = this->txn.getClass(tClassName.toString());
+      vector<PropertyDescriptor> properties = this->txn.getProperties(classDescriptor);
       for (const auto &property: properties) {
         if (property.name == tPropName.toString()) {
           result = property;
@@ -204,7 +204,7 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
 
     switch (attr) {
       case ALTER_NAME:
-        nogdb::Property::alter(this->txn, tClassName.toString(), tPropName.toString(), value.toText());
+        this->txn.renameProperty(tClassName.toString(), tPropName.toString(), value.toText());
         this->rc = SQL_OK;
         this->result = SQL::Result();
         break;
@@ -221,7 +221,7 @@ void Context::alterProperty(const Token &tClassName, const Token &tPropName, con
 
 void Context::dropProperty(const Token &tClassName, const Token &tPropName, bool checkIfExists) {
   try {
-    Property::remove(this->txn, tClassName.toString(), tPropName.toString());
+    this->txn.dropProperty(tClassName.toString(), tPropName.toString());
     this->rc = SQL_OK;
     this->result = SQL::Result();
   } catch (const Error &e) {
@@ -237,7 +237,7 @@ void Context::dropProperty(const Token &tClassName, const Token &tPropName, bool
 
 void Context::createVertex(const Token &tClassName, const nogdb::Record &prop) {
   try {
-    const nogdb::RecordDescriptor result = Vertex::create(this->txn, tClassName.toString(), prop);
+    const nogdb::RecordDescriptor result = this->txn.addVertex(tClassName.toString(), prop);
     this->rc = SQL_OK;
     this->result = SQL::Result(new vector<nogdb::RecordDescriptor>{result});
   } catch (const Error &e) {
@@ -254,8 +254,7 @@ void Context::createEdge(const CreateEdgeArgs &args) {
     vector<nogdb::RecordDescriptor> result{};
     for (const auto &src: srcVertex) {
       for (const auto &dest: destVertex) {
-        nogdb::RecordDescriptor r = Edge::create(this->txn, args.name, src.descriptor, dest.descriptor,
-                                                 args.prop);
+        nogdb::RecordDescriptor r = this->txn.addEdge(args.name, src.descriptor, dest.descriptor, args.prop);
         result.push_back(move(r));
       }
     }
@@ -289,13 +288,13 @@ void Context::update(const UpdateArgs &args) {
       for (const auto &prop: args.prop.getAll()) {
         r.set(prop.first, prop.second);
       }
-      ClassType type = DB::getClass(this->txn, target.descriptor.rid.first).type;
+      ClassType type = this->txn.getClass(target.descriptor.rid.first).type;
       switch (type) {
         case ClassType::VERTEX:
-          Vertex::update(this->txn, target.descriptor, r);
+          this->txn.update(target.descriptor, r);
           break;
         case ClassType::EDGE:
-          Edge::update(this->txn, target.descriptor, r);
+          this->txn.update(target.descriptor, r);
           break;
         case ClassType::UNDEFINED:
           throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSTYPE);
@@ -315,7 +314,7 @@ void Context::deleteVertex(const DeleteVertexArgs &args) {
     vector<nogdb::RecordDescriptor> result{};
     ResultSet targets = select(args.target, args.where);
     for (const auto &target: targets) {
-      Vertex::destroy(this->txn, target.descriptor);
+      this->txn.remove(target.descriptor);
       result.push_back(target.descriptor);
     }
     this->rc = SQL_OK;
@@ -343,16 +342,16 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
         ResultSet edges;
         switch (whereType) {
           case WhereType::NO_COND:
-            edges = Vertex::getOutEdge(this->txn, src.descriptor);
+            edges = this->txn.findOutEdge(src.descriptor).get();
             break;
           case WhereType::CONDITION: {
             const auto condition = args.where.get<Condition>();
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{condition});
+            edges = this->txn.findOutEdge(src.descriptor).where(GraphFilter{condition}).get();
             break;
           }
           case WhereType::MULTI_COND: {
             const auto multiCondition = args.where.get<MultiCondition>();
-            edges = Vertex::getOutEdge(this->txn, src.descriptor, GraphFilter{multiCondition});
+            edges = this->txn.findOutEdge(src.descriptor).where(GraphFilter{multiCondition}).get();
             break;
           }
         }
@@ -369,16 +368,16 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
           ResultSet edges;
           switch (whereType) {
             case WhereType::NO_COND:
-              edges = Vertex::getInEdge(this->txn, dest.descriptor);
+              edges = this->txn.findInEdge(dest.descriptor).get();
               break;
             case WhereType::CONDITION: {
               const auto condition = args.where.get<Condition>();
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{condition});
+              edges = this->txn.findInEdge(dest.descriptor).where(GraphFilter{condition}).get();
               break;
             }
             case WhereType::MULTI_COND: {
               const auto multiCondition = args.where.get<MultiCondition>();
-              edges = Vertex::getInEdge(this->txn, dest.descriptor, GraphFilter{multiCondition});
+              edges = this->txn.findInEdge(dest.descriptor).where(GraphFilter{multiCondition}).get();
               break;
             }
           }
@@ -411,7 +410,7 @@ void Context::deleteEdge(const DeleteEdgeArgs &args) {
 
     // delete.
     for (const auto &target: targets) {
-      Edge::destroy(this->txn, target);
+      this->txn.remove(target);
     }
 
     this->rc = SQL_OK;
@@ -438,7 +437,7 @@ void Context::traverse(const TraverseArgs &args) {
 void Context::createIndex(const Token &tClassName, const Token &tPropName, const Token &tIndexType) {
   try {
     bool unique = stringcasecmp(tIndexType.toString(), "UNIQUE") == 0 ? true : false;
-    Property::createIndex(this->txn, tClassName.toString(), tPropName.toString(), unique);
+    this->txn.addIndex(tClassName.toString(), tPropName.toString(), unique);
 
     this->rc = SQL_OK;
     this->result = SQL::Result();
@@ -450,7 +449,7 @@ void Context::createIndex(const Token &tClassName, const Token &tPropName, const
 
 void Context::dropIndex(const Token &tClassName, const Token &tPropName) {
   try {
-    Property::dropIndex(this->txn, tClassName.toString(), tPropName.toString());
+    this->txn.dropIndex(tClassName.toString(), tPropName.toString());
 
     this->rc = SQL_OK;
     this->result = SQL::Result();
@@ -524,7 +523,7 @@ ResultSet Context::select(const Target &target, const Where &where, int skip, in
 ResultSet Context::select(const RecordDescriptorSet &rids) {
   ResultSet result{};
   for (RecordDescriptor rid: rids) {
-    nogdb::Record r = nogdb::DB::getRecord(this->txn, rid);
+    nogdb::Record r = this->txn.fetchRecord(rid);
     auto res = Result(move(rid), move(r));
     result.push_back(move(res));
   }
@@ -534,24 +533,24 @@ ResultSet Context::select(const RecordDescriptorSet &rids) {
 nogdb::ResultSetCursor Context::selectVertex(const string &className, const Where &where) {
   switch (where.type) {
     case WhereType::CONDITION:
-      return nogdb::Vertex::getCursor(this->txn, className, where.get<Condition>());
+      return this->txn.find(className).where(where.get<Condition>()).getCursor();
     case WhereType::MULTI_COND:
-      return nogdb::Vertex::getCursor(this->txn, className, where.get<MultiCondition>());
+      return this->txn.find(className).where(where.get<MultiCondition>()).getCursor();
     case WhereType::NO_COND:
     default:
-      return Vertex::getCursor(this->txn, className);
+      return this->txn.find(className).getCursor();
   }
 }
 
 nogdb::ResultSetCursor Context::selectEdge(const string &className, const Where &where) {
   switch (where.type) {
     case WhereType::CONDITION:
-      return nogdb::Edge::getCursor(this->txn, className, where.get<Condition>());
+      return this->txn.find(className).where(where.get<Condition>()).getCursor();
     case WhereType::MULTI_COND:
-      return nogdb::Edge::getCursor(this->txn, className, where.get<MultiCondition>());
+      return this->txn.find(className).where(where.get<MultiCondition>()).getCursor();
     case WhereType::NO_COND:
     default:
-      return nogdb::Edge::getCursor(this->txn, className);
+      return this->txn.find(className).getCursor();
   }
 }
 
@@ -640,20 +639,6 @@ ResultSet Context::selectGroupBy(ResultSet &input, const string &group) {
 }
 
 ResultSet Context::traversePrivate(const TraverseArgs &args) {
-  typedef nogdb::ResultSet (*TraverseFunction)(const Txn &, const nogdb::RecordDescriptor &, unsigned int, unsigned int,
-                                               const GraphFilter &, const GraphFilter &);
-  static const auto mapFunc = map<string, TraverseFunction, StringCaseCompare>(
-      {
-          {"INDEPTH_FIRST",    Traverse::inEdgeDfs},
-          {"OUTDEPTH_FIRST",   Traverse::outEdgeDfs},
-          {"ALLDEPTH_FIRST",   Traverse::allEdgeDfs},
-          {"INBREADTH_FIRST",  Traverse::inEdgeBfs},
-          {"OUTBREADTH_FIRST", Traverse::outEdgeBfs},
-          {"ALLBREADTH_FIRST", Traverse::allEdgeBfs}
-      },
-      stringcasecmp
-  );
-
   if (args.minDepth<0 || args.minDepth>UINT_MAX) {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_TRAVERSE_MIN_DEPTH);
   }
@@ -661,9 +646,32 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_TRAVERSE_MAX_DEPTH);
   }
 
-  TraverseFunction func;
   try {
-    func = mapFunc.at(args.direction + args.strategy);
+    auto func = args.direction + args.strategy;
+    if (func == "INDEPTH_FIRST" || func == "INBREADTH_FIRST") {
+      return this->txn.traverseIn(args.root)
+      .minDepth(args.minDepth)
+      .maxDepth(args.maxDepth)
+      .whereV(GraphFilter{}.only(args.filter))
+      .whereE(GraphFilter{}.only(args.filter))
+      .get();
+    } else if (func == "OUTDEPTH_FIRST" || func == "OUTBREADTH_FIRST") {
+      return this->txn.traverseOut(args.root)
+          .minDepth(args.minDepth)
+          .maxDepth(args.maxDepth)
+          .whereV(GraphFilter{}.only(args.filter))
+          .whereE(GraphFilter{}.only(args.filter))
+          .get();
+    } else if (func == "ALLDEPTH_FIRST" || func == "ALLBREADTH_FIRST") {
+      return this->txn.traverse(args.root)
+          .minDepth(args.minDepth)
+          .maxDepth(args.maxDepth)
+          .whereV(GraphFilter{}.only(args.filter))
+          .whereE(GraphFilter{}.only(args.filter))
+          .get();
+    } else {
+      throw 0;
+    }
   } catch (...) {
     if (strcasecmp("IN", args.direction.c_str()) != 0
         && strcasecmp("OUT", args.direction.c_str()) != 0
@@ -675,12 +683,9 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
       throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_TRAVERSE_STRATEGY);
     }
   }
-
-  return func(this->txn, args.root, args.minDepth, args.maxDepth,
-              GraphFilter{}.only(args.filter), GraphFilter{}.only(args.filter));
 }
 
-Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {
+Bytes Context::getProjectionItem(Transaction &txn, const Result &input, const Projection &proj, const PropertyMapType &map) {
   switch (proj.type) {
     case ProjectionType::PROPERTY:
       return Context::getProjectionItemProperty(txn, input, proj.get<string>(), map);
@@ -715,7 +720,7 @@ Bytes Context::getProjectionItem(Txn &txn, const Result &input, const Projection
 }
 
 Bytes
-Context::getProjectionItemProperty(Txn &txn, const Result &input, const string &propName, const PropertyMapType &map) {
+Context::getProjectionItemProperty(Transaction &txn, const Result &input, const string &propName, const PropertyMapType &map) {
   Bytes b = input.record.get(propName);
   if (b.empty() || b.type() != nogdb::PropertyType::UNDEFINED) {
     return b;
@@ -724,7 +729,7 @@ Context::getProjectionItemProperty(Txn &txn, const Result &input, const string &
   }
 }
 
-Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Projection &firstProj,
+Bytes Context::getProjectionItemMethod(Transaction &txn, const Result &input, const Projection &firstProj,
                                        const Projection &secondProj, const PropertyMapType &map) {
   Bytes resA = Context::getProjectionItem(txn, input, firstProj, map);
   if (resA.isResults()) {
@@ -758,7 +763,7 @@ Bytes Context::getProjectionItemMethod(Txn &txn, const Result &input, const Proj
 }
 
 Bytes
-Context::getProjectionItemArraySelector(Txn &txn, const Result &input, const Projection &proj, unsigned long index,
+Context::getProjectionItemArraySelector(Transaction &txn, const Result &input, const Projection &proj, unsigned long index,
                                         const PropertyMapType &map) {
   Bytes resA = Context::getProjectionItem(txn, input, proj, map);
   if (resA.isResults()) {
@@ -773,7 +778,7 @@ Context::getProjectionItemArraySelector(Txn &txn, const Result &input, const Pro
   }
 }
 
-Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const Function &func, const Condition &cond) {
+Bytes Context::getProjectionItemCondition(Transaction &txn, const Result &input, const Function &func, const Condition &cond) {
   if (!func.isWalkResult()) {
     throw NOGDB_SQL_ERROR(NOGDB_SQL_INVALID_PROJECTION);
   }
@@ -792,17 +797,18 @@ Bytes Context::getProjectionItemCondition(Txn &txn, const Result &input, const F
   }
 }
 
-nogdb::ClassType Context::findClassType(Txn &txn, const string &className) {
-  return DB::getClass(txn, className).type;
+nogdb::ClassType Context::findClassType(Transaction &txn, const string &className) {
+  return txn.getClass(className).type;
 }
 
-nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, ClassId classID) {
+nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Transaction &txn, ClassId classID) {
   if (classID != (ClassId) CLASS_DESCDRIPTOR_TEMPORARY) {
-    const ClassDescriptor classDescriptor = DB::getClass(txn, classID);
-    const vector<PropertyDescriptor> properties = DB::getProperties(txn, classDescriptor);
+    const ClassDescriptor classDescriptor = txn.getClass(classID);
+    const vector<PropertyDescriptor> properties = txn.getProperties(classDescriptor);
     PropertyMapType map{
         {CLASS_NAME_PROPERTY, PropertyType::TEXT},
-        {RECORD_ID_PROPERTY,  PropertyType::TEXT}/*,
+        {RECORD_ID_PROPERTY,  PropertyType::TEXT},
+        {DEPTH_PROPERTY,  PropertyType::UNSIGNED_INTEGER}/*,
         {VERSION_PROPERTY,    PropertyType::UNSIGNED_BIGINT}*/
     };
     for (const auto &p: properties) {
@@ -814,7 +820,7 @@ nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Txn &txn, 
   }
 }
 
-ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const MultiCondition &conds) {
+ResultSet Context::executeCondition(Transaction &txn, const ResultSet &input, const MultiCondition &conds) {
   ResultSet result{};
   PropertyMapType mapProp{};
   ClassId previousClassID = -1;
@@ -824,6 +830,7 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
       mapProp.clear();
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
+      mapProp[DEPTH_PROPERTY] = PropertyType::UNSIGNED_INTEGER;
 //      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
       for (const auto &prop: in->record.getAll()) {
         mapProp[prop.first] = prop.second.type();
@@ -832,9 +839,10 @@ ResultSet Context::executeCondition(Txn &txn, const ResultSet &input, const Mult
       mapProp.clear();
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
+      mapProp[DEPTH_PROPERTY] = PropertyType::UNSIGNED_INTEGER;
 //      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
-      const ClassDescriptor classDescriptor = DB::getClass(txn, classID);
-      const vector<PropertyDescriptor> properties = DB::getProperties(txn, classDescriptor);
+      const ClassDescriptor classDescriptor = txn.getClass(classID);
+      const vector<PropertyDescriptor> properties = txn.getProperties(classDescriptor);
       for (const auto &p: properties) {
         mapProp[p.name] = p.type;
       }

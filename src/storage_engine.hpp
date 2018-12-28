@@ -32,7 +32,7 @@
 #include "lmdb_engine.hpp"
 #include "utils.hpp"
 
-#include "nogdb/nogdb_context.h"
+#include "nogdb/nogdb.h"
 
 #define DEFAULT_NOGDB_MAX_DATABASE_NUMBER   1024U
 #define DEFAULT_NOGDB_MAX_DATABASE_SIZE     1073741824UL  // 1GB
@@ -88,7 +88,7 @@ namespace nogdb {
     public:
 
       LMDBTxn(LMDBEnv *const env, const unsigned int txnMode) {
-        _txn = lmdb::Txn::begin(env->handle(), txnMode);
+        _txn = lmdb::Transaction::begin(env->handle(), txnMode);
       }
 
       ~LMDBTxn() noexcept {
@@ -138,12 +138,12 @@ namespace nogdb {
         _txn = nullptr;
       }
 
-      lmdb::TxnHandler *handle() const noexcept {
+      lmdb::TransactionHandler *handle() const noexcept {
         return _txn.handle();
       }
 
     private:
-      lmdb::Txn _txn{nullptr};
+      lmdb::Transaction _txn{nullptr};
     };
 
   }

@@ -33,25 +33,10 @@
 #include <memory>
 #include <ostream>
 #include <set>
+#include <list>
 #include <type_traits>
 
-//******************************************************************
-//*  Forward declarations of NogDB internal classes.               *
-//******************************************************************
-
 namespace nogdb {
-  struct Class;
-  struct Property;
-  struct DB;
-  struct Vertex;
-  struct Edge;
-  struct Traverse;
-
-  class Condition;
-
-  class MultiCondition;
-
-  class GraphFilter;
 
   namespace storage_engine {
     class LMDBEnv;
@@ -108,12 +93,11 @@ namespace nogdb {
     class Record;
   }
 
-}
+  class Condition;
 
-//*************************************************************
-//*  NogDB type definitions.                                  *
-//*************************************************************
-namespace nogdb {
+  class MultiCondition;
+
+  class GraphFilter;
 
   enum class PropertyType {
     TINYINT = 'i',
@@ -136,6 +120,10 @@ namespace nogdb {
     UNDEFINED = 'n'
   };
 
+  enum class TxnMode {
+    READ_ONLY, READ_WRITE
+  };
+
   typedef uint16_t ClassId;
   typedef uint16_t PropertyId;
   typedef uint32_t PositionId;
@@ -144,7 +132,7 @@ namespace nogdb {
   typedef uint32_t IndexId;
   typedef std::map<std::string, PropertyType> PropertyMapType;
 
-  struct DBInfo {
+  struct DbInfo {
     std::string dbPath;
     ClassId maxClassId;
     ClassId numClass;
@@ -154,7 +142,7 @@ namespace nogdb {
     IndexId numIndex;
   };
 
-  class Txn;
+  class Transaction;
 
   class Bytes {
   public:
@@ -618,9 +606,6 @@ namespace nogdb {
 
   private:
 
-    friend struct Vertex;
-    friend struct Edge;
-
     friend class parser::RecordParser;
 
     friend class algorithm::GraphTraversal;
@@ -734,17 +719,19 @@ namespace nogdb {
 
   typedef std::vector<Result> ResultSet;
 
-  class Txn;
-
   class ResultSetCursor {
   public:
-    friend struct Vertex;
-    friend struct Edge;
-    friend struct Traverse;
-
     friend class datarecord::DataRecordInterface;
 
-    ResultSetCursor(const Txn &txn_);
+    friend class FindOperationBuilder;
+
+    friend class FindEdgeOperationBuilder;
+
+    friend class TraverseOperationBuilder;
+
+    friend class ShortestPathOperationBuilder;
+
+    ResultSetCursor(const Transaction &_txn);
 
     ~ResultSetCursor() noexcept;
 
@@ -779,7 +766,7 @@ namespace nogdb {
     const Result *operator->() const;
 
   private:
-    const Txn *txn;
+    const Transaction *txn;
     std::vector<RecordDescriptor> metadata{};
     long long currentIndex;
     Result result;
@@ -798,6 +785,613 @@ namespace nogdb {
       metadata.insert(metadata.cend(), resultSetCursor.metadata.cbegin(), resultSetCursor.metadata.cend());
       return *this;
     }
+  };
+
+  class GraphFilter {
+  public:
+    friend class compare::RecordCompare;
+
+    GraphFilter();
+
+    explicit GraphFilter(const Condition &condition);
+
+    explicit GraphFilter(const MultiCondition &multiCondition);
+
+    explicit GraphFilter(bool (*function)(const Record &record));
+
+    ~GraphFilter() noexcept = default;
+
+    GraphFilter(const GraphFilter &other);
+
+    GraphFilter &operator=(const GraphFilter &other);
+
+    GraphFilter(GraphFilter &&other) noexcept;
+
+    GraphFilter &operator=(GraphFilter &&other) noexcept;
+
+    GraphFilter &only(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &only(const std::string &className, const T &... classNames) {
+      only(className);
+      only(classNames...);
+      return *this;
+    }
+
+    GraphFilter &only(const std::vector<std::string> &classNames);
+
+    GraphFilter &only(const std::list<std::string> &classNames);
+
+    GraphFilter &only(const std::set<std::string> &classNames);
+
+    GraphFilter &only(const std::vector<std::string>::const_iterator &begin,
+                      const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::list<std::string>::const_iterator &begin,
+                      const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &only(const std::set<std::string>::const_iterator &begin,
+                      const std::set<std::string>::const_iterator &end);
+
+    GraphFilter &onlySubClassOf(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &onlySubClassOf(const std::string &className, const T &... classNames) {
+      onlySubClassOf(className);
+      onlySubClassOf(classNames...);
+      return *this;
+    }
+
+    GraphFilter &onlySubClassOf(const std::vector<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::list<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::set<std::string> &classNames);
+
+    GraphFilter &onlySubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &onlySubClassOf(const std::list<std::string>::const_iterator &begin,
+                                const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &onlySubClassOf(const std::set<std::string>::const_iterator &begin,
+                                const std::set<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &exclude(const std::string &className, const T &... classNames) {
+      exclude(className);
+      exclude(classNames...);
+    }
+
+    GraphFilter &exclude(const std::vector<std::string> &classNames);
+
+    GraphFilter &exclude(const std::list<std::string> &classNames);
+
+    GraphFilter &exclude(const std::set<std::string> &classNames);
+
+    GraphFilter &exclude(const std::vector<std::string>::const_iterator &begin,
+                         const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::list<std::string>::const_iterator &begin,
+                         const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &exclude(const std::set<std::string>::const_iterator &begin,
+                         const std::set<std::string>::const_iterator &end);
+
+    GraphFilter &excludeSubClassOf(const std::string &className);
+
+    template<typename ...T>
+    GraphFilter &excludeSubClassOf(const std::string &className, const T &... classNames) {
+      excludeSubClassOf(className);
+      excludeSubClassOf(classNames...);
+    }
+
+    GraphFilter &excludeSubClassOf(const std::vector<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::list<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::set<std::string> &classNames);
+
+    GraphFilter &excludeSubClassOf(const std::vector<std::string>::const_iterator &begin,
+                                   const std::vector<std::string>::const_iterator &end);
+
+    GraphFilter &excludeSubClassOf(const std::list<std::string>::const_iterator &begin,
+                                   const std::list<std::string>::const_iterator &end);
+
+    GraphFilter &excludeSubClassOf(const std::set<std::string>::const_iterator &begin,
+                                   const std::set<std::string>::const_iterator &end);
+
+  private:
+
+    enum class FilterMode {
+      CONDITION, MULTI_CONDITION, COMPARE_FUNCTION
+    };
+
+    FilterMode _mode;
+
+    //TODO: can be improved by using std::varient in c++17
+    std::shared_ptr<Condition> _condition{};
+    std::shared_ptr<MultiCondition> _multiCondition{};
+    bool (*_function)(const Record &record);
+
+    std::set<std::string> _onlyClasses{};
+    std::set<std::string> _onlySubOfClasses{};
+    std::set<std::string> _ignoreClasses{};
+    std::set<std::string> _ignoreSubOfClasses{};
+
+  };
+
+  class Condition {
+  private:
+    enum class Comparator;
+
+  public:
+
+    friend class MultiCondition;
+
+    friend class compare::RecordCompare;
+
+    friend class datarecord::DataRecordInterface;
+
+    friend class index::IndexInterface;
+
+    Condition(const std::string &propName_);
+
+    ~Condition() noexcept = default;
+
+    operator GraphFilter() { return GraphFilter(*this); }
+
+    template<typename T>
+    Condition eq(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::EQUAL;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition gt(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::GREATER;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition lt(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LESS;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition ge(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::GREATER_EQUAL;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition le(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LESS_EQUAL;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition contain(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::CONTAIN;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition beginWith(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::BEGIN_WITH;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition endWith(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::END_WITH;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition like(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::LIKE;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition regex(T value_) const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{value_};
+      tmp.comp = Comparator::REGEX;
+      return tmp;
+    }
+
+    Condition ignoreCase() const {
+      auto tmp(*this);
+      tmp.isIgnoreCase = true;
+      return tmp;
+    }
+
+    Condition null() const {
+      auto tmp(*this);
+      tmp.valueBytes = Bytes{};
+      tmp.comp = Comparator::IS_NULL;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition between(T lower_, T upper_, const std::pair<bool, bool> isIncludeBound = {true, true}) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{Bytes{lower_}, Bytes{upper_}};
+      if (!isIncludeBound.first && !isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_BOUND;
+      } else if (!isIncludeBound.first && isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_LOWER;
+      } else if (isIncludeBound.first && !isIncludeBound.second) {
+        tmp.comp = Comparator::BETWEEN_NO_UPPER;
+      } else {
+        tmp.comp = Comparator::BETWEEN;
+      }
+      return tmp;
+    }
+
+    template<typename T>
+    Condition in(const std::vector<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition in(const std::list<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition in(const std::set<T> &values) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{};
+      for (auto iter = values.cbegin(); iter != values.cend(); ++iter) {
+        tmp.valueSet.emplace_back(Bytes{*iter});
+      }
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
+
+    template<typename T>
+    Condition in(const T &value) const {
+      auto tmp(*this);
+      tmp.valueSet = std::vector<Bytes>{Bytes{value}};
+      tmp.comp = Comparator::IN;
+      return tmp;
+    }
+
+    template<typename T, typename... U>
+    Condition in(const T &head, const U &... tail) const {
+      auto tmp = in(head);
+      for (const auto &value: in(tail...).valueSet) {
+        tmp.valueSet.emplace_back(value);
+      }
+      return tmp;
+    }
+
+    MultiCondition operator&&(const Condition &c) const;
+
+    MultiCondition operator&&(const MultiCondition &e) const;
+
+    MultiCondition operator||(const Condition &c) const;
+
+    MultiCondition operator||(const MultiCondition &e) const;
+
+    Condition operator!() const;
+
+  private:
+    std::string propName;
+    Bytes valueBytes;
+    std::vector<Bytes> valueSet;
+    Comparator comp;
+    bool isIgnoreCase{false};
+    bool isNegative{false};
+
+    enum class Comparator {
+      IS_NULL,
+      NOT_NULL,
+      EQUAL,
+      GREATER,
+      LESS,
+      GREATER_EQUAL,
+      LESS_EQUAL,
+      CONTAIN,
+      BEGIN_WITH,
+      END_WITH,
+      LIKE,
+      REGEX,
+      IN,
+      BETWEEN,
+      BETWEEN_NO_UPPER,
+      BETWEEN_NO_LOWER,
+      BETWEEN_NO_BOUND
+    };
+  };
+
+  class MultiCondition {
+  private:
+    enum Operator {
+      AND, OR
+    };
+
+    class CompositeNode;
+
+    class ConditionNode;
+
+  public:
+
+    friend class Condition;
+
+    friend class compare::RecordCompare;
+
+    friend class datarecord::DataRecordInterface;
+
+    friend class index::IndexInterface;
+
+    MultiCondition() = delete;
+
+    MultiCondition &operator&&(const MultiCondition &e);
+
+    MultiCondition &operator&&(const Condition &c);
+
+    MultiCondition &operator||(const MultiCondition &e);
+
+    MultiCondition &operator||(const Condition &c);
+
+    MultiCondition operator!() const;
+
+    operator GraphFilter() { return GraphFilter(*this); }
+
+    bool execute(const Record &r, const PropertyMapType &propType) const;
+
+  private:
+    std::shared_ptr<CompositeNode> root;
+    std::vector<std::weak_ptr<ConditionNode>> conditions;
+
+    MultiCondition(const Condition &c1, const Condition &c2, Operator opt);
+
+    MultiCondition(const Condition &c, const MultiCondition &e, Operator opt);
+
+    class ExprNode {
+    public:
+      explicit ExprNode(bool isCondition_);
+
+      virtual ~ExprNode() noexcept = default;
+
+      virtual bool check(const Record &r, const PropertyMapType &propType) const = 0;
+
+      bool checkIfCondition() const;
+
+    private:
+      bool isCondition;
+    };
+
+    class ConditionNode : public ExprNode {
+    public:
+      explicit ConditionNode(const Condition &cond_);
+
+      ~ConditionNode() noexcept override = default;
+
+      virtual bool check(const Record &r, const PropertyMapType &propType) const override;
+
+      const Condition &getCondition() const;
+
+    private:
+      Condition cond;
+    };
+
+    class CompositeNode : public ExprNode {
+    public:
+      CompositeNode(const std::shared_ptr<ExprNode> &left_,
+                    const std::shared_ptr<ExprNode> &right_,
+                    Operator opt_,
+                    bool isNegative_ = false);
+
+      ~CompositeNode() noexcept override = default;
+
+      virtual bool check(const Record &r, const PropertyMapType &propType) const override;
+
+      const std::shared_ptr<ExprNode> &getLeftNode() const;
+
+      const std::shared_ptr<ExprNode> &getRightNode() const;
+
+      const Operator &getOperator() const;
+
+      bool getIsNegative() const;
+
+    private:
+      std::shared_ptr<ExprNode> left;
+      std::shared_ptr<ExprNode> right;
+      Operator opt;
+      bool isNegative;
+    };
+  };
+
+  class OperationBuilder {
+  public:
+    enum class ConditionType {
+      CONDITION, MULTI_CONDITION, COMPARE_FUNCTION, UNDEFINED
+    };
+
+    enum class EdgeDirection {
+      IN, OUT, UNDIRECTED
+    };
+
+  protected:
+
+    OperationBuilder(const Transaction* txn);
+
+    virtual ~OperationBuilder() noexcept = default;
+
+    virtual ResultSet get() = 0;
+
+    virtual ResultSetCursor getCursor() = 0;
+
+    const Transaction* _txn;
+
+  };
+
+  class FindOperationBuilder : public OperationBuilder {
+  public:
+
+    FindOperationBuilder() = delete;
+
+    virtual ~FindOperationBuilder() noexcept = default;
+
+    virtual FindOperationBuilder& where(const Condition& condition);
+
+    virtual FindOperationBuilder& where(const MultiCondition& multiCondition);
+
+    virtual FindOperationBuilder& where(bool (*condition)(const Record &record));
+
+    virtual FindOperationBuilder& indexed(bool onlyIndex = true);
+
+    ResultSet get();
+
+    ResultSetCursor getCursor();
+
+  private:
+
+    friend class Transaction;
+
+    FindOperationBuilder(const Transaction* txn, const std::string& className, bool includeSubClassOf);
+
+    std::string _className;
+    ConditionType _conditionType;
+    bool _includeSubClassOf;
+    bool _indexed{false};
+
+    //TODO: can be improved by using std::varient in c++17
+    std::shared_ptr<Condition> _condition{};
+    std::shared_ptr<MultiCondition> _multiCondition{};
+    bool (*_function)(const Record &record);
+
+  };
+
+  class FindEdgeOperationBuilder : public OperationBuilder {
+  public:
+
+    FindEdgeOperationBuilder() = delete;
+
+    virtual ~FindEdgeOperationBuilder() noexcept = default;
+
+    virtual FindEdgeOperationBuilder& where(const GraphFilter& edgeFilter);
+
+    ResultSet get();
+
+    ResultSetCursor getCursor();
+
+  private:
+
+    friend class Transaction;
+
+    FindEdgeOperationBuilder(const Transaction* txn,
+                             const RecordDescriptor& recordDescriptor,
+                             const EdgeDirection& direction);
+
+    RecordDescriptor _rdesc;
+    EdgeDirection _direction;
+    GraphFilter _filter{};
+
+  };
+
+  class TraverseOperationBuilder : public OperationBuilder {
+  public:
+
+    TraverseOperationBuilder() = delete;
+
+    virtual ~TraverseOperationBuilder() noexcept = default;
+
+    virtual TraverseOperationBuilder& whereV(const GraphFilter& filter);
+
+    virtual TraverseOperationBuilder& whereE(const GraphFilter& filter);
+
+    virtual TraverseOperationBuilder& minDepth(unsigned int depth);
+
+    virtual TraverseOperationBuilder& maxDepth(unsigned int depth);
+
+    ResultSet get();
+
+    ResultSetCursor getCursor();
+
+  private:
+
+    friend class Transaction;
+
+    TraverseOperationBuilder(const Transaction* txn,
+                             const RecordDescriptor& recordDescriptor,
+                             const EdgeDirection& direction);
+
+    RecordDescriptor _rdesc;
+    EdgeDirection _direction;
+    unsigned int _minDepth{0};
+    unsigned int _maxDepth{0};
+    GraphFilter _edgeFilter{};
+    GraphFilter _vertexFilter{};
+
+  };
+
+  class ShortestPathOperationBuilder : public OperationBuilder {
+  public:
+
+    ShortestPathOperationBuilder() = delete;
+
+    virtual ~ShortestPathOperationBuilder() noexcept = default;
+
+    virtual ShortestPathOperationBuilder& whereV(const GraphFilter& filter);
+
+    virtual ShortestPathOperationBuilder& whereE(const GraphFilter& filter);
+
+    ResultSet get();
+
+    ResultSetCursor getCursor();
+
+  private:
+
+    friend class Transaction;
+
+    ShortestPathOperationBuilder(const Transaction* txn,
+                                 const RecordDescriptor &srcVertexRecordDescriptor,
+                                 const RecordDescriptor &dstVertexRecordDescriptor);
+
+    RecordDescriptor _srcRdesc;
+    RecordDescriptor _dstRdesc;
+    GraphFilter _edgeFilter{};
+    GraphFilter _vertexFilter{};
+
   };
 
   inline bool operator<(const RecordId &lhs, const RecordId &rhs) {
@@ -833,7 +1427,8 @@ namespace nogdb {
   }
 
   inline bool operator==(const IndexDescriptor &lhs, const IndexDescriptor &rhs) {
-    return (lhs.id == rhs.id) && (lhs.classId == rhs.classId) && (lhs.propertyId == rhs.propertyId) && (lhs.unique == rhs.unique);
+    return (lhs.id == rhs.id) && (lhs.classId == rhs.classId) && (lhs.propertyId == rhs.propertyId) &&
+           (lhs.unique == rhs.unique);
   }
 
   inline std::string rid2str(const nogdb::RecordId &rid) {
