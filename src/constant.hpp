@@ -26,9 +26,6 @@
 
 namespace nogdb {
 
-  constexpr unsigned int MAX_VERSION_CONTROL_SIZE = 128;
-  const std::string DB_LOCK_FILE = "/.context.lock";
-
   constexpr uint16_t INIT_NUM_CLASSES = 6;
   const std::string TB_DBINFO = ".dbinfo";
   const std::string TB_CLASSES = ".classes";
@@ -47,8 +44,6 @@ namespace nogdb {
   constexpr uint16_t DEPTH_PROPERTY_ID = 2;
   const std::string DEPTH_PROPERTY = "@depth";
 
-  constexpr uint16_t INIT_UINT16_EM = 0;
-  const std::string INIT_STRING_EM = "#init";
   constexpr uint32_t MAX_RECORD_NUM_EM = 0;
 
   constexpr size_t MAX_CLASS_NAME_LEN = 128;

@@ -32,14 +32,14 @@ namespace nogdb {
 
     using namespace adapter::schema;
 
-    Validator &Validator::isTransactionValid() {
+    Validator &Validator::isTxnValid() {
       if (_txn->getTxnMode() == TxnMode::READ_ONLY) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_INVALID_MODE);
       }
       return *this;
     }
 
-    Validator &Validator::isTransactionCompleted() {
+    Validator &Validator::isTxnCompleted() {
       if (_txn->isCompleted()) {
         throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
       }
@@ -68,14 +68,14 @@ namespace nogdb {
     }
 
     Validator &Validator::isClassNameValid(const std::string &className) {
-      if (!isNameValid(className)) {
+      if (!isNameValid(className) || className.length() > MAX_CLASS_NAME_LEN) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_CLASSNAME);
       }
       return *this;
     }
 
     Validator &Validator::isPropertyNameValid(const std::string &propName) {
-      if (!isNameValid(propName)) {
+      if (!isNameValid(propName) || propName.length() > MAX_PROPERTY_NAME_LEN) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INVALID_PROPERTYNAME);
       }
       return *this;

@@ -38,8 +38,8 @@ namespace nogdb {
 
   const RecordDescriptor Transaction::addVertex(const std::string &className, const Record &record) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className);
 
     auto vertexClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
@@ -63,8 +63,8 @@ namespace nogdb {
                                               const RecordDescriptor &dstVertexRecordDescriptor,
                                               const Record &record) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
@@ -90,8 +90,8 @@ namespace nogdb {
 
   void Transaction::update(const RecordDescriptor &recordDescriptor, const Record &record) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
     auto dataRecord = adapter::datarecord::DataRecord(_txnBase, classInfo.id, classInfo.type);
@@ -126,8 +126,8 @@ namespace nogdb {
   void Transaction::updateSrc(const RecordDescriptor &recordDescriptor,
                               const RecordDescriptor &newSrcVertexRecordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
@@ -150,8 +150,8 @@ namespace nogdb {
   void Transaction::updateDst(const RecordDescriptor &recordDescriptor,
                               const RecordDescriptor &newDstVertexRecordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isExistingDstVertex(newDstVertexRecordDescriptor);
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
@@ -173,8 +173,8 @@ namespace nogdb {
 
   void Transaction::remove(const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted();
+        .isTxnValid()
+        .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
     auto dataRecord = adapter::datarecord::DataRecord(_txnBase, classInfo.id, classInfo.type);
@@ -205,8 +205,8 @@ namespace nogdb {
 
   void Transaction::removeAll(const std::string &className) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className);
 
     auto classInfo = _interface->schema()->getExistingClass(className);
@@ -235,7 +235,7 @@ namespace nogdb {
 
   Result Transaction::fetchSrc(const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -249,7 +249,7 @@ namespace nogdb {
 
   Result Transaction::fetchDst(const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -263,7 +263,7 @@ namespace nogdb {
 
   ResultSet Transaction::fetchSrcDst(const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
     auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
@@ -320,7 +320,7 @@ namespace nogdb {
 
   ResultSet FindOperationBuilder::get() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(_className);
 
     auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
@@ -383,7 +383,7 @@ namespace nogdb {
 
   ResultSetCursor FindOperationBuilder::getCursor() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(_className);
 
     auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
@@ -458,7 +458,7 @@ namespace nogdb {
 
   ResultSet FindEdgeOperationBuilder::get() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
@@ -496,7 +496,7 @@ namespace nogdb {
 
   ResultSetCursor FindEdgeOperationBuilder::getCursor() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
@@ -534,7 +534,7 @@ namespace nogdb {
 
   ResultSet TraverseOperationBuilder::get() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
@@ -551,7 +551,7 @@ namespace nogdb {
 
   ResultSetCursor TraverseOperationBuilder::getCursor() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
@@ -569,7 +569,7 @@ namespace nogdb {
 
   ResultSet ShortestPathOperationBuilder::get() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 
@@ -581,7 +581,7 @@ namespace nogdb {
 
   ResultSetCursor ShortestPathOperationBuilder::getCursor() {
     BEGIN_VALIDATION(_txn)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 

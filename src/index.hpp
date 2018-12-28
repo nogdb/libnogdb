@@ -59,7 +59,9 @@ namespace nogdb {
 
       virtual ~IndexInterface() noexcept = default;
 
-      void initialize(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const ClassType &classType);
+      void initialize(const PropertyAccessInfo &propertyInfo,
+                      const IndexAccessInfo &indexInfo,
+                      const ClassType &classType);
 
       void drop(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo);
 
@@ -136,7 +138,8 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto const record = parser::RecordParser::parseRawData(
+                  result, propertyIdMapInfo, classType == ClassType::EDGE);
               auto bytesValue = record.get(propertyInfo.name);
               if (!bytesValue.empty()) {
                 auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -157,13 +160,14 @@ namespace nogdb {
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
             [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-              auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto const record = parser::RecordParser::parseRawData(
+                  result, propertyIdMapInfo, classType == ClassType::EDGE);
               auto bytesValue = record.get(propertyInfo.name);
               if (!bytesValue.empty()) {
                 auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
                 auto value = valueRetrieve(bytesValue);
-                (value >= 0) ? indexPositiveAccess.create(value, indexRecord) : indexNegativeAccess.create(value,
-                                                                                                           indexRecord);
+                (value >= 0) ? indexPositiveAccess.create(value, indexRecord)
+                             : indexNegativeAccess.create(value, indexRecord);
               }
             };
         dataRecord.resultSetIter(callback);
@@ -251,31 +255,41 @@ namespace nogdb {
                               const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
                               bool isNegative) const;
 
-      std::vector<RecordDescriptor>
-      getLessOrEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value) const;
+      std::vector<RecordDescriptor> getLessOrEqual(const PropertyAccessInfo &propertyInfo,
+                                                   const IndexAccessInfo &indexInfo,
+                                                   const Bytes &value) const;
 
-      std::vector<RecordDescriptor>
-      getLessThan(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value) const;
+      std::vector<RecordDescriptor> getLessThan(const PropertyAccessInfo &propertyInfo,
+                                                const IndexAccessInfo &indexInfo,
+                                                const Bytes &value) const;
 
-      std::vector<RecordDescriptor>
-      getEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value) const;
+      std::vector<RecordDescriptor> getEqual(const PropertyAccessInfo &propertyInfo,
+                                             const IndexAccessInfo &indexInfo,
+                                             const Bytes &value) const;
 
-      std::vector<RecordDescriptor>
-      getGreaterOrEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
-                        const Bytes &value) const;
+      std::vector<RecordDescriptor> getGreaterOrEqual(const PropertyAccessInfo &propertyInfo,
+                                                      const IndexAccessInfo &indexInfo,
+                                                      const Bytes &value) const;
 
-      std::vector<RecordDescriptor>
-      getGreaterThan(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value) const;
+      std::vector<RecordDescriptor> getGreaterThan(const PropertyAccessInfo &propertyInfo,
+                                                   const IndexAccessInfo &indexInfo,
+                                                   const Bytes &value) const;
 
-      std::vector<RecordDescriptor>
-      getBetween(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
-                 const Bytes &lowerBound, const Bytes &upperBound, const std::pair<bool, bool> &isIncludeBound) const;
+      std::vector<RecordDescriptor> getBetween(const PropertyAccessInfo &propertyInfo,
+                                               const IndexAccessInfo &indexInfo,
+                                               const Bytes &lowerBound,
+                                               const Bytes &upperBound,
+                                               const std::pair<bool, bool> &isIncludeBound) const;
 
-      std::vector<RecordDescriptor>
-      getLessCommon(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value, bool isEqual) const;
+      std::vector<RecordDescriptor> getLessCommon(const PropertyAccessInfo &propertyInfo,
+                                                  const IndexAccessInfo &indexInfo,
+                                                  const Bytes &value,
+                                                  bool isEqual) const;
 
-      std::vector<RecordDescriptor>
-      getGreaterCommon(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo, const Bytes &value, bool isEqual) const;
+      std::vector<RecordDescriptor> getGreaterCommon(const PropertyAccessInfo &propertyInfo,
+                                                     const IndexAccessInfo &indexInfo,
+                                                     const Bytes &value,
+                                                     bool isEqual) const;
 
       template<typename T>
       std::vector<RecordDescriptor>
@@ -286,8 +300,8 @@ namespace nogdb {
         } else {
           auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
           auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
-          auto positiveResult = backwardSearchIndex(indexPositiveAccessCursor, indexInfo.classId, value, true,
-                                                    includeEqual);
+          auto positiveResult = backwardSearchIndex(
+              indexPositiveAccessCursor, indexInfo.classId, value, true, includeEqual);
           auto negativeResult = fullScanIndex(indexNegativeAccessCursor, indexInfo.classId);
           positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
           return positiveResult;
@@ -309,8 +323,8 @@ namespace nogdb {
           auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
           auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
           auto positiveResult = fullScanIndex(indexPositiveAccessCursor, indexInfo.classId);
-          auto negativeResult = forwardSearchIndex(indexNegativeAccessCursor, indexInfo.classId, value, false,
-                                                   includeEqual);
+          auto negativeResult = forwardSearchIndex(
+              indexNegativeAccessCursor, indexInfo.classId, value, false, includeEqual);
           positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
           return positiveResult;
         } else {
@@ -325,8 +339,8 @@ namespace nogdb {
                         const IndexAccessInfo &indexInfo, const std::pair<bool, bool> &isIncludeBound) const {
         if (lowerBound < 0 && upperBound < 0) {
           auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
-          return betweenSearchIndex(indexAccessCursor, indexInfo.classId, lowerBound, upperBound, false,
-                                    isIncludeBound);
+          return betweenSearchIndex(
+              indexAccessCursor, indexInfo.classId, lowerBound, upperBound, false, isIncludeBound);
         } else if (lowerBound < 0 && upperBound >= 0) {
           auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
           auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();

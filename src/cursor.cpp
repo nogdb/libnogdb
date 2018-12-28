@@ -62,7 +62,7 @@ namespace nogdb {
 
   bool ResultSetCursor::next() {
     BEGIN_VALIDATION(txn)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     if (!metadata.empty() && (currentIndex == -1)) {
       currentIndex = 0;
@@ -82,7 +82,7 @@ namespace nogdb {
 
   bool ResultSetCursor::previous() {
     BEGIN_VALIDATION(txn)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
       currentIndex = static_cast<long long>(metadata.size() - 1);
@@ -114,7 +114,7 @@ namespace nogdb {
 
   void ResultSetCursor::first() {
     BEGIN_VALIDATION(txn)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     if (!metadata.empty()) {
       currentIndex = 0;
@@ -129,7 +129,7 @@ namespace nogdb {
 
   void ResultSetCursor::last() {
     BEGIN_VALIDATION(txn)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     if (!metadata.empty()) {
       currentIndex = static_cast<long long>(metadata.size() - 1);
@@ -144,7 +144,7 @@ namespace nogdb {
 
   bool ResultSetCursor::to(unsigned long index) {
     BEGIN_VALIDATION(txn)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     if (index >= metadata.size()) {
       return false;

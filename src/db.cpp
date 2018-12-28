@@ -33,7 +33,7 @@ namespace nogdb {
 
   const DbInfo Transaction::getDbInfo() {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto dbInfo = DbInfo{};
     dbInfo.maxClassId = _adapter->dbInfo()->getMaxClassId();
@@ -47,7 +47,7 @@ namespace nogdb {
 
   const std::vector<ClassDescriptor> Transaction::getClasses() {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto result = std::vector<ClassDescriptor>{};
     for (const auto &classInfo: _adapter->dbClass()->getAllInfos()) {
@@ -64,7 +64,7 @@ namespace nogdb {
 
   const std::vector<PropertyDescriptor> Transaction::getProperties(const std::string &className) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(className);
 
     auto result = std::vector<PropertyDescriptor>{};
@@ -97,7 +97,7 @@ namespace nogdb {
 
   const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDescriptor &classDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto result = std::vector<PropertyDescriptor>{};
     auto foundClass = _interface->schema()->getExistingClass(classDescriptor.id);
@@ -129,7 +129,7 @@ namespace nogdb {
 
   const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor &classDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(classDescriptor.id);
     auto indexInfos = _adapter->dbIndex()->getInfos(classInfo.id);
@@ -147,7 +147,7 @@ namespace nogdb {
 
   const ClassDescriptor Transaction::getClass(const std::string &className) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(className);
 
     auto classInfo = _interface->schema()->getExistingClass(className);
@@ -161,7 +161,7 @@ namespace nogdb {
 
   const ClassDescriptor Transaction::getClass(const ClassId &classId) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(classId);
     return ClassDescriptor{
@@ -174,7 +174,7 @@ namespace nogdb {
 
   const PropertyDescriptor Transaction::getProperty(const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
@@ -204,7 +204,7 @@ namespace nogdb {
 
   const IndexDescriptor Transaction::getIndex(const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
@@ -221,7 +221,7 @@ namespace nogdb {
 
   Record Transaction::fetchRecord(const RecordDescriptor &recordDescriptor) {
     BEGIN_VALIDATION(this)
-        .isTransactionCompleted();
+        .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first);
     return _interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);

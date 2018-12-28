@@ -38,8 +38,8 @@ namespace nogdb {
   const PropertyDescriptor
   Transaction::addProperty(const std::string &className, const std::string &propertyName, PropertyType type) {
     auto validators = BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
         .isPropertyTypeValid(type)
@@ -69,8 +69,8 @@ namespace nogdb {
                                    const std::string &oldPropertyName,
                                    const std::string &newPropertyName) {
     auto validators = BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(oldPropertyName)
         .isPropertyNameValid(newPropertyName);
@@ -93,8 +93,8 @@ namespace nogdb {
 
   void Transaction::dropProperty(const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
@@ -121,8 +121,8 @@ namespace nogdb {
                                               const std::string &propertyName,
                                               bool isUnique) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName)
         .isIndexIdMaxReach();
@@ -166,8 +166,8 @@ namespace nogdb {
 
   void Transaction::dropIndex(const std::string &className, const std::string &propertyName) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 

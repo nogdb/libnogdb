@@ -92,9 +92,8 @@ namespace nogdb {
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
-            auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result,
-                                                                          propertyIdMapInfo,
-                                                                          classInfo.type);
+            auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
             if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
               resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
             }
@@ -113,9 +112,8 @@ namespace nogdb {
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
-            auto record = parser::RecordParser::parseRawDataWithBasicInfo(classInfo.name, rid, result,
-                                                                          propertyIdMapInfo,
-                                                                          classInfo.type);
+            auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
             if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
               recordDescriptors.emplace_back(RecordDescriptor{rid});
             }

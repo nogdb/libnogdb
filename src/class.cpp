@@ -41,8 +41,8 @@ namespace nogdb {
 
   const ClassDescriptor Transaction::addClass(const std::string &className, ClassType type) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isClassTypeValid(type)
         .isNotDuplicatedClass(className)
@@ -66,8 +66,8 @@ namespace nogdb {
 
   const ClassDescriptor Transaction::addSubClassOf(const std::string &superClass, const std::string &className) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className)
         .isClassNameValid(superClass)
         .isNotDuplicatedClass(className)
@@ -92,8 +92,8 @@ namespace nogdb {
 
   void Transaction::dropClass(const std::string &className) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(className);
 
     auto foundClass = _interface->schema()->getExistingClass(className);
@@ -159,8 +159,8 @@ namespace nogdb {
 
   void Transaction::renameClass(const std::string &oldClassName, const std::string &newClassName) {
     BEGIN_VALIDATION(this)
-        .isTransactionValid()
-        .isTransactionCompleted()
+        .isTxnValid()
+        .isTxnCompleted()
         .isClassNameValid(oldClassName)
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);

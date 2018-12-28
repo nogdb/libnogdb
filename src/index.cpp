@@ -364,8 +364,8 @@ namespace nogdb {
         }
         case Condition::Comparator::BETWEEN_NO_BOUND: {
           if (!isApplyNegative) {
-            auto result = getBetween(propertyInfo, indexInfo,
-                                     condition.valueSet[0], condition.valueSet[1], {false, false});
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {false, false});
             sortByRdesc(result);
             return result;
           } else {
@@ -378,8 +378,8 @@ namespace nogdb {
         }
         case Condition::Comparator::BETWEEN: {
           if (!isApplyNegative) {
-            auto result = getBetween(propertyInfo, indexInfo,
-                                     condition.valueSet[0], condition.valueSet[1], {true, true});
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {true, true});
             sortByRdesc(result);
             return result;
           } else {
@@ -392,8 +392,8 @@ namespace nogdb {
         }
         case Condition::Comparator::BETWEEN_NO_UPPER: {
           if (!isApplyNegative) {
-            auto result = getBetween(propertyInfo, indexInfo,
-                                     condition.valueSet[0], condition.valueSet[1], {true, false});
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {true, false});
             sortByRdesc(result);
             return result;
           } else {
@@ -406,8 +406,8 @@ namespace nogdb {
         }
         case Condition::Comparator::BETWEEN_NO_LOWER: {
           if (!isApplyNegative) {
-            auto result = getBetween(propertyInfo, indexInfo,
-                                     condition.valueSet[0], condition.valueSet[1], {false, true});
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {false, true});
             sortByRdesc(result);
             return result;
           } else {
@@ -456,8 +456,8 @@ namespace nogdb {
       auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-            auto const record = parser::RecordParser::parseRawData(result, propertyIdMapInfo,
-                                                                   classType == ClassType::EDGE);
+            auto const record = parser::RecordParser::parseRawData(
+                result, propertyIdMapInfo, classType == ClassType::EDGE);
             auto value = record.get(propertyInfo.name).toText();
             if (!value.empty()) {
               auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -562,14 +562,14 @@ namespace nogdb {
           auto result = std::vector<RecordDescriptor>{};
           auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
           if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
-            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()),
-                                   result);
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), result);
           } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
-            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()),
-                                   result);
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), result);
           } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
-            return exactMatchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()),
-                                   result);
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), result);
           } else {
             return exactMatchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), result);
           }
@@ -586,8 +586,8 @@ namespace nogdb {
           return getEqualNumeric(value.toReal(), indexInfo);
         case PropertyType::TEXT: {
           auto result = std::vector<RecordDescriptor>{};
-          return exactMatchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(),
-                                 result);
+          return exactMatchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), result);
         }
         default:
           break;
@@ -697,12 +697,11 @@ namespace nogdb {
         case PropertyType::REAL:
           return getLessNumeric(value.toReal(), indexInfo, isEqual);
         case PropertyType::TEXT: {
-          return backwardSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(),
-                                     true, isEqual);
+          return backwardSearchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), true, isEqual);
         }
         default:
           return std::vector<RecordDescriptor>{};
-          break;
       }
     }
 
@@ -716,14 +715,14 @@ namespace nogdb {
         case PropertyType::UNSIGNED_BIGINT: {
           auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
           if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
-            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()),
-                                      true, isEqual);
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), true, isEqual);
           } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
-            return forwardSearchIndex(indexAccessCursor, indexInfo.classId,
-                                      static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
           } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
-            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()),
-                                      true, isEqual);
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), true, isEqual);
           } else {
             return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), true, isEqual);
           }
@@ -739,8 +738,8 @@ namespace nogdb {
         case PropertyType::REAL:
           return getGreaterNumeric(value.toReal(), indexInfo, isEqual);
         case PropertyType::TEXT: {
-          return forwardSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(),
-                                    isEqual);
+          return forwardSearchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), isEqual);
         }
         default:
           break;
