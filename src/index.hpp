@@ -231,12 +231,11 @@ namespace nogdb {
         removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
       }
 
-      inline static auto cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
-        return lhs.rid < rhs.rid;
-      };
-
       inline static void sortByRdesc(std::vector<RecordDescriptor> &recordDescriptors) {
-        std::sort(recordDescriptors.begin(), recordDescriptors.end(), cmpRecordDescriptor);
+        std::sort(recordDescriptors.begin(), recordDescriptors.end(),
+            [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
+              return lhs.rid < rhs.rid;
+            });
       };
 
       inline bool isValidComparator(const Condition &condition) const {

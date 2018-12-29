@@ -504,6 +504,12 @@ namespace nogdb {
       auto result = std::vector<RecordDescriptor>{};
       auto rightNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, rightNode, isApplyNegative);
       auto leftNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, leftNode, isApplyNegative);
+
+      static const auto cmpRecordDescriptor =
+          [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
+            return lhs.rid < rhs.rid;
+          };
+
       if ((opt == MultiCondition::Operator::AND && !isApplyNegative) ||
           (opt == MultiCondition::Operator::OR && isApplyNegative)) {
         // AND action
