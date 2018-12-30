@@ -158,8 +158,8 @@ compareText(const nogdb::ResultSet &rss, const std::string &propName, const std:
   return result;
 }
 
-inline void runTestCases(nogdb::Txn &txn,
-                         const std::vector<std::function<void(nogdb::Txn &)>> &testCases,
+inline void runTestCases(nogdb::Transaction &txn,
+                         const std::vector<std::function<void(nogdb::Transaction &)>> &testCases,
                          bool mustPass) {
   auto counter = 0;
   for (auto &testCase: testCases) {
@@ -183,37 +183,37 @@ inline void runTestCases(nogdb::Txn &txn,
   }
 }
 
-inline nogdb::ResultSet getVertexMultipleClass(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+inline nogdb::ResultSet getVertexMultipleClass(nogdb::Transaction &txn, const std::set<std::string> &classNames) {
   auto res = nogdb::ResultSet{};
   for (const auto &className: classNames) {
-    auto tmp = nogdb::Vertex::get(txn, className);
+    auto tmp = txn.find(className).get();
     res.insert(res.end(), tmp.cbegin(), tmp.cend());
   }
   return res;
 }
 
-inline nogdb::ResultSet getEdgeMultipleClass(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+inline nogdb::ResultSet getEdgeMultipleClass(nogdb::Transaction &txn, const std::set<std::string> &classNames) {
   auto res = nogdb::ResultSet{};
   for (const auto &className: classNames) {
-    auto tmp = nogdb::Edge::get(txn, className);
+    auto tmp = txn.find(className).get();
     res.insert(res.end(), tmp.cbegin(), tmp.cend());
   }
   return res;
 }
 
-inline nogdb::ResultSet getVertexMultipleClassExtend(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+inline nogdb::ResultSet getVertexMultipleClassExtend(nogdb::Transaction &txn, const std::set<std::string> &classNames) {
   auto res = nogdb::ResultSet{};
   for (const auto &className: classNames) {
-    auto tmp = nogdb::Vertex::getExtend(txn, className);
+    auto tmp = txn.findSubClassOf(className).get();
     res.insert(res.end(), tmp.cbegin(), tmp.cend());
   }
   return res;
 }
 
-inline nogdb::ResultSet getEdgeMultipleClassExtend(nogdb::Txn &txn, const std::set<std::string> &classNames) {
+inline nogdb::ResultSet getEdgeMultipleClassExtend(nogdb::Transaction &txn, const std::set<std::string> &classNames) {
   auto res = nogdb::ResultSet{};
   for (const auto &className: classNames) {
-    auto tmp = nogdb::Edge::getExtend(txn, className);
+    auto tmp = txn.findSubClassOf(className).get();
     res.insert(res.end(), tmp.cbegin(), tmp.cend());
   }
   return res;

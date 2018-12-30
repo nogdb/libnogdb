@@ -26,12 +26,12 @@
 
 inline void init_vertex_book() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "books", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "books", "title", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "books", "words", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Property::add(txn, "books", "pages", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "books", "price", nogdb::PropertyType::REAL);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("books", nogdb::ClassType::VERTEX);
+    txn.addProperty("books", "title", nogdb::PropertyType::TEXT);
+    txn.addProperty("books", "words", nogdb::PropertyType::UNSIGNED_BIGINT);
+    txn.addProperty("books", "pages", nogdb::PropertyType::INTEGER);
+    txn.addProperty("books", "price", nogdb::PropertyType::REAL);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -41,8 +41,8 @@ inline void init_vertex_book() {
 
 inline void destroy_vertex_book() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "books");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("books");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -52,12 +52,12 @@ inline void destroy_vertex_book() {
 
 inline void init_vertex_person() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "persons", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "persons", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "persons", "age", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "persons", "address", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "persons", "salary", nogdb::PropertyType::REAL);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("persons", nogdb::ClassType::VERTEX);
+    txn.addProperty("persons", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("persons", "age", nogdb::PropertyType::INTEGER);
+    txn.addProperty("persons", "address", nogdb::PropertyType::TEXT);
+    txn.addProperty("persons", "salary", nogdb::PropertyType::REAL);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -67,8 +67,8 @@ inline void init_vertex_person() {
 
 inline void destroy_vertex_person() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "persons");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("persons");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -78,10 +78,10 @@ inline void destroy_vertex_person() {
 
 inline void init_edge_author() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "authors", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "authors", "profit", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "authors", "time_used", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("authors", nogdb::ClassType::EDGE);
+    txn.addProperty("authors", "profit", nogdb::PropertyType::REAL);
+    txn.addProperty("authors", "time_used", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -91,8 +91,8 @@ inline void init_edge_author() {
 
 inline void destroy_edge_author() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "authors");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("authors");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -102,12 +102,12 @@ inline void destroy_edge_author() {
 
 inline void init_vertex_teachers() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "teachers", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "teachers", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "teachers", "age", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "teachers", "salary", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "teachers", "level", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("teachers", nogdb::ClassType::VERTEX);
+    txn.addProperty("teachers", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("teachers", "age", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("teachers", "salary", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("teachers", "level", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -117,8 +117,8 @@ inline void init_vertex_teachers() {
 
 inline void destroy_vertex_teachers() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "teachers");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("teachers");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -128,11 +128,11 @@ inline void destroy_vertex_teachers() {
 
 inline void init_vertex_students() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "students", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "students", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "students", "age", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "students", "grade", nogdb::PropertyType::REAL);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("students", nogdb::ClassType::VERTEX);
+    txn.addProperty("students", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("students", "age", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("students", "grade", nogdb::PropertyType::REAL);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -142,8 +142,8 @@ inline void init_vertex_students() {
 
 inline void destroy_vertex_students() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "students");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("students");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -153,9 +153,9 @@ inline void destroy_vertex_students() {
 
 inline void init_vertex_departments() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "departments", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "departments", "name", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("departments", nogdb::ClassType::VERTEX);
+    txn.addProperty("departments", "name", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -165,8 +165,8 @@ inline void init_vertex_departments() {
 
 inline void destroy_vertex_departments() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "departments");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("departments");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -176,9 +176,9 @@ inline void destroy_vertex_departments() {
 
 inline void init_vertex_subjects() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "subjects", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "subjects", "name", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("subjects", nogdb::ClassType::VERTEX);
+    txn.addProperty("subjects", "name", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -188,8 +188,8 @@ inline void init_vertex_subjects() {
 
 inline void destroy_vertex_subjects() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "subjects");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("subjects");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -199,9 +199,9 @@ inline void destroy_vertex_subjects() {
 
 inline void init_edge_teach() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "teach", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "teach", "semester", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("teach", nogdb::ClassType::EDGE);
+    txn.addProperty("teach", "semester", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -211,8 +211,8 @@ inline void init_edge_teach() {
 
 inline void destroy_edge_teach() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "teach");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("teach");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -222,9 +222,9 @@ inline void destroy_edge_teach() {
 
 inline void init_edge_enrol() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "enrol", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "enrol", "semester", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("enrol", nogdb::ClassType::EDGE);
+    txn.addProperty("enrol", "semester", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -234,8 +234,8 @@ inline void init_edge_enrol() {
 
 inline void destroy_edge_enrol() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "enrol");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("enrol");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -245,9 +245,9 @@ inline void destroy_edge_enrol() {
 
 inline void init_edge_know() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "know", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "know", "relationship", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("know", nogdb::ClassType::EDGE);
+    txn.addProperty("know", "relationship", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -257,8 +257,8 @@ inline void init_edge_know() {
 
 inline void destroy_edge_know() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "know");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("know");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -268,9 +268,9 @@ inline void destroy_edge_know() {
 
 inline void init_edge_workfor() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "workfor", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "workfor", "position", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("workfor", nogdb::ClassType::EDGE);
+    txn.addProperty("workfor", "position", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -280,8 +280,8 @@ inline void init_edge_workfor() {
 
 inline void destroy_edge_workfor() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "workfor");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("workfor");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -291,9 +291,9 @@ inline void destroy_edge_workfor() {
 
 inline void init_edge_belongto() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "belongto", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "belongto", "null", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("belongto", nogdb::ClassType::EDGE);
+    txn.addProperty("belongto", "null", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -303,8 +303,8 @@ inline void init_edge_belongto() {
 
 inline void destroy_edge_belongto() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "belongto");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("belongto");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -314,9 +314,9 @@ inline void destroy_edge_belongto() {
 
 inline void init_vertex_folders() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "folders", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "folders", "name", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("folders", nogdb::ClassType::VERTEX);
+    txn.addProperty("folders", "name", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -326,8 +326,8 @@ inline void init_vertex_folders() {
 
 inline void destroy_vertex_folders() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "folders");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("folders");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -337,9 +337,9 @@ inline void destroy_vertex_folders() {
 
 inline void init_vertex_files() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "name", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "name", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -349,8 +349,8 @@ inline void init_vertex_files() {
 
 inline void destroy_vertex_files() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -360,9 +360,9 @@ inline void destroy_vertex_files() {
 
 inline void init_edge_link() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "link", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "link", "null", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("link", nogdb::ClassType::EDGE);
+    txn.addProperty("link", "null", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -372,8 +372,8 @@ inline void init_edge_link() {
 
 inline void destroy_edge_link() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "link");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("link");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -383,9 +383,9 @@ inline void destroy_edge_link() {
 
 inline void init_edge_symbolic() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "symbolic", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "symbolic", "null", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("symbolic", nogdb::ClassType::EDGE);
+    txn.addProperty("symbolic", "null", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -395,8 +395,8 @@ inline void init_edge_symbolic() {
 
 inline void destroy_edge_symbolic() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "symbolic");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("symbolic");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -406,13 +406,13 @@ inline void destroy_edge_symbolic() {
 
 inline void init_vertex_mountain() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "mountains", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "mountains", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "mountains", "temperature", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "mountains", "height", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Property::add(txn, "mountains", "rating", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "mountains", "coordinates", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("mountains", nogdb::ClassType::VERTEX);
+    txn.addProperty("mountains", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("mountains", "temperature", nogdb::PropertyType::INTEGER);
+    txn.addProperty("mountains", "height", nogdb::PropertyType::UNSIGNED_BIGINT);
+    txn.addProperty("mountains", "rating", nogdb::PropertyType::REAL);
+    txn.addProperty("mountains", "coordinates", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -422,8 +422,8 @@ inline void init_vertex_mountain() {
 
 inline void destroy_vertex_mountain() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "mountains");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("mountains");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -433,15 +433,15 @@ inline void destroy_vertex_mountain() {
 
 inline void init_vertex_location() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "locations", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "locations", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "locations", "temperature", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "locations", "postcode", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "locations", "price", nogdb::PropertyType::BIGINT);
-    nogdb::Property::add(txn, "locations", "population", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Property::add(txn, "locations", "rating", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "locations", "coordinates", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("locations", nogdb::ClassType::VERTEX);
+    txn.addProperty("locations", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("locations", "temperature", nogdb::PropertyType::INTEGER);
+    txn.addProperty("locations", "postcode", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("locations", "price", nogdb::PropertyType::BIGINT);
+    txn.addProperty("locations", "population", nogdb::PropertyType::UNSIGNED_BIGINT);
+    txn.addProperty("locations", "rating", nogdb::PropertyType::REAL);
+    txn.addProperty("locations", "coordinates", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -451,8 +451,8 @@ inline void init_vertex_location() {
 
 inline void destroy_vertex_location() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "locations");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("locations");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -462,13 +462,13 @@ inline void destroy_vertex_location() {
 
 inline void init_edge_street() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "street", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "street", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "street", "temperature", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "street", "capacity", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "street", "distance", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "street", "coordinates", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("street", nogdb::ClassType::EDGE);
+    txn.addProperty("street", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("street", "temperature", nogdb::PropertyType::INTEGER);
+    txn.addProperty("street", "capacity", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("street", "distance", nogdb::PropertyType::REAL);
+    txn.addProperty("street", "coordinates", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -478,8 +478,8 @@ inline void init_edge_street() {
 
 inline void destroy_edge_street() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "street");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("street");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -489,13 +489,13 @@ inline void destroy_edge_street() {
 
 inline void init_edge_highway() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "highway", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "highway", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "highway", "temperature", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "highway", "capacity", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "highway", "distance", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "highway", "coordinates", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("highway", nogdb::ClassType::EDGE);
+    txn.addProperty("highway", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("highway", "temperature", nogdb::PropertyType::INTEGER);
+    txn.addProperty("highway", "capacity", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("highway", "distance", nogdb::PropertyType::REAL);
+    txn.addProperty("highway", "coordinates", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -505,8 +505,8 @@ inline void init_edge_highway() {
 
 inline void destroy_edge_highway() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "highway");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("highway");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -516,12 +516,12 @@ inline void destroy_edge_highway() {
 
 inline void init_edge_railway() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "railway", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "railway", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "railway", "temperature", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "railway", "distance", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "railway", "coordinates", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("railway", nogdb::ClassType::EDGE);
+    txn.addProperty("railway", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("railway", "temperature", nogdb::PropertyType::INTEGER);
+    txn.addProperty("railway", "distance", nogdb::PropertyType::REAL);
+    txn.addProperty("railway", "coordinates", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -531,8 +531,8 @@ inline void init_edge_railway() {
 
 inline void destroy_edge_railway() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "railway");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("railway");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -542,10 +542,10 @@ inline void destroy_edge_railway() {
 
 inline void init_vertex_country() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "country", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "country", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "country", "population", nogdb::PropertyType::UNSIGNED_BIGINT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("country", nogdb::ClassType::VERTEX);
+    txn.addProperty("country", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("country", "population", nogdb::PropertyType::UNSIGNED_BIGINT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -555,8 +555,8 @@ inline void init_vertex_country() {
 
 inline void destroy_vertex_country() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "country");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("country");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -566,9 +566,9 @@ inline void destroy_vertex_country() {
 
 inline void init_edge_path() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "path", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "path", "distance", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("path", nogdb::ClassType::EDGE);
+    txn.addProperty("path", "distance", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -578,8 +578,8 @@ inline void init_edge_path() {
 
 inline void destroy_edge_path() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "path");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("path");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -589,10 +589,10 @@ inline void destroy_edge_path() {
 
 inline void init_vertex_island() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "islands", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "islands", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "islands", "area", nogdb::PropertyType::REAL);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("islands", nogdb::ClassType::VERTEX);
+    txn.addProperty("islands", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("islands", "area", nogdb::PropertyType::REAL);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -602,8 +602,8 @@ inline void init_vertex_island() {
 
 inline void destroy_vertex_island() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "islands");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("islands");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -613,10 +613,10 @@ inline void destroy_vertex_island() {
 
 inline void init_vertex_city() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "cities", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "cities", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "cities", "area", nogdb::PropertyType::REAL);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("cities", nogdb::ClassType::VERTEX);
+    txn.addProperty("cities", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("cities", "area", nogdb::PropertyType::REAL);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -626,8 +626,8 @@ inline void init_vertex_city() {
 
 inline void destroy_vertex_city() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "cities");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("cities");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -637,10 +637,10 @@ inline void destroy_vertex_city() {
 
 inline void init_edge_bridge() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "bridge", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "bridge", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "bridge", "length", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("bridge", nogdb::ClassType::EDGE);
+    txn.addProperty("bridge", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("bridge", "length", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -650,8 +650,8 @@ inline void init_edge_bridge() {
 
 inline void destroy_edge_bridge() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "bridge");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("bridge");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -661,10 +661,10 @@ inline void destroy_edge_bridge() {
 
 inline void init_edge_flight() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "flight", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "flight", "name", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "flight", "distance", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("flight", nogdb::ClassType::EDGE);
+    txn.addProperty("flight", "name", nogdb::PropertyType::TEXT);
+    txn.addProperty("flight", "distance", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -674,8 +674,8 @@ inline void init_edge_flight() {
 
 inline void destroy_edge_flight() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "flight");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("flight");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -685,19 +685,19 @@ inline void destroy_edge_flight() {
 
 inline void init_vertex_index_test() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "index_test", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "index_test", "index_text", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "index_test", "index_tinyint_u", nogdb::PropertyType::UNSIGNED_TINYINT);
-    nogdb::Property::add(txn, "index_test", "index_tinyint", nogdb::PropertyType::TINYINT);
-    nogdb::Property::add(txn, "index_test", "index_smallint_u", nogdb::PropertyType::UNSIGNED_SMALLINT);
-    nogdb::Property::add(txn, "index_test", "index_smallint", nogdb::PropertyType::SMALLINT);
-    nogdb::Property::add(txn, "index_test", "index_int_u", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "index_test", "index_int", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "index_test", "index_bigint_u", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Property::add(txn, "index_test", "index_bigint", nogdb::PropertyType::BIGINT);
-    nogdb::Property::add(txn, "index_test", "index_real", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "index_test", "index_blob", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("index_test", nogdb::ClassType::VERTEX);
+    txn.addProperty("index_test", "index_text", nogdb::PropertyType::TEXT);
+    txn.addProperty("index_test", "index_tinyint_u", nogdb::PropertyType::UNSIGNED_TINYINT);
+    txn.addProperty("index_test", "index_tinyint", nogdb::PropertyType::TINYINT);
+    txn.addProperty("index_test", "index_smallint_u", nogdb::PropertyType::UNSIGNED_SMALLINT);
+    txn.addProperty("index_test", "index_smallint", nogdb::PropertyType::SMALLINT);
+    txn.addProperty("index_test", "index_int_u", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("index_test", "index_int", nogdb::PropertyType::INTEGER);
+    txn.addProperty("index_test", "index_bigint_u", nogdb::PropertyType::UNSIGNED_BIGINT);
+    txn.addProperty("index_test", "index_bigint", nogdb::PropertyType::BIGINT);
+    txn.addProperty("index_test", "index_real", nogdb::PropertyType::REAL);
+    txn.addProperty("index_test", "index_blob", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -707,8 +707,8 @@ inline void init_vertex_index_test() {
 
 inline void destroy_vertex_index_test() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "index_test");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("index_test");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;

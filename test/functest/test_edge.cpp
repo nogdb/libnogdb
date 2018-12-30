@@ -31,7 +31,7 @@ void test_create_edges() {
 
   nogdb::RecordDescriptor v1_1{}, v1_2{}, v2{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Record r1{}, r2{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
     v1_1 = nogdb::Vertex::create(txn, "books", r1);
@@ -47,7 +47,7 @@ void test_create_edges() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Record r{};
     r.set("time_used", 365U);
     nogdb::Edge::create(txn, "authors", v1_1, v2, r);
@@ -74,7 +74,7 @@ void test_create_invalid_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   auto vb = std::vector<nogdb::RecordDescriptor>{};
   auto vp = std::vector<nogdb::RecordDescriptor>{};
   try {
@@ -102,7 +102,7 @@ void test_create_invalid_edge() {
   }
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
     r.set("name", "ABC").set("age", 20);
@@ -113,7 +113,7 @@ void test_create_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
     r.set("profits", 50.0);
@@ -124,7 +124,7 @@ void test_create_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
     r.set("name", "Nanmee");
@@ -135,7 +135,7 @@ void test_create_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
     r.set("time_used", 100U);
@@ -145,7 +145,7 @@ void test_create_invalid_edge() {
     REQUIRE(ex, NOGDB_GRAPH_NOEXST_SRC, "NOGDB_GRAPH_NOEXST_SRC");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
     r.set("time_used", 100U);
@@ -165,7 +165,7 @@ void test_get_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -187,7 +187,7 @@ void test_get_edge() {
     r3.set("time_used", 430U);
     auto e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
 
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     auto count = 0;
     for (const auto &it: res) {
       auto &record = it.record;
@@ -221,7 +221,7 @@ void test_get_invalid_edges() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -250,18 +250,18 @@ void test_get_invalid_edges() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::Edge::get(txn, "author");
+    auto res = txn.find("author");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::Edge::get(txn, "persons");
+    auto res = txn.find("persons");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -278,7 +278,7 @@ void test_get_vertex_src() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -300,7 +300,7 @@ void test_get_vertex_src() {
     r3.set("time_used", 430U);
     nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
 
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     auto count = 0;
     for (const auto &it: res) {
       //auto &record = it.record;
@@ -333,7 +333,7 @@ void test_get_vertex_dst() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -355,7 +355,7 @@ void test_get_vertex_dst() {
     r3.set("time_used", 430U);
     nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
 
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     auto count = 0;
     for (const auto &it: res) {
       //auto &record = it.record;
@@ -388,7 +388,7 @@ void test_get_vertex_all() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -410,7 +410,7 @@ void test_get_vertex_all() {
     r3.set("time_used", 430U);
     nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
 
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     auto count = 0;
     for (const auto &it: res) {
       //auto &record = it.record;
@@ -446,7 +446,7 @@ void test_get_invalid_vertex_src() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1_1{}, v1_2{}, v1_3{}, v2_1{}, v2_2{};
   nogdb::RecordDescriptor e1{}, e2{}, e3{};
   try {
@@ -477,7 +477,7 @@ void test_get_invalid_vertex_src() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -488,7 +488,7 @@ void test_get_invalid_vertex_src() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = v1_1;
     auto res = nogdb::Edge::getSrc(txn, tmp);
@@ -498,7 +498,7 @@ void test_get_invalid_vertex_src() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.second = -1;
@@ -519,7 +519,7 @@ void test_get_invalid_vertex_dst() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1_1{}, v1_2{}, v1_3{}, v2_1{}, v2_2{};
   nogdb::RecordDescriptor e1{}, e2{}, e3{};
   try {
@@ -550,7 +550,7 @@ void test_get_invalid_vertex_dst() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -561,7 +561,7 @@ void test_get_invalid_vertex_dst() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = v1_1;
     auto res = nogdb::Edge::getDst(txn, tmp);
@@ -571,7 +571,7 @@ void test_get_invalid_vertex_dst() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.second = -1;
@@ -592,7 +592,7 @@ void test_get_invalid_vertex_all() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1_1{}, v1_2{}, v1_3{}, v2_1{}, v2_2{};
   nogdb::RecordDescriptor e1{}, e2{}, e3{};
   try {
@@ -623,7 +623,7 @@ void test_get_invalid_vertex_all() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -634,7 +634,7 @@ void test_get_invalid_vertex_all() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = v1_1;
     auto res = nogdb::Edge::getSrcDst(txn, tmp);
@@ -644,7 +644,7 @@ void test_get_invalid_vertex_all() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
     tmp.rid.second = -1;
@@ -665,7 +665,7 @@ void test_update_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -675,10 +675,10 @@ void test_update_edge() {
     r3.set("time_used", 365U);
     auto e1 = nogdb::Edge::create(txn, "authors", v1, v2, r3);
 
-    auto rec_book = nogdb::Vertex::get(txn, "books")[0].record;
+    auto rec_book = txn.find("books")[0].record;
     //assert(rec_book.getVersion() == 1ULL);
 
-    auto rec_person = nogdb::Vertex::get(txn, "persons")[0].record;
+    auto rec_person = txn.find("persons")[0].record;
     //assert(rec_person.getVersion() == 1ULL);
 
     auto record = nogdb::DB::getRecord(txn, e1);
@@ -686,7 +686,7 @@ void test_update_edge() {
 
     r3.set("time_used", 400U);
     nogdb::Edge::update(txn, e1, r3);
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     assert(res[0].record.get("time_used").toIntU() == 400U);
     assert(res[0].record.getText("@className") == "authors");
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(e1.rid));
@@ -719,7 +719,7 @@ void test_update_invalid_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{}, e1{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -736,7 +736,7 @@ void test_update_invalid_edge() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto r3 = nogdb::Record{};
     r3.set("time_used", 400U);
@@ -749,7 +749,7 @@ void test_update_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto r3 = nogdb::Record{};
     r3.set("time_used", 400U);
@@ -762,7 +762,7 @@ void test_update_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto r3 = nogdb::Record{};
     r3.set("time_used", 400U);
@@ -774,7 +774,7 @@ void test_update_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto r3 = nogdb::Record{};
     r3.set("time_use", 400U);
@@ -795,7 +795,7 @@ void test_update_vertex_src() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{}, e1{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -859,7 +859,7 @@ void test_update_vertex_dst() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{}, e1{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -924,7 +924,7 @@ void test_update_invalid_edge_src() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{}, e1{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -941,7 +941,7 @@ void test_update_invalid_edge_src() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = e1;
     tmp.rid.second = -1;
@@ -952,7 +952,7 @@ void test_update_invalid_edge_src() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -963,7 +963,7 @@ void test_update_invalid_edge_src() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = v1;
     nogdb::Edge::updateSrc(txn, tmp, v1);
@@ -973,7 +973,7 @@ void test_update_invalid_edge_src() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = v1;
     tmp.rid.second = -1;
@@ -994,7 +994,7 @@ void test_update_invalid_edge_dst() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{}, e1{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -1011,7 +1011,7 @@ void test_update_invalid_edge_dst() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = e1;
     tmp.rid.second = -1;
@@ -1022,7 +1022,7 @@ void test_update_invalid_edge_dst() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -1033,7 +1033,7 @@ void test_update_invalid_edge_dst() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = v1;
     nogdb::Edge::updateDst(txn, tmp, v1);
@@ -1043,7 +1043,7 @@ void test_update_invalid_edge_dst() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = v1;
     tmp.rid.second = -1;
@@ -1065,7 +1065,7 @@ void test_delete_edge() {
   init_edge_author();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
     auto v1 = nogdb::Vertex::create(txn, "books", r1);
@@ -1081,17 +1081,17 @@ void test_delete_edge() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    auto e1 = nogdb::Edge::get(txn, "authors")[0].descriptor;
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto e1 = txn.find("authors")[0].descriptor;
     auto record = nogdb::DB::getRecord(txn, e1);
     assert(record.get("time_used").toIntU() == 365U);
 
     nogdb::Edge::destroy(txn, e1);
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     ASSERT_SIZE(res, 0);
 
-    auto v1 = nogdb::Vertex::get(txn, "books")[0];
-    auto v2 = nogdb::Vertex::get(txn, "persons")[0];
+    auto v1 = txn.find("books")[0];
+    auto v2 = txn.find("persons")[0];
 
     //assert(v1.record.getVersion() == 2ULL);
     //assert(v2.record.getVersion() == 2ULL);
@@ -1117,7 +1117,7 @@ void test_update_version() {
   nogdb::RecordDescriptor edge[E];
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Record r1{}, r2{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
     auto v1 = nogdb::Vertex::create(txn, "books", r1);
@@ -1140,7 +1140,7 @@ void test_update_version() {
   for (int i = 0; i < ITERATION; ++i) {
     try {
 
-      auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+      auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
       for (int j = 0; j < E; ++j) {
         nogdb::Record r3 = nogdb::DB::getRecord(txn, edge[j]);
@@ -1166,7 +1166,7 @@ void test_delete_invalid_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{};
   nogdb::RecordDescriptor e1{};
   try {
@@ -1185,7 +1185,7 @@ void test_delete_invalid_edge() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = e1;
     tmp.rid.first = 9999U;
@@ -1196,7 +1196,7 @@ void test_delete_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto tmp = v1;
     nogdb::Edge::destroy(txn, tmp);
@@ -1216,7 +1216,7 @@ void test_delete_all_edges() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor v1{}, v2{};
   try {
     nogdb::Record r1{}, r2{}, r3{};
@@ -1234,7 +1234,7 @@ void test_delete_all_edges() {
   }
 
   try {
-    auto res = nogdb::Edge::get(txn, "authors");
+    auto res = txn.find("authors");
     ASSERT_SIZE(res, 4);
     res = nogdb::Vertex::getOutEdge(txn, v1);
     ASSERT_SIZE(res, 4);
@@ -1242,7 +1242,7 @@ void test_delete_all_edges() {
     ASSERT_SIZE(res, 4);
 
     nogdb::Edge::destroy(txn, "authors");
-    res = nogdb::Edge::get(txn, "authors");
+    res = txn.find("authors");
     ASSERT_SIZE(res, 0);
     res = nogdb::Vertex::getOutEdge(txn, v1);
     ASSERT_SIZE(res, 0);
@@ -1255,7 +1255,7 @@ void test_delete_all_edges() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Edge::destroy(txn, "books");
     assert(false);
@@ -1268,7 +1268,7 @@ void test_delete_all_edges() {
   destroy_vertex_person();
   destroy_vertex_book();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Edge::destroy(txn, "authors");
     assert(false);
@@ -1283,7 +1283,7 @@ void test_get_invalid_edge() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1316,7 +1316,7 @@ void test_get_edge_cursor() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1363,7 +1363,7 @@ void test_get_invalid_edge_cursor() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1392,7 +1392,7 @@ void test_get_invalid_edge_cursor() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Edge::getCursor(txn, "author");
     assert(false);
@@ -1401,7 +1401,7 @@ void test_get_invalid_edge_cursor() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Edge::getCursor(txn, "persons");
     assert(false);

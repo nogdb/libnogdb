@@ -25,7 +25,7 @@ struct ClassSchema {
 
   ClassSchema() = default;
 
-  ClassSchema(const nogdb::Txn &_txn, const nogdb::ClassDescriptor &_classDescriptor)
+  ClassSchema(const nogdb::Transaction &_txn, const nogdb::ClassDescriptor &_classDescriptor)
       : classDescriptor{_classDescriptor},
         propertyDescriptors{nogdb::DB::getProperties(_txn, classDescriptor)},
         indexDescriptors{nogdb::DB::getIndexes(_txn, classDescriptor)} {}
@@ -81,8 +81,8 @@ void assert_schema(const std::vector<ClassSchema> &sc1, const std::vector<ClassS
 }
 
 void assert_ctx(const nogdb::Context &ctx1, const nogdb::Context &ctx2) {
-  auto txn1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-  auto txn2 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+  auto txn2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto info1 = nogdb::DB::getDBInfo(txn1);
   auto info2 = nogdb::DB::getDBInfo(txn2);
   assert_dbinfo(info1, info2);
@@ -102,9 +102,9 @@ void test_ctx_move() {
   auto schema = std::vector<ClassSchema>{};
   auto info = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "property", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "property", nogdb::PropertyType::TEXT);
     schema.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
@@ -158,8 +158,8 @@ void test_ctx_move() {
 
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -172,13 +172,13 @@ void test_reopen_ctx() {
   auto schema = std::vector<ClassSchema>{};
   auto info = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "property1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::create(txn, "folders", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "folders", "property1", nogdb::PropertyType::BLOB);
-    nogdb::Property::add(txn, "folders", "property2", nogdb::PropertyType::BIGINT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "property1", nogdb::PropertyType::TEXT);
+    txn.addProperty("files", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addClass("folders", nogdb::ClassType::VERTEX);
+    txn.addProperty("folders", "property1", nogdb::PropertyType::BLOB);
+    txn.addProperty("folders", "property2", nogdb::PropertyType::BIGINT);
     schema.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema.emplace_back(ClassSchema{txn, cdesc});
@@ -202,7 +202,7 @@ void test_reopen_ctx() {
   auto schema_r = std::vector<ClassSchema>{};
   auto info_r = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -217,9 +217,9 @@ void test_reopen_ctx() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
-    nogdb::Class::drop(txn, "folders");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
+    txn.dropClass("folders");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -242,14 +242,14 @@ void test_reopen_ctx_v2() {
   auto schema = std::vector<ClassSchema>{};
   auto info = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test1", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test1", "property1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::create(txn, "test2", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test2", "property1", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "test2", "property2", nogdb::PropertyType::BIGINT);
-    nogdb::Property::add(txn, "test2", "property3", nogdb::PropertyType::BLOB);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test1", nogdb::ClassType::VERTEX);
+    txn.addProperty("test1", "property1", nogdb::PropertyType::TEXT);
+    txn.addProperty("test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addClass("test2", nogdb::ClassType::VERTEX);
+    txn.addProperty("test2", "property1", nogdb::PropertyType::REAL);
+    txn.addProperty("test2", "property2", nogdb::PropertyType::BIGINT);
+    txn.addProperty("test2", "property3", nogdb::PropertyType::BLOB);
 
     nogdb::Record r;
     r.set("property1", "hello1").set("property2", 15U);
@@ -280,7 +280,7 @@ void test_reopen_ctx_v2() {
   auto schema_r = std::vector<ClassSchema>{};
   auto info_r = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -293,13 +293,13 @@ void test_reopen_ctx_v2() {
     r.set("property1", "hello2").set("property2", 30U);
     nogdb::Vertex::create(txn, "test1", r);
 
-    auto res = nogdb::Vertex::get(txn, "test1");
+    auto res = txn.find("test1");
     assert(res[0].record.get("property1").toText() == "hello1");
     assert(res[0].record.get("property2").toIntU() == 15U);
     assert(res[1].record.get("property1").toText() == "hello2");
     assert(res[1].record.get("property2").toIntU() == 30U);
 
-    res = nogdb::Vertex::get(txn, "test2");
+    res = txn.find("test2");
     assert(res[0].record.get("property1").toReal() == 42.42);
     assert(res[0].record.get("property2").toBigInt() == 15LL);
     auto tmp = myobject{};
@@ -315,9 +315,9 @@ void test_reopen_ctx_v2() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "test1");
-    nogdb::Class::drop(txn, "test2");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("test1");
+    txn.dropClass("test2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -331,15 +331,15 @@ void test_reopen_ctx_v3() {
   auto info = nogdb::DbInfo{};
   auto tmp = nogdb::RecordDescriptor{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test1", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test1", "property1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::create(txn, "test2", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test2", "property1", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "test2", "property2", nogdb::PropertyType::BIGINT);
-    nogdb::Class::create(txn, "test3", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "test3", "property1", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test1", nogdb::ClassType::VERTEX);
+    txn.addProperty("test1", "property1", nogdb::PropertyType::TEXT);
+    txn.addProperty("test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addClass("test2", nogdb::ClassType::VERTEX);
+    txn.addProperty("test2", "property1", nogdb::PropertyType::REAL);
+    txn.addProperty("test2", "property2", nogdb::PropertyType::BIGINT);
+    txn.addClass("test3", nogdb::ClassType::EDGE);
+    txn.addProperty("test3", "property1", nogdb::PropertyType::INTEGER);
 
     nogdb::Record r1, r2;
     r1.set("property1", "hello1").set("property2", 15U);
@@ -373,7 +373,7 @@ void test_reopen_ctx_v3() {
   auto info_r = nogdb::DbInfo{};
   auto schema_r = std::vector<ClassSchema>{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -389,17 +389,17 @@ void test_reopen_ctx_v3() {
     r2.set("property1", 24);
     auto e = nogdb::Edge::create(txn, "test3", v3, tmp, r2);
 
-    auto res = nogdb::Vertex::get(txn, "test1");
+    auto res = txn.find("test1");
     assert(res[0].record.get("property1").toText() == "hello1");
     assert(res[0].record.get("property2").toIntU() == 15U);
     assert(res[1].record.get("property1").toText() == "hello2");
     assert(res[1].record.get("property2").toIntU() == 30U);
 
-    res = nogdb::Vertex::get(txn, "test2");
+    res = txn.find("test2");
     assert(res[0].record.get("property1").toReal() == 42.42);
     assert(res[0].record.get("property2").toBigInt() == 15LL);
 
-    res = nogdb::Edge::get(txn, "test3");
+    res = txn.find("test3");
     assert(res[0].record.get("property1").toInt() == 42);
     assert(res[1].record.get("property1").toInt() == 24);
 
@@ -421,10 +421,10 @@ void test_reopen_ctx_v3() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "test1");
-    nogdb::Class::drop(txn, "test2");
-    nogdb::Class::drop(txn, "test3");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("test1");
+    txn.dropClass("test2");
+    txn.dropClass("test3");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -440,15 +440,15 @@ void test_reopen_ctx_v4() {
   auto schema = std::vector<ClassSchema>{};
   auto info = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    t1 = nogdb::Class::create(txn, "test1", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test1", "property1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::create(txn, "test2", nogdb::ClassType::VERTEX);
-    p1 = nogdb::Property::add(txn, "test2", "property1", nogdb::PropertyType::REAL);
-    nogdb::Property::add(txn, "test2", "property2", nogdb::PropertyType::BIGINT);
-    nogdb::Class::create(txn, "test3", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "test3", "property1", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    t1 = txn.addClass("test1", nogdb::ClassType::VERTEX);
+    txn.addProperty("test1", "property1", nogdb::PropertyType::TEXT);
+    txn.addProperty("test1", "property2", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addClass("test2", nogdb::ClassType::VERTEX);
+    p1 = txn.addProperty("test2", "property1", nogdb::PropertyType::REAL);
+    txn.addProperty("test2", "property2", nogdb::PropertyType::BIGINT);
+    txn.addClass("test3", nogdb::ClassType::EDGE);
+    txn.addProperty("test3", "property1", nogdb::PropertyType::INTEGER);
 
     nogdb::Record r1, r2;
     r1.set("property1", "hello1").set("property2", 15U);
@@ -483,7 +483,7 @@ void test_reopen_ctx_v4() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -518,7 +518,7 @@ void test_reopen_ctx_v4() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     schema_rr.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_rr.emplace_back(ClassSchema{txn, cdesc});
@@ -543,10 +543,10 @@ void test_reopen_ctx_v4() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "test01");
-    nogdb::Class::drop(txn, "test2");
-    nogdb::Class::drop(txn, "test3");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("test01");
+    txn.dropClass("test2");
+    txn.dropClass("test3");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -559,20 +559,20 @@ void test_reopen_ctx_v5() {
   auto schema = std::vector<ClassSchema>{};
   auto info = nogdb::DbInfo{};
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "vertex1", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "vertex1", "prop1", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("vertex1", nogdb::ClassType::VERTEX);
+    txn.addProperty("vertex1", "prop1", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "vertex2", "vertex1");
-    nogdb::Property::add(txn, "vertex2", "prop2", nogdb::PropertyType::TEXT);
+    txn.addProperty("vertex2", "prop2", nogdb::PropertyType::TEXT);
     nogdb::Class::createExtend(txn, "vertex3", "vertex1");
-    nogdb::Property::add(txn, "vertex3", "prop3", nogdb::PropertyType::REAL);
+    txn.addProperty("vertex3", "prop3", nogdb::PropertyType::REAL);
 
-    nogdb::Class::create(txn, "edge1", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "edge1", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addClass("edge1", nogdb::ClassType::EDGE);
+    txn.addProperty("edge1", "prop1", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "edge2", "edge1");
-    nogdb::Property::add(txn, "edge2", "prop2", nogdb::PropertyType::TEXT);
+    txn.addProperty("edge2", "prop2", nogdb::PropertyType::TEXT);
     nogdb::Class::createExtend(txn, "edge3", "edge1");
-    nogdb::Property::add(txn, "edge3", "prop3", nogdb::PropertyType::REAL);
+    txn.addProperty("edge3", "prop3", nogdb::PropertyType::REAL);
 
     auto v1 = nogdb::Vertex::create(txn, "vertex2", nogdb::Record{}.set("prop1", 10).set("prop2", "hello"));
     auto v2 = nogdb::Vertex::create(txn, "vertex3", nogdb::Record{}.set("prop1", 20).set("prop3", 42.41));
@@ -602,7 +602,7 @@ void test_reopen_ctx_v5() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -611,21 +611,21 @@ void test_reopen_ctx_v5() {
     assert_dbinfo(info, info_r);
     assert_schema(schema, schema_r);
 
-    auto res = nogdb::Vertex::get(txn, "vertex1");
+    auto res = txn.find("vertex1");
     ASSERT_SIZE(res, 0);
-    res = nogdb::Vertex::getExtend(txn, "vertex1");
+    res = txn.findSubClassOf("vertex1");
     ASSERT_SIZE(res, 2);
-    res = nogdb::Edge::get(txn, "edge1");
+    res = txn.find("edge1");
     ASSERT_SIZE(res, 0);
-    res = nogdb::Edge::getExtend(txn, "edge1");
+    res = txn.findSubClassOf("edge1");
     ASSERT_SIZE(res, 2);
 
-    nogdb::Class::drop(txn, "vertex1");
-    nogdb::Class::drop(txn, "vertex2");
-    nogdb::Class::drop(txn, "vertex3");
-    nogdb::Class::drop(txn, "edge1");
-    nogdb::Class::drop(txn, "edge2");
-    nogdb::Class::drop(txn, "edge3");
+    txn.dropClass("vertex1");
+    txn.dropClass("vertex2");
+    txn.dropClass("vertex3");
+    txn.dropClass("edge1");
+    txn.dropClass("edge2");
+    txn.dropClass("edge3");
 
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -642,16 +642,16 @@ void test_reopen_ctx_v6() {
   nogdb::PropertyDescriptor propVertex1, propVertex2, propEdge1, propEdge2;
   nogdb::IndexDescriptor v_index1, v_index2, v_index3, e_index1, e_index2, e_index3;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    vertex1 = nogdb::Class::create(txn, "index_vertex1", nogdb::ClassType::VERTEX);
-    propVertex1 = nogdb::Property::add(txn, "index_vertex1", "prop1", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    vertex1 = txn.addClass("index_vertex1", nogdb::ClassType::VERTEX);
+    propVertex1 = txn.addProperty("index_vertex1", "prop1", nogdb::PropertyType::INTEGER);
     vertex2 = nogdb::Class::createExtend(txn, "index_vertex2", "index_vertex1");
-    propVertex2 = nogdb::Property::add(txn, "index_vertex2", "prop2", nogdb::PropertyType::TEXT);
+    propVertex2 = txn.addProperty("index_vertex2", "prop2", nogdb::PropertyType::TEXT);
 
-    edge1 = nogdb::Class::create(txn, "index_edge1", nogdb::ClassType::EDGE);
-    propEdge1 = nogdb::Property::add(txn, "index_edge1", "prop1", nogdb::PropertyType::UNSIGNED_INTEGER);
+    edge1 = txn.addClass("index_edge1", nogdb::ClassType::EDGE);
+    propEdge1 = txn.addProperty("index_edge1", "prop1", nogdb::PropertyType::UNSIGNED_INTEGER);
     edge2 = nogdb::Class::createExtend(txn, "index_edge2", "index_edge1");
-    propEdge2 = nogdb::Property::add(txn, "index_edge2", "prop2", nogdb::PropertyType::REAL);
+    propEdge2 = txn.addProperty("index_edge2", "prop2", nogdb::PropertyType::REAL);
 
     v_index1 = nogdb::Property::createIndex(txn, "index_vertex1", "prop1", true);
     v_index2 = nogdb::Property::createIndex(txn, "index_vertex2", "prop1", false);
@@ -692,7 +692,7 @@ void test_reopen_ctx_v6() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
     }
@@ -722,7 +722,7 @@ void test_reopen_ctx_v6() {
 
   try {
     ctx = new nogdb::Context(DATABASE_PATH);
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     schema_r.clear();
     for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
       schema_r.emplace_back(ClassSchema{txn, cdesc});
@@ -759,9 +759,9 @@ void test_reopen_ctx_v6() {
 void test_invalid_ctx() {
   auto tmp_ctx = ctx;
   ctx = nullptr;
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Class::create(txn, "invalid", nogdb::ClassType::VERTEX);
+    txn.addClass("invalid", nogdb::ClassType::VERTEX);
     ctx = tmp_ctx;
     assert(false);
   } catch (const nogdb::Error &ex) {

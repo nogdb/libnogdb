@@ -26,7 +26,7 @@ void test_create_index() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", true);
@@ -44,7 +44,7 @@ void test_create_index() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -68,10 +68,10 @@ void test_create_index() {
 void test_create_index_extended_class() {
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::createExtend(txn, "index_test_2", "index_test");
-    nogdb::Property::add(txn, "index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
+    txn.addProperty("index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
+    txn.addProperty("index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -79,7 +79,7 @@ void test_create_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test_2", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test_2", "index_tinyint_u", false);
     nogdb::Property::createIndex(txn, "index_test_2", "index_tinyint", true);
@@ -99,7 +99,7 @@ void test_create_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test_2");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -122,7 +122,7 @@ void test_create_index_extended_class() {
 
 void test_create_invalid_index() {
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::createIndex(txn, "index_test", "index_blob", true);
     assert(false);
@@ -169,7 +169,7 @@ void test_create_invalid_index() {
 
 void test_drop_index() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -187,7 +187,7 @@ void test_drop_index() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -200,7 +200,7 @@ void test_drop_index() {
 
 void test_drop_index_extended_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -209,7 +209,7 @@ void test_drop_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test_2");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -220,7 +220,7 @@ void test_drop_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     nogdb::DB::getIndex(txn, "index_test_2", "index_int_2");
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -228,7 +228,7 @@ void test_drop_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
     nogdb::Property::dropIndex(txn, "index_test_2", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test_2", "index_tinyint");
@@ -246,7 +246,7 @@ void test_drop_index_extended_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test_2");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -258,7 +258,7 @@ void test_drop_index_extended_class() {
 }
 
 void test_drop_invalid_index() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
     assert(false);
@@ -308,16 +308,16 @@ void test_drop_invalid_index() {
   }
 
   try {
-    nogdb::Class::drop(txn, "index_test_2");
+    txn.dropClass("index_test_2");
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
   }
   txn.rollback();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_text_2");
-    nogdb::Class::drop(txn, "index_test_2");
+    txn.dropClass("index_test_2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -330,7 +330,7 @@ void test_create_index_with_records() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
         .set("index_text", "aaa")
         .set("index_tinyint_u", uint8_t{1})
@@ -386,7 +386,7 @@ void test_create_index_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", true);
@@ -404,7 +404,7 @@ void test_create_index_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -427,10 +427,10 @@ void test_create_index_with_records() {
 
 void test_create_index_extended_class_with_records() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::createExtend(txn, "index_test_2", "index_test");
-    nogdb::Property::add(txn, "index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
+    txn.addProperty("index_test_2", "index_text_2", nogdb::PropertyType::TEXT);
+    txn.addProperty("index_test_2", "index_int_2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -438,7 +438,7 @@ void test_create_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Vertex::create(txn, "index_test_2", nogdb::Record{}
         .set("index_text", "aaa")
         .set("index_tinyint_u", uint8_t{1})
@@ -502,7 +502,7 @@ void test_create_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test_2", "index_text_2", true);
     nogdb::Property::createIndex(txn, "index_test_2", "index_int_2", false);
     nogdb::Property::createIndex(txn, "index_test_2", "index_text", false);
@@ -522,7 +522,7 @@ void test_create_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test_2");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -543,7 +543,7 @@ void test_create_index_extended_class_with_records() {
 
 void test_create_invalid_index_with_records() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::createExtend(txn, "index_test_3", "index_test");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -552,7 +552,7 @@ void test_create_invalid_index_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Vertex::create(txn, "index_test_3", nogdb::Record{}
         .set("index_text", "aaa")
         .set("index_tinyint_u", uint8_t{1})
@@ -595,7 +595,7 @@ void test_create_invalid_index_with_records() {
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::createIndex(txn, "index_test_3", "index_text", true);
     assert(false);
@@ -678,8 +678,8 @@ void test_create_invalid_index_with_records() {
   txn.rollback();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "index_test_3");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("index_test_3");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -690,7 +690,7 @@ void test_create_invalid_index_with_records() {
 
 void test_drop_index_with_records() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -708,7 +708,7 @@ void test_drop_index_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -721,7 +721,7 @@ void test_drop_index_with_records() {
 
 void test_drop_index_extended_class_with_records() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_int_2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -730,7 +730,7 @@ void test_drop_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     nogdb::DB::getIndex(txn, "index_test_2", "index_int_2");
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -738,7 +738,7 @@ void test_drop_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_text");
     nogdb::Property::dropIndex(txn, "index_test_2", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test_2", "index_tinyint");
@@ -756,7 +756,7 @@ void test_drop_index_extended_class_with_records() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = nogdb::DB::getClass(txn, "index_test");
     auto properties = nogdb::DB::getProperties(txn, classDesc);
     auto indexSchema = nogdb::DB::getIndexes(txn, classDesc);
@@ -768,7 +768,7 @@ void test_drop_index_extended_class_with_records() {
 }
 
 void test_drop_invalid_index_with_records() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::dropIndex(txn, "index_test", "index_text_x");
     assert(false);
@@ -818,16 +818,16 @@ void test_drop_invalid_index_with_records() {
   }
 
   try {
-    nogdb::Class::drop(txn, "index_test_2");
+    txn.dropClass("index_test_2");
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
   }
   txn.rollback();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test_2", "index_text_2");
-    nogdb::Class::drop(txn, "index_test_2");
+    txn.dropClass("index_test_2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -840,7 +840,7 @@ void test_search_by_index_unique_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", true);
@@ -859,7 +859,7 @@ void test_search_by_index_unique_condition() {
 
   nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc1 = nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1012,7 +1012,7 @@ void test_search_by_index_unique_condition() {
                                rdesc1, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -1035,7 +1035,7 @@ void test_search_by_index_non_unique_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", false);
@@ -1054,7 +1054,7 @@ void test_search_by_index_non_unique_condition() {
 
   nogdb::RecordDescriptor rdesc11, rdesc12, rdesc21, rdesc22, rdesc31, rdesc32, rdesc41, rdesc42;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc11 = nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1259,7 +1259,7 @@ void test_search_by_index_non_unique_condition() {
                                         rdesc11, rdesc12, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -1282,7 +1282,7 @@ void test_search_by_index_unique_cursor_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", true);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", true);
@@ -1301,7 +1301,7 @@ void test_search_by_index_unique_cursor_condition() {
 
   nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc1 = nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1408,7 +1408,7 @@ void test_search_by_index_unique_cursor_condition() {
                              rdesc1, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -1431,7 +1431,7 @@ void test_search_by_index_non_unique_cursor_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::createIndex(txn, "index_test", "index_text", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint_u", false);
     nogdb::Property::createIndex(txn, "index_test", "index_tinyint", false);
@@ -1450,7 +1450,7 @@ void test_search_by_index_non_unique_cursor_condition() {
 
   nogdb::RecordDescriptor rdesc11, rdesc12, rdesc21, rdesc22, rdesc31, rdesc32, rdesc41, rdesc42;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc11 = nogdb::Vertex::create(txn, "index_test", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1608,7 +1608,7 @@ void test_search_by_index_non_unique_cursor_condition() {
                                       rdesc11, rdesc12, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test", "index_text");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test", "index_tinyint");
@@ -1631,7 +1631,7 @@ void test_search_by_index_extended_class_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::createExtend(txn, "index_test2", "index_test");
     nogdb::Property::createIndex(txn, "index_test2", "index_text", true);
     nogdb::Property::createIndex(txn, "index_test2", "index_tinyint_u", false);
@@ -1651,7 +1651,7 @@ void test_search_by_index_extended_class_condition() {
 
   nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc1 = nogdb::Vertex::create(txn, "index_test2", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1809,7 +1809,7 @@ void test_search_by_index_extended_class_condition() {
 //                         rdesc1, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test2", "index_text");
     nogdb::Property::dropIndex(txn, "index_test2", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test2", "index_tinyint");
@@ -1820,7 +1820,7 @@ void test_search_by_index_extended_class_condition() {
     nogdb::Property::dropIndex(txn, "index_test2", "index_bigint_u");
     nogdb::Property::dropIndex(txn, "index_test2", "index_bigint");
     nogdb::Property::dropIndex(txn, "index_test2", "index_real");
-    nogdb::Class::drop(txn, "index_test2");
+    txn.dropClass("index_test2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1833,7 +1833,7 @@ void test_search_by_index_extended_class_cursor_condition() {
   init_vertex_index_test();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::createExtend(txn, "index_test2", "index_test");
     nogdb::Property::createIndex(txn, "index_test2", "index_text", false);
     nogdb::Property::createIndex(txn, "index_test2", "index_tinyint_u", true);
@@ -1853,7 +1853,7 @@ void test_search_by_index_extended_class_cursor_condition() {
 
   nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4;
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     rdesc1 = nogdb::Vertex::create(txn, "index_test2", nogdb::Record{}
         .set("index_text", "abcdefghijklmnopqrstuvwxyz")
         .set("index_tinyint_u", std::numeric_limits<uint8_t>::max() - uint8_t{1})
@@ -1960,7 +1960,7 @@ void test_search_by_index_extended_class_cursor_condition() {
                              rdesc1, 12345.6789);
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::dropIndex(txn, "index_test2", "index_text");
     nogdb::Property::dropIndex(txn, "index_test2", "index_tinyint_u");
     nogdb::Property::dropIndex(txn, "index_test2", "index_tinyint");
@@ -1971,7 +1971,7 @@ void test_search_by_index_extended_class_cursor_condition() {
     nogdb::Property::dropIndex(txn, "index_test2", "index_bigint_u");
     nogdb::Property::dropIndex(txn, "index_test2", "index_bigint");
     nogdb::Property::dropIndex(txn, "index_test2", "index_real");
-    nogdb::Class::drop(txn, "index_test2");
+    txn.dropClass("index_test2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;

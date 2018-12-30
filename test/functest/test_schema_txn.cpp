@@ -20,7 +20,7 @@
  */
 #include "functest.h"
 
-size_t getSizeOfSubClasses(const nogdb::Txn &txn, const nogdb::ClassDescriptor &classDesc) {
+size_t getSizeOfSubClasses(const nogdb::Transaction &txn, const nogdb::ClassDescriptor &classDesc) {
   auto size = size_t{0};
   for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
     size += cdesc.base == classDesc.id;
@@ -28,7 +28,7 @@ size_t getSizeOfSubClasses(const nogdb::Txn &txn, const nogdb::ClassDescriptor &
   return size;
 }
 
-bool propertyExists(const nogdb::Txn &txn, const std::string &className, const std::string &propertyName) {
+bool propertyExists(const nogdb::Transaction &txn, const std::string &className, const std::string &propertyName) {
   try {
     return nogdb::DB::getProperty(txn, className, propertyName).id != nogdb::PropertyDescriptor{}.id;
   } catch (const nogdb::Error &error) {
@@ -36,7 +36,7 @@ bool propertyExists(const nogdb::Txn &txn, const std::string &className, const s
   }
 }
 
-bool indexExists(const nogdb::Txn &txn, const std::string &className, const std::string &propertyName) {
+bool indexExists(const nogdb::Transaction &txn, const std::string &className, const std::string &propertyName) {
   try {
     return nogdb::DB::getIndex(txn, className, propertyName).id != nogdb::IndexDescriptor{}.id;
   } catch (const nogdb::Error &error) {
@@ -46,12 +46,12 @@ bool indexExists(const nogdb::Txn &txn, const std::string &className, const std:
 
 void test_schema_txn_commit_simple() {
   try {
-    auto txnRw1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto cdesc = nogdb::Class::create(txnRw1, "test_0", nogdb::ClassType::VERTEX);
     txnRw1.commit();
 
-    auto txnRo1 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    auto txnRo2 = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     txnRo1.rollback();
     txnRo2.rollback();
   } catch (const nogdb::Error &ex) {
@@ -66,13 +66,13 @@ void test_schema_txn_commit_simple() {
 
 void test_schema_txn_create_class_commit() {
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto cdesc = nogdb::Class::create(txnRw1, "test_1", nogdb::ClassType::VERTEX);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_1");
     assert(res.id != nogdb::ClassDescriptor{}.id);
@@ -97,8 +97,8 @@ void test_schema_txn_create_class_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_1");
     assert(res.id != nogdb::ClassDescriptor{}.id);
@@ -136,13 +136,13 @@ void test_schema_txn_create_class_commit() {
 
 void test_schema_txn_create_class_rollback() {
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto cdesc = nogdb::Class::create(txnRw1, "test_2", nogdb::ClassType::VERTEX);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_2");
     assert(res.id != nogdb::ClassDescriptor{}.id);
@@ -151,8 +151,8 @@ void test_schema_txn_create_class_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     try {
       nogdb::DB::getClass(txnRw2, "test_2");
@@ -191,13 +191,13 @@ void test_schema_txn_create_class_rollback() {
 
 void test_schema_txn_drop_class_commit() {
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_1");
@@ -214,8 +214,8 @@ void test_schema_txn_drop_class_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     try {
       nogdb::DB::getClass(txnRo4, "test_1");
@@ -245,7 +245,7 @@ void test_schema_txn_drop_class_commit() {
 
 void test_schema_txn_drop_class_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_2", nogdb::ClassType::VERTEX);
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -253,13 +253,13 @@ void test_schema_txn_drop_class_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_2");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_2");
@@ -269,8 +269,8 @@ void test_schema_txn_drop_class_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     auto res = nogdb::DB::getClass(txnRo4, "test_2");
     assert(res.id != nogdb::ClassDescriptor{}.id);
@@ -294,7 +294,7 @@ void test_schema_txn_drop_class_rollback() {
 
 void test_schema_txn_alter_class_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_3", nogdb::ClassType::EDGE);
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -302,13 +302,13 @@ void test_schema_txn_alter_class_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw1, "test_3", "test_4");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_3");
@@ -342,8 +342,8 @@ void test_schema_txn_alter_class_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     try {
       nogdb::DB::getClass(txnRo4, "test_3");
@@ -393,7 +393,7 @@ void test_schema_txn_alter_class_commit() {
 
 void test_schema_txn_alter_class_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_5", nogdb::ClassType::EDGE);
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -401,13 +401,13 @@ void test_schema_txn_alter_class_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw1, "test_5", "test_6");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_5");
@@ -419,8 +419,8 @@ void test_schema_txn_alter_class_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     try {
       nogdb::DB::getClass(txnRo4, "test_6");
@@ -470,7 +470,7 @@ void test_schema_txn_alter_class_rollback() {
 
 void test_schema_txn_create_class_extend_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_10", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_10", "prop0", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -479,9 +479,9 @@ void test_schema_txn_create_class_extend_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw1, "test_11", "test_10");
     nogdb::Class::createExtend(txnRw1, "test_12", "test_10");
@@ -490,7 +490,7 @@ void test_schema_txn_create_class_extend_commit() {
     nogdb::Property::add(txnRw1, "test_12", "prop2", nogdb::PropertyType::INTEGER);
     nogdb::Property::add(txnRw1, "test_13", "prop3", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res10 = nogdb::DB::getClass(txnRw1, "test_10");
     assert(res10.id != nogdb::ClassDescriptor{}.id);
@@ -569,8 +569,8 @@ void test_schema_txn_create_class_extend_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res10 = nogdb::DB::getClass(txnRw2, "test_10");
     assert(res10.id != nogdb::ClassDescriptor{}.id);
@@ -674,7 +674,7 @@ void test_schema_txn_create_class_extend_commit() {
 
 void test_schema_txn_create_class_extend_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_20", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_20", "prop0", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -683,9 +683,9 @@ void test_schema_txn_create_class_extend_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw1, "test_21", "test_20");
     nogdb::Class::createExtend(txnRw1, "test_22", "test_20");
@@ -694,7 +694,7 @@ void test_schema_txn_create_class_extend_rollback() {
     nogdb::Property::add(txnRw1, "test_22", "prop2", nogdb::PropertyType::INTEGER);
     nogdb::Property::add(txnRw1, "test_23", "prop3", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_20");
     assert(res.id != nogdb::ClassDescriptor{}.id);
@@ -719,8 +719,8 @@ void test_schema_txn_create_class_extend_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
     res = nogdb::DB::getClass(txnRw2, "test_20");
@@ -842,7 +842,7 @@ void test_schema_txn_create_class_extend_rollback() {
 
 void test_schema_txn_drop_class_extend_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_30", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_30", "prop0", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txnRw, "test_31", "test_30");
@@ -857,14 +857,14 @@ void test_schema_txn_drop_class_extend_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_31");
     nogdb::Class::drop(txnRw1, "test_32");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_31");
@@ -912,8 +912,8 @@ void test_schema_txn_drop_class_extend_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     try {
       nogdb::DB::getClass(txnRw2, "test_31");
@@ -977,7 +977,7 @@ void test_schema_txn_drop_class_extend_commit() {
 
 void test_schema_txn_drop_class_extend_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_40", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_40", "prop0", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txnRw, "test_41", "test_40");
@@ -992,14 +992,14 @@ void test_schema_txn_drop_class_extend_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_41");
     nogdb::Class::drop(txnRw1, "test_42");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     try {
       nogdb::DB::getClass(txnRw1, "test_41");
@@ -1020,8 +1020,8 @@ void test_schema_txn_drop_class_extend_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_40");
     assert(getSizeOfSubClasses(txnRw2, res) == 2);
@@ -1079,7 +1079,7 @@ void test_schema_txn_drop_class_extend_rollback() {
 
 void test_schema_txn_add_property_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_100", nogdb::ClassType::VERTEX);
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -1087,13 +1087,13 @@ void test_schema_txn_add_property_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw1, "test_100", "prop1", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_100");
     assert(propertyExists(txnRw1, "test_100", "prop1"));
@@ -1108,8 +1108,8 @@ void test_schema_txn_add_property_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
     res = nogdb::DB::getClass(txnRw2, "test_100");
@@ -1137,7 +1137,7 @@ void test_schema_txn_add_property_commit() {
 
 void test_schema_txn_add_property_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_101", nogdb::ClassType::VERTEX);
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -1145,13 +1145,13 @@ void test_schema_txn_add_property_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw1, "test_101", "prop1", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_101");
     assert(propertyExists(txnRw1, "test_101", "prop1"));
@@ -1166,8 +1166,8 @@ void test_schema_txn_add_property_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
 
     res = nogdb::DB::getClass(txnRo4, "test_101");
@@ -1199,7 +1199,7 @@ void test_schema_txn_add_property_rollback() {
 
 void test_schema_txn_drop_property_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_102", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_102", "prop1", nogdb::PropertyType::TEXT);
     txnRw.commit();
@@ -1208,13 +1208,13 @@ void test_schema_txn_drop_property_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw1, "test_102", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_102");
     assert(!propertyExists(txnRw1, "test_102", "prop1"));
@@ -1234,8 +1234,8 @@ void test_schema_txn_drop_property_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_102");
     assert(!propertyExists(txnRw2, "test_102", "prop1"));
@@ -1267,7 +1267,7 @@ void test_schema_txn_drop_property_commit() {
 
 void test_schema_txn_drop_property_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_103", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_103", "prop1", nogdb::PropertyType::TEXT);
     txnRw.commit();
@@ -1276,13 +1276,13 @@ void test_schema_txn_drop_property_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw1, "test_103", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_103");
     assert(!propertyExists(txnRw1, "test_103", "prop1"));
@@ -1295,8 +1295,8 @@ void test_schema_txn_drop_property_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_103");
     assert(propertyExists(txnRw2, "test_103", "prop1"));
@@ -1323,7 +1323,7 @@ void test_schema_txn_drop_property_rollback() {
 
 void test_schema_txn_alter_property_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_104", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_104", "prop1", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -1332,13 +1332,13 @@ void test_schema_txn_alter_property_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw1, "test_104", "prop1", "prop11");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_104");
     assert(!propertyExists(txnRw1, "test_104", "prop1"));
@@ -1363,8 +1363,8 @@ void test_schema_txn_alter_property_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_104");
     assert(!propertyExists(txnRw2, "test_104", "prop1"));
@@ -1402,7 +1402,7 @@ void test_schema_txn_alter_property_commit() {
 
 void test_schema_txn_alter_property_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_105", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_105", "prop1", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -1411,13 +1411,13 @@ void test_schema_txn_alter_property_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw1, "test_105", "prop1", "prop11");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_105");
     assert(!propertyExists(txnRw1, "test_105", "prop1"));
@@ -1432,8 +1432,8 @@ void test_schema_txn_alter_property_rollback() {
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_105");
     assert(propertyExists(txnRw2, "test_105", "prop1"));
@@ -1471,7 +1471,7 @@ void test_schema_txn_alter_property_rollback() {
 
 void test_schema_txn_create_index_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_106", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_106", "prop1", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -1480,13 +1480,13 @@ void test_schema_txn_create_index_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw1, "test_106", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_106");
     assert(indexExists(txnRw1, "test_106", "prop1"));
@@ -1500,8 +1500,8 @@ void test_schema_txn_create_index_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_106");
     assert(indexExists(txnRw2, "test_106", "prop1"));
@@ -1526,7 +1526,7 @@ void test_schema_txn_create_index_commit() {
 
 void test_schema_txn_create_index_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_107", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_107", "prop1", nogdb::PropertyType::INTEGER);
     txnRw.commit();
@@ -1535,21 +1535,21 @@ void test_schema_txn_create_index_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw1, "test_107", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_107");
     assert(indexExists(txnRw1, "test_107", "prop1"));
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_107");
     assert(!indexExists(txnRw2, "test_107", "prop1"));
@@ -1574,7 +1574,7 @@ void test_schema_txn_create_index_rollback() {
 
 void test_schema_txn_drop_index_commit() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_108", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_108", "prop1", nogdb::PropertyType::INTEGER);
     nogdb::Property::createIndex(txnRw, "test_108", "prop1");
@@ -1584,13 +1584,13 @@ void test_schema_txn_drop_index_commit() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw1, "test_108", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_108");
     assert(!indexExists(txnRw1, "test_108", "prop1"));
@@ -1604,8 +1604,8 @@ void test_schema_txn_drop_index_commit() {
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_108");
     assert(!indexExists(txnRw2, "test_108", "prop1"));
@@ -1630,7 +1630,7 @@ void test_schema_txn_drop_index_commit() {
 
 void test_schema_txn_drop_index_rollback() {
   try {
-    nogdb::Txn txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRw{*ctx, nogdb::Txn::Mode::READ_WRITE};
     nogdb::Class::create(txnRw, "test_109", nogdb::ClassType::VERTEX);
     nogdb::Property::add(txnRw, "test_109", "prop1", nogdb::PropertyType::INTEGER);
     nogdb::Property::createIndex(txnRw, "test_109", "prop1");
@@ -1640,21 +1640,21 @@ void test_schema_txn_drop_index_rollback() {
     assert(false);
   }
   try {
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw1, "test_109", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     auto res = nogdb::DB::getClass(txnRw1, "test_109");
     assert(!indexExists(txnRw1, "test_109", "prop1"));
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
     res = nogdb::DB::getClass(txnRw2, "test_109");
     assert(indexExists(txnRw2, "test_109", "prop1"));
@@ -1679,27 +1679,27 @@ void test_schema_txn_drop_index_rollback() {
 
 void test_schema_txn_create_class_multiversion_commit() {
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::create(txnRw0, "test_mv_1", nogdb::ClassType::VERTEX);
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::create(txnRw1, "test_mv_2", nogdb::ClassType::EDGE);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_1");
         assert(false);
@@ -1714,7 +1714,7 @@ void test_schema_txn_create_class_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_2");
         assert(false);
@@ -1725,7 +1725,7 @@ void test_schema_txn_create_class_multiversion_commit() {
       assert(res.id != nogdb::ClassDescriptor{}.id);
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_1");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       res = nogdb::DB::getClass(txn, "test_mv_2");
@@ -1750,27 +1750,27 @@ void test_schema_txn_create_class_multiversion_commit() {
 
 void test_schema_txn_create_class_multiversion_rollback() {
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::create(txnRw0, "test_mv_3", nogdb::ClassType::VERTEX);
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::create(txnRw1, "test_mv_4", nogdb::ClassType::EDGE);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_3");
         assert(false);
@@ -1785,7 +1785,7 @@ void test_schema_txn_create_class_multiversion_rollback() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_4");
         assert(false);
@@ -1814,27 +1814,27 @@ void test_schema_txn_create_class_multiversion_rollback() {
 
 void test_schema_txn_drop_class_multiversion_commit() {
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw0, "test_mv_2");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_mv_1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_1");
         assert(false);
@@ -1849,7 +1849,7 @@ void test_schema_txn_drop_class_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_2");
         assert(false);
@@ -1860,7 +1860,7 @@ void test_schema_txn_drop_class_multiversion_commit() {
       assert(res.id != nogdb::ClassDescriptor{}.id);
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_1");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       res = nogdb::DB::getClass(txn, "test_mv_2");
@@ -1885,8 +1885,8 @@ void test_schema_txn_drop_class_multiversion_commit() {
 
 void test_schema_txn_drop_class_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_4", nogdb::ClassType::EDGE);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_4", nogdb::ClassType::EDGE);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -1894,34 +1894,34 @@ void test_schema_txn_drop_class_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw0, "test_mv_3");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_mv_4");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_3");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       res = nogdb::DB::getClass(txn, "test_mv_4");
       assert(res.id != nogdb::ClassDescriptor{}.id);
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_3");
         assert(false);
@@ -1950,9 +1950,9 @@ void test_schema_txn_drop_class_multiversion_rollback() {
 
 void test_schema_txn_alter_class_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_5", nogdb::ClassType::VERTEX);
-    nogdb::Class::create(txn, "test_mv_6", nogdb::ClassType::EDGE);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_5", nogdb::ClassType::VERTEX);
+    txn.addClass("test_mv_6", nogdb::ClassType::EDGE);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -1960,28 +1960,28 @@ void test_schema_txn_alter_class_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw0, "test_mv_5", "test_mv_55");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw1, "test_mv_6", "test_mv_66");
     nogdb::Class::alter(txnRw1, "test_mv_55", "test_mv_555");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_55");
         assert(false);
@@ -2002,7 +2002,7 @@ void test_schema_txn_alter_class_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_66");
         assert(false);
@@ -2019,7 +2019,7 @@ void test_schema_txn_alter_class_multiversion_commit() {
       assert(res.id != nogdb::ClassDescriptor{}.id);
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_555");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       res = nogdb::DB::getClass(txn, "test_mv_66");
@@ -2044,9 +2044,9 @@ void test_schema_txn_alter_class_multiversion_commit() {
 
 void test_schema_txn_alter_class_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_7", nogdb::ClassType::VERTEX);
-    nogdb::Class::create(txn, "test_mv_8", nogdb::ClassType::EDGE);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_7", nogdb::ClassType::VERTEX);
+    txn.addClass("test_mv_8", nogdb::ClassType::EDGE);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2054,28 +2054,28 @@ void test_schema_txn_alter_class_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw0, "test_mv_7", "test_mv_77");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::alter(txnRw1, "test_mv_8", "test_mv_88");
     nogdb::Class::alter(txnRw1, "test_mv_77", "test_mv_777");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_77");
         assert(false);
@@ -2096,7 +2096,7 @@ void test_schema_txn_alter_class_multiversion_rollback() {
       }
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_88");
         assert(false);
@@ -2131,9 +2131,9 @@ void test_schema_txn_alter_class_multiversion_rollback() {
 
 void test_schema_txn_create_class_extend_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_100", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_100", "prop100", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_100", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_100", "prop100", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2141,8 +2141,8 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw0, "test_mv_101", "test_mv_100");
     nogdb::Property::add(txnRw0, "test_mv_101", "prop101", nogdb::PropertyType::INTEGER);
@@ -2151,21 +2151,21 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw1, "test_mv_103", "test_mv_101");
     nogdb::Property::add(txnRw1, "test_mv_103", "prop103", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_100");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 0);
@@ -2189,7 +2189,7 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_103");
         assert(false);
@@ -2208,7 +2208,7 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
       }
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_100");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 2);
@@ -2248,9 +2248,9 @@ void test_schema_txn_create_class_extend_multiversion_commit() {
 
 void test_schema_txn_create_class_extend_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_200", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_200", "prop200", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_200", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_200", "prop200", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2258,8 +2258,8 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw0, "test_mv_201", "test_mv_200");
     nogdb::Property::add(txnRw0, "test_mv_201", "prop201", nogdb::PropertyType::INTEGER);
@@ -2268,21 +2268,21 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::createExtend(txnRw1, "test_mv_203", "test_mv_201");
     nogdb::Property::add(txnRw1, "test_mv_203", "prop203", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_200");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 0);
@@ -2306,7 +2306,7 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_203");
         assert(false);
@@ -2343,15 +2343,15 @@ void test_schema_txn_create_class_extend_multiversion_rollback() {
 
 void test_schema_txn_drop_class_extend_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_300", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_300", "prop300", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_300", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_300", "prop300", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_301", "test_mv_300");
-    nogdb::Property::add(txn, "test_mv_301", "prop301", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_301", "prop301", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_302", "test_mv_300");
-    nogdb::Property::add(txn, "test_mv_302", "prop302", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_302", "prop302", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_303", "test_mv_301");
-    nogdb::Property::add(txn, "test_mv_303", "prop303", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_303", "prop303", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2359,27 +2359,27 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw0, "test_mv_301");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_mv_302");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_300");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 1);
@@ -2400,7 +2400,7 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_301");
         assert(false);
@@ -2417,7 +2417,7 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
       assert(res.base == nogdb::DB::getClass(txn, "test_mv_300").id);
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_300");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 2);
@@ -2451,15 +2451,15 @@ void test_schema_txn_drop_class_extend_multiversion_commit() {
 
 void test_schema_txn_drop_class_extend_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_400", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_400", "prop400", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_400", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_400", "prop400", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_401", "test_mv_400");
-    nogdb::Property::add(txn, "test_mv_401", "prop401", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_401", "prop401", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_402", "test_mv_400");
-    nogdb::Property::add(txn, "test_mv_402", "prop402", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_402", "prop402", nogdb::PropertyType::INTEGER);
     nogdb::Class::createExtend(txn, "test_mv_403", "test_mv_401");
-    nogdb::Property::add(txn, "test_mv_403", "prop403", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_403", "prop403", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2467,27 +2467,27 @@ void test_schema_txn_drop_class_extend_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw0, "test_mv_401");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Class::drop(txnRw1, "test_mv_402");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       try {
         nogdb::DB::getClass(txn, "test_mv_401");
         assert(false);
@@ -2504,7 +2504,7 @@ void test_schema_txn_drop_class_extend_multiversion_rollback() {
       assert(res.base == nogdb::DB::getClass(txn, "test_mv_400").id);
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_400");
       assert(res.id != nogdb::ClassDescriptor{}.id);
       assert(getSizeOfSubClasses(txn, res) == 2);
@@ -2538,8 +2538,8 @@ void test_schema_txn_drop_class_extend_multiversion_rollback() {
 
 void test_schema_txn_add_property_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_10", nogdb::ClassType::VERTEX);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_10", nogdb::ClassType::VERTEX);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2547,27 +2547,27 @@ void test_schema_txn_add_property_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw0, "test_mv_10", "prop1", nogdb::PropertyType::INTEGER);
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw1, "test_mv_10", "prop2", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_10");
       assert(!propertyExists(txn, "test_mv_10", "prop1"));
       assert(!propertyExists(txn, "test_mv_10", "prop2"));
@@ -2587,7 +2587,7 @@ void test_schema_txn_add_property_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_10");
       assert(propertyExists(txn, "test_mv_10", "prop1"));
       assert(!propertyExists(txn, "test_mv_10", "prop2"));
@@ -2602,7 +2602,7 @@ void test_schema_txn_add_property_multiversion_commit() {
       }
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_10");
       assert(propertyExists(txn, "test_mv_10", "prop1"));
       assert(propertyExists(txn, "test_mv_10", "prop2"));
@@ -2630,8 +2630,8 @@ void test_schema_txn_add_property_multiversion_commit() {
 
 void test_schema_txn_add_property_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_20", nogdb::ClassType::VERTEX);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_20", nogdb::ClassType::VERTEX);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2639,27 +2639,27 @@ void test_schema_txn_add_property_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw0, "test_mv_20", "prop1", nogdb::PropertyType::INTEGER);
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::add(txnRw1, "test_mv_20", "prop2", nogdb::PropertyType::INTEGER);
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_20");
       assert(!propertyExists(txn, "test_mv_20", "prop1"));
       assert(!propertyExists(txn, "test_mv_20", "prop2"));
@@ -2679,7 +2679,7 @@ void test_schema_txn_add_property_multiversion_rollback() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_20");
       assert(propertyExists(txn, "test_mv_20", "prop1"));
       assert(!propertyExists(txn, "test_mv_20", "prop2"));
@@ -2712,10 +2712,10 @@ void test_schema_txn_add_property_multiversion_rollback() {
 
 void test_schema_txn_drop_property_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_30", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_30", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_30", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_30", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_30", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_30", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2723,27 +2723,27 @@ void test_schema_txn_drop_property_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw0, "test_mv_30", "prop2");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw1, "test_mv_30", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_30");
       assert(!propertyExists(txn, "test_mv_30", "prop1"));
       assert(!propertyExists(txn, "test_mv_30", "prop2"));
@@ -2763,7 +2763,7 @@ void test_schema_txn_drop_property_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_30");
       assert(propertyExists(txn, "test_mv_30", "prop1"));
       assert(!propertyExists(txn, "test_mv_30", "prop2"));
@@ -2778,7 +2778,7 @@ void test_schema_txn_drop_property_multiversion_commit() {
       }
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_30");
       assert(propertyExists(txn, "test_mv_30", "prop1"));
       assert(propertyExists(txn, "test_mv_30", "prop2"));
@@ -2806,10 +2806,10 @@ void test_schema_txn_drop_property_multiversion_commit() {
 
 void test_schema_txn_drop_property_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_40", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_40", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_40", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_40", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_40", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_40", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2817,27 +2817,27 @@ void test_schema_txn_drop_property_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw0, "test_mv_40", "prop2");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::remove(txnRw1, "test_mv_40", "prop1");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_40");
       assert(propertyExists(txn, "test_mv_40", "prop1"));
       assert(!propertyExists(txn, "test_mv_40", "prop2"));
@@ -2852,7 +2852,7 @@ void test_schema_txn_drop_property_multiversion_rollback() {
       }
     };
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_40");
       assert(propertyExists(txn, "test_mv_40", "prop1"));
       assert(propertyExists(txn, "test_mv_40", "prop2"));
@@ -2880,10 +2880,10 @@ void test_schema_txn_drop_property_multiversion_rollback() {
 
 void test_schema_txn_alter_property_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_50", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_50", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_50", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_50", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_50", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_50", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -2891,28 +2891,28 @@ void test_schema_txn_alter_property_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw0, "test_mv_50", "prop1", "prop11");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw1, "test_mv_50", "prop2", "prop22");
     nogdb::Property::alter(txnRw1, "test_mv_50", "prop11", "prop111");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_50");
       assert(!propertyExists(txn, "test_mv_50", "prop11"));
       assert(!propertyExists(txn, "test_mv_50", "prop22"));
@@ -2939,7 +2939,7 @@ void test_schema_txn_alter_property_multiversion_commit() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_50");
       assert(propertyExists(txn, "test_mv_50", "prop11"));
       assert(!propertyExists(txn, "test_mv_50", "prop22"));
@@ -2961,7 +2961,7 @@ void test_schema_txn_alter_property_multiversion_commit() {
       }
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_50");
       assert(!propertyExists(txn, "test_mv_50", "prop11"));
       assert(propertyExists(txn, "test_mv_50", "prop22"));
@@ -2991,10 +2991,10 @@ void test_schema_txn_alter_property_multiversion_commit() {
 
 void test_schema_txn_alter_property_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_60", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_60", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_60", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_60", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_60", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_60", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -3002,28 +3002,28 @@ void test_schema_txn_alter_property_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw0, "test_mv_60", "prop1", "prop11");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::alter(txnRw1, "test_mv_60", "prop2", "prop22");
     nogdb::Property::alter(txnRw1, "test_mv_60", "prop11", "prop111");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_60");
       assert(!propertyExists(txn, "test_mv_60", "prop11"));
       assert(!propertyExists(txn, "test_mv_60", "prop22"));
@@ -3050,7 +3050,7 @@ void test_schema_txn_alter_property_multiversion_rollback() {
       }
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_60");
       assert(propertyExists(txn, "test_mv_60", "prop11"));
       assert(!propertyExists(txn, "test_mv_60", "prop22"));
@@ -3090,10 +3090,10 @@ void test_schema_txn_alter_property_multiversion_rollback() {
 
 void test_schema_txn_create_index_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_70", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_70", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_70", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_70", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_70", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_70", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -3101,39 +3101,39 @@ void test_schema_txn_create_index_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw0, "test_mv_70", "prop1");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw1, "test_mv_70", "prop2");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_70");
       assert(!indexExists(txn, "test_mv_70", "prop1"));
       assert(!indexExists(txn, "test_mv_70", "prop2"));
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_70");
       assert(indexExists(txn, "test_mv_70", "prop1"));
       assert(!indexExists(txn, "test_mv_70", "prop2"));
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_70");
       assert(indexExists(txn, "test_mv_70", "prop1"));
       assert(indexExists(txn, "test_mv_70", "prop2"));
@@ -3157,10 +3157,10 @@ void test_schema_txn_create_index_multiversion_commit() {
 
 void test_schema_txn_create_index_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_80", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_80", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_80", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_80", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_80", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_80", "prop2", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -3168,33 +3168,33 @@ void test_schema_txn_create_index_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw0, "test_mv_80", "prop1");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::createIndex(txnRw1, "test_mv_80", "prop2");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_80");
       assert(!indexExists(txn, "test_mv_80", "prop1"));
       assert(!indexExists(txn, "test_mv_80", "prop2"));
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_80");
       assert(indexExists(txn, "test_mv_80", "prop1"));
       assert(!indexExists(txn, "test_mv_80", "prop2"));
@@ -3218,10 +3218,10 @@ void test_schema_txn_create_index_multiversion_rollback() {
 
 void test_schema_txn_drop_index_multiversion_commit() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_90", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_90", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_90", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_90", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_90", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_90", "prop2", nogdb::PropertyType::INTEGER);
     nogdb::Property::createIndex(txn, "test_mv_90", "prop1");
     nogdb::Property::createIndex(txn, "test_mv_90", "prop2");
     txn.commit();
@@ -3231,39 +3231,39 @@ void test_schema_txn_drop_index_multiversion_commit() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw0, "test_mv_90", "prop1");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw1, "test_mv_90", "prop2");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.commit();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_90");
       assert(indexExists(txn, "test_mv_90", "prop1"));
       assert(indexExists(txn, "test_mv_90", "prop2"));
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_90");
       assert(!indexExists(txn, "test_mv_90", "prop1"));
       assert(indexExists(txn, "test_mv_90", "prop2"));
     };
 
-    auto verify_result2 = [](nogdb::Txn &txn) {
+    auto verify_result2 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_90");
       assert(!indexExists(txn, "test_mv_90", "prop1"));
       assert(!indexExists(txn, "test_mv_90", "prop2"));
@@ -3287,10 +3287,10 @@ void test_schema_txn_drop_index_multiversion_commit() {
 
 void test_schema_txn_drop_index_multiversion_rollback() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "test_mv_91", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "test_mv_91", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "test_mv_91", "prop2", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("test_mv_91", nogdb::ClassType::VERTEX);
+    txn.addProperty("test_mv_91", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("test_mv_91", "prop2", nogdb::PropertyType::INTEGER);
     nogdb::Property::createIndex(txn, "test_mv_91", "prop1");
     nogdb::Property::createIndex(txn, "test_mv_91", "prop2");
     txn.commit();
@@ -3300,33 +3300,33 @@ void test_schema_txn_drop_index_multiversion_rollback() {
   }
 
   try {
-    nogdb::Txn txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw0{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo0{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw0, "test_mv_91", "prop1");
 
     txnRw0.commit();
 
-    nogdb::Txn txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Txn txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo1{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     nogdb::Property::dropIndex(txnRw1, "test_mv_91", "prop2");
 
-    nogdb::Txn txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRo3{*ctx, nogdb::Txn::Mode::READ_ONLY};
 
     txnRw1.rollback();
 
-    nogdb::Txn txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
-    nogdb::Txn txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::Txn::Mode::READ_WRITE};
 
-    auto verify_result0 = [](nogdb::Txn &txn) {
+    auto verify_result0 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_91");
       assert(indexExists(txn, "test_mv_91", "prop1"));
       assert(indexExists(txn, "test_mv_91", "prop2"));
     };
 
-    auto verify_result1 = [](nogdb::Txn &txn) {
+    auto verify_result1 = [](nogdb::Transaction &txn) {
       auto res = nogdb::DB::getClass(txn, "test_mv_91");
       assert(!indexExists(txn, "test_mv_91", "prop1"));
       assert(indexExists(txn, "test_mv_91", "prop2"));

@@ -23,8 +23,8 @@
 
 void test_create_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
     auto schema = nogdb::DB::getClass(txn, "files");
     assert(schema.name == "files");
     txn.commit();
@@ -36,11 +36,11 @@ void test_create_class() {
 
 void test_create_class_with_properties() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files2", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files2", "prop1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files2", "prop2", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "files2", "prop3", nogdb::PropertyType::UNSIGNED_BIGINT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files2", nogdb::ClassType::VERTEX);
+    txn.addProperty("files2", "prop1", nogdb::PropertyType::TEXT);
+    txn.addProperty("files2", "prop2", nogdb::PropertyType::INTEGER);
+    txn.addProperty("files2", "prop3", nogdb::PropertyType::UNSIGNED_BIGINT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -50,16 +50,16 @@ void test_create_class_with_properties() {
 
 void test_drop_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files2");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files2");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -69,10 +69,10 @@ void test_drop_class() {
 
 void test_alter_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "files", "prop2", nogdb::PropertyType::TEXT);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("files", "prop2", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -80,16 +80,16 @@ void test_alter_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto cdesc = nogdb::DB::getClass(txn, "files");
     assert(cdesc.name == "files");
     txn.commit();
 
-    txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Class::alter(txn, "files", "file");
     txn.commit();
 
-    txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     cdesc = nogdb::DB::getClass(txn, "file");
     assert(cdesc.name == "file");
     auto properties = nogdb::DB::getProperties(txn, cdesc);
@@ -106,8 +106,8 @@ void test_alter_class() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "file");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("file");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -117,18 +117,18 @@ void test_alter_class() {
 
 void test_alter_invalid_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "files", "prop2", nogdb::PropertyType::TEXT);
-    nogdb::Class::create(txn, "folders", nogdb::ClassType::VERTEX);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "prop1", nogdb::PropertyType::INTEGER);
+    txn.addProperty("files", "prop2", nogdb::PropertyType::TEXT);
+    txn.addClass("folders", nogdb::ClassType::VERTEX);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Class::alter(txn, "files", "");
     assert(false);
@@ -166,9 +166,9 @@ void test_alter_invalid_class() {
   txn.commit();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
-    nogdb::Class::drop(txn, "folders");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
+    txn.dropClass("folders");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -178,29 +178,29 @@ void test_alter_invalid_class() {
 
 void test_create_invalid_class() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Class::create(txn, "", nogdb::ClassType::VERTEX);
+    txn.addClass("", nogdb::ClassType::VERTEX);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
   try {
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
   }
   try {
-    nogdb::Class::create(txn, "files", nogdb::ClassType::UNDEFINED);
+    txn.addClass("files", nogdb::ClassType::UNDEFINED);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSTYPE, "NOGDB_CTX_INVALID_CLASSTYPE");
@@ -208,8 +208,8 @@ void test_create_invalid_class() {
   txn.commit();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -219,20 +219,20 @@ void test_create_invalid_class() {
 
 void test_create_invalid_class_with_properties() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files2", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files2", "prop1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files2", "prop2", nogdb::PropertyType::INTEGER);
-    nogdb::Property::add(txn, "files2", "prop3", nogdb::PropertyType::UNDEFINED);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files2", nogdb::ClassType::VERTEX);
+    txn.addProperty("files2", "prop1", nogdb::PropertyType::TEXT);
+    txn.addProperty("files2", "prop2", nogdb::PropertyType::INTEGER);
+    txn.addProperty("files2", "prop3", nogdb::PropertyType::UNDEFINED);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE, "NOGDB_CTX_INVALID_PROPTYPE");
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files2", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files2", "prop1", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files2", "", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files2", nogdb::ClassType::VERTEX);
+    txn.addProperty("files2", "prop1", nogdb::PropertyType::TEXT);
+    txn.addProperty("files2", "", nogdb::PropertyType::INTEGER);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
@@ -240,28 +240,28 @@ void test_create_invalid_class_with_properties() {
 }
 
 void test_drop_invalid_class() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Class::drop(txn, "");
+    txn.dropClass("");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
   try {
-    nogdb::Class::drop(txn, "file");
+    txn.dropClass("file");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
     assert(ex.code() == NOGDB_CTX_NOEXST_CLASS);
   }
   try {
-    nogdb::Class::drop(txn, "files");
+    txn.dropClass("files");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
   try {
-    nogdb::Class::drop(txn, "files2");
+    txn.dropClass("files2");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
@@ -270,18 +270,18 @@ void test_drop_invalid_class() {
 
 void test_add_property() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "filename", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files", "filesize", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "files", "ctime", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "filename", nogdb::PropertyType::TEXT);
+    txn.addProperty("files", "filesize", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("files", "ctime", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto schema = nogdb::DB::getClass(txn, "files");
     assert(schema.name == "files");
     auto properties = nogdb::DB::getProperties(txn, schema);
@@ -302,7 +302,7 @@ void test_add_property() {
 
 void test_delete_property() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::remove(txn, "files", "ctime");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -310,8 +310,8 @@ void test_delete_property() {
     assert(false);
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -321,50 +321,50 @@ void test_delete_property() {
 
 void test_add_invalid_property() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "files", nogdb::ClassType::VERTEX);
-    nogdb::Property::add(txn, "files", "filename", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "files", "filesize", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Property::add(txn, "files", "ctime", nogdb::PropertyType::UNSIGNED_INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("files", nogdb::ClassType::VERTEX);
+    txn.addProperty("files", "filename", nogdb::PropertyType::TEXT);
+    txn.addProperty("files", "filesize", nogdb::PropertyType::UNSIGNED_INTEGER);
+    txn.addProperty("files", "ctime", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Property::add(txn, "files", "", nogdb::PropertyType::INTEGER);
+    txn.addProperty("files", "", nogdb::PropertyType::INTEGER);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
   }
   try {
-    nogdb::Property::add(txn, "", "extension", nogdb::PropertyType::INTEGER);
+    txn.addProperty("", "extension", nogdb::PropertyType::INTEGER);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
   try {
-    nogdb::Property::add(txn, "file", "extension", nogdb::PropertyType::TEXT);
+    txn.addProperty("file", "extension", nogdb::PropertyType::TEXT);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
   try {
-    nogdb::Property::add(txn, "links", "type", nogdb::PropertyType::UNDEFINED);
+    txn.addProperty("links", "type", nogdb::PropertyType::UNDEFINED);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPTYPE, "NOGDB_CTX_INVALID_PROPTYPE");
   }
   try {
-    nogdb::Property::add(txn, "files", "filename", nogdb::PropertyType::TEXT);
+    txn.addProperty("files", "filename", nogdb::PropertyType::TEXT);
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto schema = nogdb::DB::getClass(txn, "files");
     assert(schema.name == "files");
     auto properties = nogdb::DB::getProperties(txn, schema);
@@ -384,7 +384,7 @@ void test_add_invalid_property() {
 }
 
 void test_delete_invalid_property() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::remove(txn, "files", "ctimes");
     assert(false);
@@ -419,8 +419,8 @@ void test_delete_invalid_property() {
   txn.commit();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "files");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -430,20 +430,20 @@ void test_delete_invalid_property() {
 
 void test_alter_property() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "links", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "links", "type", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "links", "expire", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("links", nogdb::ClassType::EDGE);
+    txn.addProperty("links", "type", nogdb::PropertyType::TEXT);
+    txn.addProperty("links", "expire", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Property::alter(txn, "links", "type", "comments");
     nogdb::Property::alter(txn, "links", "expire", "expired");
-    nogdb::Property::add(txn, "links", "type", nogdb::PropertyType::BLOB);
+    txn.addProperty("links", "type", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -451,7 +451,7 @@ void test_alter_property() {
   }
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto schema = nogdb::DB::getClass(txn, "links");
     assert(schema.name == "links");
     auto properties = nogdb::DB::getProperties(txn, schema);
@@ -468,8 +468,8 @@ void test_alter_property() {
     assert(false);
   }
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "links");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("links");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -479,17 +479,17 @@ void test_alter_property() {
 
 void test_alter_invalid_property() {
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::create(txn, "links", nogdb::ClassType::EDGE);
-    nogdb::Property::add(txn, "links", "type", nogdb::PropertyType::TEXT);
-    nogdb::Property::add(txn, "links", "expire", nogdb::PropertyType::INTEGER);
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("links", nogdb::ClassType::EDGE);
+    txn.addProperty("links", "type", nogdb::PropertyType::TEXT);
+    txn.addProperty("links", "expire", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Property::alter(txn, "link", "type", "");
     assert(false);
@@ -528,8 +528,8 @@ void test_alter_invalid_property() {
   txn.commit();
 
   try {
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-    nogdb::Class::drop(txn, "links");
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.dropClass("links");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;

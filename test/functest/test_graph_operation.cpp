@@ -27,10 +27,10 @@
 #include "test_prepare.h"
 
 void test_bfs_traverse_in() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, a, b, c, d, e, f, Z;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -62,7 +62,7 @@ void test_bfs_traverse_in() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -183,10 +183,10 @@ void test_bfs_traverse_in() {
 }
 
 void test_bfs_traverse_out() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, a, b, c, d, e, f, Z;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -218,7 +218,7 @@ void test_bfs_traverse_out() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -312,10 +312,10 @@ void test_bfs_traverse_out() {
 }
 
 void test_bfs_traverse_all() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -347,7 +347,7 @@ void test_bfs_traverse_all() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -494,10 +494,10 @@ void test_bfs_traverse_all() {
 }
 
 void test_invalid_bfs_traverse_in() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -529,7 +529,7 @@ void test_invalid_bfs_traverse_in() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -559,7 +559,7 @@ void test_invalid_bfs_traverse_in() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -569,7 +569,7 @@ void test_invalid_bfs_traverse_in() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 1);
@@ -579,7 +579,7 @@ void test_invalid_bfs_traverse_in() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -589,7 +589,7 @@ void test_invalid_bfs_traverse_in() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfs(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 1);
@@ -599,7 +599,7 @@ void test_invalid_bfs_traverse_in() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -610,7 +610,7 @@ void test_invalid_bfs_traverse_in() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -624,10 +624,10 @@ void test_invalid_bfs_traverse_in() {
 }
 
 void test_invalid_bfs_traverse_out() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -659,7 +659,7 @@ void test_invalid_bfs_traverse_out() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -689,7 +689,7 @@ void test_invalid_bfs_traverse_out() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -699,7 +699,7 @@ void test_invalid_bfs_traverse_out() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 1);
@@ -709,7 +709,7 @@ void test_invalid_bfs_traverse_out() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -719,7 +719,7 @@ void test_invalid_bfs_traverse_out() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 1);
@@ -729,7 +729,7 @@ void test_invalid_bfs_traverse_out() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -740,7 +740,7 @@ void test_invalid_bfs_traverse_out() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -753,10 +753,10 @@ void test_invalid_bfs_traverse_out() {
 }
 
 void test_invalid_bfs_traverse_all() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -788,7 +788,7 @@ void test_invalid_bfs_traverse_all() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -817,7 +817,7 @@ void test_invalid_bfs_traverse_all() {
   }
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -827,7 +827,7 @@ void test_invalid_bfs_traverse_all() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 1);
@@ -837,7 +837,7 @@ void test_invalid_bfs_traverse_all() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -847,7 +847,7 @@ void test_invalid_bfs_traverse_all() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfs(txn, A, 0, 0, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 1);
@@ -857,7 +857,7 @@ void test_invalid_bfs_traverse_all() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -868,7 +868,7 @@ void test_invalid_bfs_traverse_all() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -881,10 +881,10 @@ void test_invalid_bfs_traverse_all() {
 }
 
 void test_shortest_path() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -916,7 +916,7 @@ void test_shortest_path() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -1065,10 +1065,10 @@ void test_shortest_path() {
 }
 
 void test_invalid_shortest_path() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "folders")) {
+    for (const auto &res: txn.find("folders")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           A = res.descriptor;
@@ -1100,7 +1100,7 @@ void test_invalid_shortest_path() {
       }
     }
 
-    for (const auto &res: nogdb::Vertex::get(txn, "files")) {
+    for (const auto &res: txn.find("files")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'a':
           a = res.descriptor;
@@ -1129,7 +1129,7 @@ void test_invalid_shortest_path() {
   }
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 999U;
@@ -1140,7 +1140,7 @@ void test_invalid_shortest_path() {
     REQUIRE(ex, NOGDB_GRAPH_NOEXST_SRC, "NOGDB_GRAPH_NOEXST_SRC");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = B;
     tmp.rid.second = 999U;
@@ -1151,7 +1151,7 @@ void test_invalid_shortest_path() {
     REQUIRE(ex, NOGDB_GRAPH_NOEXST_DST, "NOGDB_GRAPH_NOEXST_DST");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -1162,9 +1162,9 @@ void test_invalid_shortest_path() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto links = nogdb::Edge::get(txn, "link");
+    auto links = txn.find("link");
     auto tmp = links[0].descriptor;
     auto res = nogdb::Traverse::shortestPath(txn, A, tmp);
     assert(false);
@@ -1173,9 +1173,9 @@ void test_invalid_shortest_path() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto links = nogdb::Edge::get(txn, "link");
+    auto links = txn.find("link");
     auto tmp = links[0].descriptor;
     auto res = nogdb::Traverse::shortestPath(txn, tmp, f);
     assert(false);
@@ -1186,10 +1186,10 @@ void test_invalid_shortest_path() {
 }
 
 void test_bfs_traverse_with_condition() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor a, b, c, d, e, f, z;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "country")) {
+    for (const auto &res: txn.find("country")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           a = res.descriptor;
@@ -1298,10 +1298,10 @@ void test_bfs_traverse_with_condition() {
 }
 
 void test_shortest_path_with_condition() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor a, b, c, d, e, f, z;
   try {
-    for (const auto &res: nogdb::Vertex::get(txn, "country")) {
+    for (const auto &res: txn.find("country")) {
       switch (res.record.get("name").toText().c_str()[0]) {
         case 'A':
           a = res.descriptor;
@@ -1411,7 +1411,7 @@ void test_shortest_path_with_condition() {
 }
 
 void test_bfs_traverse_in_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, a, b, c, d, e, f, Z;
   try {
     auto rsCursor = nogdb::Vertex::getCursor(txn, "folders");
@@ -1573,7 +1573,7 @@ void test_bfs_traverse_in_cursor() {
 }
 
 void test_bfs_traverse_out_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, a, b, c, d, e, f, Z;
   try {
     auto rsCursor = nogdb::Vertex::getCursor(txn, "folders");
@@ -1703,7 +1703,7 @@ void test_bfs_traverse_out_cursor() {
 }
 
 void test_bfs_traverse_all_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto rsCursor = nogdb::Vertex::getCursor(txn, "folders");
@@ -1860,7 +1860,7 @@ void test_bfs_traverse_all_cursor() {
 }
 
 void test_invalid_bfs_traverse_in_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "folders");
@@ -1927,7 +1927,7 @@ void test_invalid_bfs_traverse_in_cursor() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -1937,7 +1937,7 @@ void test_invalid_bfs_traverse_in_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 1);
@@ -1947,7 +1947,7 @@ void test_invalid_bfs_traverse_in_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -1957,7 +1957,7 @@ void test_invalid_bfs_traverse_in_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::inEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 1);
@@ -1967,7 +1967,7 @@ void test_invalid_bfs_traverse_in_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -1978,7 +1978,7 @@ void test_invalid_bfs_traverse_in_cursor() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -1992,7 +1992,7 @@ void test_invalid_bfs_traverse_in_cursor() {
 }
 
 void test_invalid_bfs_traverse_out_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "folders");
@@ -2059,7 +2059,7 @@ void test_invalid_bfs_traverse_out_cursor() {
 
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -2069,7 +2069,7 @@ void test_invalid_bfs_traverse_out_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 9);
@@ -2079,7 +2079,7 @@ void test_invalid_bfs_traverse_out_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -2089,7 +2089,7 @@ void test_invalid_bfs_traverse_out_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::outEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 9);
@@ -2099,7 +2099,7 @@ void test_invalid_bfs_traverse_out_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -2110,7 +2110,7 @@ void test_invalid_bfs_traverse_out_cursor() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -2123,7 +2123,7 @@ void test_invalid_bfs_traverse_out_cursor() {
 }
 
 void test_invalid_bfs_traverse_all_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "folders");
@@ -2189,7 +2189,7 @@ void test_invalid_bfs_traverse_all_cursor() {
   }
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("ling"));
     ASSERT_SIZE(res, 1);
@@ -2199,7 +2199,7 @@ void test_invalid_bfs_traverse_all_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "symbol"));
     ASSERT_SIZE(res, 9);
@@ -2209,7 +2209,7 @@ void test_invalid_bfs_traverse_all_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("folders"));
     ASSERT_SIZE(res, 1);
@@ -2219,7 +2219,7 @@ void test_invalid_bfs_traverse_all_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto res = nogdb::Traverse::allEdgeBfsCursor(txn, A, 0, 2, nogdb::GraphFilter{}.only("link", "folders"));
     ASSERT_SIZE(res, 9);
@@ -2229,7 +2229,7 @@ void test_invalid_bfs_traverse_all_cursor() {
     assert(false);
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -2240,7 +2240,7 @@ void test_invalid_bfs_traverse_all_cursor() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
@@ -2253,7 +2253,7 @@ void test_invalid_bfs_traverse_all_cursor() {
 }
 
 void test_shortest_path_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "folders");
@@ -2417,7 +2417,7 @@ void test_shortest_path_cursor() {
 }
 
 void test_invalid_shortest_path_cursor() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "folders");
@@ -2483,7 +2483,7 @@ void test_invalid_shortest_path_cursor() {
   }
   txn.commit();
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.second = 999U;
@@ -2494,7 +2494,7 @@ void test_invalid_shortest_path_cursor() {
     REQUIRE(ex, NOGDB_GRAPH_NOEXST_SRC, "NOGDB_GRAPH_NOEXST_SRC");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = B;
     tmp.rid.second = 999U;
@@ -2505,7 +2505,7 @@ void test_invalid_shortest_path_cursor() {
     REQUIRE(ex, NOGDB_GRAPH_NOEXST_DST, "NOGDB_GRAPH_NOEXST_DST");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = A;
     tmp.rid.first = -1;
@@ -2516,9 +2516,9 @@ void test_invalid_shortest_path_cursor() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto links = nogdb::Edge::get(txn, "link");
+    auto links = txn.find("link");
     auto tmp = links[0].descriptor;
     auto res = nogdb::Traverse::shortestPathCursor(txn, A, tmp);
     assert(false);
@@ -2527,9 +2527,9 @@ void test_invalid_shortest_path_cursor() {
     REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
-  txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto links = nogdb::Edge::get(txn, "link");
+    auto links = txn.find("link");
     auto tmp = links[0].descriptor;
     auto res = nogdb::Traverse::shortestPathCursor(txn, tmp, f);
     assert(false);
@@ -2540,7 +2540,7 @@ void test_invalid_shortest_path_cursor() {
 }
 
 void test_bfs_traverse_cursor_with_condition() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor a, b, c, d, e, f, z;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "country");
@@ -2628,7 +2628,7 @@ void test_bfs_traverse_cursor_with_condition() {
 }
 
 void test_shortest_path_cursor_with_condition() {
-  auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+  auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   nogdb::RecordDescriptor a, b, c, d, e, f, z;
   try {
     auto res = nogdb::Vertex::getCursor(txn, "country");
@@ -2713,7 +2713,7 @@ void test_shortest_path_cursor_with_condition() {
 /*
 void test_shortest_path_dijkstra() {
 
-    auto txn = nogdb::Txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     nogdb::RecordDescriptor a, b, c, d, e, f, z;
     try {
         auto res = nogdb::Vertex::getCursor(txn, "country");
@@ -2755,7 +2755,7 @@ void test_shortest_path_dijkstra() {
         });
 
         // normal traversal
-        auto costFunction = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
+        auto costFunction = [](const nogdb::Transaction &txn, const nogdb::RecordDescriptor &descriptor) {
             return 1;
         };
 
@@ -2765,7 +2765,7 @@ void test_shortest_path_dijkstra() {
         ASSERT_SIZE(res.second, 4);
 
         // traverse by distance
-        auto costFunctionDistance = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) -> int {
+        auto costFunctionDistance = [](const nogdb::Transaction &txn, const nogdb::RecordDescriptor &descriptor) -> int {
             const nogdb::Record &record = nogdb::DB::getRecord(txn, descriptor);
             return record.getIntU("distance");
         };
@@ -2775,7 +2775,7 @@ void test_shortest_path_dijkstra() {
         assert(res2.first == 280);
         ASSERT_SIZE(res2.second, 4);
 
-        auto costFunctionDistanceOffset = [](const nogdb::Txn &txn, const nogdb::RecordDescriptor &descriptor) {
+        auto costFunctionDistanceOffset = [](const nogdb::Transaction &txn, const nogdb::RecordDescriptor &descriptor) {
             const nogdb::Record &record = nogdb::DB::getRecord(txn, descriptor);
             return record.getIntU("distance") + 20;
         };
