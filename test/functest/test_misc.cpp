@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -108,7 +108,7 @@ void test_get_set_large_record() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("books").get();
+    auto res = txn.find("books");
     for (auto const &r: res) {
       auto price = r.record.getReal("price");
       if (price == 1.0) {
@@ -125,15 +125,15 @@ void test_get_set_large_record() {
       }
     }
 
-    res = txn.find("books").where(nogdb::Condition("title").eq(testString1)).get();
+    res = txn.find("books", nogdb::Condition("title").eq(testString1));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 10);
 
-    res = txn.find("books").where(nogdb::Condition("title").eq(testString2)).get();
+    res = txn.find("books", nogdb::Condition("title").eq(testString2));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 20);
 
-    res = txn.find("books").where(nogdb::Condition("title").eq(testString3)).get();
+    res = txn.find("books", nogdb::Condition("title").eq(testString3));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.getInt("pages") == 30);
 
@@ -155,15 +155,15 @@ void test_overwrite_basic_info() {
     auto v2 = txn.addVertex("books", nogdb::Record{});
     txn.update(v2, nogdb::Record{}.set("@className", "bookybookyss").set("@recordId", "-999:-999"));
 
-    auto res = txn.find("books").get();
+    auto res = txn.find("books");
     for(const auto &r: res) {
       assert(r.record.getClassName() == "books");
       assert(r.record.getText("@className") == "books");
     }
 
-    auto res1 = txn.find("books").where(nogdb::Condition("@className").eq("bookybooky")).get();
+    auto res1 = txn.find("books", nogdb::Condition("@className").eq("bookybooky"));
     ASSERT_SIZE(res1, 0);
-    auto res2 = txn.find("books").where(nogdb::Condition("@className").eq("books")).get();
+    auto res2 = txn.find("books", nogdb::Condition("@className").eq("books"));
     ASSERT_SIZE(res2, 2);
 
     txn.commit();
@@ -181,9 +181,9 @@ void test_standalone_vertex() {
   try {
     nogdb::Record r{};
     auto v = txn.addVertex("books", r.set("title", "Intro to Linux"));
-    auto res1 = txn.findInEdge(v).get();
+    auto res1 = txn.findInEdge(v);
     assert(res1.size() == 0);
-    auto res2 = txn.findOutEdge(v).get();
+    auto res2 = txn.findOutEdge(v);
     assert(res2.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -328,7 +328,7 @@ void test_add_delete_prop_with_records() {
     nogdb::Record r{};
     r.set("prop1", "hello").set("prop2", 42).set("prop3", 4.2);
     auto v = txn.addVertex("mytest", r);
-    auto res = txn.find("mytest").get();
+    auto res = txn.find("mytest");
     assert(res[0].record.get("prop1").toText() == "hello");
     assert(res[0].record.get("prop2").toInt() == 42);
     assert(res[0].record.get("prop3").toReal() == 4.2);
@@ -352,7 +352,7 @@ void test_add_delete_prop_with_records() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto res = nogdb::ResultSet{};
   try {
-    res = txn.find("mytest").get();
+    res = txn.find("mytest");
     assert(res[0].record.get("prop1").toText() == "hello");
     assert(res[0].record.get("prop22").toInt() == 42);
     assert(res[0].record.get("prop4").empty());
@@ -397,7 +397,7 @@ void test_add_delete_prop_with_records() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    res = txn.find("mytest").get();
+    res = txn.find("mytest");
     assert(res[0].record.get("prop1").toText() == "hello");
     assert(res[0].record.get("prop22").toInt() == 42);
     assert(res[0].record.get("prop4").toBigIntU() == 424242ULL);
@@ -444,7 +444,7 @@ void test_alter_class_with_records() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.find("mytest01").get();
+    auto res = txn.find("mytest01");
     assert(res[0].record.get("prop1").toText() == "hello");
     assert(res[0].record.get("prop2").toInt() == 42);
     assert(res[0].record.get("prop3").toReal() == 4.2);
@@ -510,11 +510,11 @@ void test_drop_class_with_relations() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.findOutEdge(v1).get();
+    auto res = txn.findOutEdge(v1);
     ASSERT_SIZE(res, 2);
-    res = txn.findOutEdge(v2).get();
+    res = txn.findOutEdge(v2);
     ASSERT_SIZE(res, 2);
-    res = txn.findOutEdge(v3).get();
+    res = txn.findOutEdge(v3);
     ASSERT_SIZE(res, 2);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -528,13 +528,13 @@ void test_drop_class_with_relations() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.findInEdge(v4).get();
+    auto res = txn.findInEdge(v4);
     ASSERT_SIZE(res, 0);
-    res = txn.findEdge(v4).get();
+    res = txn.findEdge(v4);
     ASSERT_SIZE(res, 1);
-    res = txn.findOutEdge(v5).get();
+    res = txn.findOutEdge(v5);
     ASSERT_SIZE(res, 0);
-    res = txn.findEdge(v5).get();
+    res = txn.findEdge(v5);
     ASSERT_SIZE(res, 1);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -544,9 +544,9 @@ void test_drop_class_with_relations() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.find("myedge1").get();
+    auto res = txn.find("myedge1");
     ASSERT_SIZE(res, 0);
-    res = txn.find("myedge2").get();
+    res = txn.find("myedge2");
     ASSERT_SIZE(res, 1);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -624,7 +624,7 @@ void test_drop_and_find_extended_class() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.findSubClassOf("vertex1").get();
+    auto res = txn.findSubClassOf("vertex1");
     ASSERT_SIZE(res, 2);
     for (const auto &r: res) {
       assert(r.record.get("prop0").toIntU() == 0U);
@@ -646,11 +646,11 @@ void test_drop_and_find_extended_class() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop0").eq(0U)).get();
+    auto res = txn.findSubClassOf("vertex1", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 2);
-    res = txn.findSubClassOf("vertex3").where(nogdb::Condition("prop0").eq(0U)).get();
+    res = txn.findSubClassOf("vertex3", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 1);
-    res = txn.findSubClassOf("vertex4").where(nogdb::Condition("prop0").eq(0U)).get();
+    res = txn.findSubClassOf("vertex4", nogdb::Condition("prop0").eq(0U));
     ASSERT_SIZE(res, 1);
     txn.commit();
 
@@ -660,7 +660,7 @@ void test_drop_and_find_extended_class() {
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     try {
-      auto res = txn.find("vertex1").where(nogdb::Condition("prop0").eq(0U)).get();
+      auto res = txn.find("vertex1", nogdb::Condition("prop0").eq(0U));
       ASSERT_SIZE(res, 0);
       txn.rollback();
     } catch (const nogdb::Error &ex) {
@@ -670,7 +670,7 @@ void test_drop_and_find_extended_class() {
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     try {
-      auto res = txn.find("vertex3").where(nogdb::Condition("prop0").eq(0U)).get();
+      auto res = txn.find("vertex3", nogdb::Condition("prop0").eq(0U));
       ASSERT_SIZE(res, 0);
       txn.rollback();
     } catch (const nogdb::Error &ex) {
@@ -680,7 +680,7 @@ void test_drop_and_find_extended_class() {
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     try {
-      auto res = txn.find("vertex4").where(nogdb::Condition("prop0").eq(0U)).get();
+      auto res = txn.find("vertex4", nogdb::Condition("prop0").eq(0U));
       ASSERT_SIZE(res, 0);
       txn.rollback();
     } catch (const nogdb::Error &ex) {
@@ -725,7 +725,7 @@ void test_drop_and_find_extended_class() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("vertex6").get();
+    auto res = txn.find("vertex6");
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("prop1").empty());
   } catch (const nogdb::Error &ex) {
@@ -736,7 +736,7 @@ void test_drop_and_find_extended_class() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("vertex6").where(nogdb::Condition("prop1").eq("hello")).get();
+    auto res = txn.find("vertex6", nogdb::Condition("prop1").eq("hello"));
     ASSERT_SIZE(res, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -780,12 +780,12 @@ void test_conflict_property() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq(97)).get();
+    auto res = txn.findSubClassOf("vertex1", nogdb::Condition("prop2").eq(97));
     ASSERT_SIZE(res, 1);
     ASSERT_EQ(res[0].record.getInt("prop2"), 97);
-    res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq("a")).get();
+    res = txn.findSubClassOf("vertex1", nogdb::Condition("prop2").eq("a"));
     ASSERT_SIZE(res, 2);
-    res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq(97.97)).get();
+    res = txn.findSubClassOf("vertex1", nogdb::Condition("prop2").eq(97.97));
     ASSERT_SIZE(res, 1);
     ASSERT_EQ(res[0].record.getReal("prop2"), 97.97);
     txn.rollback();

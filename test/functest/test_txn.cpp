@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -26,7 +26,7 @@ void test_txn_commit_nothing() {
   init_edge_bridge();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -42,15 +42,15 @@ void test_txn_create_only_vertex_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Record r{};
     r.set("name", "Koh Chang").set("area", "212.34");
     nogdb::Vertex::create(txnRw1, "islands", r);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Chang"));
     assert(!res.empty());
@@ -65,8 +65,8 @@ void test_txn_create_only_vertex_commit() {
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     res = nogdb::Vertex::get(txnRw2, "islands", nogdb::Condition("name").eq("Koh Chang"));
     assert(!res.empty());
@@ -102,7 +102,7 @@ void test_txn_create_only_vertex_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Record r{};
     r.set("name", "Koh Mak").set("area", "87.92");
     nogdb::Vertex::create(txnRw1, "islands", r);
@@ -112,7 +112,7 @@ void test_txn_create_only_vertex_rollback() {
 
     txnRw1.rollback();
 
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
     nogdb::Transaction txnRw00{*ctx, nogdb::TxnMode::READ_WRITE};
     res = nogdb::Vertex::get(txnRo, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(res.empty());
@@ -136,7 +136,7 @@ void test_txn_rollback_when_destroy() {
   init_edge_bridge();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Record r{};
     r.set("name", "Koh Mak").set("area", "87.92");
     nogdb::Vertex::create(txnRw, "islands", r);
@@ -149,7 +149,7 @@ void test_txn_rollback_when_destroy() {
   }
 
   try {
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
     auto res = nogdb::Vertex::get(txnRo, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(res.empty());
   } catch (const nogdb::Error &ex) {
@@ -167,7 +167,7 @@ void test_txn_delete_only_vertex_commit() {
 
   auto vdesc = nogdb::RecordDescriptor{};
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Record r{};
     r.set("name", "Koh Mak").set("area", "87.92");
     vdesc = nogdb::Vertex::create(txnRw, "islands", r);
@@ -178,13 +178,13 @@ void test_txn_delete_only_vertex_commit() {
   }
 
   try {
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::destroy(txnRw1, vdesc);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(res.empty());
@@ -201,8 +201,8 @@ void test_txn_delete_only_vertex_commit() {
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
     res = nogdb::Vertex::get(txnRo4, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(res.empty());
     res = nogdb::Vertex::get(txnRw2, "islands", nogdb::Condition("name").eq("Koh Mak"));
@@ -243,14 +243,14 @@ void test_txn_delete_only_vertex_rollback() {
                                        nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     txnRw0.commit();
 
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Vertex::destroy(txnRw1, vdesc);
     auto res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(res.empty());
     txnRw1.rollback();
 
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
     res = nogdb::Vertex::get(txnRo, "islands", nogdb::Condition("name").eq("Koh Mak"));
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
@@ -278,9 +278,9 @@ void test_txn_create_only_edge_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands",
                                         nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
@@ -288,7 +288,7 @@ void test_txn_create_only_edge_commit() {
                                         nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     nogdb::Edge::create(txnRw1, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Kood"));
     assert(!res.empty());
@@ -306,8 +306,8 @@ void test_txn_create_only_edge_commit() {
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     resE = nogdb::Edge::get(txnRo4, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(!resE.empty());
@@ -342,7 +342,7 @@ void test_txn_create_only_edge_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
     auto vdesc1 = nogdb::Vertex::create(txnRw1, "islands",
                                         nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
     auto vdesc2 = nogdb::Vertex::create(txnRw1, "islands",
@@ -358,7 +358,7 @@ void test_txn_create_only_edge_rollback() {
 
     txnRw1.rollback();
 
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
     nogdb::Transaction txnRw00{*ctx, nogdb::TxnMode::READ_WRITE};
 
     resE = nogdb::Edge::get(txnRo, "bridge", nogdb::Condition("name").eq("yellow"));
@@ -383,7 +383,7 @@ void test_txn_delete_only_edge_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     auto vdesc1 = nogdb::Vertex::create(txnRw, "islands",
                                         nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
     auto vdesc2 = nogdb::Vertex::create(txnRw, "islands",
@@ -396,14 +396,14 @@ void test_txn_delete_only_edge_commit() {
   }
 
   try {
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto edesc = nogdb::Edge::get(txnRw1, "bridge", nogdb::Condition("name").eq("yellow"));
     nogdb::Edge::destroy(txnRw1, edesc[0].descriptor);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto resE = nogdb::Edge::get(txnRw1, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(resE.empty());
@@ -417,8 +417,8 @@ void test_txn_delete_only_edge_commit() {
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
     resE = nogdb::Edge::get(txnRo4, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(resE.empty());
     resE = nogdb::Edge::get(txnRw2, "bridge", nogdb::Condition("name").eq("yellow"));
@@ -453,7 +453,7 @@ void test_txn_delete_only_edge_rollback() {
   auto vdesc1 = nogdb::RecordDescriptor{};
   auto vdesc2 = nogdb::RecordDescriptor{};
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     vdesc1 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
     vdesc2 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     nogdb::Edge::create(txnRw, "bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
@@ -464,7 +464,7 @@ void test_txn_delete_only_edge_rollback() {
   }
 
   try {
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
     auto edesc = nogdb::Edge::get(txnRw1, "bridge", nogdb::Condition("name").eq("yellow"));
     nogdb::Edge::destroy(txnRw1, edesc[0].descriptor);
     auto resE = nogdb::Edge::get(txnRw1, "bridge", nogdb::Condition("name").eq("yellow"));
@@ -472,8 +472,8 @@ void test_txn_delete_only_edge_rollback() {
 
     txnRw1.rollback();
 
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
     resE = nogdb::Edge::get(txnRo, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(!resE.empty());
     resE = nogdb::Edge::get(txnRw2, "bridge", nogdb::Condition("name").eq("yellow"));
@@ -488,11 +488,11 @@ void test_txn_delete_only_edge_rollback() {
     resE = nogdb::Edge::get(txnRw00, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(resE.empty());
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw00.commit();
 
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     resE = nogdb::Edge::get(txnRo1, "bridge", nogdb::Condition("name").eq("yellow"));
     assert(!resE.empty());
@@ -516,9 +516,9 @@ void test_txn_get_vertex_edge() {
   init_edge_flight();
 
   try {
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     auto v1 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "1"));
     auto v2 = nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "2"));
@@ -526,7 +526,7 @@ void test_txn_get_vertex_edge() {
     auto e1 = nogdb::Edge::create(txnRw1, "bridge", v1, v2, nogdb::Record{}.set("name", "12"));
     auto e2 = nogdb::Edge::create(txnRw1, "flight", v1, v3, nogdb::Record{}.set("name", "13"));
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCases{
         [&](const nogdb::Transaction &txn) {
@@ -574,8 +574,8 @@ void test_txn_get_vertex_edge() {
 
     txnRw1.commit();
 
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
 
     runTestCases(txnRw2, testCases, true);
     runTestCases(txnRo4, testCases, true);
@@ -609,14 +609,14 @@ void test_txn_alter_vertex_edge_commit() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Edge::updateSrc(txnRw1, e1, v3);
     nogdb::Edge::updateDst(txnRw1, e2, v2);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
     std::vector<std::function<void(nogdb::Transaction &)>> oldTestCases{
         [&](const nogdb::Transaction &txn) {
           auto res = txn.fetchSrc(e1);
@@ -702,8 +702,8 @@ void test_txn_alter_vertex_edge_commit() {
 
     txnRw1.commit();
 
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
 
     runTestCases(txnRo4, newTestCases, true);
     runTestCases(txnRw2, newTestCases, true);
@@ -741,7 +741,7 @@ void test_txn_alter_vertex_edge_rollback() {
   }
 
   try {
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Edge::updateSrc(txnRw1, e1, v1);
     nogdb::Edge::updateDst(txnRw1, e2, v3);
 
@@ -827,8 +827,8 @@ void test_txn_alter_vertex_edge_rollback() {
 
     txnRw1.rollback();
 
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo{*ctx, nogdb::TxnMode::READ_ONLY};
     runTestCases(txnRw2, oldTestCases, true);
     runTestCases(txnRo, oldTestCases, true);
   } catch (const nogdb::Error &ex) {
@@ -853,18 +853,18 @@ void test_txn_create_only_vertex_multiversion_commit() {
     nogdb::Vertex::create(txnRw0, "islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     auto res = nogdb::Vertex::get(txnRo0, "islands", nogdb::Condition("name").eq("Koh Samed"));
     assert(res.empty());
@@ -911,7 +911,7 @@ void test_txn_create_only_vertex_multiversion_rollback() {
   init_edge_flight();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Tarutao"));
     txnRw.commit();
 
@@ -920,9 +920,9 @@ void test_txn_create_only_vertex_multiversion_rollback() {
     nogdb::Vertex::create(txnRw0, "islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::create(txnRw1, "islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
 
@@ -931,12 +931,12 @@ void test_txn_create_only_vertex_multiversion_rollback() {
     res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
     assert(!res.empty());
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.rollback();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     res = nogdb::Vertex::get(txnRo0, "islands", nogdb::Condition("name").eq("Koh Tarutao"));
     assert(!res.empty());
@@ -995,7 +995,7 @@ void test_txn_delete_only_vertex_multiversion_commit() {
   init_edge_flight();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     auto v1 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw.commit();
 
@@ -1003,9 +1003,9 @@ void test_txn_delete_only_vertex_multiversion_commit() {
     auto v2 = nogdb::Vertex::create(txnRw0, "islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::destroy(txnRw1, v2);
 
@@ -1014,12 +1014,12 @@ void test_txn_delete_only_vertex_multiversion_commit() {
     res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
     assert(res.empty());
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     res = nogdb::Vertex::get(txnRo1, "islands", nogdb::Condition("name").eq("Koh Samed"));
     assert(!res.empty());
@@ -1057,7 +1057,7 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
   init_edge_flight();
 
   try {
-    auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRw{*ctx, nogdb::TxnMode::READ_WRITE};
     auto v1 = nogdb::Vertex::create(txnRw, "islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw.commit();
 
@@ -1065,9 +1065,9 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
     auto v2 = nogdb::Vertex::create(txnRw0, "islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::destroy(txnRw1, v2);
 
@@ -1076,12 +1076,12 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
     res = nogdb::Vertex::get(txnRw1, "islands", nogdb::Condition("name").eq("Koh Phe Phe"));
     assert(res.empty());
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.rollback();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     res = nogdb::Vertex::get(txnRo1, "islands", nogdb::Condition("name").eq("Koh Samed"));
     assert(!res.empty());
@@ -1134,18 +1134,18 @@ void test_txn_create_edges_multiversion_commit() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Edge::create(txnRw1, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV0, testCasesV1, testCasesV2;
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
@@ -1239,18 +1239,18 @@ void test_txn_create_edges_multiversion_rollback() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Edge::create(txnRw1, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.rollback();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV1;
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
@@ -1312,18 +1312,18 @@ void test_txn_delete_edges_multiversion_commit() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::destroy(txnRw1, v3);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV0, testCasesV1, testCasesV2;
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
@@ -1433,18 +1433,18 @@ void test_txn_delete_edges_multiversion_rollback() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Vertex::destroy(txnRw1, v3);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.rollback();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV1;
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
@@ -1507,18 +1507,18 @@ void test_txn_modify_edges_multiversion_commit() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Edge::updateSrc(txnRw1, e1, v2);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.commit();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV0, testCasesV1, testCasesV2;
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
@@ -1622,18 +1622,18 @@ void test_txn_modify_edges_multiversion_rollback() {
 
     txnRw0.commit();
 
-    auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo1{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw1{*ctx, nogdb::TxnMode::READ_WRITE};
+    nogdb::Transaction txnRo2{*ctx, nogdb::TxnMode::READ_ONLY};
 
     nogdb::Edge::updateSrc(txnRw1, e1, v2);
 
-    auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::Transaction txnRo3{*ctx, nogdb::TxnMode::READ_ONLY};
 
     txnRw1.rollback();
 
-    auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    nogdb::Transaction txnRo4{*ctx, nogdb::TxnMode::READ_ONLY};
+    nogdb::Transaction txnRw2{*ctx, nogdb::TxnMode::READ_WRITE};
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV1;
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
@@ -1790,3 +1790,39 @@ void test_txn_invalid_operations() {
   destroy_edge_bridge();
   destroy_vertex_island();
 }
+//
+//void test_txn_invalid_concurrent_version() {
+//    init_vertex_island();
+//    init_edge_bridge();
+//
+//    try {
+//        auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+//        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+//        auto v1 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh Manao"));
+//        auto v2 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh Som O"));
+//        auto v3 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh Satang"));
+//        auto v4 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh Nang"));
+//        auto e = txn.addEdge("bridge", v1, v2, nogdb::Record{}.set("name", "Grand II"));
+//        txn.commit();
+//
+//        auto vertices = std::vector<decltype(v1)>{v1, v2, v3};
+//        for(int i = 0; i < 128; ++i) {
+//            txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+//            txn.updateSrc(e, vertices[i%vertices.size()]);
+//            txn.commit();
+//        }
+//
+//        txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+//        txn.updateSrc(e, v4);
+//
+//        txn.commit();
+//        assert(false);
+//    } catch (const nogdb::Error& ex) {
+//        REQUIRE(ex, TXN_VERSION_NOMEM, "TXN_VERSION_NOMEM");
+//    }
+//
+//    destroy_edge_bridge();
+//    destroy_vertex_island();
+//}
+
+

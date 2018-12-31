@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -448,6 +448,8 @@ int main() {
   exec(test_txn_modify_edges_multiversion_rollback, "aborting multi-version txn when modifying edges with vertices");
   exec(test_txn_reopen_ctx, "reopening context and committing txn with vertices and edges");
   exec(test_txn_invalid_operations, "committing txn with invalid operations");
+  //exec(test_txn_invalid_concurrent_version, "committing multi-version txn when using over a maximum number of concurrent versions");
+  //exec(test_txn_multithreads, "committing txn with multi-threads programming");
 #endif
 
   // sql
