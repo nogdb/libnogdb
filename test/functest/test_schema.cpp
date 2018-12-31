@@ -303,7 +303,7 @@ void test_add_property() {
 void test_delete_property() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::remove(txn, "files", "ctime");
+    txn.dropProperty("files", "ctime");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -386,32 +386,32 @@ void test_add_invalid_property() {
 void test_delete_invalid_property() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Property::remove(txn, "files", "ctimes");
+    txn.dropProperty("files", "ctimes");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
     assert(ex.code() == NOGDB_CTX_NOEXST_PROPERTY);
   }
   try {
-    nogdb::Property::remove(txn, "files", "");
+    txn.dropProperty("files", "");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
   }
   try {
-    nogdb::Property::remove(txn, "file", "ctime");
+    txn.dropProperty("file", "ctime");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
   try {
-    nogdb::Property::remove(txn, "files", "ctime");
+    txn.dropProperty("files", "ctime");
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
   try {
-    nogdb::Property::remove(txn, "files", "ctime");
+    txn.dropProperty("files", "ctime");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");

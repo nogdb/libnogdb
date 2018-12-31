@@ -342,7 +342,7 @@ void test_add_delete_prop_with_records() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.addProperty("mytest", "prop4", nogdb::PropertyType::UNSIGNED_BIGINT);
     txn.renameProperty("mytest", "prop2", "prop22");
-    nogdb::Property::remove(txn, "mytest", "prop3");
+    txn.dropProperty("mytest", "prop3");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -655,7 +655,7 @@ void test_drop_and_find_extended_class() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::remove(txn, "vertex1", "prop0");
+    txn.dropProperty("vertex1", "prop0");
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);

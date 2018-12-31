@@ -372,18 +372,18 @@ void test_add_invalid_property_extend() {
 void test_delete_property_extend() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::remove(txn, "systems", "prop2");
+    txn.dropProperty("systems", "prop2");
     assert_class(txn, "systems", "backends", 0, 7);
     assert_class(txn, "infras", "backends", 0, 7);
     assert_class(txn, "backends", "employees", 2, 6);
 
-    nogdb::Property::remove(txn, "collaborate", "prop1");
+    txn.dropProperty("collaborate", "prop1");
     assert_class(txn, "collaborate", "action", 2, 2);
     assert_class(txn, "inter", "collaborate", 0, 2);
     assert_class(txn, "intra", "collaborate", 0, 2);
     assert_class(txn, "action", "", 2, 2);
 
-    nogdb::Property::remove(txn, "employees", "prop1");
+    txn.dropProperty("employees", "prop1");
     assert_class(txn, "designers", "frontends", 0, 6);
     assert_class(txn, "admins", "employees", 0, 3);
     txn.commit();
@@ -396,14 +396,14 @@ void test_delete_property_extend() {
 void test_delete_invalid_property_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Property::remove(txn, "systems", "name");
+    txn.dropProperty("systems", "name");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
   }
 
   try {
-    nogdb::Property::remove(txn, "employees", "devops_skills");
+    txn.dropProperty("employees", "devops_skills");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");

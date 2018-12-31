@@ -1738,10 +1738,12 @@ void test_find_edge_all_condition_function() {
     auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).get();
     assert(vertices.size() == 1);
     auto &vertex = vertices[0];
-    auto res = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only(
-                                             "street"));
+    auto res = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only("street"))
+        .get();
     ASSERT_SIZE(res, 1);
-    res = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0)}.only("street"));
+    res = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0)}.only("street")).get();
     ASSERT_SIZE(res, 2);
     std::sort(res.begin(), res.end(), cmp);
     assert(res[0].record.get("name").toText() == "Henry Road");
@@ -1756,10 +1758,14 @@ void test_find_edge_all_condition_function() {
     assert(vertices.size() == 1);
     auto &vertex = vertices[0];
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{test_condition_function_10}.only(classNames));
+    auto res = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{test_condition_function_10}.only(classNames))
+        .get();
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "Gravity Way");
-    res = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{test_condition_function_11}.only(classNames));
+    res = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{test_condition_function_11}.only(classNames))
+        .get();
     ASSERT_SIZE(res, 5);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1777,7 +1783,7 @@ void test_find_invalid_vertex_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("location", condition);
+    auto res = txn.find("location").where(condition).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1786,7 +1792,7 @@ void test_find_invalid_vertex_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("street", condition);
+    auto res = txn.find("street").where(condition).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1797,9 +1803,9 @@ void test_find_invalid_vertex_condition_function() {
 void test_find_invalid_edge_condition_function() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("streets", [](const nogdb::Record &record) {
+    auto res = txn.find("streets").where([](const nogdb::Record &record) {
       return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    });
+    }).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1808,9 +1814,9 @@ void test_find_invalid_edge_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", [](const nogdb::Record &record) {
+    auto res = txn.find("locations").where([](const nogdb::Record &record) {
       return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    });
+    }).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1823,8 +1829,8 @@ void test_find_invalid_edge_in_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -1841,7 +1847,7 @@ void test_find_invalid_edge_in_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).get();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1852,7 +1858,7 @@ void test_find_invalid_edge_in_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).get();
     ASSERT_SIZE(edges, 3);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1863,7 +1869,7 @@ void test_find_invalid_edge_in_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1874,7 +1880,7 @@ void test_find_invalid_edge_in_condition_function() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findInEdge(tmp).where(nogdb::GraphFilter{condition}.only("street"));
+    auto res = txn.findInEdge(tmp).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1887,8 +1893,8 @@ void test_find_invalid_edge_out_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -1905,7 +1911,7 @@ void test_find_invalid_edge_out_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).get();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1916,7 +1922,7 @@ void test_find_invalid_edge_out_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).get();
     ASSERT_SIZE(edges, 3);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1927,7 +1933,7 @@ void test_find_invalid_edge_out_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findOutEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findOutEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1938,7 +1944,7 @@ void test_find_invalid_edge_out_condition_function() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findOutEdge(tmp).where(nogdb::GraphFilter{condition}.only("street"));
+    auto res = txn.findOutEdge(tmp).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1951,8 +1957,8 @@ void test_find_invalid_edge_all_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -1968,7 +1974,7 @@ void test_find_invalid_edge_all_condition_function() {
   };
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).get();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1979,7 +1985,7 @@ void test_find_invalid_edge_all_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).get();
     ASSERT_SIZE(edges, 6);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -1990,7 +1996,7 @@ void test_find_invalid_edge_all_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2001,7 +2007,7 @@ void test_find_invalid_edge_all_condition_function() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findEdge(tmp).where(nogdb::GraphFilter{condition}.only("street"));
+    auto res = txn.findEdge(tmp).where(nogdb::GraphFilter{condition}.only("street")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2012,34 +2018,34 @@ void test_find_invalid_edge_all_condition_function() {
 void test_find_vertex_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", nogdb::Condition("name").eq("Pentagon"));
+    auto res = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).getCursor();
     ASSERT_SIZE(res, 1);
     auto tmp = Coordinates{};
     res.first();
     res->record.get("coordinates").convertTo(tmp);
     assert(tmp.x == -1.00);
     assert(tmp.y == 1.00);
-    res = txn.find("locations", nogdb::Condition("name").eq("Tokyo Tower"));
+    res = txn.find("locations").where(nogdb::Condition("name").eq("Tokyo Tower")).getCursor();
     ASSERT_SIZE(res, 0);
-    res = txn.find("locations", nogdb::Condition("temperature").eq(18));
+    res = txn.find("locations").where(nogdb::Condition("temperature").eq(18)).getCursor();
     ASSERT_SIZE(res, 1);
     res.first();
     assert(res->record.get("name").toText() == "Pentagon");
-    res = txn.find("locations", nogdb::Condition("postcode").eq(11600U));
+    res = txn.find("locations").where(nogdb::Condition("postcode").eq(11600U)).getCursor();
     ASSERT_SIZE(res, 1);
     res.first();
     assert(res->record.get("name").toText() == "ThaiCC Tower");
-    res = txn.find("locations", nogdb::Condition("price").eq(280000LL));
+    res = txn.find("locations").where(nogdb::Condition("price").eq(280000LL)).getCursor();
     ASSERT_SIZE(res, 1);
     res.first();
     assert(res->record.get("name").toText() == "Dubai Building");
-    res = txn.find("locations", nogdb::Condition("population").eq(900ULL));
+    res = txn.find("locations").where(nogdb::Condition("population").eq(900ULL)).getCursor();
     ASSERT_SIZE(res, 2);
     res.next();
     assert(res->record.get("name").toText() == "ThaiCC Tower");
     res.next();
     assert(res->record.get("name").toText() == "Pentagon");
-    res = txn.find("locations", nogdb::Condition("rating").eq(4.5));
+    res = txn.find("locations").where(nogdb::Condition("rating").eq(4.5)).getCursor();
     ASSERT_SIZE(res, 2);
     res.next();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2051,25 +2057,27 @@ void test_find_vertex_cursor() {
   }
 
   try {
-    auto res = txn.find("locations", !nogdb::Condition("name").eq("Pentagon"));
+    auto res = txn.find("locations").where(!nogdb::Condition("name").eq("Pentagon")).getCursor();
     ASSERT_SIZE(res, 4);
-    res = txn.find("locations", nogdb::Condition("temperature").gt(35));
+    res = txn.find("locations").where(nogdb::Condition("temperature").gt(35)).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.find("locations", nogdb::Condition("rating").ge(4.5));
+    res = txn.find("locations").where(nogdb::Condition("rating").ge(4.5)).getCursor();
     ASSERT_SIZE(res, 3);
-    res = txn.find("locations", nogdb::Condition("postcode").lt(10300U));
+    res = txn.find("locations").where(nogdb::Condition("postcode").lt(10300U)).getCursor();
     ASSERT_SIZE(res, 2);
-    txn.find("locations", nogdb::Condition("population").le(900ULL));
+    txn.find("locations").where(nogdb::Condition("population").le(900ULL)).getCursor();
     ASSERT_SIZE(res, 2);
-    res = txn.find("locations", nogdb::Condition("price").null());
+    res = txn.find("locations").where(nogdb::Condition("price").null()).getCursor();
     ASSERT_SIZE(res, 1);
     res.last();
     assert(res->record.get("name").toText() == "ThaiCC Tower");
-    res = txn.find("locations", nogdb::Condition("temperature"));
+    res = txn.find("locations").where(nogdb::Condition("temperature")).getCursor();
     ASSERT_SIZE(res, 4);
-    res = txn.find("locations", nogdb::Condition("name").eq(100));
+    res = txn.find("locations").where(nogdb::Condition("name").eq(100)).getCursor();
     ASSERT_SIZE(res, 0);
-    res = txn.find("locations", nogdb::Condition("population").eq(static_cast<unsigned long long>(2000)));
+    res = txn.find("locations")
+        .where(nogdb::Condition("population").eq(static_cast<unsigned long long>(2000)))
+        .getCursor();
     ASSERT_SIZE(res, 1);
     res.last();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2079,29 +2087,29 @@ void test_find_vertex_cursor() {
   }
 
   try {
-    auto res = txn.find("locations", nogdb::Condition("name").contain("tag").ignoreCase());
+    auto res = txn.find("locations").where(nogdb::Condition("name").contain("tag").ignoreCase()).getCursor();
     ASSERT_SIZE(res, 1);
     res.to(0);
     assert(res->record.get("name").toText() == "Pentagon");
-    res = txn.find("locations", !nogdb::Condition("name").contain("u").ignoreCase());
+    res = txn.find("locations").where(!nogdb::Condition("name").contain("u").ignoreCase()).getCursor();
     ASSERT_SIZE(res, 3);
-    res = txn.find("locations", nogdb::Condition("name").beginWith("thai").ignoreCase());
+    res = txn.find("locations").where(nogdb::Condition("name").beginWith("thai").ignoreCase()).getCursor();
     ASSERT_SIZE(res, 1);
     res.to(0);
     assert(res->record.get("name").toText() == "ThaiCC Tower");
-    res = txn.find("locations", !nogdb::Condition("name").beginWith("Thai"));
+    res = txn.find("locations").where(!nogdb::Condition("name").beginWith("Thai")).getCursor();
     ASSERT_SIZE(res, 4);
-    res = txn.find("locations", nogdb::Condition("name").endWith("TOWER").ignoreCase());
+    res = txn.find("locations").where(nogdb::Condition("name").endWith("TOWER").ignoreCase()).getCursor();
     ASSERT_SIZE(res, 2);
-    res = txn.find("locations", !nogdb::Condition("name").endWith("Building"));
+    res = txn.find("locations").where(!nogdb::Condition("name").endWith("Building")).getCursor();
     ASSERT_SIZE(res, 3);
-    res = txn.find("locations", nogdb::Condition("name").gt("Pentagon"));
+    res = txn.find("locations").where(nogdb::Condition("name").gt("Pentagon")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.find("locations", nogdb::Condition("name").ge("Pentagon"));
+    res = txn.find("locations").where(nogdb::Condition("name").ge("Pentagon")).getCursor();
     ASSERT_SIZE(res, 2);
-    res = txn.find("locations", nogdb::Condition("name").lt("Pentagon"));
+    res = txn.find("locations").where(nogdb::Condition("name").lt("Pentagon")).getCursor();
     ASSERT_SIZE(res, 3);
-    res = txn.find("locations", nogdb::Condition("name").le("Pentagon"));
+    res = txn.find("locations").where(nogdb::Condition("name").le("Pentagon")).getCursor();
     ASSERT_SIZE(res, 4);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -2114,7 +2122,7 @@ void test_find_vertex_cursor() {
 void test_find_invalid_vertex_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("location", nogdb::Condition("name"));
+    auto res = txn.find("location").where(nogdb::Condition("name")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2123,7 +2131,7 @@ void test_find_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", nogdb::Condition("names"));
+    auto res = txn.find("locations").where(nogdb::Condition("names")).getCursor();
     ASSERT_SIZE(res, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2133,7 +2141,7 @@ void test_find_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", nogdb::Condition("coordinates").contain("a"));
+    auto res = txn.find("locations").where(nogdb::Condition("coordinates").contain("a")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2142,7 +2150,7 @@ void test_find_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    auto res = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2153,7 +2161,7 @@ void test_find_invalid_vertex_cursor() {
 void test_find_edge_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("street").where(nogdb::Condition("name").eq("George Street"));
+    auto res = txn.find("street").where(nogdb::Condition("name").eq("George Street")).getCursor();
     ASSERT_SIZE(res, 1);
     auto tmp = Coordinates{};
     res.first();
@@ -2170,7 +2178,7 @@ void test_find_edge_cursor() {
 void test_find_invalid_edge_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("streets").where(nogdb::Condition("name"));
+    auto res = txn.find("streets").where(nogdb::Condition("name")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2179,7 +2187,7 @@ void test_find_invalid_edge_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("railway").where(nogdb::Condition("names"));
+    auto res = txn.find("railway").where(nogdb::Condition("names")).getCursor();
     ASSERT_SIZE(res, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2189,7 +2197,7 @@ void test_find_invalid_edge_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("highway").where(nogdb::Condition("coordinates").contain("a"));
+    auto res = txn.find("highway").where(nogdb::Condition("coordinates").contain("a")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2198,7 +2206,7 @@ void test_find_invalid_edge_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto res = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2209,10 +2217,10 @@ void test_find_invalid_edge_cursor() {
 void test_find_vertex_cursor_condition_function() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", [](const nogdb::Record &record) {
+    auto res = txn.find("locations").where([](const nogdb::Record &record) {
       return record.get("name").toText().find("Building") != std::string::npos ||
              (!record.get("rating").empty() && record.get("rating").toReal() >= 4.5);
-    });
+    }).getCursor();
     ASSERT_SIZE(res, 3);
     res.next();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2231,7 +2239,7 @@ void test_find_vertex_cursor_condition_function() {
               (!record.get("rating").empty() && record.get("rating").toReal() >= 3.0)) ||
              (!record.get("population").empty() && record.get("population").toBigIntU() <= 900ULL);
     };
-    auto res = txn.find("locations").where(cmp);
+    auto res = txn.find("locations").where(cmp).getCursor();
     ASSERT_SIZE(res, 4);
     res.first();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2257,7 +2265,7 @@ void test_find_edge_cursor_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("street", test_condition_function_1);
+    auto res = txn.find("street").where(test_condition_function_1).getCursor();
     ASSERT_SIZE(res, 1);
     auto tmp = Coordinates{};
     res.next();
@@ -2280,7 +2288,7 @@ void test_find_invalid_vertex_cursor_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("location", condition);
+    auto res = txn.find("location").where(condition).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2289,7 +2297,7 @@ void test_find_invalid_vertex_cursor_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("street", condition);
+    auto res = txn.find("street").where(condition).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2300,9 +2308,9 @@ void test_find_invalid_vertex_cursor_condition_function() {
 void test_find_invalid_edge_cursor_condition_function() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("streets", [](const nogdb::Record &record) {
+    auto res = txn.find("streets").where([](const nogdb::Record &record) {
       return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    });
+    }).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2311,9 +2319,9 @@ void test_find_invalid_edge_cursor_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("locations", [](const nogdb::Record &record) {
+    auto res = txn.find("locations").where([](const nogdb::Record &record) {
       return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    });
+    }).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2326,7 +2334,7 @@ void test_find_vertex_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
                 or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("locations").where(expr);
+    auto res = txn.find("locations").where(expr).getCursor();
     ASSERT_SIZE(res, 3);
     res.next();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2343,7 +2351,7 @@ void test_find_vertex_cursor_with_expression() {
     auto expr1 = (nogdb::Condition("temperature").gt(0)
                   and nogdb::Condition("rating").ge(3.0));
     auto expr2 = nogdb::Condition("population").le(900ULL);
-    auto res = txn.find("locations", expr1 or expr2);
+    auto res = txn.find("locations").where(expr1 or expr2).getCursor();
     ASSERT_SIZE(res, 4);
     res.first();
     assert(res->record.get("name").toText() == "New York Tower");
@@ -2366,7 +2374,7 @@ void test_find_invalid_vertex_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
                 or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("location").where(expr);
+    auto res = txn.find("location").where(expr).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2377,7 +2385,7 @@ void test_find_invalid_vertex_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("names").endWith("Building").ignoreCase()
                 or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("locations").where(expr);
+    auto res = txn.find("locations").where(expr).getCursor();
     ASSERT_SIZE(res, 3);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2389,7 +2397,7 @@ void test_find_invalid_vertex_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
                 or nogdb::Condition("rating").contain("a");
-    auto res = txn.find("locations").where(expr);
+    auto res = txn.find("locations").where(expr).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2400,7 +2408,7 @@ void test_find_invalid_vertex_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
                 or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("street").where(expr);
+    auto res = txn.find("street").where(expr).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2436,7 +2444,7 @@ void test_find_invalid_edge_cursor_with_expression() {
   try {
     auto expr = nogdb::Condition("distance").lt(50.0)
                 and nogdb::Condition("capacity").ge(300U);
-    auto res = txn.find("streets", expr);
+    auto res = txn.find("streets").where(expr).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2481,14 +2489,15 @@ void test_find_invalid_edge_cursor_with_expression() {
 void test_find_edge_in_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Dubai Building"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Dubai Building")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only(
-                                                  "street"));
+    auto res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only("street")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").gt(40.0)}.only("street"));
+    res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").gt(40.0)}.only("street")).getCursor();
     assert(res.count() == 2);
     cursorContains(res, std::set<std::string>{"Andrew Street", "George Street"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2497,15 +2506,16 @@ void test_find_edge_in_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Pentagon"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Isaac Street")}.only(
-                                                  classNames));
+    auto res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Isaac Street")}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").lt(200.0)}.only(classNames));
+    res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").lt(200.0)}.only(classNames)).getCursor();
     assert(res.count() == 3);
     cursorContains(res, std::set<std::string>{"Dwayne Way", "Henry Road", "Isaac Street"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2514,13 +2524,13 @@ void test_find_edge_in_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.first();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findInEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring C"));
+    auto res = txn.findInEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring C")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::Condition("distance").ge(36.2));
+    res = txn.findInEdge(vertex).where(nogdb::Condition("distance").ge(36.2)).getCursor();
     assert(res.count() == 3);
     cursorContains(res, std::set<std::string>{"Eastern Way", "Fisher Avenue", "The Outer Ring C"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2534,20 +2544,27 @@ void test_find_edge_in_cursor() {
 void test_find_edge_out_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("New York Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("New York Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                   "street"));
+    auto res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").ge(100.0)}.only("railway"));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").ge(100.0)}.only("railway"))
+        .getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"Bamboo Way", "Catalina Way", "Dwayne Way"}, "name");
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("temperature").le(42)}.only("railway"));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("temperature").le(42)}.only("railway"))
+        .getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Andy Way", "Catalina Way"}, "name");
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{!nogdb::Condition("temperature")}.only("railway"));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{!nogdb::Condition("temperature")}.only("railway"))
+        .getCursor();
     ASSERT_SIZE(res, 1);
     cursorContains(res, std::set<std::string>{"Dwayne Way"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2556,25 +2573,31 @@ void test_find_edge_out_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("New York Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("New York Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{!nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                   classNames));
+    auto res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{!nogdb::Condition("name").eq("Andrew Street")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 5);
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{!nogdb::Condition("name").contain("boo")}.only(
-                                              classNames));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{!nogdb::Condition("name").contain("boo")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 5);
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").contain("BOO").ignoreCase()}.only(
-                                              classNames));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").contain("BOO").ignoreCase()}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 1);
     cursorContains(res, std::set<std::string>{"Bamboo Way"}, "name");
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{
-                                              !nogdb::Condition("name").beginWith("a").ignoreCase()}.only(classNames));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{!nogdb::Condition("name").beginWith("a").ignoreCase()}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 4);
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").beginWith("A")}.only(classNames));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").beginWith("A")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 2);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -2582,18 +2605,18 @@ void test_find_edge_out_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("New York Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("New York Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findOutEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring B"));
+    auto res = txn.findOutEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring B")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findOutEdge(vertex).where(!nogdb::Condition("name").endWith("StrEEt").ignoreCase());
+    res = txn.findOutEdge(vertex).where(!nogdb::Condition("name").endWith("StrEEt").ignoreCase()).getCursor();
     ASSERT_SIZE(res, 6);
-    res = txn.findOutEdge(vertex).where(nogdb::Condition("name").endWith("Way"));
+    res = txn.findOutEdge(vertex).where(nogdb::Condition("name").endWith("Way")).getCursor();
     ASSERT_SIZE(res, 4);
     cursorContains(res, std::set<std::string>{"Andy Way", "Bamboo Way", "Catalina Way", "Dwayne Way"}, "name");
-    res = txn.findOutEdge(vertex).where(!nogdb::Condition("coordinates").null());
+    res = txn.findOutEdge(vertex).where(!nogdb::Condition("coordinates").null()).getCursor();
     ASSERT_SIZE(res, 4);
     cursorContains(res, std::set<std::string>{"Andrew Street", "Andy Way", "Bamboo Way", "The Outer Ring B"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2607,14 +2630,15 @@ void test_find_edge_out_cursor() {
 void test_find_edge_all_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Pentagon"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only(
-                                                   "street"));
+    auto res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only("street")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0),}.only("street"));
+    res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0),}.only("street")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Henry Road", "Jetty Road"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2623,17 +2647,18 @@ void test_find_edge_all_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").gt(100.0)}.only(
-                                                   classNames));
+    auto res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").gt(100.0)}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 1);
     res.next();
     assert(res->record.get("name").toText() == "Gravity Way");
-    res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").le(100.0)}.only(classNames));
+    res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").le(100.0)}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 5);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -2641,15 +2666,15 @@ void test_find_edge_all_cursor() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findEdge(vertex).where(nogdb::Condition("capacity").eq(100U));
+    auto res = txn.findEdge(vertex).where(nogdb::Condition("capacity").eq(100U)).getCursor();
     ASSERT_SIZE(res, 1);
     res.first();
     assert(res->record.get("name").toText() == "Doodee Street");
-    res = txn.findEdge(vertex).where(nogdb::Condition("name").contain("C"));
+    res = txn.findEdge(vertex).where(nogdb::Condition("name").contain("C")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Cowboy Road", "The Outer Ring C"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2665,8 +2690,8 @@ void test_find_invalid_edge_in_cursor() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -2678,8 +2703,9 @@ void test_find_invalid_edge_in_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &vertex = vertices[0];
   try {
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                    "streets"));
+    auto edges = txn.findInEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("streets"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2690,8 +2716,9 @@ void test_find_invalid_edge_in_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                    classNames));
+    auto edges = txn.findInEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2701,8 +2728,9 @@ void test_find_invalid_edge_in_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only(
-                                                    "street"));
+    auto edges = txn.findInEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2747,8 +2775,8 @@ void test_find_invalid_edge_out_cursor() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -2760,8 +2788,9 @@ void test_find_invalid_edge_out_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &vertex = vertices[0];
   try {
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     "streets"));
+    auto edges = txn.findOutEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("streets"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2772,8 +2801,9 @@ void test_find_invalid_edge_out_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     classNames));
+    auto edges = txn.findOutEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2783,8 +2813,9 @@ void test_find_invalid_edge_out_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only(
-                                                     "street"));
+    auto edges = txn.findOutEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2794,8 +2825,9 @@ void test_find_invalid_edge_out_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only(
-                                                     "street"));
+    auto edges = txn.findOutEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2805,8 +2837,9 @@ void test_find_invalid_edge_out_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findOutEdge(edge.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     "street"));
+    auto edges = txn.findOutEdge(edge.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2817,8 +2850,9 @@ void test_find_invalid_edge_out_cursor() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findOutEdge(tmp).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                   "street"));
+    auto res = txn.findOutEdge(tmp)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2831,8 +2865,8 @@ void test_find_invalid_edge_all_cursor() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -2844,8 +2878,9 @@ void test_find_invalid_edge_all_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &vertex = vertices[0];
   try {
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     "streets"));
+    auto edges = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("streets"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2856,8 +2891,9 @@ void test_find_invalid_edge_all_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     classNames));
+    auto edges = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2867,8 +2903,9 @@ void test_find_invalid_edge_all_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only(
-                                                     "street"));
+    auto edges = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("names").eq("Andrew Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -2878,8 +2915,9 @@ void test_find_invalid_edge_all_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only(
-                                                     "street"));
+    auto edges = txn.findEdge(vertex.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2889,8 +2927,9 @@ void test_find_invalid_edge_all_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findEdge(edge.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                     "street"));
+    auto edges = txn.findEdge(edge.descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2901,8 +2940,9 @@ void test_find_invalid_edge_all_cursor() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findEdge(tmp).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                   "street"));
+    auto res = txn.findEdge(tmp)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2928,14 +2968,17 @@ void test_find_edge_in_cursor_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Dubai Building"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Dubai Building")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only(
-                                                  "street"));
+    auto res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{test_condition_function_4}.only("street"));
+    res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{test_condition_function_4}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Andrew Street", "George Street"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2944,15 +2987,16 @@ void test_find_edge_in_cursor_condition_function() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Pentagon"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findInEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Isaac Street")}.only(
-                                                  classNames));
+    auto res = txn.findInEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Isaac Street")}.only(classNames))
+        .getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{test_condition_function_5}.only(classNames));
+    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{test_condition_function_5}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"Dwayne Way", "Henry Road", "Isaac Street"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2961,13 +3005,13 @@ void test_find_edge_in_cursor_condition_function() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findInEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring C"));
+    auto res = txn.findInEdge(vertex).where(nogdb::Condition("name").eq("The Outer Ring C")).getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{test_condition_function_6});
+    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{test_condition_function_6}).getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"Eastern Way", "Fisher Avenue", "The Outer Ring C"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -2996,20 +3040,23 @@ void test_find_edge_out_cursor_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("New York Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("New York Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only(
-                                                   "street"));
+    auto res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{test_condition_function_7}.only("railway"));
+    res = txn.findOutEdge(vertex)
+        .where(nogdb::GraphFilter{test_condition_function_7}.only("railway"))
+        .getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"Bamboo Way", "Catalina Way", "Dwayne Way"}, "name");
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{test_condition_function_8}.only("railway"));
+    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{test_condition_function_8}.only("railway")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Andy Way", "Catalina Way"}, "name");
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{test_condition_function_9}.only("railway"));
+    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{test_condition_function_9}.only("railway")).getCursor();
     ASSERT_SIZE(res, 1);
     res.first();
     assert(res->record.get("name").toText() == "Dwayne Way");
@@ -3033,14 +3080,17 @@ void test_find_edge_all_cursor_condition_function() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Pentagon"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Pentagon")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
-    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only(
-                                                   "street"));
+    auto res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").eq("George Street")}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 1);
-    res = txn.findEdge(vertex).where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0)}.only("street"));
+    res = txn.findEdge(vertex)
+        .where(nogdb::GraphFilter{nogdb::Condition("distance").ge(50.0)}.only("street"))
+        .getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Henry Road", "Jetty Road"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -3049,16 +3099,16 @@ void test_find_edge_all_cursor_condition_function() {
   }
 
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("ThaiCC Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto classNames = std::vector<std::string>{"street", "railway"};
-    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{test_condition_function_10}.only(classNames));
+    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{test_condition_function_10}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 1);
     res.next();
     assert(res->record.get("name").toText() == "Gravity Way");
-    res = txn.findEdge(vertex).where(nogdb::GraphFilter{test_condition_function_11}.only(classNames));
+    res = txn.findEdge(vertex).where(nogdb::GraphFilter{test_condition_function_11}.only(classNames)).getCursor();
     ASSERT_SIZE(res, 5);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -3073,8 +3123,8 @@ void test_find_invalid_edge_in_cursor_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -3091,7 +3141,7 @@ void test_find_invalid_edge_in_cursor_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3102,7 +3152,7 @@ void test_find_invalid_edge_in_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).getCursor();
     ASSERT_SIZE(edges, 3);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3113,7 +3163,7 @@ void test_find_invalid_edge_in_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -3124,7 +3174,7 @@ void test_find_invalid_edge_in_cursor_condition_function() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findInEdge(tmp).where(nogdb::GraphFilter{condition}.only("street"));
+    auto res = txn.findInEdge(tmp).where(nogdb::GraphFilter{condition}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -3137,8 +3187,8 @@ void test_find_invalid_edge_out_cursor_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -3155,7 +3205,7 @@ void test_find_invalid_edge_out_cursor_condition_function() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3166,7 +3216,7 @@ void test_find_invalid_edge_out_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findOutEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).getCursor();
     ASSERT_SIZE(edges, 3);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3177,7 +3227,7 @@ void test_find_invalid_edge_out_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findOutEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findOutEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -3201,8 +3251,8 @@ void test_find_invalid_edge_all_cursor_condition_function() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street"));
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -3218,7 +3268,7 @@ void test_find_invalid_edge_all_cursor_condition_function() {
   };
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets"));
+    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only("streets")).getCursor();
     ASSERT_SIZE(edges, 0);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3229,7 +3279,7 @@ void test_find_invalid_edge_all_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto classNames = std::vector<std::string>{"street", "railway", "subway"};
-    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames));
+    auto edges = txn.findEdge(vertex.descriptor).where(nogdb::GraphFilter{condition}.only(classNames)).getCursor();
     ASSERT_SIZE(edges, 6);
     txn.rollback();
   } catch (const nogdb::Error &ex) {
@@ -3240,7 +3290,7 @@ void test_find_invalid_edge_all_cursor_condition_function() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    auto edges = txn.findEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street"));
+    auto edges = txn.findEdge(edge.descriptor).where(nogdb::GraphFilter{condition}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -3251,7 +3301,7 @@ void test_find_invalid_edge_all_cursor_condition_function() {
   try {
     auto tmp = vertex.descriptor;
     tmp.rid.second = -1;
-    auto res = txn.findEdge(tmp).where(nogdb::GraphFilter{condition}.only("street"));
+    auto res = txn.findEdge(tmp).where(nogdb::GraphFilter{condition}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -3262,17 +3312,17 @@ void test_find_invalid_edge_all_cursor_condition_function() {
 void test_find_edge_in_cursor_with_expression() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("Dubai Building"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("Dubai Building")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
     auto expr = nogdb::Condition("distance").ge(80.0)
                 or nogdb::Condition("capacity").gt(400U)
                 or nogdb::Condition("temperature").lt(30);
-    auto res = txn.findInEdge(vertex, expr);
+    auto res = txn.findInEdge(vertex).where(expr).getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"Andrew Street", "Andy Way", "George Street"}, "name");
-    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{expr}.only("street"));
+    res = txn.findInEdge(vertex).where(nogdb::GraphFilter{expr}.only("street")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Andrew Street", "George Street"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -3286,7 +3336,7 @@ void test_find_edge_in_cursor_with_expression() {
 void test_find_edge_out_cursor_with_expression() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto vertices = txn.find("locations", nogdb::Condition("name").eq("New York Tower"));
+    auto vertices = txn.find("locations").where(nogdb::Condition("name").eq("New York Tower")).getCursor();
     assert(vertices.size() == 1);
     vertices.next();
     auto &vertex = vertices->descriptor;
@@ -3295,16 +3345,16 @@ void test_find_edge_out_cursor_with_expression() {
                     and nogdb::Condition("capacity").ge(2000U))
                 or (nogdb::Condition("temperature").gt(40)
                     and nogdb::Condition("distance").lt(140.0));
-    auto res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{expr}.only("street"));
+    auto res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{expr}.only("street")).getCursor();
     ASSERT_SIZE(res, 1);
     res.next();
     assert(res->record.get("name").toText() == "Henry Road");
 
-    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{expr}.only("street", "highway"));
+    res = txn.findOutEdge(vertex).where(nogdb::GraphFilter{expr}.only("street", "highway")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"Henry Road", "The Outer Ring B"}, "name");
 
-    res = txn.findOutEdge(vertex, expr);
+    res = txn.findOutEdge(vertex).where(expr).getCursor();
     ASSERT_SIZE(res, 4);
     cursorContains(res, std::set<std::string>{"Andy Way", "Bamboo Way", "Henry Road", "The Outer Ring B"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -3325,11 +3375,11 @@ void test_find_edge_all_cursor_with_expression() {
     auto expr = nogdb::Condition("temperature")
                 and nogdb::Condition("capacity")
                 and nogdb::Condition("distance").gt(40.0);
-    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{expr}.only("street"));
+    auto res = txn.findEdge(vertex).where(nogdb::GraphFilter{expr}.only("street")).getCursor();
     ASSERT_SIZE(res, 2);
     cursorContains(res, std::set<std::string>{"George Street", "Jetty Road"}, "name");
 
-    res = txn.findEdge(vertex, expr);
+    res = txn.findEdge(vertex).where(expr).getCursor();
     ASSERT_SIZE(res, 3);
     cursorContains(res, std::set<std::string>{"George Street", "Jetty Road", "The Outer Ring C"}, "name");
   } catch (const nogdb::Error &ex) {
@@ -3365,8 +3415,8 @@ void test_find_invalid_edge_in_cursor_with_expression() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).getCursor();
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -3449,8 +3499,8 @@ void test_find_invalid_edge_out_cursor_with_expression() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).getCursor();
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {
@@ -3533,8 +3583,8 @@ void test_find_invalid_edge_all_cursor_with_expression() {
   auto vertices = nogdb::ResultSet{};
   auto edges = nogdb::ResultSet{};
   try {
-    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
-    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).getCursor();
+    vertices = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).get();
+    edges = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
     assert(vertices.size() == 1);
     assert(edges.size() == 1);
   } catch (const nogdb::Error &ex) {

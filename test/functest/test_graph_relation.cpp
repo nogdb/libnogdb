@@ -262,9 +262,9 @@ void test_create_complex_graph() {
 void test_get_edge_in_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findInEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findInEdge(teacher).where(nogdb::GraphFilter{}.only("workfor")).get();
       assert(edges.size() == 0);
     }
   } catch (const nogdb::Error &ex) {
@@ -277,18 +277,18 @@ void test_get_edge_in_more() {
       auto class_desc = txn.getClass(rdesc.rid.first);
       return class_desc.name;
     };
-    for (const auto &res: txn.find("subjects")) {
+    for (const auto &res: txn.find("subjects").get()) {
       auto subject = res.descriptor;
-      auto edges = txn.findInEdge(subject, nogdb::GraphFilter{}.only("teach"));
+      auto edges = txn.findInEdge(subject).where(nogdb::GraphFilter{}.only("teach")).get();
       if (res.record.get("name").toText() == "Intro to Finance") {
         assert(edges.size() == 2);
       } else {
         assert(edges.size() == 1);
       }
-      edges = txn.findInEdge(subject, nogdb::GraphFilter{}.only("enrol"));
+      edges = txn.findInEdge(subject).where(nogdb::GraphFilter{}.only("enrol")).get();
       assert(edges.size() != 0);
       bool tmp1 = false, tmp2 = false;
-      for (const auto &edge: txn.findInEdge(subject)) {
+      for (const auto &edge: txn.findInEdge(subject).get()) {
         assert(get_class_name(edge.descriptor) == "teach" ||
                get_class_name(edge.descriptor) == "enrol");
         if (get_class_name(edge.descriptor) == "teach") tmp1 |= true;
@@ -302,24 +302,24 @@ void test_get_edge_in_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       assert(edges.size() == 0);
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       assert(edges.size() == 0);
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       assert(edges.size() == 0);
     }
   } catch (const nogdb::Error &ex) {
@@ -328,16 +328,16 @@ void test_get_edge_in_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       assert(edges.size() == 2);
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findInEdge(teacher);
+      auto edges = txn.findInEdge(teacher).get();
       assert(edges.size() == 2);
     }
   } catch (const nogdb::Error &ex) {
@@ -351,9 +351,9 @@ void test_get_edge_in_more() {
 void test_get_edge_out_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findOutEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findOutEdge(teacher).where(nogdb::GraphFilter{}.only("workfor")).get();
       assert(edges.size() == 1 || edges.size() == 2);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges[0].record.get("position").toText() == "officer");
@@ -372,9 +372,9 @@ void test_get_edge_out_more() {
   }
 
   try {
-    for (const auto &res: txn.find("subjects")) {
+    for (const auto &res: txn.find("subjects").get()) {
       auto subject = res.descriptor;
-      auto edges = txn.findOutEdge(subject, nogdb::GraphFilter{}.only("belongto"));
+      auto edges = txn.findOutEdge(subject).where(nogdb::GraphFilter{}.only("belongto")).get();
       assert(edges.size() == 1);
     }
   } catch (const nogdb::Error &ex) {
@@ -383,10 +383,10 @@ void test_get_edge_out_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -395,10 +395,10 @@ void test_get_edge_out_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -407,10 +407,10 @@ void test_get_edge_out_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -424,10 +424,10 @@ void test_get_edge_out_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       assert(edges.size() == 5 || edges.size() == 6);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 6);
@@ -436,9 +436,9 @@ void test_get_edge_out_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findOutEdge(teacher);
+      auto edges = txn.findOutEdge(teacher).get();
       assert(edges.size() == 5 || edges.size() == 6);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 6);
@@ -457,9 +457,9 @@ void test_get_edge_out_more() {
 void test_get_edge_all_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findEdge(teacher).where(nogdb::GraphFilter{}.only("workfor")).get();
       assert(edges.size() == 1 || edges.size() == 2);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges[0].record.get("position").toText() == "officer");
@@ -478,10 +478,10 @@ void test_get_edge_all_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -490,10 +490,10 @@ void test_get_edge_all_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -502,10 +502,10 @@ void test_get_edge_all_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -519,10 +519,10 @@ void test_get_edge_all_more() {
   }
 
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       assert(edges.size() == 7 || edges.size() == 8);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 8);
@@ -531,9 +531,9 @@ void test_get_edge_all_more() {
       }
     }
 
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
-      auto edges = txn.findEdge(teacher);
+      auto edges = txn.findEdge(teacher).get();
       assert(edges.size() == 7 || edges.size() == 8);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 8);
@@ -547,9 +547,9 @@ void test_get_edge_all_more() {
   }
 
   try {
-    for (const auto &res: txn.find("subjects")) {
+    for (const auto &res: txn.find("subjects").get()) {
       auto subject = res.descriptor;
-      auto edges = txn.findEdge(subject);
+      auto edges = txn.findEdge(subject).get();
       if (res.record.get("name").toText() == "Intro to Finance") {
         assert(edges.size() == 7);
       } else if (res.record.get("name").toText() == "Marketing") {
@@ -575,9 +575,9 @@ void test_get_edge_all_more() {
 void test_get_invalid_edge_in_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("students")) {
+    for (const auto &res: txn.find("students").get()) {
       auto student = res.descriptor;
-      auto edges = txn.findInEdge(student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findInEdge(student).where(nogdb::GraphFilter{}.only("attack")).get();
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -588,10 +588,10 @@ void test_get_invalid_edge_in_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -602,10 +602,10 @@ void test_get_invalid_edge_in_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -616,11 +616,11 @@ void test_get_invalid_edge_in_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findInEdge(teacher, clsset);
+      auto edges = txn.findInEdge(teacher).where(clsset).get();
     }
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -633,9 +633,9 @@ void test_get_invalid_edge_in_more() {
 void test_get_invalid_edge_out_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("students")) {
+    for (const auto &res: txn.find("students").get()) {
       auto student = res.descriptor;
-      auto edges = txn.findOutEdge(student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findOutEdge(student).where(nogdb::GraphFilter{}.only("attack")).get();
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -646,10 +646,10 @@ void test_get_invalid_edge_out_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -660,10 +660,10 @@ void test_get_invalid_edge_out_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -674,11 +674,11 @@ void test_get_invalid_edge_out_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findOutEdge(teacher, clsset);
+      auto edges = txn.findOutEdge(teacher).where(clsset).get();
     }
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -691,9 +691,9 @@ void test_get_invalid_edge_out_more() {
 void test_get_invalid_edge_all_more() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("students")) {
+    for (const auto &res: txn.find("students").get()) {
       auto student = res.descriptor;
-      auto edges = txn.findEdge(student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findEdge(student).where(nogdb::GraphFilter{}.only("attack")).get();
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -704,10 +704,10 @@ void test_get_invalid_edge_all_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -718,10 +718,10 @@ void test_get_invalid_edge_all_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -732,11 +732,11 @@ void test_get_invalid_edge_all_more() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    for (const auto &res: txn.find("teachers")) {
+    for (const auto &res: txn.find("teachers").get()) {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = txn.findEdge(teacher, clsset);
+      auto edges = txn.findEdge(teacher).where(clsset).get();
     }
     assert(false);
   } catch (const nogdb::Error &ex) {

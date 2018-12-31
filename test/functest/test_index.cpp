@@ -302,7 +302,7 @@ void test_drop_invalid_index() {
   }
 
   try {
-    nogdb::Property::remove(txn, "index_test_2", "index_text_2");
+    txn.dropProperty("index_test_2", "index_text_2");
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
   }
@@ -812,7 +812,7 @@ void test_drop_invalid_index_with_records() {
   }
 
   try {
-    nogdb::Property::remove(txn, "index_test_2", "index_text_2");
+    txn.dropProperty("index_test_2", "index_text_2");
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_IN_USED_PROPERTY, "NOGDB_CTX_IN_USED_PROPERTY");
   }
