@@ -500,11 +500,11 @@ void test_create_invalid_vertex_edge_extend() {
 void test_delete_vertex_edge_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    auto res = txn.find("manage");
+    auto res = txn.find("manage").get();
     txn.remove(res[0].descriptor);
-    res = txn.find("infras");
+    res = txn.find("infras").get();
     txn.remove(res[0].descriptor);
-    res = txn.find("admins");
+    res = txn.find("admins").get();
     txn.remove(res[0].descriptor);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -546,39 +546,39 @@ void test_get_class_extend() {
     assert(false);
   }
   try {
-    auto res = txn.find("employees");
+    auto res = txn.find("employees").get();
     ASSERT_SIZE(res, 1);
 
-    res = txn.findSubClassOf("employees");
+    res = txn.findSubClassOf("employees").get();
     ASSERT_SIZE(res, 6);
     res = getVertexMultipleClassExtend(txn, std::set<std::string>{"admins", "backends", "frontends"});
     ASSERT_SIZE(res, 5);
-    res = txn.findSubClassOf("action");
+    res = txn.findSubClassOf("action").get();
     ASSERT_SIZE(res, 12);
-    res = txn.findSubClassOf("manage");
+    res = txn.findSubClassOf("manage").get();
     ASSERT_SIZE(res, 2);
     res = getEdgeMultipleClassExtend(txn, std::set<std::string>{"collaborate", "manage"});
     ASSERT_SIZE(res, 12);
-    res = txn.findSubClassOf("inter");
+    res = txn.findSubClassOf("inter").get();
     ASSERT_SIZE(res, 3);
 
-    res = txn.findSubClassOf("backends");
+    res = txn.findSubClassOf("backends").get();
     for (const auto &r: res) {
       if (r.record.get("name").toText() == "Bill") {
-        auto edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.exclude("collaborate"));
+        auto edges = txn.findInEdge(r.descriptor).where(nogdb::GraphFilter{}.exclude("collaborate")).get();
         ASSERT_SIZE(edges, 3);
-        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.excludeSubClassOf("collaborate"));
+        edges = txn.findInEdge(r.descriptor).where(nogdb::GraphFilter{}.excludeSubClassOf("collaborate")).get();
         ASSERT_SIZE(edges, 1);
-        edges = txn.findEdge(r.descriptor, nogdb::GraphFilter{}.only("inter", "manage"));
+        edges = txn.findEdge(r.descriptor).where(nogdb::GraphFilter{}.only("inter", "manage")).get();
         ASSERT_SIZE(edges, 3);
       } else if (r.record.get("name").toText() == "Charon") {
-        auto edges = txn.findOutEdge(r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+        auto edges = txn.findOutEdge(r.descriptor).where(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
         ASSERT_SIZE(edges, 2);
-        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+        edges = txn.findInEdge(r.descriptor).where(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
         ASSERT_SIZE(edges, 2);
-        edges = txn.findOutEdge(r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        edges = txn.findOutEdge(r.descriptor).where(nogdb::GraphFilter{}.only("collaborate")).get();
         ASSERT_SIZE(edges, 0);
-        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        edges = txn.findInEdge(r.descriptor).where(nogdb::GraphFilter{}.only("collaborate")).get();
         ASSERT_SIZE(edges, 1);
       }
     }
@@ -593,54 +593,55 @@ void test_get_class_extend() {
 void test_find_class_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.findSubClassOf("systems", nogdb::Condition("age").le(30U));
+    auto res = txn.findSubClassOf("systems").where(nogdb::Condition("age").le(30U)).get();
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "Charon");
-    res = txn.findSubClassOf("employees", nogdb::Condition("age").le(30U));
+    res = txn.findSubClassOf("employees").where(nogdb::Condition("age").le(30U)).get();
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "Charon" || res[0].record.get("name").toText() == "Adam");
     assert(res[1].record.get("name").toText() == "Charon" || res[1].record.get("name").toText() == "Adam");
-    res = txn.findSubClassOf("backends", nogdb::Condition("cpp_skills").eq(8));
+    res = txn.findSubClassOf("backends").where(nogdb::Condition("cpp_skills").eq(8)).get();
 
-    res = txn.findSubClassOf("collaborate", nogdb::Condition("name").endWith("provider").ignoreCase());
+    res = txn.findSubClassOf("collaborate").where(nogdb::Condition("name").endWith("provider").ignoreCase()).get();
     ASSERT_SIZE(res, 4);
-    res = txn.findSubClassOf("action", nogdb::Condition("priority"));
+    res = txn.findSubClassOf("action").where(nogdb::Condition("priority")).get();
     ASSERT_SIZE(res, 2);
 
-    auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
+    auto b = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Bill")).get();
     assert(b.size() == 1);
-    res = txn.findInEdge(b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase());
+    res = txn.findInEdge(b[0].descriptor).where(nogdb::Condition("name").endWith("provider").ignoreCase()).get();
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui provider" ||
            res[0].record.get("name").toText() == "system provider");
     assert(res[1].record.get("name").toText() == "ui provider" ||
            res[1].record.get("name").toText() == "system provider");
-    res = txn.findInEdge(b[0].descriptor,
-                                   nogdb::GraphFilter{nogdb::Condition("name").endWith("provider").ignoreCase()}
-                                   .onlySubClassOf("collaborate"));
+    res = txn.findInEdge(b[0].descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").endWith("provider").ignoreCase()}.onlySubClassOf("collaborate"))
+        .get();
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui provider" ||
            res[0].record.get("name").toText() == "system provider");
     assert(res[1].record.get("name").toText() == "ui provider" ||
            res[1].record.get("name").toText() == "system provider");
-    res = txn.findInEdge(b[0].descriptor,
-                                   nogdb::GraphFilter{nogdb::Condition("type").null()}.only("inter", "manage"));
+    res = txn.findInEdge(b[0].descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("type").null()}.only("inter", "manage"))
+        .get();
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui creator" ||
            res[0].record.get("name").toText() == "team leader");
     assert(res[1].record.get("name").toText() == "ui creator" ||
            res[1].record.get("name").toText() == "team leader");
 
-    auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
+    auto c = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Charon")).get();
     assert(c.size() == 1);
-    res = txn.findOutEdge(c[0].descriptor,
-                                    nogdb::GraphFilter{nogdb::Condition("name").beginWith("team").ignoreCase()}
-                                    .onlySubClassOf("action"));
+    res = txn.findOutEdge(c[0].descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").beginWith("team").ignoreCase()}.onlySubClassOf("action"))
+        .get();
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "team leader");
-    res = txn.findEdge(b[0].descriptor,
-                                    nogdb::GraphFilter{nogdb::Condition("name").contain("team").ignoreCase()}
-                                    .onlySubClassOf("collaborate"));
+    res = txn.findEdge(b[0].descriptor)
+        .where(nogdb::GraphFilter{nogdb::Condition("name").contain("team").ignoreCase()}.onlySubClassOf("collaborate"))
+        .get();
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "team member");
 
@@ -655,18 +656,18 @@ void test_find_class_extend() {
 void test_traverse_class_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
-    auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
-    auto f = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Falcao"));
-    auto res = txn.traverseIn(b[0].descriptor).depth(1, 1);
+    auto b = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Bill")).get();
+    auto c = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Charon")).get();
+    auto f = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Falcao")).get();
+    auto res = txn.traverseIn(b[0].descriptor).depth(1, 1).get();
     ASSERT_SIZE(res, 3);
-    res = txn.traverseIn(b[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseIn(b[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
     ASSERT_SIZE(res, 3);
-    res = txn.traverseOut(f[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseOut(f[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
     ASSERT_SIZE(res, 2);
-    res = txn.traverseOut(f[0].descriptor).depth(1, 2).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseOut(f[0].descriptor).depth(1, 2).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
     ASSERT_SIZE(res, 3);
-    res = txn.traverse(c[0].descriptor).depth(0, 100).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate", "manage"));
+    res = txn.traverse(c[0].descriptor).depth(0, 100).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate", "manage")).get();
     ASSERT_SIZE(res, 4);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -678,31 +679,28 @@ void test_traverse_class_extend() {
 void test_shortest_path_class_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
-    auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
-    auto d = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Don"));
-    auto res = txn.shortestPath(c[0].descriptor, d[0].descriptor);
+    auto b = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Bill")).get();
+    auto c = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Charon")).get();
+    auto d = txn.findSubClassOf("employees").where(nogdb::Condition("name").eq("Don")).get();
+    auto res = txn.shortestPath(c[0].descriptor, d[0].descriptor).get();
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = txn.shortestPath(c[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.shortestPath(c[0].descriptor, d[0].descriptor).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = txn.shortestPath(b[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.shortestPath(b[0].descriptor, d[0].descriptor).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate")).get();
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Bill");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = txn.shortestPath(b[0].descriptor, d[0].descriptor,
-                                        nogdb::GraphFilter{}.onlySubClassOf("inter", "manage"));
+    res = txn.shortestPath(b[0].descriptor, d[0].descriptor).whereE(nogdb::GraphFilter{}.onlySubClassOf("inter", "manage")).get();
     ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
