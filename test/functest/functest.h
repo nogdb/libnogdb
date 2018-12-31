@@ -440,8 +440,6 @@ extern void test_txn_modify_edges_multiversion_rollback();
 extern void test_txn_rollback_when_destroy();
 extern void test_txn_reopen_ctx();
 extern void test_txn_invalid_operations();
-//extern void test_txn_invalid_concurrent_version();
-extern void test_txn_multithreads();
 #endif
 
 // sql operations testing

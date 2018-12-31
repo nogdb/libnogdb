@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2019, NogDB <https://nogdb.org>
- *  <nogdb at throughwave dot co dot th>
+ *  <kasidej dot bu at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -52,7 +52,7 @@ namespace nogdb {
 
 
 void test_sql_unrecognized_token_error() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     SQL::execute(txn, "128asyuiqwerhb;");
     assert(false);
@@ -63,7 +63,7 @@ void test_sql_unrecognized_token_error() {
 }
 
 void test_sql_syntax_error() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     SQL::execute(txn, "SELECT DELETE VERTEX;");
     assert(false);
@@ -74,7 +74,7 @@ void test_sql_syntax_error() {
 }
 
 void test_sql_create_class() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     // create
     SQL::Result result = SQL::execute(txn, "CREATE CLASS sql_class EXTENDS VERTEX");
@@ -82,7 +82,7 @@ void test_sql_create_class() {
     // check result.
     assert(result.type() == SQL::Result::CLASS_DESCRIPTOR);
     assert(result.get<ClassDescriptor>().name == "sql_class");
-    ClassDescriptor schema = DB::getClass(txn, "sql_class");
+    ClassDescriptor schema = txn.getClass("sql_class");
     assert(schema.name == "sql_class");
   } catch (const Error &e) {
     std::cout << "\nError: " << e.what() << std::endl;
@@ -90,13 +90,13 @@ void test_sql_create_class() {
   }
 
   try {
-    Class::drop(txn, "sql_class");
+    txn.dropClass("sql_class");
   } catch (...) {}
   txn.commit();
 }
 
 void test_sql_create_class_if_not_exists() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   // test not exists case.
   try {
     SQL::Result result = SQL::execute(txn, "CREATE CLASS sql_class IF NOT EXISTS EXTENDS VERTEX");
@@ -110,7 +110,7 @@ void test_sql_create_class_if_not_exists() {
   // test exists case.
   try {
     SQL::execute(txn, "CREATE CLASS sql_class IF NOT EXISTS EXTENDS VERTEX");
-    auto schema = DB::getClass(txn, "sql_class");
+    auto schema = txn.getClass("sql_class");
     assert(schema.name == "sql_class");
   } catch (const Error &e) {
     std::cout << "\nError: " << e.what() << std::endl;
@@ -118,18 +118,18 @@ void test_sql_create_class_if_not_exists() {
   }
 
   try {
-    Class::drop(txn, "sql_class");
+    txn.dropClass("sql_class");
   } catch (...) {}
   txn.commit();
 }
 
 void test_sql_create_class_extend() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   // create super class
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
-    Property::add(txn, "sql_class", "prop1", PropertyType::TEXT);
-    Property::add(txn, "sql_class", "prop2", PropertyType::UNSIGNED_INTEGER);
+    txn.addClass("sql_class", ClassType::VERTEX);
+    txn.addProperty("sql_class", "prop1", PropertyType::TEXT);
+    txn.addProperty("sql_class", "prop2", PropertyType::UNSIGNED_INTEGER);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -145,7 +145,7 @@ void test_sql_create_class_extend() {
 
   // check result
   try {
-    auto res = DB::getClass(txn, "sql_class_sub");
+    auto res = txn.getClass("sql_class_sub");
     assert(res.name == "sql_class_sub");
     assert(res.type == ClassType::VERTEX);
     auto properties = txn.getProperties(res);
@@ -162,16 +162,16 @@ void test_sql_create_class_extend() {
   }
 
   try {
-    Class::drop(txn, "sql_class");
-    Class::drop(txn, "sql_class_sub");
+    txn.dropClass("sql_class");
+    txn.dropClass("sql_class_sub");
   } catch (...) {}
   txn.commit();
 }
 
 void test_sql_create_invalid_class() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
+    txn.addClass("sql_class", ClassType::VERTEX);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -199,12 +199,12 @@ void test_sql_create_invalid_class() {
 }
 
 void test_sql_alter_class_name() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   // create class
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
-    Property::add(txn, "sql_class", "prop1", PropertyType::INTEGER);
-    Property::add(txn, "sql_class", "prop2", PropertyType::TEXT);
+    txn.addClass("sql_class", ClassType::VERTEX);
+    txn.addProperty("sql_class", "prop1", PropertyType::INTEGER);
+    txn.addProperty("sql_class", "prop2", PropertyType::TEXT);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -213,7 +213,7 @@ void test_sql_alter_class_name() {
   // test alter NAME
   try {
     SQL::execute(txn, "ALTER CLASS sql_class NAME 'sql_class2'");
-    auto res = DB::getClass(txn, "sql_class2");
+    auto res = txn.getClass("sql_class2");
     assert(res.name == "sql_class2");
     auto properties = txn.getProperties(res);
     assert(properties.size() == 2);
@@ -229,15 +229,15 @@ void test_sql_alter_class_name() {
   }
 
   try {
-    Class::drop(txn, "sql_class2");
+    txn.dropClass("sql_class2");
   } catch (...) {}
   txn.commit();
 }
 
 void test_sql_drop_class() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
+    txn.addClass("sql_class", ClassType::VERTEX);
 
     SQL::Result result = SQL::execute(txn, "DROP CLASS sql_class");
     assert(result.type() == SQL::Result::NO_RESULT);
@@ -248,7 +248,7 @@ void test_sql_drop_class() {
 
   // check result.
   try {
-    auto schema = DB::getClass(txn, "sql_class");
+    auto schema = txn.getClass("sql_class");
     assert(false);
   } catch (const Error &e) {
     assert(e.code() == NOGDB_CTX_NOEXST_CLASS);
@@ -257,10 +257,10 @@ void test_sql_drop_class() {
 }
 
 void test_sql_drop_class_if_exists() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   // test exists case.
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
+    txn.addClass("sql_class", ClassType::VERTEX);
 
     SQL::Result result = SQL::execute(txn, "DROP CLASS sql_class IF EXISTS");
     assert(result.type() == SQL::Result::NO_RESULT);
@@ -280,7 +280,7 @@ void test_sql_drop_class_if_exists() {
 }
 
 void test_sql_drop_invalid_class() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     SQL::execute(txn, "DROP CLASS ''");
     assert(false);
@@ -298,9 +298,9 @@ void test_sql_drop_invalid_class() {
 }
 
 void test_sql_add_property() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
-    Class::create(txn, "sql_class", ClassType::VERTEX);
+    txn.addClass("sql_class", ClassType::VERTEX);
     SQL::Result result1 = SQL::execute(txn, "CREATE PROPERTY sql_class.prop1 TEXT");
     SQL::Result result2 = SQL::execute(txn, "CREATE PROPERTY sql_class.prop2 UNSIGNED_INTEGER");
     SQL::Result result3 = SQL::execute(txn, "CREATE PROPERTY sql_class.xml TEXT");
@@ -315,7 +315,7 @@ void test_sql_add_property() {
     assert(false);
   }
   try {
-    auto schema = DB::getClass(txn, "sql_class");
+    auto schema = txn.getClass("sql_class");
     assert(schema.name == "sql_class");
     auto properties = txn.getProperties(schema);
     assert(properties.size() == 2);
@@ -333,11 +333,11 @@ void test_sql_add_property() {
 }
 
 void test_sql_alter_property() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
-    Class::create(txn, "links", ClassType::EDGE);
-    Property::add(txn, "links", "type", PropertyType::TEXT);
-    Property::add(txn, "links", "expire", PropertyType::INTEGER);
+    txn.addClass("links", ClassType::EDGE);
+    txn.addProperty("links", "type", PropertyType::TEXT);
+    txn.addProperty("links", "expire", PropertyType::INTEGER);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -345,14 +345,14 @@ void test_sql_alter_property() {
   try {
     SQL::execute(txn, "ALTER PROPERTY links.type NAME 'comments'");
     SQL::execute(txn, "ALTER PROPERTY links.expire NAME 'expired'");
-    Property::add(txn, "links", "type", PropertyType::BLOB);
+    txn.addProperty("links", "type", PropertyType::BLOB);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
 
   try {
-    auto schema = DB::getClass(txn, "links");
+    auto schema = txn.getClass("links");
     assert(schema.name == "links");
     assert(schema.type == ClassType::EDGE);
     auto properties = txn.getProperties(schema);
@@ -369,7 +369,7 @@ void test_sql_alter_property() {
     assert(false);
   }
   try {
-    Class::drop(txn, "links");
+    txn.dropClass("links");
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -378,11 +378,11 @@ void test_sql_alter_property() {
 }
 
 void test_sql_delete_property() {
-  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn  = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     SQL::execute(txn, "DROP PROPERTY sql_class.prop2");
 
-    auto schema = DB::getClass(txn, "sql_class");
+    auto schema = txn.getClass("sql_class");
     assert(schema.name == "sql_class");
     auto properties = txn.getProperties(schema);
     assert(properties.size() == 0);
@@ -392,7 +392,7 @@ void test_sql_delete_property() {
   }
 
   try {
-    Class::drop(txn, "sql_class");
+    txn.dropClass("sql_class");
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -402,7 +402,7 @@ void test_sql_delete_property() {
 
 void test_sql_create_vertex() {
   init_vertex_book();
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     SQL::Result result = SQL::execute(txn,
                                       "CREATE VERTEX books SET title='Harry Potter', words=4242424242, pages=865, price=49.99");
@@ -420,12 +420,12 @@ void test_sql_create_edges() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   RecordDescriptor v1_1{}, v1_2{}, v2{};
   try {
-    v1_1 = Vertex::create(txn, "books", Record().set("title", "Harry Potter").set("pages", 456).set("price", 24.5));
-    v1_2 = Vertex::create(txn, "books", Record().set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0));
-    v2 = Vertex::create(txn, "persons", Record().set("name", "J.K. Rowlings").set("age", 32));
+    v1_1 = txn.addVertex("books", Record().set("title", "Harry Potter").set("pages", 456).set("price", 24.5));
+    v1_2 = txn.addVertex("books", Record().set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0));
+    v2 = txn.addVertex("persons", Record().set("name", "J.K. Rowlings").set("age", 32));
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -452,7 +452,7 @@ void test_sql_select_vertex() {
   init_vertex_person();
   init_vertex_book();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     auto records = std::vector<Record>{};
     records.push_back(Record{}
@@ -466,9 +466,9 @@ void test_sql_select_vertex() {
                           .set("price", 36.0)
     );
     for (const auto &record: records) {
-      Vertex::create(txn, "books", record);
+      txn.addVertex("books", record);
     }
-    Vertex::create(txn, "persons", Record{}
+    txn.addVertex("persons", Record{}
         .set("name", "Jim Beans")
         .set("age", 40U)
     );
@@ -503,15 +503,15 @@ void test_sql_select_vertex_with_rid() {
   init_vertex_person();
   init_vertex_book();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
   RecordDescriptor rid1, rid2;
   try {
-    rid1 = Vertex::create(txn, "persons", Record()
+    rid1 = txn.addVertex("persons", Record()
         .set("name", "Jim Beans")
         .set("age", 40U)
     );
-    rid2 = Vertex::create(txn, "books", Record()
+    rid2 = txn.addVertex("books", Record()
         .set("title", "Percy Jackson")
         .set("pages", 456)
         .set("price", 24.5)
@@ -553,11 +553,11 @@ void test_sql_select_vertex_with_rid() {
 void test_sql_select_property() {
   init_vertex_person();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
   RecordDescriptor rdesc, rdResult;
   try {
-    rdesc = Vertex::create(txn, "persons", Record()
+    rdesc = txn.addVertex("persons", Record()
         .set("name", "Jim Beans")
         .set("age", 40U)
     );
@@ -637,13 +637,13 @@ void test_sql_select_property() {
 void test_sql_select_count() {
   init_vertex_person();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
   RecordDescriptor rid1, rid2;
   try {
-    Vertex::create(txn, "persons", Record().set("name", "Jim Beans").set("age", 40U));
-    Vertex::create(txn, "persons", Record().set("name", "Jame Beans"));
-    Vertex::create(txn, "persons");
+    txn.addVertex("persons", Record().set("name", "Jim Beans").set("age", 40U));
+    txn.addVertex("persons", Record().set("name", "Jame Beans"));
+    txn.addVertex("persons");
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -683,26 +683,26 @@ void test_sql_select_count() {
 }
 
 void test_sql_select_walk() {
-  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "p", PropertyType::TEXT);
-  Class::create(txn, "eA", ClassType::EDGE);
-  Property::add(txn, "eA", "p", PropertyType::TEXT);
-  Class::create(txn, "eB", ClassType::EDGE);
-  Property::add(txn, "eB", "p", PropertyType::TEXT);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "p", PropertyType::TEXT);
+  txn.addClass("eA", ClassType::EDGE);
+  txn.addProperty("eA", "p", PropertyType::TEXT);
+  txn.addClass("eB", ClassType::EDGE);
+  txn.addProperty("eB", "p", PropertyType::TEXT);
 
   try {
-    auto v1 = Vertex::create(txn, "v", Record().set("p", "v1"));
-    auto v2 = Vertex::create(txn, "v", Record().set("p", "v2"));
-    auto v3 = Vertex::create(txn, "v", Record().set("p", "v3"));
-    auto v4 = Vertex::create(txn, "v", Record().set("p", "v4"));
-    auto v5 = Vertex::create(txn, "v", Record().set("p", "v5"));
-    auto eA13 = Edge::create(txn, "eA", v1, v3, Record().set("p", "e13"));
-    auto eB14 = Edge::create(txn, "eB", v1, v4, Record().set("p", "e14"));
-    auto eA23 = Edge::create(txn, "eA", v2, v3, Record().set("p", "e23"));
-    auto eB24 = Edge::create(txn, "eB", v2, v4, Record().set("p", "e24"));
-    auto eA35 = Edge::create(txn, "eA", v3, v5, Record().set("p", "e35"));
+    auto v1 = txn.addVertex("v", Record().set("p", "v1"));
+    auto v2 = txn.addVertex("v", Record().set("p", "v2"));
+    auto v3 = txn.addVertex("v", Record().set("p", "v3"));
+    auto v4 = txn.addVertex("v", Record().set("p", "v4"));
+    auto v5 = txn.addVertex("v", Record().set("p", "v5"));
+    auto eA13 = txn.addEdge("eA", v1, v3, Record().set("p", "e13"));
+    auto eB14 = txn.addEdge("eB", v1, v4, Record().set("p", "e14"));
+    auto eA23 = txn.addEdge("eA", v2, v3, Record().set("p", "e23"));
+    auto eB24 = txn.addEdge("eB", v2, v4, Record().set("p", "e24"));
+    auto eA35 = txn.addEdge("eA", v3, v5, Record().set("p", "e35"));
 
     auto result = SQL::execute(txn, "SELECT expand(outE()) FROM " + to_string(v1));
     assert(result.type() == result.RESULT_SET);
@@ -802,29 +802,29 @@ void test_sql_select_walk() {
     assert(false);
   }
 
-  Class::drop(txn, "v");
-  Class::drop(txn, "eA");
-  Class::drop(txn, "eB");
+  txn.dropClass("v");
+  txn.dropClass("eA");
+  txn.dropClass("eB");
 
   txn.commit();
 }
 
 void test_sql_select_method_property() {
-  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "propV", PropertyType::TEXT);
-  Class::create(txn, "e", ClassType::EDGE);
-  Property::add(txn, "e", "propE", PropertyType::TEXT);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "propV", PropertyType::TEXT);
+  txn.addClass("e", ClassType::EDGE);
+  txn.addProperty("e", "propE", PropertyType::TEXT);
 
   try {
-    auto v1 = Vertex::create(txn, "v", Record().set("propV", "v1"));
-    auto v2 = Vertex::create(txn, "v", Record().set("propV", "v2"));
-    auto v3 = Vertex::create(txn, "v", Record().set("propV", "v3"));
-    auto v4 = Vertex::create(txn, "v", Record().set("propV", "v4"));
-    auto eA13 = Edge::create(txn, "e", v1, v3, Record().set("propE", "e1->3"));
-    Edge::create(txn, "e", v1, v4, Record().set("propE", "e1->4"));
-    Edge::create(txn, "e", v2, v4, Record().set("propE", "e2->4"));
+    auto v1 = txn.addVertex("v", Record().set("propV", "v1"));
+    auto v2 = txn.addVertex("v", Record().set("propV", "v2"));
+    auto v3 = txn.addVertex("v", Record().set("propV", "v3"));
+    auto v4 = txn.addVertex("v", Record().set("propV", "v4"));
+    auto eA13 = txn.addEdge("e", v1, v3, Record().set("propE", "e1->3"));
+    txn.addEdge("e", v1, v4, Record().set("propE", "e1->4"));
+    txn.addEdge("e", v2, v4, Record().set("propE", "e2->4"));
 
     // normal method
     auto result = SQL::execute(txn, "SELECT inV().propV FROM " + to_string(eA13));
@@ -876,23 +876,23 @@ void test_sql_select_method_property() {
     assert(false);
   }
 
-  Class::drop(txn, "v");
-  Class::drop(txn, "e");
+  txn.dropClass("v");
+  txn.dropClass("e");
   txn.commit();
 }
 
 void test_sql_select_alias_property() {
-  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "propV", PropertyType::TEXT);
-  Class::create(txn, "e", ClassType::EDGE);
-  Property::add(txn, "e", "propE", PropertyType::TEXT);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "propV", PropertyType::TEXT);
+  txn.addClass("e", ClassType::EDGE);
+  txn.addProperty("e", "propE", PropertyType::TEXT);
 
   try {
-    auto v1 = Vertex::create(txn, "v", Record().set("propV", "v1"));
-    auto v3 = Vertex::create(txn, "v", Record().set("propV", "v3"));
-    auto eA13 = Edge::create(txn, "e", v1, v3, Record().set("propE", "e1->3"));
+    auto v1 = txn.addVertex("v", Record().set("propV", "v1"));
+    auto v3 = txn.addVertex("v", Record().set("propV", "v3"));
+    auto eA13 = txn.addEdge("e", v1, v3, Record().set("propE", "e1->3"));
 
     auto result = SQL::execute(txn, "SELECT inV().propV AS my_prop FROM " + to_string(eA13));
     assert(result.type() == result.RESULT_SET);
@@ -905,8 +905,8 @@ void test_sql_select_alias_property() {
     assert(false);
   }
 
-  Class::drop(txn, "v");
-  Class::drop(txn, "e");
+  txn.dropClass("v");
+  txn.dropClass("e");
   txn.commit();
 }
 
@@ -930,58 +930,48 @@ struct Coordinates {
 };
 
 void test_sql_select_vertex_condition() {
-  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "text", nogdb::PropertyType::TEXT);
-  Property::add(txn, "v", "int", nogdb::PropertyType::INTEGER);
-  Property::add(txn, "v", "uint", nogdb::PropertyType::UNSIGNED_INTEGER);
-  Property::add(txn, "v", "bigint", nogdb::PropertyType::BIGINT);
-  Property::add(txn, "v", "ubigint", nogdb::PropertyType::UNSIGNED_BIGINT);
-  Property::add(txn, "v", "real", nogdb::PropertyType::REAL);
-  auto v1 = Vertex::create(txn, "v", nogdb::Record{}.set("text", "A").set("int", 11).set("uint", 10200U).set("bigint",
-                                                                                                             200000LL).set(
-      "ubigint", 2000ULL).set("real", 4.5));
-  Vertex::create(txn, "v",
-                 nogdb::Record{}.set("text", "B1Y").set("int", 37).set("bigint", 280000LL).set("ubigint", 1800ULL).set(
-                     "real", 5.0));
-  Vertex::create(txn, "v", nogdb::Record{}.set("text", "B2Y").set("uint", 10250U).set("bigint", 220000LL).set("ubigint",
-                                                                                                              2400ULL).set(
-      "real", 4.5));
-  Vertex::create(txn, "v",
-                 nogdb::Record{}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real",
-                                                                                                                 3.5));
-  Vertex::create(txn, "v",
-                 nogdb::Record{}.set("text", "DX").set("int", 18).set("uint", 10475U).set("bigint", 300000LL).set(
-                     "ubigint", 900ULL));
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "text", nogdb::PropertyType::TEXT);
+  txn.addProperty("v", "int", nogdb::PropertyType::INTEGER);
+  txn.addProperty("v", "uint", nogdb::PropertyType::UNSIGNED_INTEGER);
+  txn.addProperty("v", "bigint", nogdb::PropertyType::BIGINT);
+  txn.addProperty("v", "ubigint", nogdb::PropertyType::UNSIGNED_BIGINT);
+  txn.addProperty("v", "real", nogdb::PropertyType::REAL);
+  auto v1 = txn.addVertex("v", nogdb::Record{}.set("text", "A").set("int", 11).set("uint", 10200U).set("bigint", 200000LL).set("ubigint", 2000ULL).set("real", 4.5));
+  txn.addVertex("v", nogdb::Record{}.set("text", "B1Y").set("int", 37).set("bigint", 280000LL).set("ubigint", 1800ULL).set("real", 5.0));
+  txn.addVertex("v", nogdb::Record{}.set("text", "B2Y").set("uint", 10250U).set("bigint", 220000LL).set("ubigint", 2400ULL).set("real", 4.5));
+  txn.addVertex("v", nogdb::Record{}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real", 3.5));
+  txn.addVertex("v", nogdb::Record{}.set("text", "DX").set("int", 18).set("uint", 10475U).set("bigint", 300000LL).set("ubigint", 900ULL));
 
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE text='A'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq("A")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").eq("A")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text='Z'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq("Z")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").eq("Z")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE int=18");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("int").eq(18)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("int").eq(18)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE uint=11600");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("uint").eq(11600)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("uint").eq(11600)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE bigint=280000");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("bigint").eq(280000LL)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("bigint").eq(280000LL)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE ubigint=900");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").eq(900ULL)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("ubigint").eq(900ULL)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE real=4.5");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").eq(4.5)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("real").eq(4.5)).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -991,15 +981,12 @@ void test_sql_select_vertex_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE @recordId = '" + nogdb::rid2str(v1.rid) + "'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@recordId").eq(nogdb::rid2str(v1.rid))));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("@recordId").eq(nogdb::rid2str(v1.rid))).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE @className = 'v'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@className").eq("v")));
-
-    result = SQL::execute(txn, "SELECT FROM v WHERE @version > 0");
-    assert(result.type() == result.RESULT_SET);
-    //assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("@version").gt(0ULL)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("@className").eq("v")).get());
+    
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1008,39 +995,39 @@ void test_sql_select_vertex_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE text != 'A'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").eq("A")));
+    assert(result.get<ResultSet>() == txn.find("v").where(not Condition("text").eq("A")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE int > 35");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("int").gt(35)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("int").gt(35)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE real >= 4.5");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("real").ge(4.5)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("real").ge(4.5)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE uint < 10300");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("uint").lt(10300)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("uint").lt(10300)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE ubigint <= 900");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").le(900ULL)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("ubigint").le(900ULL)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE bigint IS NULL");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("bigint").null()));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("bigint").null()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE int IS NOT NULL");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("int").null()));
+    assert(result.get<ResultSet>() == txn.find("v").where(not Condition("int").null()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text = 100");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").eq(100)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").eq(100)).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE ubigint = 2000");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("ubigint").eq(2000ULL)));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("ubigint").eq(2000ULL)).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1049,52 +1036,52 @@ void test_sql_select_vertex_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE text CONTAIN 'a'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").contain("a").ignoreCase()));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").contain("a").ignoreCase()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE NOT (text CONTAIN 'b')");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").contain("b").ignoreCase()));
+    assert(result.get<ResultSet>() == txn.find("v").where(not Condition("text").contain("b").ignoreCase()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text BEGIN WITH 'a'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").beginWith("a").ignoreCase()));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").beginWith("a").ignoreCase()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE NOT text BEGIN WITH CASE 'A'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").beginWith("A")));
+    assert(result.get<ResultSet>() == txn.find("v").where(not Condition("text").beginWith("A")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text END WITH 'x'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").endWith("x").ignoreCase()));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").endWith("x").ignoreCase()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE NOT text END WITH CASE 'Y'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", not Condition("text").endWith("Y")));
+    assert(result.get<ResultSet>() == txn.find("v").where(not Condition("text").endWith("Y")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text > 'B2Y'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").gt("B2Y")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").gt("B2Y")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text >= 'B2Y'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").ge("B2Y")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").ge("B2Y")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text < 'B2Y'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").lt("B2Y")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").lt("B2Y")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text <= 'B2Y'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").le("B2Y")));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").le("B2Y")).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text IN ['B1Y', 'A']");
     assert(result.type() == result.RESULT_SET);
     assert(result.get<ResultSet>() ==
-           Vertex::get(txn, "v", Condition("text").in(vector<string>{"B1Y", "A"}).ignoreCase()));
+           txn.find("v").where(Condition("text").in(vector<string>{"B1Y", "A"}).ignoreCase()).get());
 
     result = SQL::execute(txn, "SELECT FROM v WHERE text LIKE '%1%'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("text").like("%1%").ignoreCase()));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").like("%1%").ignoreCase()).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1102,18 +1089,18 @@ void test_sql_select_vertex_condition() {
 }
 
 void test_sql_select_vertex_with_multi_condition() {
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "prop1", PropertyType::TEXT);
-  Property::add(txn, "v", "prop2", PropertyType::INTEGER);
-  Vertex::create(txn, "v", Record().set("prop1", "AX").set("prop2", 1));
-  Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
-  Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "prop1", PropertyType::TEXT);
+  txn.addProperty("v", "prop2", PropertyType::INTEGER);
+  txn.addVertex("v", Record().set("prop1", "AX").set("prop2", 1));
+  txn.addVertex("v", Record().set("prop1", "BX").set("prop2", 2));
+  txn.addVertex("v", Record().set("prop1", "C").set("prop2", 3));
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE prop1 END WITH 'X' OR prop2 >= 2");
     assert(result.type() == result.RESULT_SET);
     assert(result.get<ResultSet>() ==
-           Vertex::get(txn, "v", Condition("prop1").endWith("X").ignoreCase() or Condition("prop2").ge(2)));
+           txn.find("v").where(Condition("prop1").endWith("X").ignoreCase() or Condition("prop2").ge(2)).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1122,8 +1109,8 @@ void test_sql_select_vertex_with_multi_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'C' AND prop2 = 3) OR prop1 = 'AX'");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", (Condition("prop1").eq("C") and Condition("prop2").eq(3)) or
-                                                            Condition("prop1").eq("AX")));
+    assert(result.get<ResultSet>() == txn.find("v").where((Condition("prop1").eq("C") and Condition("prop2").eq(3)) or
+                                                            Condition("prop1").eq("AX")).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1132,8 +1119,8 @@ void test_sql_select_vertex_with_multi_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'AX') OR (prop1 = 'C' AND prop2 = 3)");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v", Condition("prop1").eq("AX") or
-                                                            (Condition("prop1").eq("C") and Condition("prop2").eq(3))));
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("prop1").eq("AX") or
+                                                            (Condition("prop1").eq("C") and Condition("prop2").eq(3))).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1142,9 +1129,9 @@ void test_sql_select_vertex_with_multi_condition() {
   try {
     auto result = SQL::execute(txn, "SELECT FROM v WHERE (@className='v' AND prop2<2) OR (@className='x' AND prop2>0)");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Vertex::get(txn, "v",
+    assert(result.get<ResultSet>() == txn.find("v").where(
                                                   (Condition("@className").eq("v") and Condition("prop2").lt(2)) or
-                                                  (Condition("@className").eq("x") and Condition("prop2").gt(0))));
+                                                  (Condition("@className").eq("x") and Condition("prop2").gt(0))).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -1152,13 +1139,13 @@ void test_sql_select_vertex_with_multi_condition() {
 }
 
 void test_sql_select_nested_condition() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "prop1", PropertyType::TEXT);
-  Property::add(txn, "v", "prop2", PropertyType::INTEGER);
-  auto v1 = Vertex::create(txn, "v", Record().set("prop1", "AX").set("prop2", 1));
-  Vertex::create(txn, "v", Record().set("prop1", "BX").set("prop2", 2));
-  Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "prop1", PropertyType::TEXT);
+  txn.addProperty("v", "prop2", PropertyType::INTEGER);
+  auto v1 = txn.addVertex("v", Record().set("prop1", "AX").set("prop2", 1));
+  txn.addVertex("v", Record().set("prop1", "BX").set("prop2", 2));
+  txn.addVertex("v", Record().set("prop1", "C").set("prop2", 3));
   try {
     auto result = SQL::execute(txn, "SELECT * FROM (SELECT FROM v) WHERE prop2=1");
     assert(result.type() == result.RESULT_SET);
@@ -1185,25 +1172,25 @@ void test_sql_select_nested_condition() {
 }
 
 void test_sql_select_skip_limit() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "v", ClassType::VERTEX);
-  Property::add(txn, "v", "prop1", PropertyType::TEXT);
-  Property::add(txn, "v", "prop2", PropertyType::INTEGER);
-  Vertex::create(txn, "v", Record().set("prop1", "A").set("prop2", 1));
-  Vertex::create(txn, "v", Record().set("prop1", "B").set("prop2", 2));
-  Vertex::create(txn, "v", Record().set("prop1", "C").set("prop2", 3));
-  Vertex::create(txn, "v", Record().set("prop1", "D").set("prop2", 4));
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("v", ClassType::VERTEX);
+  txn.addProperty("v", "prop1", PropertyType::TEXT);
+  txn.addProperty("v", "prop2", PropertyType::INTEGER);
+  txn.addVertex("v", Record().set("prop1", "A").set("prop2", 1));
+  txn.addVertex("v", Record().set("prop1", "B").set("prop2", 2));
+  txn.addVertex("v", Record().set("prop1", "C").set("prop2", 3));
+  txn.addVertex("v", Record().set("prop1", "D").set("prop2", 4));
   try {
     SQL::Result result = SQL::execute(txn, "SELECT * FROM v SKIP 1 LIMIT 2");
     assert(result.type() == result.RESULT_SET);
-    ResultSet baseResult = Vertex::get(txn, "v");
+    ResultSet baseResult = txn.find("v").get();
     baseResult.erase(baseResult.begin(), baseResult.begin() + 1);
     baseResult.resize(2);
     assert(result.get<ResultSet>() == baseResult);
 
     result = SQL::execute(txn, "SELECT * FROM (SELECT FROM v) WHERE prop2<3 SKIP 0 LIMIT 1");
     assert(result.type() == result.RESULT_SET);
-    baseResult = Vertex::get(txn, "v", Condition("prop2").le(3));
+    baseResult = txn.find("v").where(Condition("prop2").le(3)).get();
     baseResult.resize(1);
     assert(result.get<ResultSet>() == baseResult);
 
@@ -1218,13 +1205,13 @@ void test_sql_select_skip_limit() {
 
 void test_sql_select_group_by() {
   init_vertex_book();
-  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0);
-    Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 100.0);
-    Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
 
     SQL::Result result = SQL::execute(txn, "SELECT * FROM books GROUP BY price");
     assert(result.type() == result.RESULT_SET);
@@ -1240,15 +1227,15 @@ void test_sql_select_group_by() {
 
 void test_sql_update_vertex_with_rid() {
   init_vertex_book();
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
 
-    auto record = DB::getRecord(txn, rdesc1);
+    auto record = txn.fetchRecord(rdesc1);
     assert(record.get("title").toText() == "Lion King");
     assert(record.get("price").toReal() == 100);
     assert(record.get("pages").toInt() == 320);
@@ -1257,7 +1244,7 @@ void test_sql_update_vertex_with_rid() {
     assert(result.type() == result.RECORD_DESCRIPTORS);
     using ::operator==;
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{rdesc1});
-    auto res = Vertex::get(txn, "books");
+    auto res = txn.find("books").get();
     assert(res[0].record.get("title").toText() == "Lion King");
     assert(res[0].record.get("price").toReal() == 50);
     assert(res[0].record.get("pages").toInt() == 400);
@@ -1275,15 +1262,15 @@ void test_sql_update_vertex_with_rid() {
 
 void test_sql_update_vertex_with_condition() {
   init_vertex_book();
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
 
-    auto record = DB::getRecord(txn, rdesc1);
+    auto record = txn.fetchRecord(rdesc1);
     assert(record.get("title").toText() == "Lion King");
     assert(record.get("price").toReal() == 100);
     assert(record.get("pages").toInt() == 320);
@@ -1291,7 +1278,7 @@ void test_sql_update_vertex_with_condition() {
     auto result = SQL::execute(txn, "UPDATE books SET price=50.0, pages=400, words=90000 where title='Lion King'");
     assert(result.type() == result.RECORD_DESCRIPTORS);
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{rdesc1});
-    auto res = Vertex::get(txn, "books");
+    auto res = txn.find("books").get();
     assert(res[0].record.get("title").toText() == "Lion King");
     assert(res[0].record.get("price").toReal() == 50);
     assert(res[0].record.get("pages").toInt() == 400);
@@ -1311,42 +1298,42 @@ void test_sql_delete_vertex_with_rid() {
   init_vertex_book();
   init_vertex_person();
   init_edge_author();
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    auto e1 = Edge::create(txn, "authors", v1_1, v2_1, r3);
+    auto e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
+    auto e2 = txn.addEdge("authors", v1_2, v2_1, r3);
 
     auto result = SQL::execute(txn, "DELETE VERTEX " + to_string(v2_1));
     assert(result.type() == result.RECORD_DESCRIPTORS);
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
     try {
-      auto record = DB::getRecord(txn, v2_1);
+      auto record = txn.fetchRecord(v2_1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
-    auto record = DB::getRecord(txn, v1_1);
+    auto record = txn.fetchRecord(v1_1);
     assert(!record.empty());
-    record = DB::getRecord(txn, v1_2);
+    record = txn.fetchRecord(v1_2);
     assert(!record.empty());
     try {
-      auto record = DB::getRecord(txn, e1);
+      auto record = txn.fetchRecord(e1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
     try {
-      auto record = DB::getRecord(txn, e2);
+      auto record = txn.fetchRecord(e2);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
@@ -1365,42 +1352,42 @@ void test_sql_delete_vertex_with_condition() {
   init_vertex_book();
   init_vertex_person();
   init_edge_author();
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    auto e1 = Edge::create(txn, "authors", v1_1, v2_1, r3);
+    auto e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    auto e2 = Edge::create(txn, "authors", v1_2, v2_1, r3);
+    auto e2 = txn.addEdge("authors", v1_2, v2_1, r3);
 
     auto result = SQL::execute(txn, "DELETE VERTEX persons WHERE name='J.K. Rowlings'");
     assert(result.type() == result.RECORD_DESCRIPTORS);
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{v2_1});
 
     try {
-      auto record = DB::getRecord(txn, v2_1);
+      auto record = txn.fetchRecord(v2_1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
-    auto record = DB::getRecord(txn, v1_1);
+    auto record = txn.fetchRecord(v1_1);
     assert(!record.empty());
-    record = DB::getRecord(txn, v1_2);
+    record = txn.fetchRecord(v1_2);
     assert(!record.empty());
     try {
-      auto record = DB::getRecord(txn, e1);
+      auto record = txn.fetchRecord(e1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
     try {
-      auto record = DB::getRecord(txn, e2);
+      auto record = txn.fetchRecord(e2);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
@@ -1420,26 +1407,26 @@ void test_sql_delete_edge_with_rid() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1 = Vertex::create(txn, "books", r1);
+    auto v1 = txn.addVertex("books", r1);
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2 = Vertex::create(txn, "persons", r2);
+    auto v2 = txn.addVertex("persons", r2);
     r3.set("time_used", 365U);
-    auto e1 = Edge::create(txn, "authors", v1, v2, r3);
+    auto e1 = txn.addEdge("authors", v1, v2, r3);
 
-    auto record = DB::getRecord(txn, e1);
+    auto record = txn.fetchRecord(e1);
     assert(record.get("time_used").toIntU() == 365U);
 
     auto result = SQL::execute(txn, "DELETE EDGE " + to_string(e1));
     assert(result.type() == result.RECORD_DESCRIPTORS);
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{e1});
 
-    auto res = Edge::get(txn, "authors");
+    auto res = txn.find("authors").get();
     ASSERT_SIZE(res, 0);
-    Edge::destroy(txn, e1);
+    txn.remove(e1);
 
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1457,17 +1444,17 @@ void test_sql_delete_edge_with_condition() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1 = Vertex::create(txn, "books", r1);
+    auto v1 = txn.addVertex("books", r1);
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2 = Vertex::create(txn, "persons", r2);
+    auto v2 = txn.addVertex("persons", r2);
     r3.set("time_used", 365U);
-    auto e1 = Edge::create(txn, "authors", v1, v2, r3);
+    auto e1 = txn.addEdge("authors", v1, v2, r3);
 
-    auto record = DB::getRecord(txn, e1);
+    auto record = txn.fetchRecord(e1);
     assert(record.get("time_used").toIntU() == 365U);
 
     auto result = SQL::execute(txn,
@@ -1475,7 +1462,7 @@ void test_sql_delete_edge_with_condition() {
     assert(result.type() == result.RECORD_DESCRIPTORS);
     assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor>{e1});
 
-    auto res = Edge::get(txn, "authors");
+    auto res = txn.find("authors").get();
     ASSERT_SIZE(res, 0);
 
   } catch (const Error &ex) {
@@ -1491,7 +1478,7 @@ void test_sql_delete_edge_with_condition() {
 }
 
 void test_sql_validate_property_type() {
-  Txn txn = Txn(*ctx, TxnMode::READ_WRITE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
 
   SQL::execute(txn, "CREATE CLASS sql_valid_type IF NOT EXISTS EXTENDS VERTEX");
   SQL::execute(txn, "CREATE PROPERTY sql_valid_type.tiny IF NOT EXISTS TINYINT");
@@ -1532,7 +1519,7 @@ void test_sql_validate_property_type() {
     props.set("text", baseText);
     props.set("real", real);
     props.set("blob", blob);
-    Vertex::create(txn, "sql_valid_type", props);
+    txn.addVertex("sql_valid_type", props);
 
     string sqlCreate = (string("CREATE VERTEX sql_valid_type ")
                         + "SET tiny=" + to_string(tiny)
@@ -1548,10 +1535,10 @@ void test_sql_validate_property_type() {
                         + ", blob=X'" + blob.toHex() + "'");
     SQL::execute(txn, sqlCreate);
 
-    auto res = Vertex::get(txn, "sql_valid_type");
+    auto res = txn.find("sql_valid_type").get();
     ASSERT_SIZE(res, 2);
 
-    res = Vertex::get(txn, "sql_valid_type",
+    res = txn.find("sql_valid_type").where(
                       Condition("tiny").eq(tiny)
                       && Condition("utiny").eq(utiny)
                       && Condition("small").eq(small)
@@ -1562,7 +1549,7 @@ void test_sql_validate_property_type() {
                       && Condition("ubigint").eq(ubigint)
                       && Condition("text").eq(baseText)
                       && Condition("real").eq(real)
-                      && Condition("blob").eq(blob));
+                      && Condition("blob").eq(blob)).get();
     ASSERT_SIZE(res, 2);
 
     string sqlSelect = (string("SELECT * FROM sql_valid_type ")
@@ -1591,60 +1578,60 @@ void test_sql_validate_property_type() {
 }
 
 void test_sql_traverse() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "V", ClassType::VERTEX);
-  Property::add(txn, "V", "p", PropertyType::TEXT);
-  Class::create(txn, "EL", ClassType::EDGE);
-  Class::create(txn, "ER", ClassType::EDGE);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("V", ClassType::VERTEX);
+  txn.addProperty("V", "p", PropertyType::TEXT);
+  txn.addClass("EL", ClassType::EDGE);
+  txn.addClass("ER", ClassType::EDGE);
 
   try {
-    auto v1 = Vertex::create(txn, "V", Record().set("p", "v1"));
-    auto v21 = Vertex::create(txn, "V", Record().set("p", "v21"));
-    auto v22 = Vertex::create(txn, "V", Record().set("p", "v22"));
-    auto v31 = Vertex::create(txn, "V", Record().set("p", "v31"));
-    auto v32 = Vertex::create(txn, "V", Record().set("p", "v32"));
-    auto v33 = Vertex::create(txn, "V", Record().set("p", "v33"));
-    Edge::create(txn, "EL", v1, v21);
-    Edge::create(txn, "ER", v1, v22);
-    Edge::create(txn, "EL", v21, v31);
-    Edge::create(txn, "ER", v21, v32);
-    Edge::create(txn, "EL", v22, v33);
+    auto v1 = txn.addVertex("V", Record().set("p", "v1"));
+    auto v21 = txn.addVertex("V", Record().set("p", "v21"));
+    auto v22 = txn.addVertex("V", Record().set("p", "v22"));
+    auto v31 = txn.addVertex("V", Record().set("p", "v31"));
+    auto v32 = txn.addVertex("V", Record().set("p", "v32"));
+    auto v33 = txn.addVertex("V", Record().set("p", "v33"));
+    txn.addEdge("EL", v1, v21);
+    txn.addEdge("ER", v1, v22);
+    txn.addEdge("EL", v21, v31);
+    txn.addEdge("ER", v21, v32);
+    txn.addEdge("EL", v22, v33);
 
     SQL::Result result = SQL::execute(txn, "TRAVERSE all() FROM " + to_string(v21));
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::allEdgeDfs(txn, v21, 0, UINT_MAX));
+    assert(result.get<ResultSet>() == txn.traverse(v21).depth(0, UINT_MAX).get());
 
     result = SQL::execute(txn, "TRAVERSE out() FROM " + to_string(v1));
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX));
+    assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).get());
 
     result = SQL::execute(txn, "TRAVERSE in() FROM " + to_string(v32));
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::inEdgeDfs(txn, v32, 0, UINT_MAX));
+    assert(result.get<ResultSet>() == txn.traverseIn(v32).depth(0, UINT_MAX).get());
 
     result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v1));
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX, nogdb::GraphFilter{}.only("EL")));
+    assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter{}.only("EL")).get());
 
     result = SQL::execute(txn, "TRAVERSE in('ER') FROM " + to_string(v33) + " MINDEPTH 2");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::inEdgeDfs(txn, v33, 2, UINT_MAX, nogdb::GraphFilter{}.only("ER")));
+    assert(result.get<ResultSet>() == txn.traverseIn(v33).depth(2, UINT_MAX).whereE(nogdb::GraphFilter{}.only("ER")).get());
 
     result = SQL::execute(txn, "TRAVERSE all('EL') FROM " + to_string(v21) +
                                " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::allEdgeBfs(txn, v21).depth(1, 1).whereE(nogdb::GraphFilter{}.only("EL")));
+    assert(result.get<ResultSet>() == txn.traverse(v21).depth(1, 1).whereE(nogdb::GraphFilter{}.only("EL")).get());
 
     result = SQL::execute(txn, "SELECT p FROM (TRAVERSE out() FROM " + to_string(v1) + ") WHERE p = 'v22'");
     assert(result.type() == result.RESULT_SET);
     {
-      auto traverseResult = Traverse::outEdgeDfs(txn, v1, 0, UINT_MAX);
+      auto traverseResult = txn.traverseOut(v1).depth(0, UINT_MAX).get();
       vector<string> traverseRid(traverseResult.size());
       transform(traverseResult.cbegin(),
                 traverseResult.cend(),
                 traverseRid.begin(),
                 [](const Result &r) { return rid2str(r.descriptor.rid); });
-      auto selectResult = Vertex::get(txn, "V", Condition("@recordId").in(traverseRid) && Condition("p").eq("v22"));
+      auto selectResult = txn.find("V").where(Condition("@recordId").in(traverseRid) && Condition("p").eq("v22")).get();
       assert(result.get<ResultSet>() == selectResult);
     }
   } catch (const Error &e) {
@@ -1652,16 +1639,16 @@ void test_sql_traverse() {
     assert(false);
   }
 
-  Class::drop(txn, "V");
-  Class::drop(txn, "EL");
-  Class::drop(txn, "ER");
+  txn.dropClass("V");
+  txn.dropClass("EL");
+  txn.dropClass("ER");
   txn.commit();
 }
 
 void test_sql_create_index() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "V", ClassType::VERTEX);
-  Property::add(txn, "V", "p", PropertyType::TEXT);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("V", ClassType::VERTEX);
+  txn.addProperty("V", "p", PropertyType::TEXT);
 
   try {
     SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p");
@@ -1669,23 +1656,23 @@ void test_sql_create_index() {
     auto index = txn.getIndex("V", "p");
     assert(index.id != nogdb::IndexDescriptor{}.id);
     assert(index.unique == false);
-    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(txn.getClass("V"));
     assert(indexes.size() == 1);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;
     assert(false);
   }
 
-  Property::dropIndex(txn, "V", "p");
-  Property::remove(txn, "V", "p");
-  Class::drop(txn, "V");
+  txn.dropIndex("V", "p");
+  txn.dropProperty("V", "p");
+  txn.dropClass("V");
   txn.commit();
 }
 
 void test_sql_create_index_unique() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "V", ClassType::VERTEX);
-  Property::add(txn, "V", "p", PropertyType::TEXT);
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("V", ClassType::VERTEX);
+  txn.addProperty("V", "p", PropertyType::TEXT);
 
   try {
     SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p UNIQUE");
@@ -1693,37 +1680,37 @@ void test_sql_create_index_unique() {
     auto index = txn.getIndex("V", "p");
     assert(index.id != nogdb::IndexDescriptor{}.id);
     assert(index.unique == true);
-    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(txn.getClass("V"));
     assert(indexes.size() == 1);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;
     assert(false);
   }
 
-  Property::dropIndex(txn, "V", "p");
-  Property::remove(txn, "V", "p");
-  Class::drop(txn, "V");
+  txn.dropIndex("V", "p");
+  txn.dropProperty("V", "p");
+  txn.dropClass("V");
   txn.commit();
 }
 
 void test_sql_drop_index() {
-  Txn txn(*ctx, TxnMode::READ_WRITE);
-  Class::create(txn, "V", ClassType::VERTEX);
-  Property::add(txn, "V", "p", PropertyType::TEXT);
-  Property::createIndex(txn, "V", "p");
+  auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
+  txn.addClass("V", ClassType::VERTEX);
+  txn.addProperty("V", "p", PropertyType::TEXT);
+  txn.addIndex("V", "p");
 
   try {
     SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
     assert(result.type() == result.NO_RESULT);
     auto index = txn.getIndex("V", "p");
     assert(index.id == nogdb::IndexDescriptor{}.id);
-    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(txn.getClass("V"));
     assert(indexes.size() == 0);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;
     assert(false);
   }
 
-  Class::drop(txn, "V");
+  txn.dropClass("V");
   txn.commit();
 }
