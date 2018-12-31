@@ -29,13 +29,13 @@ void test_get_set_empty_value() {
   try {
     nogdb::Record r_blank_name{};
     r_blank_name.set("name", "");
-    auto rdesc1 = nogdb::Vertex::create(txn, "persons", r_blank_name);
-    auto r1 = nogdb::DB::getRecord(txn, rdesc1);
+    auto rdesc1 = txn.addVertex("persons", r_blank_name);
+    auto r1 = txn.fetchRecord(rdesc1);
     assert(r1.get("name").toText() == "");
     assert(r1.get("name").empty());
 
-    auto rdesc2 = nogdb::Vertex::create(txn, "persons");
-    auto r2 = nogdb::DB::getRecord(txn, rdesc2);
+    auto rdesc2 = txn.addVertex("persons");
+    auto r2 = txn.fetchRecord(rdesc2);
     assert(r2.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -53,14 +53,14 @@ void test_get_invalid_record() {
   try {
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc2 = txn.addVertex("books", r);
     tmp = rdesc2;
-    nogdb::Vertex::destroy(txn, rdesc1);
+    txn.remove(rdesc1);
 
     try {
-      auto res = nogdb::DB::getRecord(txn, rdesc1);
+      auto res = txn.fetchRecord(rdesc1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
@@ -74,7 +74,7 @@ void test_get_invalid_record() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::DB::getRecord(txn, tmp);
+    auto res = txn.fetchRecord(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -94,11 +94,11 @@ void test_get_set_large_record() {
   try {
     nogdb::Record r{};
     r.set("title", testString1).set("price", 1.0).set("pages", 10);
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
     r.set("title", testString2).set("price", 2.0).set("pages", 20);
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
     r.set("title", testString3).set("price", 3.0).set("pages", 30);
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
 
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -151,9 +151,9 @@ void test_overwrite_basic_info() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    auto v1 = nogdb::Vertex::create(txn, "books", nogdb::Record{}.set("@className", "bookybooky").set("@recordId", "-1:-1"));
-    auto v2 = nogdb::Vertex::create(txn, "books", nogdb::Record{});
-    nogdb::Vertex::update(txn, v2, nogdb::Record{}.set("@className", "bookybookyss").set("@recordId", "-999:-999"));
+    auto v1 = txn.addVertex("books", nogdb::Record{}.set("@className", "bookybooky").set("@recordId", "-1:-1"));
+    auto v2 = txn.addVertex("books", nogdb::Record{});
+    txn.update(v2, nogdb::Record{}.set("@className", "bookybookyss").set("@recordId", "-999:-999"));
 
     auto res = txn.find("books");
     for(const auto &r: res) {
@@ -180,10 +180,10 @@ void test_standalone_vertex() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     nogdb::Record r{};
-    auto v = nogdb::Vertex::create(txn, "books", r.set("title", "Intro to Linux"));
-    auto res1 = nogdb::Vertex::getInEdge(txn, v);
+    auto v = txn.addVertex("books", r.set("title", "Intro to Linux"));
+    auto res1 = txn.findInEdge(v);
     assert(res1.size() == 0);
-    auto res2 = nogdb::Vertex::getOutEdge(txn, v);
+    auto res2 = txn.findOutEdge(v);
     assert(res2.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -201,42 +201,42 @@ void test_delete_vertex_with_edges() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    auto e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    auto e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    auto e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    auto e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    auto e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    auto e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
-    nogdb::Vertex::destroy(txn, v2_1);
+    txn.remove(v2_1);
 
     try {
-      auto record = nogdb::DB::getRecord(txn, v2_1);
+      auto record = txn.fetchRecord(v2_1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
-    auto record = nogdb::DB::getRecord(txn, v1_1);
+    auto record = txn.fetchRecord(v1_1);
     assert(!record.empty());
-    record = nogdb::DB::getRecord(txn, v1_2);
+    record = txn.fetchRecord(v1_2);
     assert(!record.empty());
     try {
-      auto record = nogdb::DB::getRecord(txn, e1);
+      auto record = txn.fetchRecord(e1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
     try {
-      auto record = nogdb::DB::getRecord(txn, e2);
+      auto record = txn.fetchRecord(e2);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
@@ -260,42 +260,42 @@ void test_delete_all_vertices_with_edges() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    auto e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    auto e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    auto e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    auto e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    auto e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    auto e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
-    nogdb::Vertex::destroy(txn, v2_1);
+    txn.remove(v2_1);
 
     try {
-      auto record = nogdb::DB::getRecord(txn, v2_1);
+      auto record = txn.fetchRecord(v2_1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
-    auto record = nogdb::DB::getRecord(txn, v1_1);
+    auto record = txn.fetchRecord(v1_1);
     assert(!record.empty());
-    record = nogdb::DB::getRecord(txn, v1_2);
+    record = txn.fetchRecord(v1_2);
     assert(!record.empty());
     try {
-      auto record = nogdb::DB::getRecord(txn, e1);
+      auto record = txn.fetchRecord(e1);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
     try {
-      auto record = nogdb::DB::getRecord(txn, e2);
+      auto record = txn.fetchRecord(e2);
     } catch (const nogdb::Error &ex) {
       REQUIRE(ex, NOGDB_CTX_NOEXST_RECORD, "NOGDB_CTX_NOEXST_RECORD");
     }
@@ -327,7 +327,7 @@ void test_add_delete_prop_with_records() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     nogdb::Record r{};
     r.set("prop1", "hello").set("prop2", 42).set("prop3", 4.2);
-    auto v = nogdb::Vertex::create(txn, "mytest", r);
+    auto v = txn.addVertex("mytest", r);
     auto res = txn.find("mytest");
     assert(res[0].record.get("prop1").toText() == "hello");
     assert(res[0].record.get("prop2").toInt() == 42);
@@ -341,7 +341,7 @@ void test_add_delete_prop_with_records() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.addProperty("mytest", "prop4", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Property::alter(txn, "mytest", "prop2", "prop22");
+    txn.renameProperty("mytest", "prop2", "prop22");
     nogdb::Property::remove(txn, "mytest", "prop3");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -368,7 +368,7 @@ void test_add_delete_prop_with_records() {
   try {
     auto rec = res[0].record;
     rec.set("prop3", 42.42);
-    nogdb::Vertex::update(txn, res[0].descriptor, rec);
+    txn.update(res[0].descriptor, rec);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
@@ -378,7 +378,7 @@ void test_add_delete_prop_with_records() {
   try {
     auto rec = res[0].record;
     rec.set("prop2", 4242);
-    nogdb::Vertex::update(txn, res[0].descriptor, rec);
+    txn.update(res[0].descriptor, rec);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
@@ -388,7 +388,7 @@ void test_add_delete_prop_with_records() {
   try {
     auto rec = res[0].record;
     rec.set("prop4", 424242ULL);
-    nogdb::Vertex::update(txn, res[0].descriptor, rec);
+    txn.update(res[0].descriptor, rec);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -432,7 +432,7 @@ void test_alter_class_with_records() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto v = nogdb::Vertex::create(txn, "mytest", nogdb::Record{}
+    auto v = txn.addVertex("mytest", nogdb::Record{}
         .set("prop1", "hello")
         .set("prop2", 42)
         .set("prop3", 4.2)
@@ -440,7 +440,7 @@ void test_alter_class_with_records() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::alter(txn, "mytest", "mytest01");
+    txn.renameClass("mytest", "mytest01");
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
@@ -479,24 +479,24 @@ void test_drop_class_with_relations() {
     txn.addClass("myedge3", nogdb::ClassType::EDGE);
     txn.addProperty("myedge3", "prop", nogdb::PropertyType::TEXT);
 
-    v1 = nogdb::Vertex::create(txn, "myvertex1", nogdb::Record{}.set("prop", "a"));
-    v2 = nogdb::Vertex::create(txn, "myvertex1", nogdb::Record{}.set("prop", "b"));
-    v3 = nogdb::Vertex::create(txn, "myvertex1", nogdb::Record{}.set("prop", "c"));
+    v1 = txn.addVertex("myvertex1", nogdb::Record{}.set("prop", "a"));
+    v2 = txn.addVertex("myvertex1", nogdb::Record{}.set("prop", "b"));
+    v3 = txn.addVertex("myvertex1", nogdb::Record{}.set("prop", "c"));
 
-    v4 = nogdb::Vertex::create(txn, "myvertex2", nogdb::Record{}.set("prop", "A"));
-    v5 = nogdb::Vertex::create(txn, "myvertex2", nogdb::Record{}.set("prop", "B"));
+    v4 = txn.addVertex("myvertex2", nogdb::Record{}.set("prop", "A"));
+    v5 = txn.addVertex("myvertex2", nogdb::Record{}.set("prop", "B"));
 
-    nogdb::Edge::create(txn, "myedge1", v1, v2);
-    nogdb::Edge::create(txn, "myedge2", v1, v4);
-    nogdb::Edge::create(txn, "myedge3", v1, v4);
-    nogdb::Edge::create(txn, "myedge1", v2, v3);
-    nogdb::Edge::create(txn, "myedge2", v2, v5);
-    nogdb::Edge::create(txn, "myedge3", v2, v5);
-    nogdb::Edge::create(txn, "myedge2", v3, v4);
-    nogdb::Edge::create(txn, "myedge3", v3, v4);
-    nogdb::Edge::create(txn, "myedge2", v3, v5);
-    nogdb::Edge::create(txn, "myedge3", v3, v5);
-    nogdb::Edge::create(txn, "myedge2", v4, v5);
+    txn.addEdge("myedge1", v1, v2);
+    txn.addEdge("myedge2", v1, v4);
+    txn.addEdge("myedge3", v1, v4);
+    txn.addEdge("myedge1", v2, v3);
+    txn.addEdge("myedge2", v2, v5);
+    txn.addEdge("myedge3", v2, v5);
+    txn.addEdge("myedge2", v3, v4);
+    txn.addEdge("myedge3", v3, v4);
+    txn.addEdge("myedge2", v3, v5);
+    txn.addEdge("myedge3", v3, v5);
+    txn.addEdge("myedge2", v4, v5);
 
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -510,11 +510,11 @@ void test_drop_class_with_relations() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = nogdb::Vertex::getOutEdge(txn, v1);
+    auto res = txn.findOutEdge(v1);
     ASSERT_SIZE(res, 2);
-    res = nogdb::Vertex::getOutEdge(txn, v2);
+    res = txn.findOutEdge(v2);
     ASSERT_SIZE(res, 2);
-    res = nogdb::Vertex::getOutEdge(txn, v3);
+    res = txn.findOutEdge(v3);
     ASSERT_SIZE(res, 2);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -528,13 +528,13 @@ void test_drop_class_with_relations() {
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = nogdb::Vertex::getInEdge(txn, v4);
+    auto res = txn.findInEdge(v4);
     ASSERT_SIZE(res, 0);
-    res = nogdb::Vertex::getAllEdge(txn, v4);
+    res = txn.findEdge(v4);
     ASSERT_SIZE(res, 1);
-    res = nogdb::Vertex::getOutEdge(txn, v5);
+    res = txn.findOutEdge(v5);
     ASSERT_SIZE(res, 0);
-    res = nogdb::Vertex::getAllEdge(txn, v5);
+    res = txn.findEdge(v5);
     ASSERT_SIZE(res, 1);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -556,7 +556,7 @@ void test_drop_class_with_relations() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::DB::getClass(txn, "myvertex1");
+    auto res = txn.getClass("myvertex1");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -582,16 +582,16 @@ void test_drop_and_find_extended_class() {
     txn.addClass("vertex1", nogdb::ClassType::VERTEX);
     txn.addProperty("vertex1", "prop0", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.addProperty("vertex1", "prop1", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::createExtend(txn, "vertex2", "vertex1");
+    txn.addSubClassOf("vertex1", "vertex2");
     txn.addProperty("vertex2", "prop2", nogdb::PropertyType::INTEGER);
-    v3 = nogdb::Class::createExtend(txn, "vertex3", "vertex2");
+    v3 = txn.addSubClassOf("vertex2", "vertex3");
     txn.addProperty("vertex3", "prop3", nogdb::PropertyType::REAL);
-    v4 = nogdb::Class::createExtend(txn, "vertex4", "vertex2");
+    v4 = txn.addSubClassOf("vertex2", "vertex4");
     txn.addProperty("vertex4", "prop3", nogdb::PropertyType::TEXT);
 
-    nogdb::Vertex::create(txn, "vertex3",
+    txn.addVertex("vertex3",
                           nogdb::Record{}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", 1.1));
-    nogdb::Vertex::create(txn, "vertex4",
+    txn.addVertex("vertex4",
                           nogdb::Record{}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", "hello"));
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -603,18 +603,18 @@ void test_drop_and_find_extended_class() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.dropClass("vertex2");
 
-    auto classDesc = nogdb::DB::getClass(txn, "vertex1");
+    auto classDesc = txn.getClass("vertex1");
     auto count = size_t{0};
-    for (const auto &cdesc: nogdb::DB::getClasses(txn)) {
+    for (const auto &cdesc: txn.getClasses()) {
       if (cdesc.base == classDesc.id) {
         ++count;
         assert(cdesc.name == "vertex3" || cdesc.name == "vertex4");
       }
     }
     assert(count == 2);
-    auto res = nogdb::DB::getClass(txn, "vertex3");
+    auto res = txn.getClass("vertex3");
     assert(res.base == classDesc.id);
-    res = nogdb::DB::getClass(txn, "vertex4");
+    res = txn.getClass("vertex4");
     assert(res.base == classDesc.id);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -696,9 +696,9 @@ void test_drop_and_find_extended_class() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.addClass("vertex5", nogdb::ClassType::VERTEX);
     txn.addProperty("vertex5", "prop1", nogdb::PropertyType::TEXT);
-    nogdb::Class::createExtend(txn, "vertex6", "vertex5");
+    txn.addSubClassOf("vertex5", "vertex6");
 
-    nogdb::Vertex::create(txn, "vertex6", nogdb::Record{}.set("prop1", "hello"));
+    txn.addVertex("vertex6", nogdb::Record{}.set("prop1", "hello"));
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -716,7 +716,7 @@ void test_drop_and_find_extended_class() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Vertex::create(txn, "vertex6", nogdb::Record{}.set("prop1", "hello"));
+    txn.addVertex("vertex6", nogdb::Record{}.set("prop1", "hello"));
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -762,16 +762,16 @@ void test_conflict_property() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.addClass("vertex1", nogdb::ClassType::VERTEX);
     txn.addProperty("vertex1", "prop1", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "vertex2", "vertex1");
+    txn.addSubClassOf("vertex1", "vertex2");
     txn.addProperty("vertex2", "prop2", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "vertex3", "vertex1");
+    txn.addSubClassOf("vertex1", "vertex3");
     txn.addProperty("vertex3", "prop2", nogdb::PropertyType::TEXT);
-    nogdb::Class::createExtend(txn, "vertex4", "vertex1");
+    txn.addSubClassOf("vertex1", "vertex4");
     txn.addProperty("vertex4", "prop2", nogdb::PropertyType::REAL);
 
-    nogdb::Vertex::create(txn, "vertex2", nogdb::Record{}.set("prop2", 97));
-    nogdb::Vertex::create(txn, "vertex3", nogdb::Record{}.set("prop2", "a"));
-    nogdb::Vertex::create(txn, "vertex4", nogdb::Record{}.set("prop2", 97.97));
+    txn.addVertex("vertex2", nogdb::Record{}.set("prop2", 97));
+    txn.addVertex("vertex3", nogdb::Record{}.set("prop2", "a"));
+    txn.addVertex("vertex4", nogdb::Record{}.set("prop2", 97.97));
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;

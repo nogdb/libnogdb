@@ -23,13 +23,13 @@
 
 void assert_class(const nogdb::Transaction &txn, const std::string &className, const std::string &superClassName,
                   size_t sizeOfSubClasses, size_t sizeOfProperties) {
-  auto res = nogdb::DB::getClass(txn, className);
-  auto superId = (superClassName == "")? 0 : nogdb::DB::getClass(txn, superClassName).id;
+  auto res = txn.getClass(className);
+  auto superId = (superClassName == "")? 0 : txn.getClass(superClassName).id;
   assert(res.base == superId);
-  auto properties = nogdb::DB::getProperties(txn, res);
+  auto properties = txn.getProperties(res);
   assert(properties.size() == sizeOfProperties);
   auto subClassCount = size_t{0};
-  for (const auto &classDesc: nogdb::DB::getClasses(txn)) {
+  for (const auto &classDesc: txn.getClasses()) {
     subClassCount += classDesc.base == res.id;
   }
   assert(subClassCount == sizeOfSubClasses);
@@ -42,26 +42,26 @@ void init_all_extended_classes() {
     txn.addProperty("employees", "name", nogdb::PropertyType::TEXT);
     txn.addProperty("employees", "age", nogdb::PropertyType::UNSIGNED_INTEGER);
     txn.addProperty("employees", "salary", nogdb::PropertyType::UNSIGNED_BIGINT);
-    nogdb::Class::createExtend(txn, "backends", "employees");
+    txn.addSubClassOf("employees", "backends");
     txn.addProperty("backends", "cpp_skills", nogdb::PropertyType::INTEGER);
     txn.addProperty("backends", "js_skills", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "frontends", "employees");
+    txn.addSubClassOf("employees", "frontends");
     txn.addProperty("frontends", "html_skills", nogdb::PropertyType::INTEGER);
     txn.addProperty("frontends", "js_skills", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "systems", "backends");
+    txn.addSubClassOf("backends", "systems");
     txn.addProperty("systems", "devops_skills", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "infras", "backends");
+    txn.addSubClassOf("backends", "infras");
     txn.addProperty("infras", "IT_skills", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "designers", "frontends");
+    txn.addSubClassOf("frontends", "designers");
     txn.addProperty("designers", "ux_skills", nogdb::PropertyType::INTEGER);
-    nogdb::Class::createExtend(txn, "admins", "employees");
+    txn.addSubClassOf("employees", "admins");
     txn.addClass("action", nogdb::ClassType::EDGE);
     txn.addProperty("action", "name", nogdb::PropertyType::TEXT);
     txn.addProperty("action", "type", nogdb::PropertyType::UNSIGNED_INTEGER);
-    nogdb::Class::createExtend(txn, "collaborate", "action");
-    nogdb::Class::createExtend(txn, "inter", "collaborate");
-    nogdb::Class::createExtend(txn, "intra", "collaborate");
-    nogdb::Class::createExtend(txn, "manage", "action");
+    txn.addSubClassOf("action", "collaborate");
+    txn.addSubClassOf("collaborate", "inter");
+    txn.addSubClassOf("collaborate", "intra");
+    txn.addSubClassOf("action", "manage");
     txn.addProperty("manage", "priority", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -107,7 +107,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "backends", "employees");
+    txn.addSubClassOf("employees", "backends");
     txn.addProperty("backends", "cpp_skills", nogdb::PropertyType::INTEGER);
     txn.addProperty("backends", "js_skills", nogdb::PropertyType::INTEGER);
     txn.commit();
@@ -118,7 +118,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "frontends", "employees");
+    txn.addSubClassOf("employees", "frontends");
     txn.addProperty("frontends", "html_skills", nogdb::PropertyType::INTEGER);
     txn.addProperty("frontends", "js_skills", nogdb::PropertyType::INTEGER);
     txn.commit();
@@ -129,7 +129,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "systems", "backends");
+    txn.addSubClassOf("backends", "systems");
     txn.addProperty("systems", "devops_skills", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -139,7 +139,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "infras", "backends");
+    txn.addSubClassOf("backends", "infras");
     txn.addProperty("infras", "IT_skills", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -149,7 +149,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "designers", "frontends");
+    txn.addSubClassOf("frontends", "designers");
     txn.addProperty("designers", "ux_skills", nogdb::PropertyType::INTEGER);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -159,7 +159,7 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "admins", "employees");
+    txn.addSubClassOf("employees", "admins");
     txn.commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -179,10 +179,10 @@ void test_create_class_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::createExtend(txn, "collaborate", "action");
-    nogdb::Class::createExtend(txn, "inter", "collaborate");
-    nogdb::Class::createExtend(txn, "intra", "collaborate");
-    nogdb::Class::createExtend(txn, "manage", "action");
+    txn.addSubClassOf("action", "collaborate");
+    txn.addSubClassOf("collaborate", "inter");
+    txn.addSubClassOf("collaborate", "intra");
+    txn.addSubClassOf("action", "manage");
     txn.addProperty("manage", "priority", nogdb::PropertyType::TEXT);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -210,9 +210,9 @@ void test_create_class_extend() {
   }
 
   try {
-    auto res = nogdb::DB::getClass(txn, "infras");
+    auto res = txn.getClass("infras");
     assert(res.type == nogdb::ClassType::VERTEX);
-    res = nogdb::DB::getClass(txn, "intra");
+    res = txn.getClass("intra");
     assert(res.type == nogdb::ClassType::EDGE);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -225,28 +225,28 @@ void test_create_class_extend() {
 void test_create_invalid_class_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Class::createExtend(txn, "senior", "backend");
+    txn.addSubClassOf("backend", "senior");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
   try {
-    nogdb::Class::createExtend(txn, "", "backends");
+    txn.addSubClassOf("backends", "");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
 
   try {
-    nogdb::Class::createExtend(txn, "designers", "backends");
+    txn.addSubClassOf("backends", "designers");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
   }
 
   try {
-    nogdb::Class::createExtend(txn, "something1", "backends");
+    txn.addSubClassOf("backends", "something1");
     txn.addProperty("something1", "", nogdb::PropertyType::INTEGER);
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -254,7 +254,7 @@ void test_create_invalid_class_extend() {
   }
 
   try {
-    nogdb::Class::createExtend(txn, "something2", "backends");
+    txn.addSubClassOf("backends", "something2");
     txn.addProperty("something2", "prop1", nogdb::PropertyType::UNDEFINED);
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -262,7 +262,7 @@ void test_create_invalid_class_extend() {
   }
 
   try {
-    nogdb::Class::createExtend(txn, "something3", "systems");
+    txn.addSubClassOf("systems", "something3");
     txn.addProperty("something3", "prop1", nogdb::PropertyType::TEXT);
     txn.addProperty("something3", "name", nogdb::PropertyType::TEXT);
     txn.addProperty("something3", "prop3", nogdb::PropertyType::TEXT);
@@ -275,12 +275,12 @@ void test_create_invalid_class_extend() {
 void test_alter_class_extend() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::alter(txn, "backends", "backbackends");
+    txn.renameClass("backends", "backbackends");
     assert_class(txn, "systems", "backbackends", 0, 6);
     assert_class(txn, "infras", "backbackends", 0, 6);
     assert_class(txn, "backbackends", "employees", 2, 5);
 
-    nogdb::Class::alter(txn, "backbackends", "backends");
+    txn.renameClass("backbackends", "backends");
     assert_class(txn, "systems", "backends", 0, 6);
     assert_class(txn, "infras", "backends", 0, 6);
     assert_class(txn, "backends", "employees", 2, 5);
@@ -413,9 +413,9 @@ void test_delete_invalid_property_extend() {
 void test_alter_property_extend() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::alter(txn, "employees", "name", "title");
-    auto classDesc = nogdb::DB::getClass(txn, "systems");
-    auto properties = nogdb::DB::getProperties(txn, classDesc);
+    txn.renameProperty("employees", "name", "title");
+    auto classDesc = txn.getClass("systems");
+    auto properties = txn.getProperties(classDesc);
     assert(std::find_if(properties.cbegin(), properties.cend(), [](const nogdb::PropertyDescriptor &property) {
       return property.name == "name";
     }) == properties.cend());
@@ -430,9 +430,9 @@ void test_alter_property_extend() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::alter(txn, "employees", "title", "name");
-    auto classDesc = nogdb::DB::getClass(txn, "infras");
-    auto properties = nogdb::DB::getProperties(txn, classDesc);
+    txn.renameProperty("employees", "title", "name");
+    auto classDesc = txn.getClass("infras");
+    auto properties = txn.getProperties(classDesc);
     assert(std::find_if(properties.cbegin(), properties.cend(), [](const nogdb::PropertyDescriptor &property) {
       return property.name == "name";
     }) != properties.cend());
@@ -449,14 +449,14 @@ void test_alter_property_extend() {
 void test_alter_invalid_property_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Property::alter(txn, "backends", "cpp_skills", "IT_skills");
+    txn.renameProperty("backends", "cpp_skills", "IT_skills");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_OVERRIDE_PROPERTY, "NOGDB_CTX_OVERRIDE_PROPERTY");
   }
 
   try {
-    nogdb::Property::alter(txn, "backends", "cpp_skills", "age");
+    txn.renameProperty("backends", "cpp_skills", "age");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
@@ -466,10 +466,10 @@ void test_alter_invalid_property_extend() {
 void test_create_vertex_edge_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    auto v1 = nogdb::Vertex::create(txn, "infras",
+    auto v1 = txn.addVertex("infras",
                                     nogdb::Record{}.set("name", "Peter").set("js_skills", 7).set("IT_skills", 9));
-    auto v2 = nogdb::Vertex::create(txn, "admins", nogdb::Record{}.set("name", "Mike").set("age", 36U));
-    auto e = nogdb::Edge::create(txn, "manage", v1, v2, nogdb::Record{}.set("name", "Team Leader"));
+    auto v2 = txn.addVertex("admins", nogdb::Record{}.set("name", "Mike").set("age", 36U));
+    auto e = txn.addEdge("manage", v1, v2, nogdb::Record{}.set("name", "Team Leader"));
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -480,7 +480,7 @@ void test_create_vertex_edge_extend() {
 void test_create_invalid_vertex_edge_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Vertex::create(txn, "infras", nogdb::Record{}.set("name", "Pete").set("devops_skills", 4));
+    txn.addVertex("infras", nogdb::Record{}.set("name", "Pete").set("devops_skills", 4));
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -489,7 +489,7 @@ void test_create_invalid_vertex_edge_extend() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Vertex::create(txn, "employees", nogdb::Record{}.set("name", "Pete").set("js_skills", 4));
+    txn.addVertex("employees", nogdb::Record{}.set("name", "Pete").set("js_skills", 4));
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -501,11 +501,11 @@ void test_delete_vertex_edge_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto res = txn.find("manage");
-    nogdb::Edge::destroy(txn, res[0].descriptor);
+    txn.remove(res[0].descriptor);
     res = txn.find("infras");
-    nogdb::Vertex::destroy(txn, res[0].descriptor);
+    txn.remove(res[0].descriptor);
     res = txn.find("admins");
-    nogdb::Vertex::destroy(txn, res[0].descriptor);
+    txn.remove(res[0].descriptor);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -517,29 +517,29 @@ void test_get_class_extend() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   nogdb::RecordDescriptor a{}, b{}, c{}, d{}, e{}, f{};
   try {
-    a = nogdb::Vertex::create(txn, "admins", nogdb::Record{}.set("name", "Adam").set("age", 26U));
-    b = nogdb::Vertex::create(txn, "backends",
+    a = txn.addVertex("admins", nogdb::Record{}.set("name", "Adam").set("age", 26U));
+    b = txn.addVertex("backends",
                               nogdb::Record{}.set("name", "Bill").set("age", 32U).set("cpp_skills", 7));
-    c = nogdb::Vertex::create(txn, "systems",
+    c = txn.addVertex("systems",
                               nogdb::Record{}.set("name", "Charon").set("age", 27U).set("js_skills", 6)
                                   .set("cpp_skills", 8).set("devops_skills", 10));
-    d = nogdb::Vertex::create(txn, "designers", nogdb::Record{}.set("name", "Don").set("ux_skills", 9U));
-    e = nogdb::Vertex::create(txn, "employees", nogdb::Record{}.set("name", "Eric"));
-    f = nogdb::Vertex::create(txn, "frontends",
+    d = txn.addVertex("designers", nogdb::Record{}.set("name", "Don").set("ux_skills", 9U));
+    e = txn.addVertex("employees", nogdb::Record{}.set("name", "Eric"));
+    f = txn.addVertex("frontends",
                               nogdb::Record{}.set("name", "Falcao").set("age", 34U).set("js_skills", 9));
 
-    nogdb::Edge::create(txn, "manage", a, e, nogdb::Record{}.set("name", "helpdesk").set("priority", "medium"));
-    nogdb::Edge::create(txn, "inter", b, f, nogdb::Record{}.set("name", "api creator"));
-    nogdb::Edge::create(txn, "intra", b, c, nogdb::Record{}.set("name", "team member"));
-    nogdb::Edge::create(txn, "inter", c, f, nogdb::Record{}.set("name", "system provider"));
-    nogdb::Edge::create(txn, "manage", c, b, nogdb::Record{}.set("name", "team leader").set("priority", "high"));
-    nogdb::Edge::create(txn, "intra", c, b, nogdb::Record{}.set("name", "system provider"));
-    nogdb::Edge::create(txn, "collaborate", d, b, nogdb::Record{}.set("name", "ui provider"));
-    nogdb::Edge::create(txn, "collaborate", d, c, nogdb::Record{}.set("name", "ui provider"));
-    nogdb::Edge::create(txn, "intra", d, f, nogdb::Record{}.set("name", "wireframe creator"));
-    nogdb::Edge::create(txn, "collaborate", e, a, nogdb::Record{}.set("name", "guest"));
-    nogdb::Edge::create(txn, "inter", f, b, nogdb::Record{}.set("name", "ui creator"));
-    nogdb::Edge::create(txn, "intra", f, d, nogdb::Record{}.set("name", "team member"));
+    txn.addEdge("manage", a, e, nogdb::Record{}.set("name", "helpdesk").set("priority", "medium"));
+    txn.addEdge("inter", b, f, nogdb::Record{}.set("name", "api creator"));
+    txn.addEdge("intra", b, c, nogdb::Record{}.set("name", "team member"));
+    txn.addEdge("inter", c, f, nogdb::Record{}.set("name", "system provider"));
+    txn.addEdge("manage", c, b, nogdb::Record{}.set("name", "team leader").set("priority", "high"));
+    txn.addEdge("intra", c, b, nogdb::Record{}.set("name", "system provider"));
+    txn.addEdge("collaborate", d, b, nogdb::Record{}.set("name", "ui provider"));
+    txn.addEdge("collaborate", d, c, nogdb::Record{}.set("name", "ui provider"));
+    txn.addEdge("intra", d, f, nogdb::Record{}.set("name", "wireframe creator"));
+    txn.addEdge("collaborate", e, a, nogdb::Record{}.set("name", "guest"));
+    txn.addEdge("inter", f, b, nogdb::Record{}.set("name", "ui creator"));
+    txn.addEdge("intra", f, d, nogdb::Record{}.set("name", "team member"));
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -565,20 +565,20 @@ void test_get_class_extend() {
     res = txn.findSubClassOf("backends");
     for (const auto &r: res) {
       if (r.record.get("name").toText() == "Bill") {
-        auto edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.exclude("collaborate"));
+        auto edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.exclude("collaborate"));
         ASSERT_SIZE(edges, 3);
-        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.excludeSubClassOf("collaborate"));
+        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.excludeSubClassOf("collaborate"));
         ASSERT_SIZE(edges, 1);
-        edges = nogdb::Vertex::getAllEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("inter", "manage"));
+        edges = txn.findEdge(r.descriptor, nogdb::GraphFilter{}.only("inter", "manage"));
         ASSERT_SIZE(edges, 3);
       } else if (r.record.get("name").toText() == "Charon") {
-        auto edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+        auto edges = txn.findOutEdge(r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
         ASSERT_SIZE(edges, 2);
-        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
         ASSERT_SIZE(edges, 2);
-        edges = nogdb::Vertex::getOutEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        edges = txn.findOutEdge(r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
         ASSERT_SIZE(edges, 0);
-        edges = nogdb::Vertex::getInEdge(txn, r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
+        edges = txn.findInEdge(r.descriptor, nogdb::GraphFilter{}.only("collaborate"));
         ASSERT_SIZE(edges, 1);
       }
     }
@@ -609,13 +609,13 @@ void test_find_class_extend() {
 
     auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
     assert(b.size() == 1);
-    res = nogdb::Vertex::getInEdge(txn, b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase());
+    res = txn.findInEdge(b[0].descriptor, nogdb::Condition("name").endWith("provider").ignoreCase());
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui provider" ||
            res[0].record.get("name").toText() == "system provider");
     assert(res[1].record.get("name").toText() == "ui provider" ||
            res[1].record.get("name").toText() == "system provider");
-    res = nogdb::Vertex::getInEdge(txn, b[0].descriptor,
+    res = txn.findInEdge(b[0].descriptor,
                                    nogdb::GraphFilter{nogdb::Condition("name").endWith("provider").ignoreCase()}
                                    .onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 2);
@@ -623,7 +623,7 @@ void test_find_class_extend() {
            res[0].record.get("name").toText() == "system provider");
     assert(res[1].record.get("name").toText() == "ui provider" ||
            res[1].record.get("name").toText() == "system provider");
-    res = nogdb::Vertex::getInEdge(txn, b[0].descriptor,
+    res = txn.findInEdge(b[0].descriptor,
                                    nogdb::GraphFilter{nogdb::Condition("type").null()}.only("inter", "manage"));
     ASSERT_SIZE(res, 2);
     assert(res[0].record.get("name").toText() == "ui creator" ||
@@ -633,12 +633,12 @@ void test_find_class_extend() {
 
     auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
     assert(c.size() == 1);
-    res = nogdb::Vertex::getOutEdge(txn, c[0].descriptor,
+    res = txn.findOutEdge(c[0].descriptor,
                                     nogdb::GraphFilter{nogdb::Condition("name").beginWith("team").ignoreCase()}
                                     .onlySubClassOf("action"));
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("name").toText() == "team leader");
-    res = nogdb::Vertex::getAllEdge(txn, b[0].descriptor,
+    res = txn.findEdge(b[0].descriptor,
                                     nogdb::GraphFilter{nogdb::Condition("name").contain("team").ignoreCase()}
                                     .onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 1);
@@ -658,15 +658,15 @@ void test_traverse_class_extend() {
     auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
     auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
     auto f = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Falcao"));
-    auto res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1);
+    auto res = txn.traverseIn(b[0].descriptor).depth(1, 1);
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::inEdgeBfs(txn, b[0].descriptor, 1, 1, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseIn(b[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 1, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseOut(f[0].descriptor).depth(1, 1).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 2);
-    res = nogdb::Traverse::outEdgeBfs(txn, f[0].descriptor, 1, 2, nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
+    res = txn.traverseOut(f[0].descriptor).depth(1, 2).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
-    res = nogdb::Traverse::allEdgeBfs(txn, c[0].descriptor, 0, 100, nogdb::GraphFilter{}.onlySubClassOf("collaborate", "manage"));
+    res = txn.traverse(c[0].descriptor).depth(0, 100).whereE(nogdb::GraphFilter{}.onlySubClassOf("collaborate", "manage"));
     ASSERT_SIZE(res, 4);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -681,27 +681,27 @@ void test_shortest_path_class_extend() {
     auto b = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Bill"));
     auto c = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Charon"));
     auto d = txn.findSubClassOf("employees", nogdb::Condition("name").eq("Don"));
-    auto res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor);
+    auto res = txn.shortestPath(c[0].descriptor, d[0].descriptor);
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = nogdb::Traverse::shortestPath(txn, c[0].descriptor, d[0].descriptor,
+    res = txn.shortestPath(c[0].descriptor, d[0].descriptor,
                                         nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Charon");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor,
+    res = txn.shortestPath(b[0].descriptor, d[0].descriptor,
                                         nogdb::GraphFilter{}.onlySubClassOf("collaborate"));
     ASSERT_SIZE(res, 3);
     assert(res[0].record.get("name").toText() == "Bill");
     assert(res[1].record.get("name").toText() == "Falcao");
     assert(res[2].record.get("name").toText() == "Don");
 
-    res = nogdb::Traverse::shortestPath(txn, b[0].descriptor, d[0].descriptor,
+    res = txn.shortestPath(b[0].descriptor, d[0].descriptor,
                                         nogdb::GraphFilter{}.onlySubClassOf("inter", "manage"));
     ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {

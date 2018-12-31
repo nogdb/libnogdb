@@ -136,25 +136,25 @@ namespace nogdb {
 
     void dropIndex(const std::string &className, const std::string &propertyName);
 
-    const DbInfo getDbInfo();
+    const DbInfo getDbInfo() const;
 
-    const std::vector<ClassDescriptor> getClasses();
+    const std::vector<ClassDescriptor> getClasses() const;
 
-    const std::vector<PropertyDescriptor> getProperties(const std::string &className);
+    const std::vector<PropertyDescriptor> getProperties(const std::string &className) const;
 
-    const std::vector<PropertyDescriptor> getProperties(const ClassDescriptor &classDescriptor);
+    const std::vector<PropertyDescriptor> getProperties(const ClassDescriptor &classDescriptor) const;
 
-    const std::vector<IndexDescriptor> getIndexes(const ClassDescriptor &classDescriptor);
+    const std::vector<IndexDescriptor> getIndexes(const ClassDescriptor &classDescriptor) const;
 
-    const ClassDescriptor getClass(const std::string &className);
+    const ClassDescriptor getClass(const std::string &className) const;
 
-    const ClassDescriptor getClass(const ClassId &classId);
+    const ClassDescriptor getClass(const ClassId &classId) const;
 
-    const PropertyDescriptor getProperty(const std::string &className, const std::string &propertyName);
+    const PropertyDescriptor getProperty(const std::string &className, const std::string &propertyName) const;
 
-    const IndexDescriptor getIndex(const std::string &className, const std::string &propertyName);
+    const IndexDescriptor getIndex(const std::string &className, const std::string &propertyName) const;
 
-    Record fetchRecord(const RecordDescriptor &recordDescriptor);
+    Record fetchRecord(const RecordDescriptor &recordDescriptor) const;
 
     const RecordDescriptor addVertex(const std::string &className, const Record &record = Record{});
 
@@ -173,30 +173,30 @@ namespace nogdb {
 
     void removeAll(const std::string &className);
 
-    FindOperationBuilder find(const std::string &className);
+    FindOperationBuilder find(const std::string &className) const;
 
-    FindOperationBuilder findSubClassOf(const std::string &className);
+    FindOperationBuilder findSubClassOf(const std::string &className) const;
 
-    FindEdgeOperationBuilder findInEdge(const RecordDescriptor &recordDescriptor);
+    FindEdgeOperationBuilder findInEdge(const RecordDescriptor &recordDescriptor) const;
 
-    FindEdgeOperationBuilder findOutEdge(const RecordDescriptor &recordDescriptor);
+    FindEdgeOperationBuilder findOutEdge(const RecordDescriptor &recordDescriptor) const;
 
-    FindEdgeOperationBuilder findEdge(const RecordDescriptor &recordDescriptor);
+    FindEdgeOperationBuilder findEdge(const RecordDescriptor &recordDescriptor) const;
 
-    Result fetchSrc(const RecordDescriptor &recordDescriptor);
+    Result fetchSrc(const RecordDescriptor &recordDescriptor) const;
 
-    Result fetchDst(const RecordDescriptor &recordDescriptor);
+    Result fetchDst(const RecordDescriptor &recordDescriptor) const;
 
-    ResultSet fetchSrcDst(const RecordDescriptor &recordDescriptor);
+    ResultSet fetchSrcDst(const RecordDescriptor &recordDescriptor) const;
 
-    TraverseOperationBuilder traverseIn(const RecordDescriptor &recordDescriptor);
+    TraverseOperationBuilder traverseIn(const RecordDescriptor &recordDescriptor) const;
 
-    TraverseOperationBuilder traverseOut(const RecordDescriptor &recordDescriptor);
+    TraverseOperationBuilder traverseOut(const RecordDescriptor &recordDescriptor) const;
 
-    TraverseOperationBuilder traverse(const RecordDescriptor &recordDescriptor);
+    TraverseOperationBuilder traverse(const RecordDescriptor &recordDescriptor) const;
 
     ShortestPathOperationBuilder shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
-                                              const RecordDescriptor &dstVertexRecordDescriptor);
+                                              const RecordDescriptor &dstVertexRecordDescriptor) const;
 
   private:
 

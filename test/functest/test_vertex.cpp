@@ -34,10 +34,10 @@ void test_create_vertex() {
     r.set("words", 4242424242);
     r.set("pages", 865);
     r.set("price", 49.99);
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
 
     r.clear();
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -54,7 +54,7 @@ void test_create_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("profit", 1.0);
-    nogdb::Vertex::create(txn, "authors", r);
+    txn.addVertex("authors", r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -65,7 +65,7 @@ void test_create_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("author", "J.K. Rowling");
-    nogdb::Vertex::create(txn, "books", r);
+    txn.addVertex("books", r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -76,7 +76,7 @@ void test_create_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("name", "J.K. Rowling");
-    nogdb::Vertex::create(txn, "persons", r);
+    txn.addVertex("persons", r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -94,16 +94,16 @@ void test_create_vertices() {
   try {
     nogdb::Record r1{};
     r1.set("title", "Percy Jackson").set("pages", 456).set("price", 24.5);
-    nogdb::Vertex::create(txn, "books", r1);
+    txn.addVertex("books", r1);
     r1.set("title", "Batman VS Superman").set("pages", 800).set("words", 9999999).set("price", 36.0);
-    nogdb::Vertex::create(txn, "books", r1);
+    txn.addVertex("books", r1);
     nogdb::Record r2{};
     r2.set("name", "Tom Hank").set("age", 58).set("salary", 45000);
-    nogdb::Vertex::create(txn, "persons", r2);
+    txn.addVertex("persons", r2);
     r2.set("name", "John Doe").set("age", 21).set("salary", 90000);
-    nogdb::Vertex::create(txn, "persons", r2);
+    txn.addVertex("persons", r2);
     r2.set("name", "Newt Scamander").set("age", 25).set("salary", 0).set("address", "Hogwarts");
-    nogdb::Vertex::create(txn, "persons", r2);
+    txn.addVertex("persons", r2);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -130,9 +130,9 @@ void test_get_vertex() {
                           .set("price", 36.0)
     );
     for (const auto &record: records) {
-      nogdb::Vertex::create(txn, "books", record);
+      txn.addVertex("books", record);
     }
-    nogdb::Vertex::create(txn, "persons", nogdb::Record{}
+    txn.addVertex("persons", nogdb::Record{}
         .set("name", "Jim Beans")
         .set("age", 40U)
     );
@@ -207,7 +207,7 @@ void test_get_vertex_v2() {
         .set("text", "hello world")
         .set("blob", obj);
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto rdesc = nogdb::Vertex::create(txn, "test", r);
+    auto rdesc = txn.addVertex("test", r);
 
     auto res = txn.find("test");
     assert(res[0].record.get("integer").toInt() == INT_MIN);
@@ -246,12 +246,12 @@ void test_get_invalid_vertices() {
   init_edge_author();
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    auto v = nogdb::Vertex::create(txn, "books",
+    auto v = txn.addVertex("books",
                                    nogdb::Record{}
                                        .set("title", "Percy Jackson")
                                        .set("pages", 456).set("price", 24.5));
-    nogdb::Vertex::create(txn, "persons", nogdb::Record{}.set("name", "Jack Mah"));
-    nogdb::Edge::create(txn, "authors", v, v, nogdb::Record{}.set("time_used", 10U));
+    txn.addVertex("persons", nogdb::Record{}.set("name", "Jack Mah"));
+    txn.addEdge("authors", v, v, nogdb::Record{}.set("time_used", 10U));
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -307,14 +307,14 @@ void test_get_vertex_cursor() {
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     for (const auto &data: testData) {
-      nogdb::Vertex::create(txn, "books", nogdb::Record{}.set(testColumn, data));
+      txn.addVertex("books", nogdb::Record{}.set(testColumn, data));
     }
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
   }
   try {
-    auto res = nogdb::Vertex::getCursor(txn, "books");
+    auto res = txn.find("books");
     cursorTester(res, testData, testColumn);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -331,13 +331,13 @@ void test_get_invalid_vertex_cursor() {
   init_edge_author();
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    auto v = nogdb::Vertex::create(txn, "books",
+    auto v = txn.addVertex("books",
                                    nogdb::Record{}
                                        .set("title", "Percy Jackson")
                                        .set("pages", 456)
                                        .set("price", 24.5));
-    nogdb::Vertex::create(txn, "persons", nogdb::Record{}.set("name", "Jack Mah"));
-    nogdb::Edge::create(txn, "authors", v, v, nogdb::Record{}.set("time_used", 10U));
+    txn.addVertex("persons", nogdb::Record{}.set("name", "Jack Mah"));
+    txn.addEdge("authors", v, v, nogdb::Record{}.set("time_used", 10U));
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -346,7 +346,7 @@ void test_get_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::Vertex::getCursor(txn, "book");
+    auto res = txn.find("book");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -355,7 +355,7 @@ void test_get_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = nogdb::Vertex::getCursor(txn, "authors");
+    auto res = txn.find("authors");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -373,17 +373,17 @@ void test_update_vertex() {
   try {
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc2 = txn.addVertex("books", r);
 
-    auto record = nogdb::DB::getRecord(txn, rdesc1);
+    auto record = txn.fetchRecord(rdesc1);
     assert(record.get("title").toText() == "Lion King");
     assert(record.get("price").toReal() == 100);
     assert(record.get("pages").toInt() == 320);
     //assert(record.getVersion() == 1ULL);
     record.set("price", 50.0).set("pages", 400).set("words", 90000ULL);
-    nogdb::Vertex::update(txn, rdesc1, record);
+    txn.update(rdesc1, record);
 
     auto res = txn.find("books");
     assert(res[0].record.get("title").toText() == "Lion King");
@@ -401,7 +401,7 @@ void test_update_vertex() {
     //assert(res[1].record.getBigIntU("@version") == 1ULL);
     //assert(res[1].record.getVersion() == 1ULL);
 
-    nogdb::Vertex::update(txn, rdesc1, nogdb::Record{});
+    txn.update(rdesc1, nogdb::Record{});
     res = txn.find("books");
     assert(res[0].record.empty() == true);
     assert(res[0].record.getText("@className") == "books");
@@ -424,12 +424,12 @@ void test_update_vertex_version() {
   init_vertex_book();
   const int ITERATION = 10;
   try { // init
-    nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::Txn::Mode::READ_WRITE);
+    nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::TxnMode::READ_WRITE);
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc2 = txn.addVertex("books", r);
 
     txn.commit();
 
@@ -439,12 +439,12 @@ void test_update_vertex_version() {
   }
   for (int i = 0; i < ITERATION; ++i) {
     try {
-      nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::Txn::Mode::READ_WRITE);
+      nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::TxnMode::READ_WRITE);
       nogdb::ResultSet res = txn.find("books");
       nogdb::Result rec0 = res[0], rec1 = res[1];
 
       //assert(rec0.record.getVersion() == 1ULL + i);
-      nogdb::Vertex::update(txn, rec0.descriptor, rec0.record);
+      txn.update(rec0.descriptor, rec0.record);
 
       //assert(rec0.record.getVersion() == 2ULL + i);
       //assert(rec1.record.getVersion() == 1ULL);
@@ -471,12 +471,12 @@ void test_update_invalid_vertex() {
     nogdb::Record r{};
     r.set("name", "H. Clinton").set("age", 55);
     txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto v1 = nogdb::Vertex::create(txn, "persons", r);
+    auto v1 = txn.addVertex("persons", r);
     txn.commit();
     destroy_vertex_person();
     txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     r.set("age", 60);
-    nogdb::Vertex::update(txn, v1, r);
+    txn.update(v1, r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -487,11 +487,11 @@ void test_update_invalid_vertex() {
   try {
     nogdb::Record r1{}, r2{};
     r1.set("title", "Robin Hood").set("price", 80.0).set("pages", 300);
-    auto v1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1 = txn.addVertex("books", r1);
     r2.set("profit", 0.0);
-    auto e1 = nogdb::Edge::create(txn, "authors", v1, v1, r2);
+    auto e1 = txn.addEdge("authors", v1, v1, r2);
     r2.set("profit", 42.42);
-    nogdb::Vertex::update(txn, e1, r2);
+    txn.update(e1, r2);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -502,9 +502,9 @@ void test_update_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("title", "The Lord").set("price", 420.0).set("pages", 810);
-    auto rdesc = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc = txn.addVertex("books", r);
     r.set("ISBN", "2343482991837");
-    nogdb::Vertex::update(txn, rdesc, r);
+    txn.update(rdesc, r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -515,12 +515,12 @@ void test_update_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
-    nogdb::Vertex::destroy(txn, rdesc2);
+    auto rdesc2 = txn.addVertex("books", r);
+    txn.remove(rdesc2);
     r.set("price", 50.0).set("pages", 400);
-    nogdb::Vertex::update(txn, rdesc2, r);
+    txn.update(rdesc2, r);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -536,10 +536,10 @@ void test_delete_vertex_only() {
   try {
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    auto rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = nogdb::Vertex::create(txn, "books", r);
-    nogdb::Vertex::destroy(txn, rdesc1);
+    auto rdesc2 = txn.addVertex("books", r);
+    txn.remove(rdesc1);
 
     auto res = txn.find("books");
     ASSERT_SIZE(res, 1);
@@ -563,9 +563,9 @@ void test_delete_invalid_vertex() {
   try {
     nogdb::Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    rdesc1 = nogdb::Vertex::create(txn, "books", r);
+    rdesc1 = txn.addVertex("books", r);
     r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    rdesc2 = nogdb::Vertex::create(txn, "books", r);
+    rdesc2 = txn.addVertex("books", r);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -576,7 +576,7 @@ void test_delete_invalid_vertex() {
   try {
     auto tmp = rdesc1;
     tmp.rid.first = 9999U;
-    nogdb::Vertex::destroy(txn, tmp);
+    txn.remove(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -590,12 +590,12 @@ void test_delete_invalid_vertex() {
     r.set("time_used", 1U);
     auto e = nogdb::RecordDescriptor{};
     try {
-      e = nogdb::Edge::create(txn, "authors", rdesc1, rdesc2, r);
+      e = txn.addEdge("authors", rdesc1, rdesc2, r);
     } catch (const nogdb::Error &ex) {
       std::cout << "\nError: " << ex.what() << std::endl;
       assert(false);
     }
-    nogdb::Vertex::destroy(txn, e);
+    txn.remove(e);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -615,11 +615,11 @@ void test_delete_all_vertices() {
     records.push_back(nogdb::Record{}.set("title", "Tarzan").set("price", 60.0).set("pages", 360));
     records.push_back(nogdb::Record{}.set("title", "Snow White").set("price", 80.0).set("pages", 280));
     for (const auto &record: records) {
-      nogdb::Vertex::create(txn, "books", record);
+      txn.addVertex("books", record);
     }
     auto res = txn.find("books");
     ASSERT_SIZE(res, 3);
-    nogdb::Vertex::destroy(txn, "books");
+    txn.removeAll("books");
     res = txn.find("books");
     ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
@@ -632,7 +632,7 @@ void test_delete_all_vertices() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Vertex::destroy(txn, "books");
+    txn.removeAll("books");
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -648,35 +648,35 @@ void test_get_edge_in() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto in_edges = nogdb::Vertex::getInEdge(txn, v1_1);
+    auto in_edges = txn.findInEdge(v1_1);
     assert(in_edges.size() == 0);
-    in_edges = nogdb::Vertex::getInEdge(txn, v1_2);
+    in_edges = txn.findInEdge(v1_2);
     assert(in_edges.size() == 0);
-    in_edges = nogdb::Vertex::getInEdge(txn, v1_3);
+    in_edges = txn.findInEdge(v1_3);
     assert(in_edges.size() == 0);
-    in_edges = nogdb::Vertex::getInEdge(txn, v2_1);
+    in_edges = txn.findInEdge(v2_1);
     assert(in_edges.size() == 2);
     assert(in_edges[0].record.get("time_used").toIntU() == 365U);
     assert(in_edges[1].record.get("time_used").toIntU() == 180U);
-    in_edges = nogdb::Vertex::getInEdge(txn, v2_2);
+    in_edges = txn.findInEdge(v2_2);
     assert(in_edges.size() == 1);
     assert(in_edges[0].record.get("time_used").toIntU() == 430U);
   } catch (const nogdb::Error &ex) {
@@ -698,36 +698,36 @@ void test_get_edge_out() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto out_edges = nogdb::Vertex::getOutEdge(txn, v1_1);
+    auto out_edges = txn.findOutEdge(v1_1);
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 365U);
-    out_edges = nogdb::Vertex::getOutEdge(txn, v1_2);
+    out_edges = txn.findOutEdge(v1_2);
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 180U);
-    out_edges = nogdb::Vertex::getOutEdge(txn, v1_3);
+    out_edges = txn.findOutEdge(v1_3);
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 430U);
-    out_edges = nogdb::Vertex::getOutEdge(txn, v2_1);
+    out_edges = txn.findOutEdge(v2_1);
     assert(out_edges.size() == 0);
-    out_edges = nogdb::Vertex::getOutEdge(txn, v2_2);
+    out_edges = txn.findOutEdge(v2_2);
     assert(out_edges.size() == 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -747,38 +747,38 @@ void test_get_edge_all() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto all_edges = nogdb::Vertex::getAllEdge(txn, v1_1);
+    auto all_edges = txn.findEdge(v1_1);
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 365U);
-    all_edges = nogdb::Vertex::getAllEdge(txn, v1_2);
+    all_edges = txn.findEdge(v1_2);
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 180U);
-    all_edges = nogdb::Vertex::getAllEdge(txn, v1_3);
+    all_edges = txn.findEdge(v1_3);
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 430U);
-    all_edges = nogdb::Vertex::getAllEdge(txn, v2_1);
+    all_edges = txn.findEdge(v2_1);
     assert(all_edges.size() == 2);
     assert(all_edges[0].record.get("time_used").toIntU() == 365U);
     assert(all_edges[1].record.get("time_used").toIntU() == 180U);
-    all_edges = nogdb::Vertex::getInEdge(txn, v2_2);
+    all_edges = txn.findInEdge(v2_2);
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 430U);
   } catch (const nogdb::Error &ex) {
@@ -803,23 +803,23 @@ void test_get_invalid_edge_in() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -831,7 +831,7 @@ void test_get_invalid_edge_in() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getInEdge(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -841,7 +841,7 @@ void test_get_invalid_edge_in() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getInEdge(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -852,7 +852,7 @@ void test_get_invalid_edge_in() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getInEdge(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -875,23 +875,23 @@ void test_get_invalid_edge_out() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -903,7 +903,7 @@ void test_get_invalid_edge_out() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getOutEdge(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -913,7 +913,7 @@ void test_get_invalid_edge_out() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getOutEdge(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -924,7 +924,7 @@ void test_get_invalid_edge_out() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getOutEdge(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -947,23 +947,23 @@ void test_get_invalid_edge_all() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -975,7 +975,7 @@ void test_get_invalid_edge_all() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getAllEdge(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -985,7 +985,7 @@ void test_get_invalid_edge_all() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getAllEdge(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -996,7 +996,7 @@ void test_get_invalid_edge_all() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getAllEdge(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1016,37 +1016,37 @@ void test_get_edge_in_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto in_edges = nogdb::Vertex::getInEdgeCursor(txn, v1_1);
+    auto in_edges = txn.findInEdge(v1_1);
     assert(in_edges.count() == 0);
-    in_edges = nogdb::Vertex::getInEdgeCursor(txn, v1_2);
+    in_edges = txn.findInEdge(v1_2);
     assert(in_edges.size() == 0);
-    in_edges = nogdb::Vertex::getInEdgeCursor(txn, v1_3);
+    in_edges = txn.findInEdge(v1_3);
     assert(in_edges.empty());
-    in_edges = nogdb::Vertex::getInEdgeCursor(txn, v2_1);
+    in_edges = txn.findInEdge(v2_1);
     assert(in_edges.size() == 2);
     in_edges.next();
     assert(in_edges->record.get("time_used").toIntU() == 365U);
     in_edges.next();
     assert(in_edges->record.get("time_used").toIntU() == 180U);
-    in_edges = nogdb::Vertex::getInEdgeCursor(txn, v2_2);
+    in_edges = txn.findInEdge(v2_2);
     assert(in_edges.size() == 1);
     in_edges.first();
     assert(in_edges->record.get("time_used").toIntU() == 430U);
@@ -1071,39 +1071,39 @@ void test_get_edge_out_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto out_edges = nogdb::Vertex::getOutEdgeCursor(txn, v1_1);
+    auto out_edges = txn.findOutEdge(v1_1);
     assert(out_edges.size() == 1);
     out_edges.first();
     assert(out_edges->record.get("time_used").toIntU() == 365U);
-    out_edges = nogdb::Vertex::getOutEdgeCursor(txn, v1_2);
+    out_edges = txn.findOutEdge(v1_2);
     assert(out_edges.size() == 1);
     out_edges.next();
     assert(out_edges->record.get("time_used").toIntU() == 180U);
-    out_edges = nogdb::Vertex::getOutEdgeCursor(txn, v1_3);
+    out_edges = txn.findOutEdge(v1_3);
     assert(out_edges.size() == 1);
     out_edges.to(0);
     assert(out_edges->record.get("time_used").toIntU() == 430U);
-    out_edges = nogdb::Vertex::getOutEdgeCursor(txn, v2_1);
+    out_edges = txn.findOutEdge(v2_1);
     assert(out_edges.count() == 0);
-    out_edges = nogdb::Vertex::getOutEdgeCursor(txn, v2_2);
+    out_edges = txn.findOutEdge(v2_2);
     assert(out_edges.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1123,43 +1123,43 @@ void test_get_edge_all_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    auto v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    auto v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    auto v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    auto v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    auto v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    auto v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    auto v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto all_edges = nogdb::Vertex::getAllEdgeCursor(txn, v1_1);
+    auto all_edges = txn.findEdge(v1_1);
     assert(all_edges.size() == 1);
     all_edges.first();
     assert(all_edges->record.get("time_used").toIntU() == 365U);
-    all_edges = nogdb::Vertex::getAllEdgeCursor(txn, v1_2);
+    all_edges = txn.findEdge(v1_2);
     assert(all_edges.size() == 1);
     all_edges.to(0);
     assert(all_edges->record.get("time_used").toIntU() == 180U);
-    all_edges = nogdb::Vertex::getAllEdgeCursor(txn, v1_3);
+    all_edges = txn.findEdge(v1_3);
     assert(all_edges.size() == 1);
     all_edges.last();
     assert(all_edges->record.get("time_used").toIntU() == 430U);
-    all_edges = nogdb::Vertex::getAllEdgeCursor(txn, v2_1);
+    all_edges = txn.findEdge(v2_1);
     assert(all_edges.size() == 2);
     all_edges.to(0);
     assert(all_edges->record.get("time_used").toIntU() == 365U);
     all_edges.to(1);
     assert(all_edges->record.get("time_used").toIntU() == 180U);
-    all_edges = nogdb::Vertex::getAllEdgeCursor(txn, v2_2);
+    all_edges = txn.findEdge(v2_2);
     assert(all_edges.size() == 1);
     all_edges.next();
     assert(all_edges->record.get("time_used").toIntU() == 430U);
@@ -1185,23 +1185,23 @@ void test_get_invalid_edge_in_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1213,7 +1213,7 @@ void test_get_invalid_edge_in_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getInEdgeCursor(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1223,7 +1223,7 @@ void test_get_invalid_edge_in_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getInEdgeCursor(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1234,7 +1234,7 @@ void test_get_invalid_edge_in_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getInEdgeCursor(txn, tmp);
+    auto res = txn.findInEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1257,23 +1257,23 @@ void test_get_invalid_edge_out_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1285,7 +1285,7 @@ void test_get_invalid_edge_out_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getOutEdgeCursor(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1295,7 +1295,7 @@ void test_get_invalid_edge_out_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getOutEdgeCursor(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1306,7 +1306,7 @@ void test_get_invalid_edge_out_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getOutEdgeCursor(txn, tmp);
+    auto res = txn.findOutEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1329,23 +1329,23 @@ void test_get_invalid_edge_all_cursor() {
   try {
     nogdb::Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
-    v1_1 = nogdb::Vertex::create(txn, "books", r1);
+    v1_1 = txn.addVertex("books", r1);
     r1.set("title", "Fantastic Beasts").set("pages", 342).set("price", 21.0);
-    v1_2 = nogdb::Vertex::create(txn, "books", r1);
+    v1_2 = txn.addVertex("books", r1);
     r1.set("title", "Percy Jackson").set("pages", 800).set("price", 32.4);
-    v1_3 = nogdb::Vertex::create(txn, "books", r1);
+    v1_3 = txn.addVertex("books", r1);
 
     r2.set("name", "J.K. Rowlings").set("age", 32);
-    v2_1 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_1 = txn.addVertex("persons", r2);
     r2.set("name", "David Lahm").set("age", 29);
-    v2_2 = nogdb::Vertex::create(txn, "persons", r2);
+    v2_2 = txn.addVertex("persons", r2);
 
     r3.set("time_used", 365U);
-    e1 = nogdb::Edge::create(txn, "authors", v1_1, v2_1, r3);
+    e1 = txn.addEdge("authors", v1_1, v2_1, r3);
     r3.set("time_used", 180U);
-    e2 = nogdb::Edge::create(txn, "authors", v1_2, v2_1, r3);
+    e2 = txn.addEdge("authors", v1_2, v2_1, r3);
     r3.set("time_used", 430U);
-    e3 = nogdb::Edge::create(txn, "authors", v1_3, v2_2, r3);
+    e3 = txn.addEdge("authors", v1_3, v2_2, r3);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1357,7 +1357,7 @@ void test_get_invalid_edge_all_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = nogdb::Vertex::getAllEdgeCursor(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1367,7 +1367,7 @@ void test_get_invalid_edge_all_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = nogdb::Vertex::getAllEdgeCursor(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1378,7 +1378,7 @@ void test_get_invalid_edge_all_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = nogdb::Vertex::getAllEdgeCursor(txn, tmp);
+    auto res = txn.findEdge(tmp);
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();

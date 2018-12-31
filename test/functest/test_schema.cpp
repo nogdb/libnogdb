@@ -25,7 +25,7 @@ void test_create_class() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txn.addClass("files", nogdb::ClassType::VERTEX);
-    auto schema = nogdb::DB::getClass(txn, "files");
+    auto schema = txn.getClass("files");
     assert(schema.name == "files");
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -81,18 +81,18 @@ void test_alter_class() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto cdesc = nogdb::DB::getClass(txn, "files");
+    auto cdesc = txn.getClass("files");
     assert(cdesc.name == "files");
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Class::alter(txn, "files", "file");
+    txn.renameClass("files", "file");
     txn.commit();
 
     txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    cdesc = nogdb::DB::getClass(txn, "file");
+    cdesc = txn.getClass("file");
     assert(cdesc.name == "file");
-    auto properties = nogdb::DB::getProperties(txn, cdesc);
+    auto properties = txn.getProperties(cdesc);
     assert(properties.size() == 2);
     for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::INTEGER);
@@ -130,35 +130,35 @@ void test_alter_invalid_class() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Class::alter(txn, "files", "");
+    txn.renameClass("files", "");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
 
   try {
-    nogdb::Class::alter(txn, "", "file");
+    txn.renameClass("", "file");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
 
   try {
-    nogdb::Class::alter(txn, "file", "filess");
+    txn.renameClass("file", "filess");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
   try {
-    nogdb::Class::alter(txn, "files", "files");
+    txn.renameClass("files", "files");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
   }
 
   try {
-    nogdb::Class::alter(txn, "files", "folders");
+    txn.renameClass("files", "folders");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_CLASS, "NOGDB_CTX_DUPLICATE_CLASS");
@@ -282,9 +282,9 @@ void test_add_property() {
   }
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto schema = nogdb::DB::getClass(txn, "files");
+    auto schema = txn.getClass("files");
     assert(schema.name == "files");
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 3);
     for (const auto &property: properties) {
       if (property.name == "filename") assert(property.type == nogdb::PropertyType::TEXT);
@@ -365,9 +365,9 @@ void test_add_invalid_property() {
   }
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto schema = nogdb::DB::getClass(txn, "files");
+    auto schema = txn.getClass("files");
     assert(schema.name == "files");
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 3);
     for (const auto &property: properties) {
       if (property.name == "filename") assert(property.type == nogdb::PropertyType::TEXT);
@@ -441,8 +441,8 @@ void test_alter_property() {
   }
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    nogdb::Property::alter(txn, "links", "type", "comments");
-    nogdb::Property::alter(txn, "links", "expire", "expired");
+    txn.renameProperty("links", "type", "comments");
+    txn.renameProperty("links", "expire", "expired");
     txn.addProperty("links", "type", nogdb::PropertyType::BLOB);
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -452,9 +452,9 @@ void test_alter_property() {
 
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto schema = nogdb::DB::getClass(txn, "links");
+    auto schema = txn.getClass("links");
     assert(schema.name == "links");
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 3);
     for (const auto &property: properties) {
       if (property.name == "type") assert(property.type == nogdb::PropertyType::BLOB);
@@ -491,37 +491,37 @@ void test_alter_invalid_property() {
 
   auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
-    nogdb::Property::alter(txn, "link", "type", "");
+    txn.renameProperty("link", "type", "");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
   }
   try {
-    nogdb::Property::alter(txn, "", "type", "types");
+    txn.renameProperty("", "type", "types");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
   try {
-    nogdb::Property::alter(txn, "links", "", "types");
+    txn.renameProperty("links", "", "types");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_INVALID_PROPERTYNAME, "NOGDB_CTX_INVALID_PROPERTYNAME");
   }
   try {
-    nogdb::Property::alter(txn, "link", "type", "comments");
+    txn.renameProperty("link", "type", "comments");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
   try {
-    nogdb::Property::alter(txn, "links", "types", "comments");
+    txn.renameProperty("links", "types", "comments");
     assert(false);
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_NOEXST_PROPERTY, "NOGDB_CTX_NOEXST_PROPERTY");
   }
   try {
-    nogdb::Property::alter(txn, "links", "type", "expire");
+    txn.renameProperty("links", "type", "expire");
   } catch (const nogdb::Error &ex) {
     REQUIRE(ex, NOGDB_CTX_DUPLICATE_PROPERTY, "NOGDB_CTX_DUPLICATE_PROPERTY");
   }

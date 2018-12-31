@@ -233,7 +233,7 @@ namespace nogdb {
     }
   }
 
-  Result Transaction::fetchSrc(const RecordDescriptor &recordDescriptor) {
+  Result Transaction::fetchSrc(const RecordDescriptor &recordDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -247,7 +247,7 @@ namespace nogdb {
     };
   }
 
-  Result Transaction::fetchDst(const RecordDescriptor &recordDescriptor) {
+  Result Transaction::fetchDst(const RecordDescriptor &recordDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -261,7 +261,7 @@ namespace nogdb {
     };
   }
 
-  ResultSet Transaction::fetchSrcDst(const RecordDescriptor &recordDescriptor) {
+  ResultSet Transaction::fetchSrcDst(const RecordDescriptor &recordDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -281,44 +281,44 @@ namespace nogdb {
     };
   }
 
-  FindOperationBuilder Transaction::find(const std::string &className) {
+  FindOperationBuilder Transaction::find(const std::string &className) const {
     return FindOperationBuilder(this, className, false);
   }
 
-  FindOperationBuilder Transaction::findSubClassOf(const std::string &className) {
+  FindOperationBuilder Transaction::findSubClassOf(const std::string &className) const {
     return FindOperationBuilder(this, className, true);
   }
 
-  FindEdgeOperationBuilder Transaction::findInEdge(const RecordDescriptor &recordDescriptor) {
+  FindEdgeOperationBuilder Transaction::findInEdge(const RecordDescriptor &recordDescriptor) const {
     return FindEdgeOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::IN);
   }
 
-  FindEdgeOperationBuilder Transaction::findOutEdge(const RecordDescriptor &recordDescriptor) {
+  FindEdgeOperationBuilder Transaction::findOutEdge(const RecordDescriptor &recordDescriptor) const {
     return FindEdgeOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::OUT);
   }
 
-  FindEdgeOperationBuilder Transaction::findEdge(const RecordDescriptor &recordDescriptor) {
+  FindEdgeOperationBuilder Transaction::findEdge(const RecordDescriptor &recordDescriptor) const {
     return FindEdgeOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::UNDIRECTED);
   }
 
-  TraverseOperationBuilder Transaction::traverseIn(const RecordDescriptor &recordDescriptor) {
+  TraverseOperationBuilder Transaction::traverseIn(const RecordDescriptor &recordDescriptor) const {
     return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::IN);
   }
 
-  TraverseOperationBuilder Transaction::traverseOut(const RecordDescriptor &recordDescriptor) {
+  TraverseOperationBuilder Transaction::traverseOut(const RecordDescriptor &recordDescriptor) const {
     return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::OUT);
   }
 
-  TraverseOperationBuilder Transaction::traverse(const RecordDescriptor &recordDescriptor) {
+  TraverseOperationBuilder Transaction::traverse(const RecordDescriptor &recordDescriptor) const {
     return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::UNDIRECTED);
   }
 
   ShortestPathOperationBuilder Transaction::shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
-                                                         const RecordDescriptor &dstVertexRecordDescriptor) {
+                                                         const RecordDescriptor &dstVertexRecordDescriptor) const {
     return ShortestPathOperationBuilder(this, srcVertexRecordDescriptor, dstVertexRecordDescriptor);
   }
 
-  ResultSet FindOperationBuilder::get() {
+  ResultSet FindOperationBuilder::get() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isClassNameValid(_className);
@@ -381,7 +381,7 @@ namespace nogdb {
     }
   };
 
-  ResultSetCursor FindOperationBuilder::getCursor() {
+  ResultSetCursor FindOperationBuilder::getCursor() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isClassNameValid(_className);
@@ -456,7 +456,7 @@ namespace nogdb {
     }
   }
 
-  ResultSet FindEdgeOperationBuilder::get() {
+  ResultSet FindEdgeOperationBuilder::get() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
@@ -494,7 +494,7 @@ namespace nogdb {
     return result;
   }
 
-  ResultSetCursor FindEdgeOperationBuilder::getCursor() {
+  ResultSetCursor FindEdgeOperationBuilder::getCursor() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
@@ -532,7 +532,7 @@ namespace nogdb {
     return result;
   }
 
-  ResultSet TraverseOperationBuilder::get() {
+  ResultSet TraverseOperationBuilder::get() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
@@ -549,7 +549,7 @@ namespace nogdb {
         *_txn, vertexClassInfo, _rdesc, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
   }
 
-  ResultSetCursor TraverseOperationBuilder::getCursor() {
+  ResultSetCursor TraverseOperationBuilder::getCursor() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
@@ -567,7 +567,7 @@ namespace nogdb {
     return std::move(ResultSetCursor{*_txn}.addMetadata(result));
   }
 
-  ResultSet ShortestPathOperationBuilder::get() {
+  ResultSet ShortestPathOperationBuilder::get() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingSrcVertex(_srcRdesc)
@@ -579,7 +579,7 @@ namespace nogdb {
         *_txn, srcVertexClassInfo, dstVertexClassInfo, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
   }
 
-  ResultSetCursor ShortestPathOperationBuilder::getCursor() {
+  ResultSetCursor ShortestPathOperationBuilder::getCursor() const {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
         .isExistingSrcVertex(_srcRdesc)

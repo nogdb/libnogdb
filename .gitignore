@@ -45,7 +45,9 @@ apitest
 apitest_*
 apitest_all
 functest
-functest_*
+functest_*.dSYM
+functest_*.o
 functest_all
+*.o
 *_debug_address
 gtest_installer.sh

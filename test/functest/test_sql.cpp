@@ -52,7 +52,7 @@ namespace nogdb {
 
 
 void test_sql_unrecognized_token_error() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     SQL::execute(txn, "128asyuiqwerhb;");
     assert(false);
@@ -63,7 +63,7 @@ void test_sql_unrecognized_token_error() {
 }
 
 void test_sql_syntax_error() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     SQL::execute(txn, "SELECT DELETE VERTEX;");
     assert(false);
@@ -74,7 +74,7 @@ void test_sql_syntax_error() {
 }
 
 void test_sql_create_class() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     // create
     SQL::Result result = SQL::execute(txn, "CREATE CLASS sql_class EXTENDS VERTEX");
@@ -96,7 +96,7 @@ void test_sql_create_class() {
 }
 
 void test_sql_create_class_if_not_exists() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   // test not exists case.
   try {
     SQL::Result result = SQL::execute(txn, "CREATE CLASS sql_class IF NOT EXISTS EXTENDS VERTEX");
@@ -124,7 +124,7 @@ void test_sql_create_class_if_not_exists() {
 }
 
 void test_sql_create_class_extend() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   // create super class
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
@@ -148,7 +148,7 @@ void test_sql_create_class_extend() {
     auto res = DB::getClass(txn, "sql_class_sub");
     assert(res.name == "sql_class_sub");
     assert(res.type == ClassType::VERTEX);
-    auto properties = nogdb::DB::getProperties(txn, res);
+    auto properties = txn.getProperties(res);
     assert(properties.size() == 2);
     for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::TEXT);
@@ -169,7 +169,7 @@ void test_sql_create_class_extend() {
 }
 
 void test_sql_create_invalid_class() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
   } catch (const Error &ex) {
@@ -199,7 +199,7 @@ void test_sql_create_invalid_class() {
 }
 
 void test_sql_alter_class_name() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   // create class
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
@@ -215,7 +215,7 @@ void test_sql_alter_class_name() {
     SQL::execute(txn, "ALTER CLASS sql_class NAME 'sql_class2'");
     auto res = DB::getClass(txn, "sql_class2");
     assert(res.name == "sql_class2");
-    auto properties = nogdb::DB::getProperties(txn, res);
+    auto properties = txn.getProperties(res);
     assert(properties.size() == 2);
     for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::INTEGER);
@@ -235,7 +235,7 @@ void test_sql_alter_class_name() {
 }
 
 void test_sql_drop_class() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
 
@@ -257,7 +257,7 @@ void test_sql_drop_class() {
 }
 
 void test_sql_drop_class_if_exists() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   // test exists case.
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
@@ -280,7 +280,7 @@ void test_sql_drop_class_if_exists() {
 }
 
 void test_sql_drop_invalid_class() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     SQL::execute(txn, "DROP CLASS ''");
     assert(false);
@@ -298,7 +298,7 @@ void test_sql_drop_invalid_class() {
 }
 
 void test_sql_add_property() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Class::create(txn, "sql_class", ClassType::VERTEX);
     SQL::Result result1 = SQL::execute(txn, "CREATE PROPERTY sql_class.prop1 TEXT");
@@ -317,7 +317,7 @@ void test_sql_add_property() {
   try {
     auto schema = DB::getClass(txn, "sql_class");
     assert(schema.name == "sql_class");
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 2);
     for (const auto &property: properties) {
       if (property.name == "prop1") assert(property.type == nogdb::PropertyType::TEXT);
@@ -333,7 +333,7 @@ void test_sql_add_property() {
 }
 
 void test_sql_alter_property() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Class::create(txn, "links", ClassType::EDGE);
     Property::add(txn, "links", "type", PropertyType::TEXT);
@@ -355,7 +355,7 @@ void test_sql_alter_property() {
     auto schema = DB::getClass(txn, "links");
     assert(schema.name == "links");
     assert(schema.type == ClassType::EDGE);
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 3);
     for (const auto &property: properties) {
       if (property.name == "type") assert(property.type == nogdb::PropertyType::BLOB);
@@ -378,13 +378,13 @@ void test_sql_alter_property() {
 }
 
 void test_sql_delete_property() {
-  Txn txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  Txn txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     SQL::execute(txn, "DROP PROPERTY sql_class.prop2");
 
     auto schema = DB::getClass(txn, "sql_class");
     assert(schema.name == "sql_class");
-    auto properties = nogdb::DB::getProperties(txn, schema);
+    auto properties = txn.getProperties(schema);
     assert(properties.size() == 0);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -402,7 +402,7 @@ void test_sql_delete_property() {
 
 void test_sql_create_vertex() {
   init_vertex_book();
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     SQL::Result result = SQL::execute(txn,
                                       "CREATE VERTEX books SET title='Harry Potter', words=4242424242, pages=865, price=49.99");
@@ -420,7 +420,7 @@ void test_sql_create_edges() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   RecordDescriptor v1_1{}, v1_2{}, v2{};
   try {
     v1_1 = Vertex::create(txn, "books", Record().set("title", "Harry Potter").set("pages", 456).set("price", 24.5));
@@ -452,7 +452,7 @@ void test_sql_select_vertex() {
   init_vertex_person();
   init_vertex_book();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     auto records = std::vector<Record>{};
     records.push_back(Record{}
@@ -503,7 +503,7 @@ void test_sql_select_vertex_with_rid() {
   init_vertex_person();
   init_vertex_book();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
 
   RecordDescriptor rid1, rid2;
   try {
@@ -553,7 +553,7 @@ void test_sql_select_vertex_with_rid() {
 void test_sql_select_property() {
   init_vertex_person();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
 
   RecordDescriptor rdesc, rdResult;
   try {
@@ -637,7 +637,7 @@ void test_sql_select_property() {
 void test_sql_select_count() {
   init_vertex_person();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
 
   RecordDescriptor rid1, rid2;
   try {
@@ -683,7 +683,7 @@ void test_sql_select_count() {
 }
 
 void test_sql_select_walk() {
-  auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
 
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "p", PropertyType::TEXT);
@@ -810,7 +810,7 @@ void test_sql_select_walk() {
 }
 
 void test_sql_select_method_property() {
-  auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
 
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "propV", PropertyType::TEXT);
@@ -882,7 +882,7 @@ void test_sql_select_method_property() {
 }
 
 void test_sql_select_alias_property() {
-  auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
 
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "propV", PropertyType::TEXT);
@@ -930,7 +930,7 @@ struct Coordinates {
 };
 
 void test_sql_select_vertex_condition() {
-  auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "text", nogdb::PropertyType::TEXT);
   Property::add(txn, "v", "int", nogdb::PropertyType::INTEGER);
@@ -1102,7 +1102,7 @@ void test_sql_select_vertex_condition() {
 }
 
 void test_sql_select_vertex_with_multi_condition() {
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "prop1", PropertyType::TEXT);
   Property::add(txn, "v", "prop2", PropertyType::INTEGER);
@@ -1152,7 +1152,7 @@ void test_sql_select_vertex_with_multi_condition() {
 }
 
 void test_sql_select_nested_condition() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "prop1", PropertyType::TEXT);
   Property::add(txn, "v", "prop2", PropertyType::INTEGER);
@@ -1185,7 +1185,7 @@ void test_sql_select_nested_condition() {
 }
 
 void test_sql_select_skip_limit() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "v", ClassType::VERTEX);
   Property::add(txn, "v", "prop1", PropertyType::TEXT);
   Property::add(txn, "v", "prop2", PropertyType::INTEGER);
@@ -1218,7 +1218,7 @@ void test_sql_select_skip_limit() {
 
 void test_sql_select_group_by() {
   init_vertex_book();
-  auto txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  auto txn = Txn(*ctx, TxnMode::READ_WRITE);
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0);
@@ -1240,7 +1240,7 @@ void test_sql_select_group_by() {
 
 void test_sql_update_vertex_with_rid() {
   init_vertex_book();
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
@@ -1275,7 +1275,7 @@ void test_sql_update_vertex_with_rid() {
 
 void test_sql_update_vertex_with_condition() {
   init_vertex_book();
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r{};
     r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
@@ -1311,7 +1311,7 @@ void test_sql_delete_vertex_with_rid() {
   init_vertex_book();
   init_vertex_person();
   init_edge_author();
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1365,7 +1365,7 @@ void test_sql_delete_vertex_with_condition() {
   init_vertex_book();
   init_vertex_person();
   init_edge_author();
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1420,7 +1420,7 @@ void test_sql_delete_edge_with_rid() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1457,7 +1457,7 @@ void test_sql_delete_edge_with_condition() {
   init_vertex_person();
   init_edge_author();
 
-  auto txn = Txn{*ctx, Txn::Mode::READ_WRITE};
+  auto txn = Txn{*ctx, TxnMode::READ_WRITE};
   try {
     Record r1{}, r2{}, r3{};
     r1.set("title", "Harry Potter").set("pages", 456).set("price", 24.5);
@@ -1491,7 +1491,7 @@ void test_sql_delete_edge_with_condition() {
 }
 
 void test_sql_validate_property_type() {
-  Txn txn = Txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn = Txn(*ctx, TxnMode::READ_WRITE);
 
   SQL::execute(txn, "CREATE CLASS sql_valid_type IF NOT EXISTS EXTENDS VERTEX");
   SQL::execute(txn, "CREATE PROPERTY sql_valid_type.tiny IF NOT EXISTS TINYINT");
@@ -1591,7 +1591,7 @@ void test_sql_validate_property_type() {
 }
 
 void test_sql_traverse() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "V", ClassType::VERTEX);
   Property::add(txn, "V", "p", PropertyType::TEXT);
   Class::create(txn, "EL", ClassType::EDGE);
@@ -1633,7 +1633,7 @@ void test_sql_traverse() {
     result = SQL::execute(txn, "TRAVERSE all('EL') FROM " + to_string(v21) +
                                " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
     assert(result.type() == result.RESULT_SET);
-    assert(result.get<ResultSet>() == Traverse::allEdgeBfs(txn, v21, 1, 1, nogdb::GraphFilter{}.only("EL")));
+    assert(result.get<ResultSet>() == Traverse::allEdgeBfs(txn, v21).depth(1, 1).whereE(nogdb::GraphFilter{}.only("EL")));
 
     result = SQL::execute(txn, "SELECT p FROM (TRAVERSE out() FROM " + to_string(v1) + ") WHERE p = 'v22'");
     assert(result.type() == result.RESULT_SET);
@@ -1659,17 +1659,17 @@ void test_sql_traverse() {
 }
 
 void test_sql_create_index() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "V", ClassType::VERTEX);
   Property::add(txn, "V", "p", PropertyType::TEXT);
 
   try {
     SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p");
     assert(result.type() == result.NO_RESULT);
-    auto index = nogdb::DB::getIndex(txn, "V", "p");
+    auto index = txn.getIndex("V", "p");
     assert(index.id != nogdb::IndexDescriptor{}.id);
     assert(index.unique == false);
-    auto indexes = nogdb::DB::getIndexes(txn, DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
     assert(indexes.size() == 1);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;
@@ -1683,17 +1683,17 @@ void test_sql_create_index() {
 }
 
 void test_sql_create_index_unique() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "V", ClassType::VERTEX);
   Property::add(txn, "V", "p", PropertyType::TEXT);
 
   try {
     SQL::Result result = SQL::execute(txn, "CREATE INDEX V.p UNIQUE");
     assert(result.type() == result.NO_RESULT);
-    auto index = nogdb::DB::getIndex(txn, "V", "p");
+    auto index = txn.getIndex("V", "p");
     assert(index.id != nogdb::IndexDescriptor{}.id);
     assert(index.unique == true);
-    auto indexes = nogdb::DB::getIndexes(txn, DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
     assert(indexes.size() == 1);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;
@@ -1707,7 +1707,7 @@ void test_sql_create_index_unique() {
 }
 
 void test_sql_drop_index() {
-  Txn txn(*ctx, Txn::Mode::READ_WRITE);
+  Txn txn(*ctx, TxnMode::READ_WRITE);
   Class::create(txn, "V", ClassType::VERTEX);
   Property::add(txn, "V", "p", PropertyType::TEXT);
   Property::createIndex(txn, "V", "p");
@@ -1715,9 +1715,9 @@ void test_sql_drop_index() {
   try {
     SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
     assert(result.type() == result.NO_RESULT);
-    auto index = nogdb::DB::getIndex(txn, "V", "p");
+    auto index = txn.getIndex("V", "p");
     assert(index.id == nogdb::IndexDescriptor{}.id);
-    auto indexes = nogdb::DB::getIndexes(txn, DB::getClass(txn, "V"));
+    auto indexes = txn.getIndexes(DB::getClass(txn, "V"));
     assert(indexes.size() == 0);
   } catch (const Error &e) {
     cout << "\nError: " << e.what() << endl;

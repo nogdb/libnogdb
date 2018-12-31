@@ -31,10 +31,10 @@ void do_job(unsigned int type) {
   if (type == 11) { // create more + commit
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-      auto v1 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh C"));
-      auto v2 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh D"));
-      nogdb::Edge::create(txn, "bridge", v1, v2, nogdb::Record{}.set("name", "bridge 34"));
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
+      auto v1 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh C"));
+      auto v2 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh D"));
+      txn.addEdge("bridge", v1, v2, nogdb::Record{}.set("name", "bridge 34"));
       auto res = txn.find("islands", nogdb::Condition("name").eq("Koh D"));
       assert(!res.empty());
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 34"));
@@ -47,9 +47,9 @@ void do_job(unsigned int type) {
   } else if (type == 21) { // delete some + commit
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
       auto res = txn.find("islands", nogdb::Condition("name").eq("Koh C"));
-      for (const auto &r: res) nogdb::Vertex::destroy(txn, r.descriptor);
+      for (const auto &r: res) txn.remove(r.descriptor);
       res = txn.find("islands", nogdb::Condition("name").eq("Koh C"));
       assert(res.empty());
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -64,11 +64,11 @@ void do_job(unsigned int type) {
   } else if (type == 31) { // modify some + commit
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
       auto resV = txn.find("islands", nogdb::Condition("name").eq("Koh A"));
-      nogdb::Edge::updateDst(txn, resE[0].descriptor, resV[0].descriptor);
-      auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
+      txn.updateDst(resE[0].descriptor, resV[0].descriptor);
+      auto res = txn.findInEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 2);
       txn.commit();
     } catch (const nogdb::Error &ex) {
@@ -78,10 +78,10 @@ void do_job(unsigned int type) {
   } else if (type == 10) { // create more + rollback
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
-      auto v1 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh C"));
-      auto v2 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh D"));
-      nogdb::Edge::create(txn, "bridge", v1, v2, nogdb::Record{}.set("name", "bridge 34"));
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
+      auto v1 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh C"));
+      auto v2 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh D"));
+      txn.addEdge("bridge", v1, v2, nogdb::Record{}.set("name", "bridge 34"));
       auto res = txn.find("islands", nogdb::Condition("name").eq("Koh D"));
       assert(!res.empty());
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 34"));
@@ -94,9 +94,9 @@ void do_job(unsigned int type) {
   } else if (type == 20) { // delete some + rollback
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
       auto res = txn.find("islands", nogdb::Condition("name").eq("Koh C"));
-      for (const auto &r: res) nogdb::Vertex::destroy(txn, r.descriptor);
+      for (const auto &r: res) txn.remove(r.descriptor);
       res = txn.find("islands", nogdb::Condition("name").eq("Koh C"));
       assert(res.empty());
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
@@ -111,11 +111,11 @@ void do_job(unsigned int type) {
   } else if (type == 30) { // modify some + rollback
     std::unique_lock<std::mutex> _(wlock);
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
       auto resV = txn.find("islands", nogdb::Condition("name").eq("Koh A"));
-      nogdb::Edge::updateDst(txn, resE[0].descriptor, resV[0].descriptor);
-      auto res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
+      txn.updateDst(resE[0].descriptor, resV[0].descriptor);
+      auto res = txn.findInEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 2);
       txn.rollback();
     } catch (const nogdb::Error &ex) {
@@ -124,7 +124,7 @@ void do_job(unsigned int type) {
     }
   } else if (type == 0) { // read only new version
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_ONLY};
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
       assert(resE.empty());
       resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -135,10 +135,10 @@ void do_job(unsigned int type) {
       assert(!resE.empty());
 
       auto resV = txn.find("islands", nogdb::Condition("name").eq("Koh A"));
-      auto res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
+      auto res = txn.findOutEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 1);
       resV = txn.find("islands", nogdb::Condition("name").eq("Koh B"));
-      res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
+      res = txn.findOutEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 1);
     } catch (const nogdb::Error &ex) {
       std::cout << "Error: " << ex.what() << std::endl;
@@ -146,7 +146,7 @@ void do_job(unsigned int type) {
     }
   } else if (type == 1) { // read only old version
     try {
-      nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_ONLY};
+      nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_ONLY};
       auto resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
       assert(!resE.empty());
       resE = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
@@ -157,13 +157,13 @@ void do_job(unsigned int type) {
       assert(!resE.empty());
 
       auto resV = txn.find("islands", nogdb::Condition("name").eq("Koh A"));
-      auto res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
+      auto res = txn.findOutEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 2);
       resV = txn.find("islands", nogdb::Condition("name").eq("Koh B"));
-      res = nogdb::Vertex::getOutEdge(txn, resV[0].descriptor);
+      res = txn.findOutEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 2);
       resV = txn.find("islands", nogdb::Condition("name").eq("Koh C"));
-      res = nogdb::Vertex::getInEdge(txn, resV[0].descriptor);
+      res = txn.findInEdge(resV[0].descriptor);
       ASSERT_SIZE(res, 2);
     } catch (const nogdb::Error &ex) {
       std::cout << "Error: " << ex.what() << std::endl;
@@ -177,15 +177,15 @@ void test_txn_multithreads() {
   init_edge_bridge();
 
   try {
-    nogdb::Transaction txn{*ctx, nogdb::Txn::Mode::READ_WRITE};
+    nogdb::Transaction txn{*ctx, nogdb::TxnMode::READ_WRITE};
 
-    auto v1 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh A"));
-    auto v2 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh B"));
-    auto v3 = nogdb::Vertex::create(txn, "islands", nogdb::Record{}.set("name", "Koh C"));
-    nogdb::Edge::create(txn, "bridge", v1, v2, nogdb::Record{}.set("name", "bridge 12"));
-    nogdb::Edge::create(txn, "bridge", v2, v1, nogdb::Record{}.set("name", "bridge 21"));
-    nogdb::Edge::create(txn, "bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
-    nogdb::Edge::create(txn, "bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
+    auto v1 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh A"));
+    auto v2 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh B"));
+    auto v3 = txn.addVertex("islands", nogdb::Record{}.set("name", "Koh C"));
+    txn.addEdge("bridge", v1, v2, nogdb::Record{}.set("name", "bridge 12"));
+    txn.addEdge("bridge", v2, v1, nogdb::Record{}.set("name", "bridge 21"));
+    txn.addEdge("bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
+    txn.addEdge("bridge", v1, v3, nogdb::Record{}.set("name", "bridge 13"));
 
     txn.commit();
   } catch (const nogdb::Error &ex) {

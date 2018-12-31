@@ -93,6 +93,12 @@ namespace nogdb {
     return *this;
   }
 
+  TraverseOperationBuilder& TraverseOperationBuilder::depth(unsigned int minDepth, unsigned int maxDepth) {
+    _minDepth = minDepth;
+    _maxDepth = maxDepth;
+    return *this;
+  }
+
   ShortestPathOperationBuilder::ShortestPathOperationBuilder(const Transaction* txn,
                                                              const RecordDescriptor &srcVertexRecordDescriptor,
                                                              const RecordDescriptor &dstVertexRecordDescriptor)

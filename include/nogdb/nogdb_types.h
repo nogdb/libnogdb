@@ -1256,9 +1256,9 @@ namespace nogdb {
 
     virtual ~OperationBuilder() noexcept = default;
 
-    virtual ResultSet get() = 0;
+    virtual ResultSet get() const = 0;
 
-    virtual ResultSetCursor getCursor() = 0;
+    virtual ResultSetCursor getCursor() const = 0;
 
     const Transaction* _txn;
 
@@ -1279,9 +1279,9 @@ namespace nogdb {
 
     virtual FindOperationBuilder& indexed(bool onlyIndex = true);
 
-    ResultSet get();
+    ResultSet get() const;
 
-    ResultSetCursor getCursor();
+    ResultSetCursor getCursor() const;
 
   private:
 
@@ -1310,9 +1310,9 @@ namespace nogdb {
 
     virtual FindEdgeOperationBuilder& where(const GraphFilter& edgeFilter);
 
-    ResultSet get();
+    ResultSet get() const;
 
-    ResultSetCursor getCursor();
+    ResultSetCursor getCursor() const;
 
   private:
 
@@ -1343,9 +1343,11 @@ namespace nogdb {
 
     virtual TraverseOperationBuilder& maxDepth(unsigned int depth);
 
-    ResultSet get();
+    virtual TraverseOperationBuilder& depth(unsigned int minDepth, unsigned int maxDepth);
 
-    ResultSetCursor getCursor();
+    ResultSet get() const;
+
+    ResultSetCursor getCursor() const;
 
   private:
 
@@ -1358,7 +1360,7 @@ namespace nogdb {
     RecordDescriptor _rdesc;
     EdgeDirection _direction;
     unsigned int _minDepth{0};
-    unsigned int _maxDepth{0};
+    unsigned int _maxDepth{std::numeric_limits<unsigned int>::max()};
     GraphFilter _edgeFilter{};
     GraphFilter _vertexFilter{};
 
@@ -1375,9 +1377,9 @@ namespace nogdb {
 
     virtual ShortestPathOperationBuilder& whereE(const GraphFilter& filter);
 
-    ResultSet get();
+    ResultSet get() const;
 
-    ResultSetCursor getCursor();
+    ResultSetCursor getCursor() const;
 
   private:
 

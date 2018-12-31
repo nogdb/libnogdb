@@ -65,95 +65,95 @@ void test_create_complex_graph() {
   try {
     nogdb::Record rt{};
     rt.set("name", "John").set("age", 52U).set("salary", 51000U).set("level", "Dr.");
-    auto john = nogdb::Vertex::create(txn, "teachers", rt);
+    auto john = txn.addVertex("teachers", rt);
     rt.set("name", "Jim").set("age", 55U).set("salary", 46000U).set("level", "Asso.Prof.");
-    auto jim = nogdb::Vertex::create(txn, "teachers", rt);
+    auto jim = txn.addVertex("teachers", rt);
     rt.set("name", "Wei").set("age", 32U).set("salary", 65000U).set("level", "Prof.");
-    auto wei = nogdb::Vertex::create(txn, "teachers", rt);
+    auto wei = txn.addVertex("teachers", rt);
 
     nogdb::Record rs{};
     rs.set("name", "Peter").set("age", 42U).set("grade", 2.89);
-    auto peter = nogdb::Vertex::create(txn, "students", rs);
+    auto peter = txn.addVertex("students", rs);
     rs.set("name", "David").set("age", 40U).set("grade", 3.3);
-    auto david = nogdb::Vertex::create(txn, "students", rs);
+    auto david = txn.addVertex("students", rs);
     rs.set("name", "Ying").set("age", 21U).set("grade", 3.01);
-    auto ying = nogdb::Vertex::create(txn, "students", rs);
+    auto ying = txn.addVertex("students", rs);
     rs.set("name", "Andy").set("age", 30U).set("grade", 3.43);
-    auto andy = nogdb::Vertex::create(txn, "students", rs);
+    auto andy = txn.addVertex("students", rs);
     rs.set("name", "Wong").set("age", 29U).set("grade", 3.78);
-    auto wong = nogdb::Vertex::create(txn, "students", rs);
+    auto wong = txn.addVertex("students", rs);
     rs.set("name", "Jessie").set("age", 27U).set("grade", 2.56);
-    auto jessie = nogdb::Vertex::create(txn, "students", rs);
+    auto jessie = txn.addVertex("students", rs);
 
     nogdb::Record rd{};
     rd.set("name", "Computing");
-    auto comp = nogdb::Vertex::create(txn, "departments", rd);
+    auto comp = txn.addVertex("departments", rd);
     rd.set("name", "Business");
-    auto bus = nogdb::Vertex::create(txn, "departments", rd);
+    auto bus = txn.addVertex("departments", rd);
 
     nogdb::Record rsb{};
     rsb.set("name", "Programming");
-    auto prog = nogdb::Vertex::create(txn, "subjects", rsb);
+    auto prog = txn.addVertex("subjects", rsb);
     rsb.set("name", "Database");
-    auto db = nogdb::Vertex::create(txn, "subjects", rsb);
+    auto db = txn.addVertex("subjects", rsb);
     rsb.set("name", "Networking");
-    auto network = nogdb::Vertex::create(txn, "subjects", rsb);
+    auto network = txn.addVertex("subjects", rsb);
     rsb.set("name", "Marketing");
-    auto market = nogdb::Vertex::create(txn, "subjects", rsb);
+    auto market = txn.addVertex("subjects", rsb);
     rsb.set("name", "Intro to Finance");
-    auto fin = nogdb::Vertex::create(txn, "subjects", rsb);
+    auto fin = txn.addVertex("subjects", rsb);
 
     nogdb::Record rtch{};
     rtch.set("semester", "2016s1");
-    nogdb::Edge::create(txn, "teach", john, market, rtch);
-    nogdb::Edge::create(txn, "teach", jim, fin, rtch);
-    nogdb::Edge::create(txn, "teach", wei, db, rtch);
+    txn.addEdge("teach", john, market, rtch);
+    txn.addEdge("teach", jim, fin, rtch);
+    txn.addEdge("teach", wei, db, rtch);
     rtch.set("semester", "2016s2");
-    nogdb::Edge::create(txn, "teach", john, fin, rtch);
-    nogdb::Edge::create(txn, "teach", jim, network, rtch);
-    nogdb::Edge::create(txn, "teach", wei, prog, rtch);
+    txn.addEdge("teach", john, fin, rtch);
+    txn.addEdge("teach", jim, network, rtch);
+    txn.addEdge("teach", wei, prog, rtch);
 
     nogdb::Record rb{};
     rb.set("null", "0");
-    nogdb::Edge::create(txn, "belongto", prog, comp, rb);
-    nogdb::Edge::create(txn, "belongto", db, comp, rb);
-    nogdb::Edge::create(txn, "belongto", network, comp, rb);
-    nogdb::Edge::create(txn, "belongto", market, bus, rb);
-    nogdb::Edge::create(txn, "belongto", fin, bus, rb);
+    txn.addEdge("belongto", prog, comp, rb);
+    txn.addEdge("belongto", db, comp, rb);
+    txn.addEdge("belongto", network, comp, rb);
+    txn.addEdge("belongto", market, bus, rb);
+    txn.addEdge("belongto", fin, bus, rb);
 
     nogdb::Record rw{};
     rw.set("position", "officer");
-    nogdb::Edge::create(txn, "workfor", jim, comp, rw);
-    nogdb::Edge::create(txn, "workfor", jim, bus, rw);
+    txn.addEdge("workfor", jim, comp, rw);
+    txn.addEdge("workfor", jim, bus, rw);
     rw.set("position", "dean");
-    nogdb::Edge::create(txn, "workfor", john, bus, rw);
-    nogdb::Edge::create(txn, "workfor", wei, comp, rw);
+    txn.addEdge("workfor", john, bus, rw);
+    txn.addEdge("workfor", wei, comp, rw);
 
     nogdb::Record rk{};
     rk.set("relationship", "friend");
-    nogdb::Edge::create(txn, "know", john, jim, rk);
-    nogdb::Edge::create(txn, "know", jim, john, rk);
-    nogdb::Edge::create(txn, "know", john, wei, rk);
+    txn.addEdge("know", john, jim, rk);
+    txn.addEdge("know", jim, john, rk);
+    txn.addEdge("know", john, wei, rk);
     rk.set("relationship", "colleague");
-    nogdb::Edge::create(txn, "know", wei, john, rk);
-    nogdb::Edge::create(txn, "know", jim, wei, rk);
-    nogdb::Edge::create(txn, "know", wei, jim, rk);
+    txn.addEdge("know", wei, john, rk);
+    txn.addEdge("know", jim, wei, rk);
+    txn.addEdge("know", wei, jim, rk);
 
     nogdb::Record re{};
     re.set("semester", "2016s1");
-    nogdb::Edge::create(txn, "enrol", jessie, market, re);
-    nogdb::Edge::create(txn, "enrol", ying, fin, re);
-    nogdb::Edge::create(txn, "enrol", peter, fin, re);
-    nogdb::Edge::create(txn, "enrol", david, fin, re);
-    nogdb::Edge::create(txn, "enrol", andy, db, re);
-    nogdb::Edge::create(txn, "enrol", wong, db, re);
+    txn.addEdge("enrol", jessie, market, re);
+    txn.addEdge("enrol", ying, fin, re);
+    txn.addEdge("enrol", peter, fin, re);
+    txn.addEdge("enrol", david, fin, re);
+    txn.addEdge("enrol", andy, db, re);
+    txn.addEdge("enrol", wong, db, re);
     re.set("semester", "2016s2");
-    nogdb::Edge::create(txn, "enrol", jessie, fin, re);
-    nogdb::Edge::create(txn, "enrol", ying, prog, re);
-    nogdb::Edge::create(txn, "enrol", peter, prog, re);
-    nogdb::Edge::create(txn, "enrol", david, prog, re);
-    nogdb::Edge::create(txn, "enrol", andy, network, re);
-    nogdb::Edge::create(txn, "enrol", wong, network, re);
+    txn.addEdge("enrol", jessie, fin, re);
+    txn.addEdge("enrol", ying, prog, re);
+    txn.addEdge("enrol", peter, prog, re);
+    txn.addEdge("enrol", david, prog, re);
+    txn.addEdge("enrol", andy, network, re);
+    txn.addEdge("enrol", wong, network, re);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -162,44 +162,44 @@ void test_create_complex_graph() {
 
   try {
     nogdb::Record rf{}, rl{};
-    auto A = nogdb::Vertex::create(txn, "folders", rf.set("name", "A"));
-    auto B = nogdb::Vertex::create(txn, "folders", rf.set("name", "B"));
-    auto C = nogdb::Vertex::create(txn, "folders", rf.set("name", "C"));
-    auto D = nogdb::Vertex::create(txn, "folders", rf.set("name", "D"));
-    auto E = nogdb::Vertex::create(txn, "folders", rf.set("name", "E"));
-    auto F = nogdb::Vertex::create(txn, "folders", rf.set("name", "F"));
-    auto G = nogdb::Vertex::create(txn, "folders", rf.set("name", "G"));
-    auto H = nogdb::Vertex::create(txn, "folders", rf.set("name", "H"));
-    auto Z = nogdb::Vertex::create(txn, "folders", rf.set("name", "Z"));
+    auto A = txn.addVertex("folders", rf.set("name", "A"));
+    auto B = txn.addVertex("folders", rf.set("name", "B"));
+    auto C = txn.addVertex("folders", rf.set("name", "C"));
+    auto D = txn.addVertex("folders", rf.set("name", "D"));
+    auto E = txn.addVertex("folders", rf.set("name", "E"));
+    auto F = txn.addVertex("folders", rf.set("name", "F"));
+    auto G = txn.addVertex("folders", rf.set("name", "G"));
+    auto H = txn.addVertex("folders", rf.set("name", "H"));
+    auto Z = txn.addVertex("folders", rf.set("name", "Z"));
 
-    auto a = nogdb::Vertex::create(txn, "files", rf.set("name", "a"));
-    auto b = nogdb::Vertex::create(txn, "files", rf.set("name", "b"));
-    auto c = nogdb::Vertex::create(txn, "files", rf.set("name", "c"));
-    auto d = nogdb::Vertex::create(txn, "files", rf.set("name", "d"));
-    auto e = nogdb::Vertex::create(txn, "files", rf.set("name", "e"));
-    auto f = nogdb::Vertex::create(txn, "files", rf.set("name", "f"));
+    auto a = txn.addVertex("files", rf.set("name", "a"));
+    auto b = txn.addVertex("files", rf.set("name", "b"));
+    auto c = txn.addVertex("files", rf.set("name", "c"));
+    auto d = txn.addVertex("files", rf.set("name", "d"));
+    auto e = txn.addVertex("files", rf.set("name", "e"));
+    auto f = txn.addVertex("files", rf.set("name", "f"));
 
 //        rl.set("null", "0");
-    nogdb::Edge::create(txn, "link", A, B, rl);
-    nogdb::Edge::create(txn, "link", A, a, rl);
-    nogdb::Edge::create(txn, "link", A, C, rl);
-    nogdb::Edge::create(txn, "link", B, D, rl);
-    nogdb::Edge::create(txn, "link", B, E, rl);
-    nogdb::Edge::create(txn, "link", B, b, rl);
-    nogdb::Edge::create(txn, "link", C, c, rl);
-    nogdb::Edge::create(txn, "link", C, F, rl);
-    nogdb::Edge::create(txn, "link", E, G, rl);
-    nogdb::Edge::create(txn, "link", F, d, rl);
-    nogdb::Edge::create(txn, "link", F, H, rl);
-    nogdb::Edge::create(txn, "link", F, e, rl);
-    nogdb::Edge::create(txn, "link", G, f, rl);
-    nogdb::Edge::create(txn, "symbolic", B, b, rl);
-    nogdb::Edge::create(txn, "symbolic", C, e, rl);
-    nogdb::Edge::create(txn, "symbolic", D, A, rl);
-    nogdb::Edge::create(txn, "symbolic", D, f, rl);
-    nogdb::Edge::create(txn, "symbolic", E, F, rl);
-    nogdb::Edge::create(txn, "symbolic", H, C, rl);
-    nogdb::Edge::create(txn, "symbolic", a, a, rl);
+    txn.addEdge("link", A, B, rl);
+    txn.addEdge("link", A, a, rl);
+    txn.addEdge("link", A, C, rl);
+    txn.addEdge("link", B, D, rl);
+    txn.addEdge("link", B, E, rl);
+    txn.addEdge("link", B, b, rl);
+    txn.addEdge("link", C, c, rl);
+    txn.addEdge("link", C, F, rl);
+    txn.addEdge("link", E, G, rl);
+    txn.addEdge("link", F, d, rl);
+    txn.addEdge("link", F, H, rl);
+    txn.addEdge("link", F, e, rl);
+    txn.addEdge("link", G, f, rl);
+    txn.addEdge("symbolic", B, b, rl);
+    txn.addEdge("symbolic", C, e, rl);
+    txn.addEdge("symbolic", D, A, rl);
+    txn.addEdge("symbolic", D, f, rl);
+    txn.addEdge("symbolic", E, F, rl);
+    txn.addEdge("symbolic", H, C, rl);
+    txn.addEdge("symbolic", a, a, rl);
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -207,50 +207,50 @@ void test_create_complex_graph() {
   }
 
   try {
-    auto a = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto a = txn.addVertex("country", nogdb::Record{}
         .set("name", "A")
         .set("population", 400ULL)
     );
 
-    auto b = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto b = txn.addVertex("country", nogdb::Record{}
         .set("name", "B")
         .set("population", 1000ULL)
     );
 
-    auto c = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto c = txn.addVertex("country", nogdb::Record{}
         .set("name", "C")
         .set("population", 2000ULL)
     );
 
-    auto d = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto d = txn.addVertex("country", nogdb::Record{}
         .set("name", "D")
         .set("population", 5000ULL)
     );
 
-    auto e = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto e = txn.addVertex("country", nogdb::Record{}
         .set("name", "E")
         .set("population", 500ULL)
     );
 
-    auto f = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto f = txn.addVertex("country", nogdb::Record{}
         .set("name", "F")
         .set("population", 1500ULL)
     );
 
-    auto z = nogdb::Vertex::create(txn, "country", nogdb::Record{}
+    auto z = txn.addVertex("country", nogdb::Record{}
         .set("name", "Z")
         .set("population", 500ULL)
     );
 
-    nogdb::Edge::create(txn, "path", z, a, nogdb::Record{}.set("distance", 40U));
-    nogdb::Edge::create(txn, "path", a, b, nogdb::Record{}.set("distance", 50U));
-    nogdb::Edge::create(txn, "path", a, c, nogdb::Record{}.set("distance", 400U));
-    nogdb::Edge::create(txn, "path", b, e, nogdb::Record{}.set("distance", 250U));
-    nogdb::Edge::create(txn, "path", b, c, nogdb::Record{}.set("distance", 80U));
-    nogdb::Edge::create(txn, "path", c, d, nogdb::Record{}.set("distance", 100U));
-    nogdb::Edge::create(txn, "path", c, f, nogdb::Record{}.set("distance", 150U));
-    nogdb::Edge::create(txn, "path", d, a, nogdb::Record{}.set("distance", 300U));
-    nogdb::Edge::create(txn, "path", d, f, nogdb::Record{}.set("distance", 120U));
+    txn.addEdge("path", z, a, nogdb::Record{}.set("distance", 40U));
+    txn.addEdge("path", a, b, nogdb::Record{}.set("distance", 50U));
+    txn.addEdge("path", a, c, nogdb::Record{}.set("distance", 400U));
+    txn.addEdge("path", b, e, nogdb::Record{}.set("distance", 250U));
+    txn.addEdge("path", b, c, nogdb::Record{}.set("distance", 80U));
+    txn.addEdge("path", c, d, nogdb::Record{}.set("distance", 100U));
+    txn.addEdge("path", c, f, nogdb::Record{}.set("distance", 150U));
+    txn.addEdge("path", d, a, nogdb::Record{}.set("distance", 300U));
+    txn.addEdge("path", d, f, nogdb::Record{}.set("distance", 120U));
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -264,7 +264,7 @@ void test_get_edge_in_more() {
   try {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findInEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
       assert(edges.size() == 0);
     }
   } catch (const nogdb::Error &ex) {
@@ -274,21 +274,21 @@ void test_get_edge_in_more() {
 
   try {
     auto get_class_name = [&](const nogdb::RecordDescriptor &rdesc) {
-      auto class_desc = nogdb::DB::getClass(txn, rdesc.rid.first);
+      auto class_desc = txn.getClass(rdesc.rid.first);
       return class_desc.name;
     };
     for (const auto &res: txn.find("subjects")) {
       auto subject = res.descriptor;
-      auto edges = nogdb::Vertex::getInEdge(txn, subject, nogdb::GraphFilter{}.only("teach"));
+      auto edges = txn.findInEdge(subject, nogdb::GraphFilter{}.only("teach"));
       if (res.record.get("name").toText() == "Intro to Finance") {
         assert(edges.size() == 2);
       } else {
         assert(edges.size() == 1);
       }
-      edges = nogdb::Vertex::getInEdge(txn, subject, nogdb::GraphFilter{}.only("enrol"));
+      edges = txn.findInEdge(subject, nogdb::GraphFilter{}.only("enrol"));
       assert(edges.size() != 0);
       bool tmp1 = false, tmp2 = false;
-      for (const auto &edge: nogdb::Vertex::getInEdge(txn, subject)) {
+      for (const auto &edge: txn.findInEdge(subject)) {
         assert(get_class_name(edge.descriptor) == "teach" ||
                get_class_name(edge.descriptor) == "enrol");
         if (get_class_name(edge.descriptor) == "teach") tmp1 |= true;
@@ -305,21 +305,21 @@ void test_get_edge_in_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       assert(edges.size() == 0);
     }
 
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       assert(edges.size() == 0);
     }
 
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       assert(edges.size() == 0);
     }
   } catch (const nogdb::Error &ex) {
@@ -331,13 +331,13 @@ void test_get_edge_in_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       assert(edges.size() == 2);
     }
 
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher);
+      auto edges = txn.findInEdge(teacher);
       assert(edges.size() == 2);
     }
   } catch (const nogdb::Error &ex) {
@@ -353,7 +353,7 @@ void test_get_edge_out_more() {
   try {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findOutEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
       assert(edges.size() == 1 || edges.size() == 2);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges[0].record.get("position").toText() == "officer");
@@ -374,7 +374,7 @@ void test_get_edge_out_more() {
   try {
     for (const auto &res: txn.find("subjects")) {
       auto subject = res.descriptor;
-      auto edges = nogdb::Vertex::getOutEdge(txn, subject, nogdb::GraphFilter{}.only("belongto"));
+      auto edges = txn.findOutEdge(subject, nogdb::GraphFilter{}.only("belongto"));
       assert(edges.size() == 1);
     }
   } catch (const nogdb::Error &ex) {
@@ -386,7 +386,7 @@ void test_get_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -398,7 +398,7 @@ void test_get_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -410,7 +410,7 @@ void test_get_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -427,7 +427,7 @@ void test_get_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       assert(edges.size() == 5 || edges.size() == 6);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 6);
@@ -438,7 +438,7 @@ void test_get_edge_out_more() {
 
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher);
+      auto edges = txn.findOutEdge(teacher);
       assert(edges.size() == 5 || edges.size() == 6);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 6);
@@ -459,7 +459,7 @@ void test_get_edge_all_more() {
   try {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, nogdb::GraphFilter{}.only("workfor"));
+      auto edges = txn.findEdge(teacher, nogdb::GraphFilter{}.only("workfor"));
       assert(edges.size() == 1 || edges.size() == 2);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges[0].record.get("position").toText() == "officer");
@@ -481,7 +481,7 @@ void test_get_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -493,7 +493,7 @@ void test_get_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -505,7 +505,7 @@ void test_get_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       assert(edges.size() == 3 || edges.size() == 4);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 4);
@@ -522,7 +522,7 @@ void test_get_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       assert(edges.size() == 7 || edges.size() == 8);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 8);
@@ -533,7 +533,7 @@ void test_get_edge_all_more() {
 
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher);
+      auto edges = txn.findEdge(teacher);
       assert(edges.size() == 7 || edges.size() == 8);
       if (res.record.get("name").toText() == "Jim") {
         assert(edges.size() == 8);
@@ -549,7 +549,7 @@ void test_get_edge_all_more() {
   try {
     for (const auto &res: txn.find("subjects")) {
       auto subject = res.descriptor;
-      auto edges = nogdb::Vertex::getAllEdge(txn, subject);
+      auto edges = txn.findEdge(subject);
       if (res.record.get("name").toText() == "Intro to Finance") {
         assert(edges.size() == 7);
       } else if (res.record.get("name").toText() == "Marketing") {
@@ -577,7 +577,7 @@ void test_get_invalid_edge_in_more() {
   try {
     for (const auto &res: txn.find("students")) {
       auto student = res.descriptor;
-      auto edges = nogdb::Vertex::getInEdge(txn, student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findInEdge(student, nogdb::GraphFilter{}.only("attack"));
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -591,7 +591,7 @@ void test_get_invalid_edge_in_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -605,7 +605,7 @@ void test_get_invalid_edge_in_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -620,7 +620,7 @@ void test_get_invalid_edge_in_more() {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getInEdge(txn, teacher, clsset);
+      auto edges = txn.findInEdge(teacher, clsset);
     }
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -635,7 +635,7 @@ void test_get_invalid_edge_out_more() {
   try {
     for (const auto &res: txn.find("students")) {
       auto student = res.descriptor;
-      auto edges = nogdb::Vertex::getOutEdge(txn, student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findOutEdge(student, nogdb::GraphFilter{}.only("attack"));
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -649,7 +649,7 @@ void test_get_invalid_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -663,7 +663,7 @@ void test_get_invalid_edge_out_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -678,7 +678,7 @@ void test_get_invalid_edge_out_more() {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getOutEdge(txn, teacher, clsset);
+      auto edges = txn.findOutEdge(teacher, clsset);
     }
     assert(false);
   } catch (const nogdb::Error &ex) {
@@ -693,7 +693,7 @@ void test_get_invalid_edge_all_more() {
   try {
     for (const auto &res: txn.find("students")) {
       auto student = res.descriptor;
-      auto edges = nogdb::Vertex::getAllEdge(txn, student, nogdb::GraphFilter{}.only("attack"));
+      auto edges = txn.findEdge(student, nogdb::GraphFilter{}.only("attack"));
       ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -707,7 +707,7 @@ void test_get_invalid_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "knew");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -721,7 +721,7 @@ void test_get_invalid_edge_all_more() {
     for (const auto &res: txn.find("teachers")) {
       auto teacher = res.descriptor;
       auto clsset = nogdb::GraphFilter{}.only("teach", "students");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
       //ASSERT_SIZE(edges, 0);
     }
     txn.rollback();
@@ -736,7 +736,7 @@ void test_get_invalid_edge_all_more() {
       auto teacher = res.descriptor;
       teacher.rid.second = 9999U;
       auto clsset = nogdb::GraphFilter{}.only("workfor", "teach", "know");
-      auto edges = nogdb::Vertex::getAllEdge(txn, teacher, clsset);
+      auto edges = txn.findEdge(teacher, clsset);
     }
     assert(false);
   } catch (const nogdb::Error &ex) {

@@ -31,7 +31,7 @@
 
 namespace nogdb {
 
-  const DbInfo Transaction::getDbInfo() {
+  const DbInfo Transaction::getDbInfo() const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -45,7 +45,7 @@ namespace nogdb {
     return dbInfo;
   }
 
-  const std::vector<ClassDescriptor> Transaction::getClasses() {
+  const std::vector<ClassDescriptor> Transaction::getClasses() const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -62,7 +62,7 @@ namespace nogdb {
     return result;
   }
 
-  const std::vector<PropertyDescriptor> Transaction::getProperties(const std::string &className) {
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const std::string &className) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted()
         .isClassNameValid(className);
@@ -95,7 +95,7 @@ namespace nogdb {
     return result;
   }
 
-  const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDescriptor &classDescriptor) {
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDescriptor &classDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -127,7 +127,7 @@ namespace nogdb {
     return result;
   }
 
-  const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor &classDescriptor) {
+  const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor &classDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -145,7 +145,7 @@ namespace nogdb {
     return indexDescriptors;
   }
 
-  const ClassDescriptor Transaction::getClass(const std::string &className) {
+  const ClassDescriptor Transaction::getClass(const std::string &className) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted()
         .isClassNameValid(className);
@@ -159,7 +159,7 @@ namespace nogdb {
     };
   }
 
-  const ClassDescriptor Transaction::getClass(const ClassId &classId) {
+  const ClassDescriptor Transaction::getClass(const ClassId &classId) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
@@ -172,7 +172,8 @@ namespace nogdb {
     };
   }
 
-  const PropertyDescriptor Transaction::getProperty(const std::string &className, const std::string &propertyName) {
+  const PropertyDescriptor Transaction::getProperty(const std::string &className,
+                                                    const std::string &propertyName) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted()
         .isClassNameValid(className)
@@ -202,7 +203,7 @@ namespace nogdb {
     }
   }
 
-  const IndexDescriptor Transaction::getIndex(const std::string &className, const std::string &propertyName) {
+  const IndexDescriptor Transaction::getIndex(const std::string &className, const std::string &propertyName) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted()
         .isClassNameValid(className)
@@ -219,7 +220,7 @@ namespace nogdb {
     };
   }
 
-  Record Transaction::fetchRecord(const RecordDescriptor &recordDescriptor) {
+  Record Transaction::fetchRecord(const RecordDescriptor &recordDescriptor) const {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
