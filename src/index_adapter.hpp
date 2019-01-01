@@ -48,7 +48,7 @@ namespace nogdb {
       public:
         IndexRecord(const storage_engine::LMDBTxn *const txn, const IndexId &indexId, const unsigned int flags)
             : LMDBKeyValAccess(txn, buildIndexName(indexId, getPositiveFlag(flags)), getNumericFlag(flags),
-                               getUniqueFlag(flags), false, false),
+                               getUniqueFlag(flags), false, !getUniqueFlag(flags)),
               _positive{getPositiveFlag(flags)}, _numeric{getNumericFlag(flags)}, _unique{getUniqueFlag(flags)} {}
 
         virtual ~IndexRecord() noexcept = default;

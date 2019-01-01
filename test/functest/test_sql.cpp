@@ -1593,8 +1593,6 @@ void test_sql_traverse() {
     assert(result.get<ResultSet>() == txn.traverseIn(v32).depth(0, UINT_MAX).get());
 
     result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v1));
-    auto tmp1 = txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter{}.only("EL")).get();
-    auto tmp2 = result.get<ResultSet>();
     assert(result.type() == result.RESULT_SET);
     assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter{}.only("EL")).get());
 

@@ -248,9 +248,12 @@ void test_drop_index_extended_class() {
   try {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto classDesc = txn.getClass("index_test_2");
-    auto properties = txn.getProperties(classDesc);
+    auto index = txn.getIndex("index_test_2", "index_text_2");
     auto indexSchema = txn.getIndexes(classDesc);
-    assert(indexSchema.size() == 0);
+    assert(indexSchema.size() == 1);
+    assert(indexSchema[0].id == index.id);
+    assert(indexSchema[0].classId == index.classId);
+    assert(indexSchema[0].propertyId == index.propertyId);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
