@@ -648,25 +648,23 @@ ResultSet Context::traversePrivate(const TraverseArgs &args) {
 
   try {
     auto func = args.direction + args.strategy;
+    utils::string::toUpperCase(func);
     if (func == "INDEPTH_FIRST" || func == "INBREADTH_FIRST") {
       return this->txn.traverseIn(args.root)
       .minDepth(args.minDepth)
       .maxDepth(args.maxDepth)
-      .whereV(GraphFilter{}.only(args.filter))
       .whereE(GraphFilter{}.only(args.filter))
       .get();
     } else if (func == "OUTDEPTH_FIRST" || func == "OUTBREADTH_FIRST") {
       return this->txn.traverseOut(args.root)
           .minDepth(args.minDepth)
           .maxDepth(args.maxDepth)
-          .whereV(GraphFilter{}.only(args.filter))
           .whereE(GraphFilter{}.only(args.filter))
           .get();
     } else if (func == "ALLDEPTH_FIRST" || func == "ALLBREADTH_FIRST") {
       return this->txn.traverse(args.root)
           .minDepth(args.minDepth)
           .maxDepth(args.maxDepth)
-          .whereV(GraphFilter{}.only(args.filter))
           .whereE(GraphFilter{}.only(args.filter))
           .get();
     } else {

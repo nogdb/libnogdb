@@ -29,6 +29,7 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <algorithm>
 #include <sstream>
 #include <sys/time.h>
 #include <sys/file.h>
@@ -108,6 +109,7 @@ namespace nogdb {
     namespace string {
       std::vector<std::string> split(const std::string &string, char delimeter);
       void replaceAll(std::string &string, const std::string &from, const std::string &to);
+      void toUpperCase(std::string &str);
     }
 
     // assertion

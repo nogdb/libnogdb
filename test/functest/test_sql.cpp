@@ -285,7 +285,7 @@ void test_sql_drop_invalid_class() {
     SQL::execute(txn, "DROP CLASS ''");
     assert(false);
   } catch (const Error &ex) {
-    REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
+    REQUIRE(ex, NOGDB_CTX_INVALID_CLASSNAME, "NOGDB_CTX_INVALID_CLASSNAME");
   }
   try {
     SQL::execute(txn, "DROP CLASS sql_class");
@@ -303,13 +303,10 @@ void test_sql_add_property() {
     txn.addClass("sql_class", ClassType::VERTEX);
     SQL::Result result1 = SQL::execute(txn, "CREATE PROPERTY sql_class.prop1 TEXT");
     SQL::Result result2 = SQL::execute(txn, "CREATE PROPERTY sql_class.prop2 UNSIGNED_INTEGER");
-    SQL::Result result3 = SQL::execute(txn, "CREATE PROPERTY sql_class.xml TEXT");
     assert(result1.type() == SQL::Result::PROPERTY_DESCRIPTOR);
     assert(result1.get<PropertyDescriptor>().type == PropertyType::TEXT);
     assert(result2.type() == SQL::Result::PROPERTY_DESCRIPTOR);
     assert(result2.get<PropertyDescriptor>().type == PropertyType::UNSIGNED_INTEGER);
-    assert(result3.type() == SQL::Result::PROPERTY_DESCRIPTOR);
-    assert(result3.get<PropertyDescriptor>().type == PropertyType::TEXT);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -385,7 +382,7 @@ void test_sql_delete_property() {
     auto schema = txn.getClass("sql_class");
     assert(schema.name == "sql_class");
     auto properties = txn.getProperties(schema);
-    assert(properties.size() == 0);
+    assert(properties.size() == 1);
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -606,19 +603,6 @@ void test_sql_select_property() {
     assert(false);
   }
 
-  // select @version.
-  try {
-    SQL::Result result = SQL::execute(txn, "SELECT @version FROM " + to_string(rdesc));
-    assert(result.type() == result.RESULT_SET);
-    auto res = result.get<ResultSet>();
-    ASSERT_SIZE(res, 1);
-    assert(res[0].descriptor == RecordDescriptor(-2, 0));
-    //assert(res[0].record.get("@version").empty() == false);
-  } catch (const Error &ex) {
-    std::cout << "\nError: " << ex.what() << std::endl;
-    assert(false);
-  }
-
   // select non-exist property.
   try {
     SQL::Result result = SQL::execute(txn, "SELECT nonExist FROM " + to_string(rdesc));
@@ -715,8 +699,8 @@ void test_sql_select_walk() {
     assert(result.type() == result.RESULT_SET);
     res = result.get<ResultSet>();
     ASSERT_SIZE(res, 2);
-    assert(res[0].descriptor == eA23);
-    assert(res[1].descriptor == eA13);
+    assert(res[0].descriptor == eA13);
+    assert(res[1].descriptor == eA23);
 
     result = SQL::execute(txn, "SELECT expand(bothE()) FROM " + to_string(v3));
     assert(result.type() == result.RESULT_SET);
@@ -756,15 +740,15 @@ void test_sql_select_walk() {
     assert(result.type() == result.RESULT_SET);
     res = result.get<ResultSet>();
     ASSERT_SIZE(res, 2);
-    assert(res[0].descriptor == v2);
-    assert(res[1].descriptor == v1);
+    assert(res[0].descriptor == v1);
+    assert(res[1].descriptor == v2);
 
     result = SQL::execute(txn, "SELECT expand(both()) FROM " + to_string(v3));
     assert(result.type() == result.RESULT_SET);
     res = result.get<ResultSet>();
     ASSERT_SIZE(res, 3);
-    assert(res[0].descriptor == v2);
-    assert(res[1].descriptor == v1);
+    assert(res[0].descriptor == v1);
+    assert(res[1].descriptor == v2);
     assert(res[2].descriptor == v5);
 
     result = SQL::execute(txn, "SELECT expand(out('eA')) FROM " + to_string(v1));
@@ -777,8 +761,8 @@ void test_sql_select_walk() {
     assert(result.type() == result.RESULT_SET);
     res = result.get<ResultSet>();
     ASSERT_SIZE(res, 2);
-    assert(res[0].descriptor == v2);
-    assert(res[1].descriptor == v1);
+    assert(res[0].descriptor == v1);
+    assert(res[1].descriptor == v2);
 
     result = SQL::execute(txn, "SELECT expand(in('eA').out('eB')) FROM " + to_string(v3));
     assert(result.type() == result.RESULT_SET);
@@ -839,7 +823,7 @@ void test_sql_select_method_property() {
     assert(result.type() == result.RESULT_SET);
     res = result.get<ResultSet>();
     assert(res[0].descriptor == RecordDescriptor(-2, 0));
-    assert(res[0].record.get("out").toText() == "v4");
+    assert(res[0].record.get("out").toText() == "v3");
 
     // normal method with array selector and normal property
     result = SQL::execute(txn, "SELECT propV, out()[0].propV FROM " + to_string(v1));
@@ -847,7 +831,7 @@ void test_sql_select_method_property() {
     res = result.get<ResultSet>();
     assert(res[0].descriptor == RecordDescriptor(-2, 0));
     assert(res[0].record.get("propV").toText() == "v1");
-    assert(res[0].record.get("out").toText() == "v4");
+    assert(res[0].record.get("out").toText() == "v3");
 
     // normal method with out of range array selector
     result = SQL::execute(txn, "SELECT out()[2].propV FROM " + to_string(v1));
@@ -1426,7 +1410,6 @@ void test_sql_delete_edge_with_rid() {
 
     auto res = txn.find("authors").get();
     ASSERT_SIZE(res, 0);
-    txn.remove(e1);
 
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1610,6 +1593,8 @@ void test_sql_traverse() {
     assert(result.get<ResultSet>() == txn.traverseIn(v32).depth(0, UINT_MAX).get());
 
     result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v1));
+    auto tmp1 = txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter{}.only("EL")).get();
+    auto tmp2 = result.get<ResultSet>();
     assert(result.type() == result.RESULT_SET);
     assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter{}.only("EL")).get());
 

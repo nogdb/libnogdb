@@ -57,6 +57,10 @@ namespace nogdb {
           }
         }
       }
+
+      void toUpperCase(std::string &str) {
+        std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+      }
     }
 
     // assertion
