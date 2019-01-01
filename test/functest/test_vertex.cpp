@@ -141,7 +141,7 @@ void test_get_vertex() {
     assert(false);
   }
   try {
-    auto res = txn.find("books");
+    auto res = txn.find("books").get();
     ASSERT_SIZE(res, 2);
 
     assert(res[0].record.get("title").toText() == "Percy Jackson");
@@ -209,7 +209,7 @@ void test_get_vertex_v2() {
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto rdesc = txn.addVertex("test", r);
 
-    auto res = txn.find("test");
+    auto res = txn.find("test").get();
     assert(res[0].record.get("integer").toInt() == INT_MIN);
     assert(res[0].record.get("uinteger").toIntU() == UINT_MAX);
     assert(res[0].record.get("bigint").toBigInt() == LLONG_MIN);
@@ -314,7 +314,7 @@ void test_get_vertex_cursor() {
     assert(false);
   }
   try {
-    auto res = txn.find("books");
+    auto res = txn.find("books").getCursor();
     cursorTester(res, testData, testColumn);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -346,7 +346,7 @@ void test_get_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("book");
+    auto res = txn.find("book").get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -355,7 +355,7 @@ void test_get_invalid_vertex_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("authors");
+    auto res = txn.find("authors").get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -385,28 +385,23 @@ void test_update_vertex() {
     record.set("price", 50.0).set("pages", 400).set("words", 90000ULL);
     txn.update(rdesc1, record);
 
-    auto res = txn.find("books");
+    auto res = txn.find("books").get();
     assert(res[0].record.get("title").toText() == "Lion King");
     assert(res[0].record.get("price").toReal() == 50);
     assert(res[0].record.get("pages").toInt() == 400);
     assert(res[0].record.get("words").toBigIntU() == 90000ULL);
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(rdesc1.rid));
-    //assert(res[0].record.getBigIntU("@version") == 1ULL);
-    //assert(res[0].record.getVersion() == 1ULL);
 
     assert(res[1].record.get("title").toText() == "Tarzan");
     assert(res[1].record.get("price").toReal() == 60);
     assert(res[1].record.get("pages").toInt() == 360);
     assert(res[1].record.getText("@recordId") == nogdb::rid2str(rdesc2.rid));
-    //assert(res[1].record.getBigIntU("@version") == 1ULL);
-    //assert(res[1].record.getVersion() == 1ULL);
 
     txn.update(rdesc1, nogdb::Record{});
-    res = txn.find("books");
+    res = txn.find("books").get();
     assert(res[0].record.empty() == true);
     assert(res[0].record.getText("@className") == "books");
     assert(res[0].record.getText("@recordId") == nogdb::rid2str(rdesc1.rid));
-    //assert(res[0].record.getVersion() == 1ULL);
 
     assert(res[1].record.get("title").toText() == "Tarzan");
     assert(res[1].record.get("price").toReal() == 60);
@@ -417,46 +412,6 @@ void test_update_vertex() {
     assert(false);
   }
   txn.commit();
-  destroy_vertex_book();
-}
-
-void test_update_vertex_version() {
-  init_vertex_book();
-  const int ITERATION = 10;
-  try { // init
-    nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::TxnMode::READ_WRITE);
-    nogdb::Record r{};
-    r.set("title", "Lion King").set("price", 100.0).set("pages", 320);
-    auto rdesc1 = txn.addVertex("books", r);
-    r.set("title", "Tarzan").set("price", 60.0).set("pages", 360);
-    auto rdesc2 = txn.addVertex("books", r);
-
-    txn.commit();
-
-  } catch (const nogdb::Error &ex) {
-    std::cout << "Error in initialization step" << std::endl;
-    std::cout << "Error: " << ex.what() << std::endl;
-  }
-  for (int i = 0; i < ITERATION; ++i) {
-    try {
-      nogdb::Transaction txn = nogdb::Txn(*ctx, nogdb::TxnMode::READ_WRITE);
-      nogdb::ResultSet res = txn.find("books");
-      nogdb::Result rec0 = res[0], rec1 = res[1];
-
-      //assert(rec0.record.getVersion() == 1ULL + i);
-      txn.update(rec0.descriptor, rec0.record);
-
-      //assert(rec0.record.getVersion() == 2ULL + i);
-      //assert(rec1.record.getVersion() == 1ULL);
-
-      txn.commit();
-
-    } catch (const nogdb::Error &ex) {
-      std::cout << "\n In Round " << i << std::endl;
-      std::cout << "Error: " << ex.what() << std::endl;
-      assert(false);
-    }
-  }
   destroy_vertex_book();
 }
 
@@ -541,7 +496,7 @@ void test_delete_vertex_only() {
     auto rdesc2 = txn.addVertex("books", r);
     txn.remove(rdesc1);
 
-    auto res = txn.find("books");
+    auto res = txn.find("books").get();
     ASSERT_SIZE(res, 1);
     assert(res[0].record.get("title").toText() == "Tarzan");
     assert(res[0].record.get("price").toReal() == 60);
@@ -617,10 +572,10 @@ void test_delete_all_vertices() {
     for (const auto &record: records) {
       txn.addVertex("books", record);
     }
-    auto res = txn.find("books");
+    auto res = txn.find("books").get();
     ASSERT_SIZE(res, 3);
     txn.removeAll("books");
-    res = txn.find("books");
+    res = txn.find("books").get();
     ASSERT_SIZE(res, 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -666,17 +621,17 @@ void test_get_edge_in() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto in_edges = txn.findInEdge(v1_1);
+    auto in_edges = txn.findInEdge(v1_1).get();
     assert(in_edges.size() == 0);
-    in_edges = txn.findInEdge(v1_2);
+    in_edges = txn.findInEdge(v1_2).get();
     assert(in_edges.size() == 0);
-    in_edges = txn.findInEdge(v1_3);
+    in_edges = txn.findInEdge(v1_3).get();
     assert(in_edges.size() == 0);
-    in_edges = txn.findInEdge(v2_1);
+    in_edges = txn.findInEdge(v2_1).get();
     assert(in_edges.size() == 2);
     assert(in_edges[0].record.get("time_used").toIntU() == 365U);
     assert(in_edges[1].record.get("time_used").toIntU() == 180U);
-    in_edges = txn.findInEdge(v2_2);
+    in_edges = txn.findInEdge(v2_2).get();
     assert(in_edges.size() == 1);
     assert(in_edges[0].record.get("time_used").toIntU() == 430U);
   } catch (const nogdb::Error &ex) {
@@ -716,18 +671,18 @@ void test_get_edge_out() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto out_edges = txn.findOutEdge(v1_1);
+    auto out_edges = txn.findOutEdge(v1_1).get();
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 365U);
-    out_edges = txn.findOutEdge(v1_2);
+    out_edges = txn.findOutEdge(v1_2).get();
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 180U);
-    out_edges = txn.findOutEdge(v1_3);
+    out_edges = txn.findOutEdge(v1_3).get();
     assert(out_edges.size() == 1);
     assert(out_edges[0].record.get("time_used").toIntU() == 430U);
-    out_edges = txn.findOutEdge(v2_1);
+    out_edges = txn.findOutEdge(v2_1).get();
     assert(out_edges.size() == 0);
-    out_edges = txn.findOutEdge(v2_2);
+    out_edges = txn.findOutEdge(v2_2).get();
     assert(out_edges.size() == 0);
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -765,20 +720,20 @@ void test_get_edge_all() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto all_edges = txn.findEdge(v1_1);
+    auto all_edges = txn.findEdge(v1_1).get();
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 365U);
-    all_edges = txn.findEdge(v1_2);
+    all_edges = txn.findEdge(v1_2).get();
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 180U);
-    all_edges = txn.findEdge(v1_3);
+    all_edges = txn.findEdge(v1_3).get();
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 430U);
-    all_edges = txn.findEdge(v2_1);
+    all_edges = txn.findEdge(v2_1).get();
     assert(all_edges.size() == 2);
     assert(all_edges[0].record.get("time_used").toIntU() == 365U);
     assert(all_edges[1].record.get("time_used").toIntU() == 180U);
-    all_edges = txn.findInEdge(v2_2);
+    all_edges = txn.findInEdge(v2_2).get();
     assert(all_edges.size() == 1);
     assert(all_edges[0].record.get("time_used").toIntU() == 430U);
   } catch (const nogdb::Error &ex) {
@@ -1034,19 +989,19 @@ void test_get_edge_in_cursor() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto in_edges = txn.findInEdge(v1_1);
+    auto in_edges = txn.findInEdge(v1_1).getCursor();
     assert(in_edges.count() == 0);
-    in_edges = txn.findInEdge(v1_2);
+    in_edges = txn.findInEdge(v1_2).getCursor();
     assert(in_edges.size() == 0);
-    in_edges = txn.findInEdge(v1_3);
+    in_edges = txn.findInEdge(v1_3).getCursor();
     assert(in_edges.empty());
-    in_edges = txn.findInEdge(v2_1);
+    in_edges = txn.findInEdge(v2_1).getCursor();
     assert(in_edges.size() == 2);
     in_edges.next();
     assert(in_edges->record.get("time_used").toIntU() == 365U);
     in_edges.next();
     assert(in_edges->record.get("time_used").toIntU() == 180U);
-    in_edges = txn.findInEdge(v2_2);
+    in_edges = txn.findInEdge(v2_2).getCursor();
     assert(in_edges.size() == 1);
     in_edges.first();
     assert(in_edges->record.get("time_used").toIntU() == 430U);
@@ -1089,21 +1044,21 @@ void test_get_edge_out_cursor() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto out_edges = txn.findOutEdge(v1_1);
+    auto out_edges = txn.findOutEdge(v1_1).getCursor();
     assert(out_edges.size() == 1);
     out_edges.first();
     assert(out_edges->record.get("time_used").toIntU() == 365U);
-    out_edges = txn.findOutEdge(v1_2);
+    out_edges = txn.findOutEdge(v1_2).getCursor();
     assert(out_edges.size() == 1);
     out_edges.next();
     assert(out_edges->record.get("time_used").toIntU() == 180U);
-    out_edges = txn.findOutEdge(v1_3);
+    out_edges = txn.findOutEdge(v1_3).getCursor();
     assert(out_edges.size() == 1);
     out_edges.to(0);
     assert(out_edges->record.get("time_used").toIntU() == 430U);
-    out_edges = txn.findOutEdge(v2_1);
+    out_edges = txn.findOutEdge(v2_1).getCursor();
     assert(out_edges.count() == 0);
-    out_edges = txn.findOutEdge(v2_2);
+    out_edges = txn.findOutEdge(v2_2).getCursor();
     assert(out_edges.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
@@ -1141,25 +1096,25 @@ void test_get_edge_all_cursor() {
     r3.set("time_used", 430U);
     txn.addEdge("authors", v1_3, v2_2, r3);
 
-    auto all_edges = txn.findEdge(v1_1);
+    auto all_edges = txn.findEdge(v1_1).getCursor();
     assert(all_edges.size() == 1);
     all_edges.first();
     assert(all_edges->record.get("time_used").toIntU() == 365U);
-    all_edges = txn.findEdge(v1_2);
+    all_edges = txn.findEdge(v1_2).getCursor();
     assert(all_edges.size() == 1);
     all_edges.to(0);
     assert(all_edges->record.get("time_used").toIntU() == 180U);
-    all_edges = txn.findEdge(v1_3);
+    all_edges = txn.findEdge(v1_3).getCursor();
     assert(all_edges.size() == 1);
     all_edges.last();
     assert(all_edges->record.get("time_used").toIntU() == 430U);
-    all_edges = txn.findEdge(v2_1);
+    all_edges = txn.findEdge(v2_1).getCursor();
     assert(all_edges.size() == 2);
     all_edges.to(0);
     assert(all_edges->record.get("time_used").toIntU() == 365U);
     all_edges.to(1);
     assert(all_edges->record.get("time_used").toIntU() == 180U);
-    all_edges = txn.findEdge(v2_2);
+    all_edges = txn.findEdge(v2_2).getCursor();
     assert(all_edges.size() == 1);
     all_edges.next();
     assert(all_edges->record.get("time_used").toIntU() == 430U);
@@ -1213,7 +1168,7 @@ void test_get_invalid_edge_in_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1223,7 +1178,7 @@ void test_get_invalid_edge_in_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1234,7 +1189,7 @@ void test_get_invalid_edge_in_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
