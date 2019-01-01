@@ -106,9 +106,23 @@ namespace nogdb {
 
   GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept {
     if (this != &other) {
-      auto tmp(std::move(other));
-      using std::swap;
-      swap(*this, tmp);
+      _mode = other._mode;
+      _onlyClasses = std::move(other._onlyClasses);
+      _onlySubOfClasses = std::move(other._onlySubOfClasses);
+      _ignoreClasses = std::move(other._ignoreClasses);
+      _ignoreSubOfClasses = std::move(other._ignoreSubOfClasses);
+      switch(_mode) {
+        case FilterMode::CONDITION:
+          _condition = std::move(other._condition);
+          break;
+        case FilterMode::MULTI_CONDITION:
+          _multiCondition = std::move(other._multiCondition);
+          break;
+        case FilterMode::COMPARE_FUNCTION:
+          _function = other._function;
+          other._function = nullptr;
+          break;
+      }
     }
     return *this;
   }

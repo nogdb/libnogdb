@@ -273,7 +273,7 @@ void test_bfs_traverse_out() {
     ASSERT_SIZE(res, 3);
     res = txn.traverseOut(A).depth(1, 2).whereE(nogdb::GraphFilter{}.only("link")).get();
     ASSERT_SIZE(res, 8);
-    res = txn.traverseOut(A).depth(0, 3).whereE(nogdb::GraphFilter{}.only("link")).get();
+    res = txn.traverseOut(A).depth(1, 3).whereE(nogdb::GraphFilter{}.only("link")).get();
     ASSERT_SIZE(res, 12);
     res = txn.traverseOut(A).depth(1, 4).whereE(nogdb::GraphFilter{}.only("link")).get();
     ASSERT_SIZE(res, 13);
@@ -406,7 +406,7 @@ void test_bfs_traverse_all() {
     assert(count == 7);
 
     count = 0;
-    for (const auto &res: txn.traverse(F).depth(0, 3).whereE(nogdb::GraphFilter{}.only("link")).get()) {
+    for (const auto &res: txn.traverse(F).depth(1, 3).whereE(nogdb::GraphFilter{}.only("link")).get()) {
       auto name = res.record.get("name").toText();
       assert(name == "d" || name == "C" || name == "H" || name == "e" ||
              name == "A" || name == "c" || name == "a" || name == "B");
@@ -449,7 +449,7 @@ void test_bfs_traverse_all() {
     }
     assert(count == 1);
 
-    auto res = txn.traverse(H).depth(0, 3).whereE(nogdb::GraphFilter{}.only("symbolic")).get();
+    auto res = txn.traverse(H).depth(1, 3).whereE(nogdb::GraphFilter{}.only("symbolic")).get();
     ASSERT_SIZE(res, 2);
 
     res = txn.traverse(H).depth(0, 0).whereE(nogdb::GraphFilter{}.only("symbolic")).get();
@@ -606,7 +606,7 @@ void test_invalid_bfs_traverse_in() {
   try {
     auto tmp = A;
     tmp.rid.first = -1;
-    auto res = txn.traverseIn(tmp).depth(0, 0);
+    auto res = txn.traverseIn(tmp).depth(0, 0).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -617,7 +617,7 @@ void test_invalid_bfs_traverse_in() {
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
-    auto res = txn.traverseIn(tmp).depth(0, 0);
+    auto res = txn.traverseIn(tmp).depth(0, 0).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -736,7 +736,7 @@ void test_invalid_bfs_traverse_out() {
   try {
     auto tmp = A;
     tmp.rid.first = -1;
-    auto res = txn.traverseOut(tmp).depth(0, 0);
+    auto res = txn.traverseOut(tmp).depth(0, 0).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -747,7 +747,7 @@ void test_invalid_bfs_traverse_out() {
   try {
     auto tmp = A;
     tmp.rid.second = 9999U;
-    auto res = txn.traverseOut(tmp).depth(0, 0);
+    auto res = txn.traverseOut(tmp).depth(0, 0).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1498,7 +1498,7 @@ void test_bfs_traverse_in_cursor() {
     assert(rsCursor->record.get("name").toText() == "A");
     assert(rsCursor->record.getDepth() == 2);
 
-    rsCursor = txn.traverseIn(D).depth(0, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
+    rsCursor = txn.traverseIn(D).depth(1, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
     rsCursor.next();
     assert(rsCursor->record.get("name").toText() == "B");
     rsCursor.next();
@@ -1666,7 +1666,7 @@ void test_bfs_traverse_out_cursor() {
     assert(rsCursor.size() == 3);
     rsCursor = txn.traverseOut(A).depth(1, 2).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
     assert(rsCursor.size() == 8);
-    rsCursor = txn.traverseOut(A).depth(0, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
+    rsCursor = txn.traverseOut(A).depth(1, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
     assert(rsCursor.size() == 12);
     rsCursor = txn.traverseOut(A).depth(1, 4).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
     assert(rsCursor.size() == 13);
@@ -1786,7 +1786,7 @@ void test_bfs_traverse_all_cursor() {
     }
     assert(rsCursor.size() == 7);
 
-    rsCursor = txn.traverse(F).depth(0, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
+    rsCursor = txn.traverse(F).depth(1, 3).whereE(nogdb::GraphFilter{}.only("link")).getCursor();
     while (rsCursor.next()) {
       auto name = rsCursor->record.get("name").toText();
       assert(name == "d" || name == "C" || name == "H" || name == "e" ||
@@ -1818,7 +1818,7 @@ void test_bfs_traverse_all_cursor() {
     assert(name == "e");
     assert(rsCursor.count() == 1);
 
-    rsCursor = txn.traverse(H).depth(0, 3).whereE(nogdb::GraphFilter{}.only("symbolic")).getCursor();
+    rsCursor = txn.traverse(H).depth(1, 3).whereE(nogdb::GraphFilter{}.only("symbolic")).getCursor();
     assert(rsCursor.size() == 2);
     rsCursor = txn.traverse(H).depth(0, 0).whereE(nogdb::GraphFilter{}.only("symbolic")).getCursor();
     assert(rsCursor.size() == 1);
