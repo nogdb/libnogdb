@@ -260,7 +260,7 @@ void test_get_invalid_vertices() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("book");
+    auto res = txn.find("book").get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -274,24 +274,6 @@ void test_get_invalid_vertices() {
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("authors");
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = getVertexMultipleClass(txn, std::set<std::string>{"books", "authors"});
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
   destroy_edge_author();
@@ -351,15 +333,6 @@ void test_get_invalid_vertex_cursor() {
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("authors").get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
   destroy_edge_author();
@@ -436,21 +409,6 @@ void test_update_invalid_vertex() {
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-  try {
-    nogdb::Record r1{}, r2{};
-    r1.set("title", "Robin Hood").set("price", 80.0).set("pages", 300);
-    auto v1 = txn.addVertex("books", r1);
-    r2.set("profit", 0.0);
-    auto e1 = txn.addEdge("authors", v1, v1, r2);
-    r2.set("profit", 42.42);
-    txn.update(e1, r2);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
@@ -538,26 +496,6 @@ void test_delete_invalid_vertex() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  init_edge_author();
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-  try {
-    nogdb::Record r{};
-    r.set("time_used", 1U);
-    auto e = nogdb::RecordDescriptor{};
-    try {
-      e = txn.addEdge("authors", rdesc1, rdesc2, r);
-    } catch (const nogdb::Error &ex) {
-      std::cout << "\nError: " << ex.what() << std::endl;
-      assert(false);
-    }
-    txn.remove(e);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
-  destroy_edge_author();
   destroy_vertex_book();
 }
 
@@ -786,7 +724,7 @@ void test_get_invalid_edge_in() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -796,7 +734,7 @@ void test_get_invalid_edge_in() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -807,7 +745,7 @@ void test_get_invalid_edge_in() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findInEdge(tmp);
+    auto res = txn.findInEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -858,7 +796,7 @@ void test_get_invalid_edge_out() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -868,7 +806,7 @@ void test_get_invalid_edge_out() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -879,7 +817,7 @@ void test_get_invalid_edge_out() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -930,7 +868,7 @@ void test_get_invalid_edge_all() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -940,7 +878,7 @@ void test_get_invalid_edge_all() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -951,7 +889,7 @@ void test_get_invalid_edge_all() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1240,7 +1178,7 @@ void test_get_invalid_edge_out_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1250,7 +1188,7 @@ void test_get_invalid_edge_out_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1261,7 +1199,7 @@ void test_get_invalid_edge_out_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findOutEdge(tmp);
+    auto res = txn.findOutEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1312,7 +1250,7 @@ void test_get_invalid_edge_all_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.first = 9999U;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1322,7 +1260,7 @@ void test_get_invalid_edge_all_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
     auto tmp = e1;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -1333,7 +1271,7 @@ void test_get_invalid_edge_all_cursor() {
   try {
     auto tmp = v1_1;
     tmp.rid.second = -1;
-    auto res = txn.findEdge(tmp);
+    auto res = txn.findEdge(tmp).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();

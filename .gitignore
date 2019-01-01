@@ -48,6 +48,17 @@ functest
 functest_*.dSYM
 functest_*.o
 functest_all
+functest_context
+functest_find
+functest_graph
+functest_index
+functest_inheritance
+functest_misc
+functest_record
+functest_schema
+functest_schema_txn
+functest_sql
+functest_txn
 *.o
 *_debug_address
 gtest_installer.sh

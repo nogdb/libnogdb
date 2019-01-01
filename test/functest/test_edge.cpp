@@ -260,15 +260,6 @@ void test_get_invalid_edges() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("persons").get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
   destroy_edge_author();
   destroy_vertex_person();
   destroy_vertex_book();
@@ -766,18 +757,6 @@ void test_update_invalid_edge() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
   try {
     auto r3 = nogdb::Record{};
-    r3.set("time_used", 400U);
-    auto tmp = v1;
-    txn.update(tmp, r3);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-  try {
-    auto r3 = nogdb::Record{};
     r3.set("time_use", 400U);
     txn.update(e1, r3);
     assert(false);
@@ -1191,16 +1170,6 @@ void test_delete_invalid_edge() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-  try {
-    auto tmp = v1;
-    txn.remove(tmp);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
   destroy_edge_author();
   destroy_vertex_person();
   destroy_vertex_book();
@@ -1249,15 +1218,6 @@ void test_delete_all_edges() {
   }
 
   txn.commit();
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-  try {
-    txn.removeAll("books");
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 
   destroy_edge_author();
   destroy_vertex_person();
@@ -1389,20 +1349,11 @@ void test_get_invalid_edge_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("author").get();
+    auto res = txn.find("author").getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("persons").get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 
   destroy_edge_author();
