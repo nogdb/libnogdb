@@ -347,15 +347,6 @@ void test_find_invalid_vertex() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
-
 }
 
 void test_find_edge() {
@@ -398,20 +389,11 @@ void test_find_invalid_edge() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto res = txn.find("highway").where(nogdb::Condition("coordinates").contain("invalid"));
+    auto res = txn.find("highway").where(nogdb::Condition("coordinates").contain("invalid")).get();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
-  }
-
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower"));
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
   }
 }
 
@@ -1007,16 +989,7 @@ void test_find_invalid_vertex_with_expression() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
-                or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("street").where(expr).get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
+
 }
 
 void test_find_edge_with_expression() {
@@ -1109,16 +1082,6 @@ void test_find_invalid_edge_with_expression() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto expr = nogdb::Condition("distance").lt(50.0)
-                and nogdb::Condition("capacity").ge(300U);
-    auto res = txn.find("locations").where(expr);
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_edge_in_with_expression() {
@@ -1790,14 +1753,6 @@ void test_find_invalid_vertex_condition_function() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("street").where(condition).get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_invalid_edge_condition_function() {
@@ -1812,16 +1767,6 @@ void test_find_invalid_edge_condition_function() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("locations").where([](const nogdb::Record &record) {
-      return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    }).get();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_invalid_edge_in_condition_function() {
@@ -2148,14 +2093,6 @@ void test_find_invalid_vertex_cursor() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("street").where(nogdb::Condition("name").eq("Andrew Street")).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_edge_cursor() {
@@ -2204,14 +2141,6 @@ void test_find_invalid_edge_cursor() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("locations").where(nogdb::Condition("name").eq("ThaiCC Tower")).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_vertex_cursor_condition_function() {
@@ -2295,14 +2224,6 @@ void test_find_invalid_vertex_cursor_condition_function() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("street").where(condition).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_invalid_edge_cursor_condition_function() {
@@ -2317,16 +2238,6 @@ void test_find_invalid_edge_cursor_condition_function() {
     REQUIRE(ex, NOGDB_CTX_NOEXST_CLASS, "NOGDB_CTX_NOEXST_CLASS");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto res = txn.find("locations").where([](const nogdb::Record &record) {
-      return record.get("distance").toReal() < 50.0 && record.get("capacity").toIntU() >= 300U;
-    }).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_vertex_cursor_with_expression() {
@@ -2404,16 +2315,6 @@ void test_find_invalid_vertex_cursor_with_expression() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto expr = nogdb::Condition("name").endWith("Building").ignoreCase()
-                or nogdb::Condition("rating").ge(4.5);
-    auto res = txn.find("street").where(expr).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_edge_cursor_with_expression() {
@@ -2474,16 +2375,6 @@ void test_find_invalid_edge_cursor_with_expression() {
     REQUIRE(ex, NOGDB_CTX_INVALID_COMPARATOR, "NOGDB_CTX_INVALID_COMPARATOR");
   }
 
-  txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-  try {
-    auto expr = nogdb::Condition("distance").lt(50.0)
-                and nogdb::Condition("capacity").ge(300U);
-    auto res = txn.find("locations").where(expr).getCursor();
-    assert(false);
-  } catch (const nogdb::Error &ex) {
-    txn.rollback();
-    REQUIRE(ex, NOGDB_CTX_MISMATCH_CLASSTYPE, "NOGDB_CTX_MISMATCH_CLASSTYPE");
-  }
 }
 
 void test_find_edge_in_cursor() {
@@ -2740,7 +2631,7 @@ void test_find_invalid_edge_in_cursor() {
 
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   try {
-    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only("street"));
+    auto edges = txn.findInEdge(vertex.descriptor).where(nogdb::GraphFilter{nogdb::Condition("distance").contain("a")}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();
@@ -2750,7 +2641,7 @@ void test_find_invalid_edge_in_cursor() {
   txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
   auto &edge = edges[0];
   try {
-    txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street"));
+    txn.findInEdge(edge.descriptor).where(nogdb::GraphFilter{nogdb::Condition("name").eq("Andrew Street")}.only("street")).getCursor();
     assert(false);
   } catch (const nogdb::Error &ex) {
     txn.rollback();

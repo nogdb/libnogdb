@@ -44,7 +44,11 @@ namespace nogdb {
   }
 
   GraphFilter::GraphFilter(const GraphFilter& other)
-    : _mode{other._mode}, _onlyClasses{other._onlyClasses}, _ignoreClasses{other._ignoreClasses} {
+    : _mode{other._mode},
+      _onlyClasses{other._onlyClasses},
+      _onlySubOfClasses{other._onlySubOfClasses},
+      _ignoreClasses{other._ignoreClasses},
+      _ignoreSubOfClasses{other._ignoreSubOfClasses} {
     switch(_mode) {
       case FilterMode::CONDITION:
         _condition = other._condition;
@@ -60,36 +64,51 @@ namespace nogdb {
 
   GraphFilter& GraphFilter::operator=(const GraphFilter& other) {
     if (this != &other) {
-      auto tmp = GraphFilter(other);
-      using std::swap;
-      swap(*this, tmp);
+      _mode = other._mode;
+      _onlyClasses = other._onlyClasses;
+      _onlySubOfClasses = other._onlySubOfClasses;
+      _ignoreClasses = other._ignoreClasses;
+      _ignoreSubOfClasses = other._ignoreSubOfClasses;
+      switch(_mode) {
+        case FilterMode::CONDITION:
+          _condition = other._condition;
+          break;
+        case FilterMode::MULTI_CONDITION:
+          _multiCondition = other._multiCondition;
+          break;
+        case FilterMode::COMPARE_FUNCTION:
+          _function = other._function;
+          break;
+      }
     }
     return *this;
   }
 
   GraphFilter::GraphFilter(GraphFilter&& other) noexcept {
-    auto tmp = std::move(other);
-    using std::swap;
-    swap(*this, tmp);
+    _mode = other._mode;
+    _onlyClasses = std::move(other._onlyClasses);
+    _onlySubOfClasses = std::move(other._onlySubOfClasses);
+    _ignoreClasses = std::move(other._ignoreClasses);
+    _ignoreSubOfClasses = std::move(other._ignoreSubOfClasses);
+    switch(_mode) {
+      case FilterMode::CONDITION:
+        _condition = std::move(other._condition);
+        break;
+      case FilterMode::MULTI_CONDITION:
+        _multiCondition = std::move(other._multiCondition);
+        break;
+      case FilterMode::COMPARE_FUNCTION:
+        _function = other._function;
+        other._function = nullptr;
+        break;
+    }
   }
 
   GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept {
     if (this != &other) {
-      _mode = other._mode;
-      _onlyClasses = std::move(other._onlyClasses);
-      _ignoreClasses = std::move(other._ignoreClasses);
-      switch(_mode) {
-        case FilterMode::CONDITION:
-          _condition = std::move(other._condition);
-          break;
-        case FilterMode::MULTI_CONDITION:
-          _multiCondition = std::move(other._multiCondition);
-          break;
-        case FilterMode::COMPARE_FUNCTION:
-          _function = other._function;
-          other._function = nullptr;
-          break;
-      }
+      auto tmp(std::move(other));
+      using std::swap;
+      swap(*this, tmp);
     }
     return *this;
   }
