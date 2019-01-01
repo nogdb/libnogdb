@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <cassert>
 #include <type_traits>
 #include <sstream>

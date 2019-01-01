@@ -52,15 +52,15 @@ void test_txn_create_only_vertex_commit() {
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Chang");
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
 
     txnRw1.commit();
@@ -68,18 +68,18 @@ void test_txn_create_only_vertex_commit() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Chang");
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Chang");
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Chang"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Chang")).get();
     assert(res.empty());
 
     txnRo1.commit();
@@ -106,17 +106,17 @@ void test_txn_create_only_vertex_rollback() {
     nogdb::Record r{};
     r.set("name", "Koh Mak").set("area", "87.92");
     txnRw1.addVertex("islands", r);
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
 
     txnRw1.rollback();
 
     auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
-    res = txnRo.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    res = txnRo.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
-    res = txnRw00.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRw00.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
 
     txnRo.commit();
@@ -140,7 +140,7 @@ void test_txn_rollback_when_destroy() {
     nogdb::Record r{};
     r.set("name", "Koh Mak").set("area", "87.92");
     txnRw.addVertex("islands", r);
-    auto res = nogdb::Vertex::get(txnRw, "islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto res = txnRw.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
   } catch (const nogdb::Error &ex) {
@@ -150,7 +150,7 @@ void test_txn_rollback_when_destroy() {
 
   try {
     auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto res = txnRo.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto res = txnRo.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -186,16 +186,16 @@ void test_txn_delete_only_vertex_commit() {
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
 
@@ -203,18 +203,18 @@ void test_txn_delete_only_vertex_commit() {
 
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
 
@@ -238,30 +238,29 @@ void test_txn_delete_only_vertex_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
-    auto vdesc = txnRw0.addVertex("islands",
-                                       nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto vdesc = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     txnRw0.commit();
 
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txnRw1.remove(vdesc);
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(res.empty());
     txnRw1.rollback();
 
     auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    res = txnRo.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRo.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
     assert(res[0].record.get("name").toText() == "Koh Mak");
 
     txnRo.commit();
     txnRw2.commit();
 
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txnRw00.remove(vdesc);
     txnRw00.commit();
   } catch (const nogdb::Error &ex) {
@@ -282,26 +281,24 @@ void test_txn_create_only_edge_commit() {
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto vdesc1 = txnRw1.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-    auto vdesc2 = txnRw1.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+    auto vdesc1 = txnRw1.addVertex("islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+    auto vdesc2 = txnRw1.addVertex("islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     txnRw1.addEdge("bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Kood"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Kood")).get();
     assert(!res.empty());
-    res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
-    auto resE = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    auto resE = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
-    resE = txnRo1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRo2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRo3.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo3.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     txnRw1.commit();
@@ -309,16 +306,16 @@ void test_txn_create_only_edge_commit() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    resE = txnRo4.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo4.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRw2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRw2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
-    resE = txnRo1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRo2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRo3.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo3.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     txnRo1.commit();
@@ -343,27 +340,25 @@ void test_txn_create_only_edge_rollback() {
 
   try {
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto vdesc1 = txnRw1.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-    auto vdesc2 = txnRw1.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+    auto vdesc1 = txnRw1.addVertex("islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+    auto vdesc2 = txnRw1.addVertex("islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     txnRw1.addEdge("bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Kood"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Kood")).get();
     assert(!res.empty());
-    res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Mak"));
+    res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Mak")).get();
     assert(!res.empty());
-    auto resE = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    auto resE = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
     txnRw1.rollback();
 
     auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    resE = txnRo.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRw00.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRw00.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     txnRo.commit();
@@ -384,10 +379,8 @@ void test_txn_delete_only_edge_commit() {
 
   try {
     auto txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto vdesc1 = txnRw.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
-    auto vdesc2 = txnRw.addVertex("islands",
-                                        nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
+    auto vdesc1 = txnRw.addVertex("islands", nogdb::Record{}.set("name", "Koh Kood").set("area", "145.32"));
+    auto vdesc2 = txnRw.addVertex("islands", nogdb::Record{}.set("name", "Koh Mak").set("area", "87.92"));
     txnRw.addEdge("bridge", vdesc1, vdesc2, nogdb::Record{}.set("name", "yellow"));
     txnRw.commit();
   } catch (const nogdb::Error &ex) {
@@ -400,35 +393,35 @@ void test_txn_delete_only_edge_commit() {
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto edesc = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
-    nogdb::Edge::destroy(txnRw1, edesc[0].descriptor);
+    auto edesc = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
+    txnRw1.remove(edesc[0].descriptor);
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    auto resE = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    auto resE = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
-    resE = txnRo1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRo2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRo3.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo3.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
     txnRw1.commit();
 
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    resE = txnRo4.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo4.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
-    resE = txnRw2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRw2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
-    resE = txnRo1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRo2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRo3.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo3.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
     txnRo1.commit();
@@ -465,27 +458,27 @@ void test_txn_delete_only_edge_rollback() {
 
   try {
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    auto edesc = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
-    nogdb::Edge::destroy(txnRw1, edesc[0].descriptor);
-    auto resE = txnRw1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    auto edesc = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
+    txnRw1.remove(edesc[0].descriptor);
+    auto resE = txnRw1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     txnRw1.rollback();
 
     auto txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
-    resE = txnRo.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRw2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRw2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
 
     txnRo.commit();
     txnRw2.commit();
 
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txnRw00.remove(vdesc1);
     txnRw00.remove(vdesc2);
-    resE = txnRw00.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRw00.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     auto txnRo1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
@@ -494,9 +487,9 @@ void test_txn_delete_only_edge_rollback() {
 
     auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    resE = txnRo1.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo1.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(!resE.empty());
-    resE = txnRo2.addEdge("bridge", nogdb::Condition("name").eq("yellow"));
+    resE = txnRo2.find("bridge").where(nogdb::Condition("name").eq("yellow")).get();
     assert(resE.empty());
 
     txnRo1.rollback();
@@ -546,23 +539,23 @@ void test_txn_get_vertex_edge() {
           assert(res.record.get("name").toText() == "3");
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2);
+          auto res = txn.findInEdge(v2).get();
           assert(res[0].record.get("name").toText() == "12");
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v3);
+          auto res = txn.findInEdge(v3).get();
           assert(res[0].record.get("name").toText() == "13");
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1);
+          auto res = txn.findOutEdge(v1).get();
           ASSERT_SIZE(res, 2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("bridge"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("bridge")).get();
           assert(res[0].record.get("name").toText() == "12");
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("flight"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("flight")).get();
           assert(res[0].record.get("name").toText() == "13");
         }
     };
@@ -599,7 +592,7 @@ void test_txn_alter_vertex_edge_commit() {
   init_edge_flight();
 
   try {
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
     auto v1 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "1"));
     auto v2 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "2"));
@@ -614,7 +607,7 @@ void test_txn_alter_vertex_edge_commit() {
     auto txnRo2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
     txnRw1.updateSrc(e1, v3);
-    nogdb::Edge::updateDst(txnRw1, e2, v2);
+    txnRw1.updateDst(e2, v2);
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     std::vector<std::function<void(nogdb::Transaction &)>> oldTestCases{
@@ -635,23 +628,23 @@ void test_txn_alter_vertex_edge_commit() {
           assert(res.descriptor == v3);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2);
+          auto res = txn.findInEdge(v2).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v3);
+          auto res = txn.findInEdge(v3).get();
           assert(res[0].descriptor == e2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1);
+          auto res = txn.findOutEdge(v1).get();
           ASSERT_SIZE(res, 2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("bridge"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("bridge")).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("flight"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("flight")).get();
           assert(res[0].descriptor == e2);
         }
     };
@@ -674,23 +667,23 @@ void test_txn_alter_vertex_edge_commit() {
           assert(res.descriptor == v2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2);
+          auto res = txn.findInEdge(v2).get();
           ASSERT_SIZE(res, 2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v3);
+          auto res = txn.findOutEdge(v3).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1);
+          auto res = txn.findOutEdge(v1).get();
           assert(res[0].descriptor == e2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2, nogdb::GraphFilter{}.only("bridge"));
+          auto res = txn.findInEdge(v2).where(nogdb::GraphFilter{}.only("bridge")).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2, nogdb::GraphFilter{}.only("flight"));
+          auto res = txn.findInEdge(v2).where(nogdb::GraphFilter{}.only("flight")).get();
           assert(res[0].descriptor == e2);
         }
     };
@@ -728,7 +721,7 @@ void test_txn_alter_vertex_edge_rollback() {
 
   nogdb::RecordDescriptor v1, v2, v3, e1, e2;
   try {
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     v1 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "1"));
     v2 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "2"));
     v3 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "3"));
@@ -743,7 +736,7 @@ void test_txn_alter_vertex_edge_rollback() {
   try {
     auto txnRw1 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txnRw1.updateSrc(e1, v1);
-    nogdb::Edge::updateDst(txnRw1, e2, v3);
+    txnRw1.updateDst(e2, v3);
 
     std::vector<std::function<void(nogdb::Transaction &)>> newTestCases{
         [&](const nogdb::Transaction &txn) {
@@ -763,23 +756,23 @@ void test_txn_alter_vertex_edge_rollback() {
           assert(res.descriptor == v3);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2);
+          auto res = txn.findInEdge(v2).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v3);
+          auto res = txn.findInEdge(v3).get();
           assert(res[0].descriptor == e2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1);
+          auto res = txn.findOutEdge(v1).get();
           ASSERT_SIZE(res, 2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("bridge"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("bridge")).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1, nogdb::GraphFilter{}.only("flight"));
+          auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter{}.only("flight")).get();
           assert(res[0].descriptor == e2);
         }
     };
@@ -802,23 +795,23 @@ void test_txn_alter_vertex_edge_rollback() {
           assert(res.descriptor == v2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2);
+          auto res = txn.findInEdge(v2).get();
           ASSERT_SIZE(res, 2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v3);
+          auto res = txn.findOutEdge(v3).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findOutEdge(v1);
+          auto res = txn.findOutEdge(v1).get();
           assert(res[0].descriptor == e2);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2, nogdb::GraphFilter{}.only("bridge"));
+          auto res = txn.findInEdge(v2).where(nogdb::GraphFilter{}.only("bridge")).get();
           assert(res[0].descriptor == e1);
         },
         [&](const nogdb::Transaction &txn) {
-          auto res = txn.findInEdge(v2, nogdb::GraphFilter{}.only("flight"));
+          auto res = txn.findInEdge(v2).where(nogdb::GraphFilter{}.only("flight")).get();
           assert(res[0].descriptor == e2);
         }
     };
@@ -847,7 +840,7 @@ void test_txn_create_only_vertex_multiversion_commit() {
   init_edge_flight();
 
   try {
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo0 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
     txnRw0.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
@@ -866,34 +859,34 @@ void test_txn_create_only_vertex_multiversion_commit() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    auto res = txnRo0.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    auto res = txnRo0.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(res.empty());
-    res = txnRo0.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
-    assert(res.empty());
-
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
-    assert(!res.empty());
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo0.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
+    assert(res.empty());
+
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
+    assert(!res.empty());
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
 
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -916,7 +909,7 @@ void test_txn_create_only_vertex_multiversion_rollback() {
     txnRw.commit();
 
     auto txnRo0 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     txnRw0.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw0.commit();
 
@@ -926,9 +919,9 @@ void test_txn_create_only_vertex_multiversion_rollback() {
 
     txnRw1.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
@@ -938,46 +931,46 @@ void test_txn_create_only_vertex_multiversion_rollback() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    res = txnRo0.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
+    res = txnRo0.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
     assert(!res.empty());
-    res = txnRo0.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo0.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(res.empty());
-    res = txnRo0.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
-    assert(res.empty());
-
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
-    assert(!res.empty());
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
-    assert(!res.empty());
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo0.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Tarutao"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
+    assert(res.empty());
+
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Tarutao")).get();
+    assert(!res.empty());
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
+    assert(!res.empty());
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -999,7 +992,7 @@ void test_txn_delete_only_vertex_multiversion_commit() {
     auto v1 = txnRw.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v2 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
     txnRw0.commit();
 
@@ -1009,9 +1002,9 @@ void test_txn_delete_only_vertex_multiversion_commit() {
 
     txnRw1.remove(v2);
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
@@ -1021,25 +1014,25 @@ void test_txn_delete_only_vertex_multiversion_commit() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -1061,7 +1054,7 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
     auto v1 = txnRw.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     txnRw.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v2 = txnRw0.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe Phe"));
     txnRw0.commit();
 
@@ -1071,9 +1064,9 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
 
     txnRw1.remove(v2);
 
-    auto res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    auto res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRw1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(res.empty());
 
     auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
@@ -1083,25 +1076,25 @@ void test_txn_delete_only_vertex_multiversion_rollback() {
     auto txnRo4 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txnRw2 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo1.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo1.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo3.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo3.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRo4.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRo4.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Samed"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Samed")).get();
     assert(!res.empty());
-    res = txnRw2.find("islands", nogdb::Condition("name").eq("Koh Phe Phe"));
+    res = txnRw2.find("islands").where(nogdb::Condition("name").eq("Koh Phe Phe")).get();
     assert(!res.empty());
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -1118,7 +1111,7 @@ void test_txn_create_edges_multiversion_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1127,7 +1120,7 @@ void test_txn_create_edges_multiversion_commit() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo0 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
     txnRw0.addEdge("bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
@@ -1149,57 +1142,57 @@ void test_txn_create_edges_multiversion_commit() {
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV0, testCasesV1, testCasesV2;
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(res.empty());
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].record.get("name").toText() == "bridge 21");
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].record.get("name").toText() == "bridge 23");
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].record.get("name").toText() == "bridge 12");
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto e = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto e = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       auto res = txn.fetchSrc(e[0].descriptor);
       assert(res.descriptor == v1);
       res = txn.fetchDst(e[0].descriptor);
       assert(res.descriptor == v3);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
 
@@ -1224,7 +1217,7 @@ void test_txn_create_edges_multiversion_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1233,7 +1226,7 @@ void test_txn_create_edges_multiversion_rollback() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
     txnRw0.addEdge("bridge", v2, v3, nogdb::Record{}.set("name", "bridge 23"));
 
@@ -1254,23 +1247,23 @@ void test_txn_create_edges_multiversion_rollback() {
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV1;
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].record.get("name").toText() == "bridge 23");
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].record.get("name").toText() == "bridge 12");
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
 
@@ -1294,7 +1287,7 @@ void test_txn_delete_edges_multiversion_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1305,10 +1298,10 @@ void test_txn_delete_edges_multiversion_commit() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo0 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-    nogdb::Edge::destroy(txnRw0, e1);
+    txnRw0.remove(e1);
 
     txnRw0.commit();
 
@@ -1327,70 +1320,70 @@ void test_txn_delete_edges_multiversion_commit() {
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV0, testCasesV1, testCasesV2;
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 12")).get();
       assert(!res.empty());
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 12")).get();
       assert(res.empty());
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].descriptor == e4);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 12")).get();
       assert(res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 21"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 21")).get();
       assert(!res.empty());
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].descriptor == e2);
     });
@@ -1416,7 +1409,7 @@ void test_txn_delete_edges_multiversion_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1427,9 +1420,9 @@ void test_txn_delete_edges_multiversion_rollback() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
-    nogdb::Edge::destroy(txnRw0, e1);
+    txnRw0.remove(e1);
 
     txnRw0.commit();
 
@@ -1448,28 +1441,28 @@ void test_txn_delete_edges_multiversion_rollback() {
 
     std::vector<std::function<void(nogdb::Transaction &)>> testCasesV1;
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.find("bridge", nogdb::Condition("name").eq("bridge 13"));
+      auto res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 13")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 23"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 23")).get();
       assert(!res.empty());
-      res = txn.find("bridge", nogdb::Condition("name").eq("bridge 12"));
+      res = txn.find("bridge").where(nogdb::Condition("name").eq("bridge 12")).get();
       assert(res.empty());
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 2);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
       assert(res[0].descriptor == e4);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 2);
     });
 
@@ -1492,7 +1485,7 @@ void test_txn_modify_edges_multiversion_commit() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1500,7 +1493,7 @@ void test_txn_modify_edges_multiversion_commit() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto txnRo0 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
     txnRw0.updateDst(e1, v3);
@@ -1528,19 +1521,19 @@ void test_txn_modify_edges_multiversion_commit() {
       assert(res.descriptor == v2);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV0.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
@@ -1550,19 +1543,19 @@ void test_txn_modify_edges_multiversion_commit() {
       assert(res.descriptor == v3);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
@@ -1572,19 +1565,19 @@ void test_txn_modify_edges_multiversion_commit() {
       assert(res.descriptor == v3);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV2.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 1);
     });
 
@@ -1608,7 +1601,7 @@ void test_txn_modify_edges_multiversion_rollback() {
   init_edge_bridge();
 
   try {
-    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw00 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     auto v1 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Samed"));
     auto v2 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Phe PHe"));
     auto v3 = txnRw00.addVertex("islands", nogdb::Record{}.set("name", "Koh Tao"));
@@ -1616,7 +1609,7 @@ void test_txn_modify_edges_multiversion_rollback() {
 
     txnRw00.commit();
 
-    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE});
+    auto txnRw0 = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
 
     txnRw0.updateDst(e1, v3);
 
@@ -1643,19 +1636,19 @@ void test_txn_modify_edges_multiversion_rollback() {
       assert(res.descriptor == v3);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v1);
+      auto res = txn.findOutEdge(v1).get();
       ASSERT_SIZE(res, 1);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v2);
+      auto res = txn.findInEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findOutEdge(v2);
+      auto res = txn.findOutEdge(v2).get();
       ASSERT_SIZE(res, 0);
     });
     testCasesV1.push_back([&](nogdb::Transaction &txn) {
-      auto res = txn.findInEdge(v3);
+      auto res = txn.findInEdge(v3).get();
       ASSERT_SIZE(res, 1);
     });
 
@@ -1699,9 +1692,9 @@ void test_txn_reopen_ctx() {
 
   try {
     auto txn = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_WRITE)));
-    auto v1 = txn->find("islands", nogdb::Condition("name").eq("Koh Samui"));
-    auto v2 = txn->find("islands", nogdb::Condition("name").eq("Koh Tao"));
-    nogdb::Edge::create(*txn, "bridge", v1[0].descriptor, v2[0].descriptor, nogdb::Record{}.set("name", "red"));
+    auto v1 = txn->find("islands").where(nogdb::Condition("name").eq("Koh Samui")).get();
+    auto v2 = txn->find("islands").where(nogdb::Condition("name").eq("Koh Tao")).get();
+    txn->addEdge("bridge", v1[0].descriptor, v2[0].descriptor, nogdb::Record{}.set("name", "red"));
     txn->commit();
   } catch (const nogdb::Error &ex) {
     std::cout << "Error: " << ex.what() << std::endl;
@@ -1719,7 +1712,7 @@ void test_txn_reopen_ctx() {
 
   try {
     auto txn = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_ONLY)));
-    auto resE = txn->find("bridge", nogdb::Condition("name").eq("red"));
+    auto resE = txn->find("bridge").where(nogdb::Condition("name").eq("red")).get();
     assert(!resE.empty());
     auto res = txn->fetchSrcDst(resE[0].descriptor);
     assert(!res.empty());

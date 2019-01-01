@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2019, NogDB <https://nogdb.org>
- *  <kasidej dot bu at throughwave dot co dot th>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
