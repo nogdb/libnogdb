@@ -48,21 +48,21 @@ namespace nogdb {
 
     Validator &Validator::isClassIdMaxReach() {
       if ((_txn->_adapter->dbInfo()->getMaxClassId() >= CLASS_ID_UPPER_LIMIT)) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MAXCLASS_REACH);
       }
       return *this;
     }
 
     Validator &Validator::isPropertyIdMaxReach() {
       if ((_txn->_adapter->dbInfo()->getMaxPropertyId() >= UINT16_MAX)) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MAXPROPERTY_REACH);
       }
       return *this;
     }
 
     Validator &Validator::isIndexIdMaxReach() {
       if ((_txn->_adapter->dbInfo()->getMaxIndexId() >= UINT32_MAX)) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_LIMIT_DBSCHEMA);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MAXINDEX_REACH);
       }
       return *this;
     }

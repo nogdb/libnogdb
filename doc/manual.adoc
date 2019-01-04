@@ -1,244 +1,188 @@
-# NogDB Documentation [v0.12.0]
+# NogDB Documentation [v0.14.0]
 ================================
 :toc:
 :toc-placement: preamble
 :toclevels: 3
 :Author: Peerawich Promjai
 :Email: peerawich@throughwave.co.th
-:Date: 30/07/2018
+:Date: 01/01/2019
 :cpp: C++
 
 [big]#**CAUTION:** This manual is only _partially_ written. This message will be removed when it is completed.#
 
 == Database Context
 
-A database context must be initialized to create a connection to NogDB before calling any database operation.
-Noted that a particular database can be opened by only one process at a time and its database context
-needs to be treated as a singleton object in multi-thread programmings.
-
-When the context is created:
-
-* If a database directory doesn't exist, it will make a new one with a default database schema.
-* If a database directory has already existed, it will load the existing database schema and information into memory.
+A database context must be firstly initialized to create a connection to NogDB before calling any database operations.
+When the context is created, if a database directory doesn't exist on the file system, it will make a new one with a default database schema.
 
 [source,cpp]
 ------------
 // default constructor
-nogdb::Context ctx{"mygraph.db"};
+auto ctx = new nogdb::Context{"mygraph.db"};
 
 // alternative constructors with specific configuration
 // -- with a maximum database number
-nogdb::Context ctx{"mygraph.db", static_cast<unsigned int>(128)};
+auto customCtx_1 = new nogdb::Context{"mygraph.db", static_cast<unsigned int>(128)};
 // -- with a maximum database size (in Bytes)
-nogdb::Context ctx{"mygraph.db", static_cast<unsigned long>(4294967296)};
+auto customCtx_2 = new nogdb::Context{"mygraph.db", static_cast<unsigned long>(4294967296)};
 // -- with a maximum database number and database size
-nogdb::Context ctx{"mygraph.db", 128, 4294967296UL};
+auto customCtx_3 = new nogdb::Context{"mygraph.db", 128, 4294967296UL};
 ------------
-
-[NOTE]
-=====
-* Each database must have its own individual database context object.
-* It is allowed to have more than one database context when it uses more than one database instance simultaneously (one database per one context).
-
-=====
 
 == Database Information
 
-Once a database has been created, its associated information will be stored in `nogdb::DBInfo` in a database context which consists of the following attributes:
+An object `nogdb::DbInfo` contains all database metadata and associated information in a database context which consists of the following attributes:
+
+[source,cpp]
+------------
+namespace nogdb {
+
+    typedef uint16_t ClassId;
+    typedef uint16_t PropertyId;
+    typedef uint32_t PositionId;
+    typedef uint32_t IndexId;
+
+    struct DbInfo {
+        std::string dbPath;
+        ClassId maxClassId;
+        ClassId numClass;
+        PropertyId maxPropertyId;
+        PropertyId numProperty;
+        IndexId maxIndexId;
+        IndexId numIndex;
+    };
+}
+------------
 
 // tag::b-col-indv[]
-[cols="1,2", options="header"]
-.Attributes of `nogdb::DBInfo`
+[cols="1,2,3", options="header"]
+.Attributes of `nogdb::DbInfo`
 |===
 |Name
+|Type
 |Description
 
 |dbPath
+|String (`std::string`)
 |A path to the database folder.
 
-|maxDB
-|A maximum number of databases that can be handled.
-
-|maxDBSize
-|the largest size of a database.
-
-|maxPropertyId
-|The largest property number(id) in the entire database.
-
-|numProperty
-|A number of properties in the database.
-
 |maxClassId
+|ClassId (`uint16_t`)
 |The largest class number(id) in the entire database.
 
 |numClass
+|ClassId (`uint16_t`)
 |A number of classes in the database.
+
+|maxPropertyId
+|PropertyId (`uint16_t`)
+|The largest property number(id) in the entire database.
+
+|numProperty
+|PropertyId (`uint16_t`)
+|A number of properties in the database.
+
+|maxIndexId
+|IndexId (`uint32_t`)
+|The largest index number(id) in the entire database.
+
+|numIndex
+|IndexId (`uint32_t`)
+|A number of indexes in the database.
 
 |===
 // end::b-col-indv[]
 
-==== Example:
-
-[source,cpp]
-------------
-const nogdb::DBInfo& dbInfo = ...(some functions that return nogdb::DBInfo)...;
-
-// -- print out a database path
-std::cout << dbInfo.dbPath << std::endl;
-// -- print out a number of current existing class
-std::cout << dbInfo.numClass << std::endl;
-------------
-
 == Class
 
-A class could be equivalent to a table in a relational database and it must be created prior to storing any associated information.
-There are two available types of classes in NogDB, which are Vertex and Edge, represented by `nogdb::ClassDescriptor`.
-Vertices and edges must be explicitly specified when creating any classes since they are corresponding to different graph operations.
+A class could be equivalent to a table in a relational database and it must be created prior to storing any information.
+There are two available types of classes in NogDB, i.e. vertex and edge, represented by `nogdb::ClassDescriptor`.
 
 [NOTE]
 =====
 * A class name must consist of valid characters such as A-Z, a-z, 0-9 and underscore (_).
+* A maximum length of a class name is 128 characters (bytes).
+* A maximum number of classes is limited to 65,535. Creating the 65536th class will result in throwing an exception `NOGDB_CTX_MAXCLASS_REACH`.
 =====
 
-=== Class Descriptor
-
-The `nogdb::ClassDescriptor` consists of the following attributes:
-
-// tag::b-col-indv[]
-[cols="1,2", options="header"]
-.Attributes of `nogdb::ClassDescriptor`
-|===
-|Name
-|Description
-
-|id
-|An unique id of a class.
-
-|name
-|A unique name of a class.
-
-|type
-|A particular type of a class (can be either vertex or edge). 
-
-|properties
-|A set of properties belongs to a class represented by a STL container `std::map<K, V>` when `K` is `std::string` for a property name and `V` is `nogdb::PropertyDescriptor` for a property descriptor.
-
-|super
-|A name of a super-class (aka. a base class) if any.
-
-|sub
-|A list of sub-classes (aka. derived classes) if any.
-
-|===
-// end::b-col-indv[]
-
-==== Example:
-
-[source,cpp]
-------------
-const nogdb::ClassDescriptor& classDesc = ...(some functions that return nogdb::ClassDescriptor)...;
-
-// -- print out class name
-std::cout << classDesc.name << std::endl;
-// -- print out class type
-std::cout << classDesc.type << std::endl;
-------------
-
-=== Class Types
+=== ClassType
 
 Generally, there are two types of the class in a graph database such as vertex and edge.
 A vertex is a node in the graph while an edge is a link that joins two vertices together.
 The major different between a vertex and an edge is that the vertex could be standalone and sometimes has no relations with other vertices.
-However, two endpoints of edges, the source and destination nodes, must be specified especially in a directed graph.
-Therefore, a type of the class should be wisely and appropriately chosen for your program design and usage because it cannot be changed later.  
+However, two endpoints of edges, i.e. the source and destination nodes, must be specified especially in a directed graph like NogDB.
 
 [source,cpp]
 ------------
-// -- enum value for Vertex
-nogdb::ClassType::VERTEX;
-// -- enum value for Edge
-nogdb::ClassType::EDGE;
-------------
+namespace nogdb {
 
-== Property
+    enum class ClassType {
+        VERTEX,
+        EDGE,
+        UNDEFINED
+    };
 
-In a graph database, both vertex and edge can have their own defined properties.
-For example, a vertex that represents a person may have some attributes, such as `FullName`, `PhoneNumber`, and `Age`, defined
-as properties in a class `Persons`. An edge that represents a relationship between `Persons` may have some attributes,
-such as `RelationType`, defined as properties in a class `Relations`.
-
-[source,cpp]
-------------
-// an example of a definition of a 'persons' vertex
-{
-    "persons": {
-        "_type": "vertex",
-        "_properties": [
-            { "_name": "FullName", "_type": "text" },
-            { "_name": "PhoneNumber", "_type" : "text" },
-            { "_name": "Age", "_type": "integer" }
-        ]
-    }
 }
 ------------
 
+=== ClassDescriptor
+
+A descriptor to represent a particular class in the database.
+
 [source,cpp]
 ------------
-// an example of a definition of a 'relations' edge
-{
-    "relations": {
-        "_type": "edge",
-        "_properties": [
-            { "_name": "RelationType", "_type": "text" }
-        ]
-    }
+namespace nogdb {
+
+    struct ClassDescriptor {
+        ClassId id;
+        std::string name;
+        ClassId base;
+        ClassType type;
+    };
 }
 ------------
 
-[NOTE]
-=====
-* A property name must consist of valid characters such as A-Z, a-z, 0-9 and underscore (_).
-=====
-
-=== Property Descriptor
-
-The `nogdb::PropertyDescriptor` consists of the following attributes:
+The `nogdb::ClassDescriptor` consists of the following attributes:
 
 // tag::b-col-indv[]
-[cols="1,2", options="header"]
-.Attributes of `nogdb::PropertyDescriptor`
+[cols="1,2,3", options="header"]
+.Attributes of `nogdb::ClassDescriptor`
 |===
 |Name
+|Type
 |Description
 
 |id
-|A unique id of a property.
+|ClassId (`uint16_t`)
+|An unique id of a class.
+
+|name
+|String (`std::string`)
+|A unique name of a class.
+
+|base
+|ClassId (`uint16_t`)
+|A class id of a super class (aka. a base class) if any (default is 0).
 
 |type
-|A particular data type of a property (see Types of Properties below for more information).
-
-|indexInfo
-|A set of database indexing information associated with the property.
+|ClassType (`nogdb::ClassType`)
+|A particular type of a class (can be either vertex or edge).
 
 |===
 // end::b-col-indv[]
 
-==== Example:
-[source,cpp]
-------------
-// an example of a relationship between ClassDescriptor and PropertyDescriptor in Schema 
-const nogdb::ClassDescriptor& classDesc = ...(some functions that return nogdb::ClassDescriptor)...;
+== Property
 
-// iterate through all properties
-for(const auto& property: classDesc.properties) {
-    // -- get a name of property as std::string
-    auto propertyName = property.first
-    // -- get const nogdb::PropertyDescriptor
-    auto propertyDescriptor = property.second
-}
-------------
+In NogDB, both vertex and edge can have zero or more attributes for their own properties, represented by `nogdb::PropertyDescriptor`.
 
-=== Types of Properties
+[NOTE]
+=====
+* A property name must consist of valid characters such as A-Z, a-z, 0-9 and underscore (_).
+* A maximum length of a property name is 128 characters (bytes).
+* A maximum number of properties is limited to 65,536. Creating the 65537th class will result in throwing an exception `NOGDB_CTX_MAXPROPERTY_REACH`.
+=====
+
+=== PropertyType
 
 There are 11 supported types of properties as listed below:
 
@@ -295,18 +239,57 @@ There are 11 supported types of properties as listed below:
 
 |===
 
-== Types and Operations
+=== PropertyDescriptor
 
-=== Bytes
-`nogdb::Bytes` is a representation of binary data objects which can be converted to some appropriate primitive data types such as `integer`, `unsigned integer`, `std::string`, and etc.
+A descriptor to represent a particular property in the database.
 
 [source,cpp]
 ------------
-// to create a binary object or blob from a pointer (or an array) of unsigned char
-nogdb::Bytes b(<unsigned char[]>, <size of unsigned char[]>);
+namespace nogdb {
+    struct PropertyDescriptor {
+        PropertyId id;
+        std::string name;
+        PropertyType type;
+    };
+}
+------------
 
+The `nogdb::PropertyDescriptor` consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2,3", options="header"]
+.Attributes of `nogdb::PropertyDescriptor`
+|===
+|Name
+|Type
+|Description
+
+|id
+|PropertyId (`uint16_t`)
+|A unique id of a property.
+
+|name
+|String (`std::string`)
+|A unique name of a property in a namespace of the particular class.
+
+|type
+|PropertyType (`nogdb::PropertyType`)
+|A data type of a property.
+
+|===
+// end::b-col-indv[]
+
+== NogDB Types
+
+=== Bytes
+`nogdb::Bytes` is a representation of binary data objects which can be converted to some appropriate primitive data types such as `integer`, `unsigned integer`, `std::string`, etc.,
+and also available for some C++ STL containers such as `std::vector`, `std::array`, `std::set`, `std::map`, `std::pair`, etc.
+
+
+[source,cpp]
+------------
 // to create a binary object from primitive types
-nogdb::Bytes b(const T& value);
+auto byte = nogdb::Bytes{std::string{"Hello, NogDB"}};
 ------------
 
 ==== GET RAW BYTES
@@ -366,11 +349,10 @@ b.convertTo(T& object);
 * Description:
 ** To convert bytes to an original object.
 * Return:
-** `void` - No values returned but the result of conversion will be stored into `T& object`.
+** No values returned but the result of conversion will be stored into `T& object`.
 
 === Record Id
-A record id, `nogdb::RecordId`, is a pair of a class id and a position id. Each class has its own id and this helps to indicate to which
-class a record belongs. A position id represents a unique number of a record in a class.
+A record id, `nogdb::RecordId`, is a pair of a class id and a position id. A position id represents a unique number of a record in the particular class.
 
 === Record
 Typically, `nogdb::Record` is returned as a part of results from any record retrieval operations, representing a set of properties and values in `nogdb::Bytes`.
@@ -404,10 +386,6 @@ nogdb::Record r{};
 |`nogdb::PropertyType::UNSIGNED_INTEGER`
 |A distance of a vertex node from the source node if the record is a result of graph traversal operations (`@depth = 0` by default if other operations are applied).
 
-|`@version`
-|`nogdb::PropertyType::UNSIGNED_BIGINT`
-|A version number of a record. Any updates and changes in properties or relations would result in the version increment by one.
-
 |===
 
 =====
@@ -427,12 +405,12 @@ nogdb::Bytes value = r.get(const std::string& propName);
 ==== GET ALL
 [source,cpp]
 ------------
-const std::map<std::string, nogdb::Bytes>& values = r.getAll();
+nogdb::PropertyToBytesMap values = r.getAll();
 ------------
 * Description:
 ** To retrieve all values from all properties in a record.
 * Return:
-** `std::map<std::string, nogdb::Bytes>` - A key-value container as pairs of property names and value in `nogdb::Bytes`.
+** `nogdb::PropertyToBytesMap` - A key-value container as pairs of property names and value in `nogdb::Bytes` (`std::map<std::string, nogdb::Bytes>`).
 
 ==== GET PROPERTIES
 [source,cpp]
@@ -471,14 +449,13 @@ std::string val = r.getText(const std::string& propName);
 [source,cpp]
 ------------
 std::string val = r.getClassName(); // identical to r.getText("@className");
-RecordId val = r.getRecordId();
+nogdb::RecordId val = r.getRecordId();
 uint32_t val = r.getDepth();    // identical to r.getIntU("@depth");
-uint64_t val = r.getVersion();  // identical to r.getBigIntU("@version");
 ------------
 * Description:
 ** To retrieve a value from basic information associated with the current record.
 * Return:
-** A value depending on a member function.
+** A value depending on getting information.
 
 ==== SET
 [source,cpp]
@@ -517,25 +494,31 @@ bool isNull = r.empty();
 * Description:
 ** To check if a record is empty.
 
-=== Record Descriptor
-A record descriptor, `nogdb::RecordDescriptor`, is used to represent a record. It contains some useful information
-for records retrieval. In the current version of NogDB, the `nogdb::RecordDescriptor` consists of the following attributes:
+=== RecordDescriptor
+A descriptor to represent a record. It contains some useful information for records retrieval.
+In NogDB, the `nogdb::RecordDescriptor` consists of the following attributes:
 
 // tag::b-col-indv[]
-[cols="1,2", options="header"]
+[cols="1,2,2", options="header"]
 .Attributes of `nogdb::RecordDescriptor`
 |===
 |Name
+|Type
 |Description
 
 |rid
-|A record id.
+|RecordId (`nogdb::RecordId`)
+|A record id (a pair of class id and position id).
+
+|cid
+|ClusterId (`uint32_t`)
+|Pre-defined attributes but not being used in the current version.
 
 |===
 // end::b-col-indv[]
 
-=== Result, Result Set, and Result Set Cursor
-An individual result returned from retrieval operations is represented as `nogdb::Result` which consists of two attributes:
+=== Result, ResultSet, and ResultSetCursor
+An individual result returned from record retrieval operations is represented as `nogdb::Result` which consists of two attributes:
 
 // tag::b-col-indv[]
 [cols="1,2", options="header"]
@@ -553,7 +536,7 @@ An individual result returned from retrieval operations is represented as `nogdb
 |===
 // end::b-col-indv[]
 
-In addition, a set of results, `nogdb::ResultSet`, can also be returned from any record retrieval operations
+In addition, a set of results, i.e. `nogdb::ResultSet`, can also be returned from any record retrieval operations
 when there are more than (or even less than) one record matching to the condition.
 
 ==== Example:
@@ -561,18 +544,18 @@ when there are more than (or even less than) one record matching to the conditio
 [source,cpp]
 ------------
 // to get a set of results returned from a record retrieval function
-nogdb::ResultSet res = ...(some functions that return nogdb::ResultSet)...;
-for(const nogdb::Result& item: res) {
-    // -- do something with `nogdb::RecordDescriptor`
-    auto recordDescriptor = item.descriptor
-    // -- do something with `nogdb::Record`
-    auto record = item.record
+nogdb::ResultSet rss = ...(some functions that return nogdb::ResultSet)...;
+for(const nogdb::Result& rs: rss) {
+    // -- retrieve `nogdb::RecordDescriptor`
+    auto recordDescriptor = rs.descriptor
+    // -- retrieve `nogdb::Record`
+    auto record = rs.record
 }
 ------------
 
 In contrast, a set of cursors as results, `nogdb::ResultSetCursor`, which is only returned from any cursor retrieval operations, can be used for iterating through each record descriptor in a set of results without pre-loading records into memory.
 The cursor may help to reduce memory usage in client programs and avoid out-of-memory problems. A concept of `nogdb::ResultSetCursor` is that it always points to a single record in a result set at a time while it provides a number of member functions
-to move its cursor to the previous or next record freely. The usage of `nogdb::ResultSetCursor` can be demonstrated as in the example below:
+to move its cursor to the previous or next record as needed. The usage of `nogdb::ResultSetCursor` can be demonstrated as in the example below:
 
 ==== Example:
 
@@ -721,8 +704,8 @@ auto mcond = (cond1 && cond2) || (cond3 && cond4);
 bool res = mcond.execute(const nogdb::Record& r, const nogdb::PropertyMapType& propertyTypes);
 ------------
 
-=== Path Filter
-A path filtering is a set of a pointer to comparable functions that can be used for graph traversal and finding the shortest path with conditions on vertices and edges.
+=== GraphFilter
+A graph filtering is a set of a pointer to comparable functions that can be used for graph traversal and finding the shortest path with conditions on vertices and edges.
 
 ==== Example:
 
