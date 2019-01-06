@@ -601,7 +601,7 @@ nogdb::Record record = rssCursor->record;
 
 === Condition
 
-A comparable object in NogDB which is used to compare records with a defined condition.
+A conditional object in NogDB which is used to compare records with a defined condition.
 
 [source,cpp]
 ------------
@@ -673,8 +673,8 @@ auto condition = nogdb::Condition(propName).between(propLowerBound, propUpperBou
 
 === MultiCondition
 
-Another comparable object in NogDB but more complex since it is a combination of condition objects.
-Only one possible way to create an object of `nogdb::MultiCondition` is to use functions `operator&&` and `operator||` to combine a condition with one another or with a defined multi-condition itself.
+Another conditional object in NogDB but more complex as it is a combination of multiple conditional objects.
+An object of `nogdb::MultiCondition` can be created by the use of `operator&&` and `operator||` to combine a conditional object with one another or with a multi-condition object.
 
 ==== Example:
 
@@ -705,99 +705,83 @@ bool res = mcond.execute(const nogdb::Record& r, const nogdb::PropertyMapType& p
 ------------
 
 === GraphFilter
-A graph filtering is a set of a pointer to comparable functions that can be used for graph traversal and finding the shortest path with conditions on vertices and edges.
+A graph filtering is a combination of conditional objects and functions that can be used as a filter for graph traversal and shortest path with conditions on vertices and edges.
 
 ==== Example:
 
 [source,cpp]
 ------------
-auto vertexCondition = [](const nogdb::Record& r) {
+auto condition = nogdb::Condition(propName1).eq(100);
+auto multiCondition = condition and !nogdb::Condition(propName2).null();
+auto customCondition = [](const nogdb::Record& r) {
     // return true or false
 };
 
-auto edgeCondition = [](const nogdb::Record& r) {
-    // return true or false
-};
+// constructor to create an empty graph filter
+nogdb::GraphFilter filter{};
 
-nogdb::PathFilter pathFilter{};
-pathFilter.setVertex(vertexCondition);
-pathFilter.setEdge(edgeCondition);
+// constructor to create a graph filter with different types of conditions
+nogdb::GraphFilter filter{condition};
+nogdb::GraphFilter filter{multiCondition};
+nogdb::GraphFilter filter{customCondition};
 
-// checking if vertex and edge conditions are set
-pathFilter.isEnable(); // return true or false
-pathFilter.isSetVertex(); // return true or false
-pathFilter.isSetEdge(); // return true or false
-------------
+// consider only 'className1' in the graph traversal
+filter.only(className1);
 
-=== Class Filter
-A class filtering is a set of class names which is internally represented as `std::set<std::string>` used to choose only some particular classes in the result set of edge functions like `*InEdge`, `*OutEdge`, `*AllEdge`, and graph traversal functions.
+// ignore 'className2' in the graph traversal
+filter.exclude(className2);
 
-[source,cpp]
-------------
-// constructor
-nogdb::ClassFilter classFilter{"className1", "className2", ...};
+// consider only 'className1' and all of its sub classes in the graph traversal
+filter.onlySubClassOf(className1);
 
-nogdb::ClassFilter classFilter{classNameAsVector};
-nogdb::ClassFilter classFilter{classNameAsList};
-nogdb::ClassFilter classFilter{classNameAsSet};
-
-nogdb::ClassFilter classFilter{classNameAsVector.cbegin(), classNameAsVector.cend()};
-nogdb::ClassFilter classFilter{classNameAsList.cbegin(), classNameAsList.cend()};
-nogdb::ClassFilter classFilter{classNameAsSet.cbegin(), classNameAsSet.cend()};
-
-classFilter.add("className3"); // now having {"className1", "className2", "className3"} for filtering classes
-classFilter.remove("className2"); // now having {"className1", "className3"} for filtering classes
-size_t size = classFilter.size();
-bool isEmpty = classFilter.empty();
-std::set<std::string> classNames = classFilter.getClassName();
+// ignore 'className2' and all of its sub classes in the graph traversal
+filter.excludeSubClassOf(className2);
 ------------
 
 == Transaction
 
-Database operations can be performed and controlled via a transaction.
-According to a concept of NogDB transaction, MVCC is applied together with copy-on-write which allows multiple readers not to block a writer when using the same database context and vice versa.
+All database operations in NogDB are performed and controlled via NogDB transaction which is completely based on LMDB transaction.
+The benefit of using NogDB (or LMDB) transaction is to allow multiple readers not to block a writer when they are operated on the same database context.
 Generally, the database will take an effect after the transaction is committed and it will be untouched if the transaction is rolled back or not yet completed.
+Any transaction objects that are already completed (committed or rolled back) cannot be re-used as it will throw an exception `NOGDB_TXN_COMPLETED`.
 
-=== Transaction modes
+=== Transaction Modes
 
 [source,cpp]
 ------------
-// -- enum value for read-write txn
-nogdb::Txn::Mode::READ_WRITE
-// -- enum value for read-only txn
-nogdb::Txn::Mode::READ_ONLY
+namespace nogdb {
+    enum class TxnMode {
+        READ_ONLY,
+        READ_WRITE
+    };
+}
 ------------
 
 === Transaction Operations
 
 [source,cpp]
 ------------
-// -- constructor, begin a transaction
-nogdb::Txn txn(ctx, nogdb::Txn::Mode::READ_WRITE); // to create a read-write txn
-nogdb::Txn txn(ctx, nogdb::Txn::Mode::READ_ONLY); // to create a read-only txn
+// -- begin a transaction
+nogdb::Transaction txnRw = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // to create a read-write transaction
+nogdb::Transaction txnRo = ctx->beginTxn(nogdb::TxnMode::READ_ONLY); // to create a read-only transaction
+
+// -- database operations
+...
+
+// -- check Txn mode
+// return nogdb::TxnMode::READ_ONLY or nogdb::TxnMode::READ_WRITE
+auto mode = txnRw.getTxnMode();
+
+// -- check if txn is completed
+// return false if already committed or rolled back, otherwise, true
+auto completed = txnRw.isCompleted();
 
 // -- commit
-txn.commit();
+// throw an exception "NOGDB_TXN_COMPLETED" if txn is already completed
+txnRw.commit();
 
 // -- rollback or abort
-txn.rollback();
-------------
-
-=== Transaction Stats
-
-Some global transaction information such as the maximum number of transaction id, the maximum number of graph version id, and the oldest active read-only transaction
-can be retrieved via `getMaxTxnId()`, `getMaxVersionId()`, and `getMinActiveTxnId()` respectively as the examples below:
-
-==== Example:
-
-[source,cpp]
-------------
-// -- getting the maximum number of transaction id
-TxnId res = ctx.getMaxTxnId();
-// -- getting the maximum number of graph version id
-TxnId res = ctx.getMaxVersionId();
-// -- the oldest active read-only transaction
-std::pair<TxnId, TxnId> res = ctx.getMinActiveTxnId(); // a pair of particular txn id and latest graph version id related to it
+txnRo.rollback();
 ------------
 
 [NOTE]
@@ -811,9 +795,9 @@ std::pair<TxnId, TxnId> res = ctx.getMinActiveTxnId(); // a pair of particular t
 
 == Database Indexing
 
-The main purpose of database indexing is to increase the performance of querying data records in a large data set. This may not help to make graph traversal operations work faster but
-retrieving data records from data storage would definitely take advantages of database indexing. Some data retrieval operations that can significantly work
-with NogDB database indexing are such as `find(...)` and `findCursor(...)` on vertices and edges (only with `nogdb::Condition` and `nogdb::MultiCondition`).
+Database indexing is introduced to increase the performance of querying data records in a large data set. This may not help to make graph traversal operations work faster but
+retrieving data records from data storage would definitely take advantages of database indexing. A record retrieval operation that can significantly work
+with NogDB database indexing is `find(...)` on vertices and edges (only with `nogdb::Condition` and `nogdb::MultiCondition`).
 
 [NOTE]
 =====
@@ -822,196 +806,275 @@ with NogDB database indexing are such as `find(...)` and `findCursor(...)` on ve
 * Indexing does not have a concept of inheritance which means creating an index on a property of a super class will not affect to any sub classes even though they are using that property from their super class.
 =====
 
-== Class Operations  - `nogdb::Class`
+=== IndexDescriptor
 
-=== CREATE
+A descriptor to represent a particular index in the database.
+
 [source,cpp]
 ------------
-const nogdb::ClassDescriptor create(nogdb::Txn&                        txn,
-                                    const std::string&                 name, 
-                                    nogdb::ClassType                   type
-                                   )
+namespace nogdb {
+
+    struct IndexDescriptor {
+        IndexId id;
+        ClassId classId;
+        PropertyId propertyId;
+        bool unique;
+    };
+}
+------------
+
+The `nogdb::ClassDescriptor` consists of the following attributes:
+
+// tag::b-col-indv[]
+[cols="1,2,3", options="header"]
+.Attributes of `nogdb::IndexDescriptor`
+|===
+|Name
+|Type
+|Description
+
+|id
+|IndexId (`uint32_t`)
+|An unique id of an index.
+
+|classId
+|ClassId (`uint16_t`)
+|An unique id of a class to which the index belongs.
+
+|propertyId
+|PropertyId (`uint16_t`)
+|A unique name of a class.
+
+|unique
+|bool
+|A flag to represent unique and non-unique indexes.
+
+|===
+// end::b-col-indv[]
+
+== Class Operations
+
+=== ADD CLASS
+[source,cpp]
+------------
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+nogdb::ClassDescriptor cdesc = txn.addClass(const std::string &className, ClassType type);
+
+txn.commit();
 ------------
 * Description:
 ** To create a new class.
 * Parameters:
-** txn - A database transaction.
-** name - A name of a class that will be created.
+** className - A name of a class that will be created.
 ** type - A type of a class. Note that there are two class types available, `nogdb::ClassType::VERTEX` (or vertex) and `nogdb::ClassType::EDGE` (or edge).
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created class.
 * Exceptions:
-** `NOGDB_CTX_INVALID_CLASSNAME` - A length of class name is zero.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
 ** `NOGDB_CTX_INVALID_CLASSTYPE` - A type of class is not valid.
 ** `NOGDB_CTX_DUPLICATE_CLASS` - A specified class name has already existed.
-** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_MAXCLASS_REACH` - A maximum number of classes has been reached.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== CREATE EXTEND
+=== ADD SUB CLASS OF
 [source,cpp]
 ------------
-const nogdb::ClassDescriptor createExtend(nogdb::Txn&                      txn,
-                                          const std::string&               className, 
-                                          const std::string&               superClassName
-                                         )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+nogdb::ClassDescriptor cdesc = txn.addSubClassClass(const std::string &superClass, const std::string &className);
+
+txn.commit();
 ------------
 * Description:
-** To create a sub-class (aka. a derived class) of a super class (aka. a base class).
+** To create a derived class from a base class. All properties belonging to the base class are inherited.
 * Parameters:
-** txn - A database transaction.
+** superClass - A name of a super class that will be derived from.
 ** className - A name of a sub-class that will be created.
-** superClassName - A name of a super class that will be derived from.
 * Return:
 ** `nogdb::ClassDescriptor` - A class descriptor of a created sub-class.
 * Exceptions:
-** `NOGDB_CTX_INVALID_CLASSNAME` - A length of class name is zero.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
 ** `NOGDB_CTX_DUPLICATE_CLASS` - A specified class name has already existed.
-** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_MAXCLASS_REACH` - A maximum number of classes has been reached.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== ALTER
+=== RENAME CLASS
 [source,cpp]
 ------------
-void alter(nogdb::Txn&           txn,
-           const std::string&    oldClassName,
-           const std::string&    newClassName
-          )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+txn.renameClass(const std::string &oldName, const std::string &newName);
+
+txn.commit();
 ------------
 * Description: 
 ** To modify a class name.
 * Parameters:
-** txn - A database transaction.
 ** oldName - An old name of a class that will be changed from.
 ** newName - A new name of a class that will be changed to.
 * Exceptions:
-** `NOGDB_CTX_INVALID_CLASSNAME` - A length of a new class name is zero.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - An old class does not exist.
 ** `NOGDB_CTX_DUPLICATE_CLASS` - A new class name has already existed.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== DROP
+=== DROP CLASS
 [source,cpp]
 ------------
-void drop(nogdb::Txn&           txn,
-          const std::string&    name
-         )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+txn.dropClass(const std::string &className);
+
+txn.commit();
 ------------
 * Description:
 ** To drop a class.
 * Parameters:
-** txn - A database transaction.
-** name - A name of a class that will be dropped.
+** className - A name of a class that will be dropped.
 * Exceptions:
-** `NOGDB_CTX_INVALID_CLASSTYPE` - A type of class is not valid.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-== Property Operations  - `nogdb::Property`
 
-=== ADD
+== Property Operations
+
+=== ADD PROPERTY
 [source,cpp]
 ------------
-const nogdb::PropertyDescriptor add(nogdb::Txn&             txn,
-                                    const std::string&      className, 
-                                    const std::string&      propertyName, 
-                                    nogdb::PropertyType     type
-                                   )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+nogdb::PropertyDescriptor pdesc = txn.addProperty(const std::string &className,
+                                                  const std::string &propertyName,
+                                                  PropertyType type);
+
+txn.commit();
 ------------
 * Description:
 ** To add a property to a class.
 * Parameters:
-** txn - A database transaction.
 ** className - A name of a class that a property will be added into.
 ** propertyName - A name of a property that will be added.
-** type - A type of a property. (Please refer to "Types of Properties").
+** type - A type of a property.
 * Return:
 ** `nogdb::PropertyDescriptor` - A property descriptor of a created property.
 * Exceptions:
-** `NOGDB_CTX_INVALID_PROPERTYNAME` - A length of property name is zero.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A property name is invalid.
 ** `NOGDB_CTX_INVALID_PROPTYPE` - A type of class is not valid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_DUPLICATE_PROPERTY` - A specified property name has already existed.
-** `NOGDB_CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
-** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_OVERRIDE_PROPERTY` - A specified property name can be overridden the others among its sub-class.
+** `NOGDB_CTX_MAXPROPERTY_REACH` - A maximum number of properties has been reached.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== ALTER
+=== RENAME PROPERTY
 [source,cpp]
 ------------
-void alter(nogdb::Txn&           txn,
-           const std::string&    className,
-           const std::string&    oldName, 
-           const std::string&    newName
-          )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+txn.renameProperty(const std::string &className, const std::string &oldName, const std::string &newName);
+
+txn.commit();
 ------------
 * Description: 
-** To modify a property's name.
+** To modify a property name.
 * Parameters:
-** txn - A database transaction.
 ** className - A name of a class to which a property currently belongs.
 ** oldName - An old name of a property that will be changed from.
 ** newName - A new name of a property that will be changed to.
 * Exceptions:
-** `NOGDB_CTX_INVALID_PROPERTYNAME` - A length of a new property name is zero.
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A property name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_NOEXST_PROPERTY` - An old property name does not exist.
 ** `NOGDB_CTX_DUPLICATE_PROPERTY` - A new property  name has already existed.
 ** `NOGDB_CTX_OVERRIDE_PROPERTY` - A speficied property name can be overriden the others among its sub-class.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== REMOVE
+
+=== DROP PROPERTY
 [source,cpp]
 ------------
-void remove(nogdb::Txn&           txn,
-            const std::string&    className,
-            const std::string&    propertyName
-           )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+txn.dropProperty(const std::string &className, const std::string &propertyName);
+
+txn.commit();
 ------------
 * Description: 
 ** To delete a property.
 * Parameters:
-** txn - A database transaction.
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property that will be deleted.
 * Exceptions:
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A property name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
-=== CREATE INDEX
+== Index Operations
+
+=== ADD INDEX
 [source,cpp]
 ------------
-void createIndex(nogdb::Txn&             txn,
-                 const std::string&      className,
-                 const std::string&      propertyName,
-                 bool                    isUnique
-                )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+nogdb::IndexDescriptor idesc = txn.addIndex(const std::string &className,
+                                            const std::string &propertyName,
+                                            bool isUnique);
+
+txn.commit();
 ------------
 * Description:
 ** To create an index on a specified property.
 * Parameters:
-** txn - A database transaction.
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property that will be indexed.
+** isUnique - A flag to set a uniqueness of a created index.
 * Exceptions:
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A property name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_LIMIT_DBSCHEMA` - A limitation of a database schema has been reached.
+** `NOGDB_CTX_MAXINDEX_REACH` - A maximum number of indexes has been reached.
 ** `NOGDB_CTX_INVALID_PROPTYPE_INDEX` - A property type does not support database indexing.
 ** `NOGDB_CTX_DUPLICATE_INDEX` - An index has already existed.
 ** `NOGDB_CTX_INVALID_INDEX_CONSTRAINT` - An index could not be created with a unique constraint due to some duplicated values in existing records.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
 === DROP INDEX
 [source,cpp]
 ------------
-void dropIndex(nogdb::Txn&              txn,
-               const std::string&       className,
-               const std::string&       propertyName
-              )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE); // need to be only read-write
+
+txn.dropIndex(const std::string &className, const std::string &propertyName);
+
+txn.commit();
 ------------
 * Description:
 ** To drop an index on a specified property.
 * Parameters:
-** txn - A database transaction.
 ** className - A name of a class to which a property currently belongs.
 ** propertyName - A name of an existing property with an index that will be removed.
 * Exceptions:
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_INVALID_PROPERTYNAME` - A property name is invalid.
 ** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
 ** `NOGDB_CTX_NOEXST_INDEX` - An index does not exist on a specified class and property.
+** `NOGDB_TXN_INVALID_MODE` - A transaction mode is invalid.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
 == Database Operations - `nogdb::DB`
 
