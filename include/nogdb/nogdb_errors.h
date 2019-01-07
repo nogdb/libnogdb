@@ -322,7 +322,7 @@ namespace nogdb {
         case NOGDB_SQL_STACK_OVERFLOW:
           return "NOGDB_SQL_STACK_OVERFLOW: A parser stack overflow.";
         case NOGDB_SQL_NUMBER_FORMAT_EXCEPTION:
-          return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or overlimit.";
+          return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or over limits.";
         case NOGDB_SQL_INVALID_ALTER_ATTR:
           return "NOGDB_SQL_INVALID_ALTER_ATTR: A attribute of alter is invalid (or unknown).";
         case NOGDB_SQL_INVALID_COMPARATOR:
