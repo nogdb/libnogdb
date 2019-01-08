@@ -67,8 +67,9 @@
 #define NOGDB_CTX_DUPLICATE_INDEX               0x6020
 #define NOGDB_CTX_INVALID_INDEX_CONSTRAINT      0x6030
 #define NOGDB_CTX_UNIQUE_CONSTRAINT             0x6040
-//#define NOGDB_CTX_IS_LOCKED                     0x9fc0
-#define NOGDB_CTX_LIMIT_DBSCHEMA                0x9fd0
+#define NOGDB_CTX_MAXCLASS_REACH                0x9fd0
+#define NOGDB_CTX_MAXPROPERTY_REACH             0x9fd1
+#define NOGDB_CTX_MAXINDEX_REACH                0x9fd2
 #define NOGDB_CTX_INTERNAL_ERR                  0x9fe0
 #define NOGDB_CTX_UNKNOWN_ERR                   0x9ff0
 #define NOGDB_CTX_NOT_IMPLEMENTED               0x9fff
@@ -259,10 +260,12 @@ namespace nogdb {
           return "NOGDB_CTX_INVALID_CLASSNAME: A class name is empty or contains invalid characters";
         case NOGDB_CTX_INVALID_PROPERTYNAME:
           return "NOGDB_CTX_INVALID_PROPERTYNAME: A property name is empty or contains invalid characters";
-          //case NOGDB_CTX_IS_LOCKED:
-          //  return "NOGDB_CTX_IS_LOCKED: A context is locked or being used";
-        case NOGDB_CTX_LIMIT_DBSCHEMA:
-          return "NOGDB_CTX_LIMIT_DBSCHEMA: A limitation of a database schema has been reached";
+        case NOGDB_CTX_MAXCLASS_REACH:
+          return "NOGDB_CTX_MAXCLASS_REACH: A limitation of class number has been reached";
+        case NOGDB_CTX_MAXPROPERTY_REACH:
+          return "NOGDB_CTX_MAXPROPERTY_REACH: A limitation of property number has been reached";
+        case NOGDB_CTX_MAXINDEX_REACH:
+          return "NOGDB_CTX_MAXINDEX_REACH: A limitation of index number has been reached";
         case NOGDB_CTX_NOT_IMPLEMENTED:
           return "NOGDB_CTX_NOT_IMPLEMENTED: A function or class has not been implemented yet";
         case NOGDB_CTX_INVALID_PROPTYPE_INDEX:
@@ -319,7 +322,7 @@ namespace nogdb {
         case NOGDB_SQL_STACK_OVERFLOW:
           return "NOGDB_SQL_STACK_OVERFLOW: A parser stack overflow.";
         case NOGDB_SQL_NUMBER_FORMAT_EXCEPTION:
-          return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or overlimit.";
+          return "NOGDB_SQL_NUMBER_FORMAT_EXCEPTION: A number is incorrect format or over limits.";
         case NOGDB_SQL_INVALID_ALTER_ATTR:
           return "NOGDB_SQL_INVALID_ALTER_ATTR: A attribute of alter is invalid (or unknown).";
         case NOGDB_SQL_INVALID_COMPARATOR:
