@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,50 +19,52 @@
  *
  */
 
-#ifndef __BLOB_HPP_INCLUDED_
-#define __BLOB_HPP_INCLUDED_
+#pragma once
+
+#include <unistd.h>
 
 namespace nogdb {
 
-    namespace internal_data_type {
+  namespace internal_data_type {
 
-        class Blob {
-        public:
-            typedef unsigned char Byte;
+    class Blob {
+    public:
+      typedef unsigned char Byte;
 
-            Blob(const size_t capacity = 1);
+      Blob(const size_t capacity = 1);
 
-            Blob(const Byte *value, const size_t capacity);
+      Blob(const Byte *value, const size_t capacity);
 
-            ~Blob() noexcept;
+      Blob(const Byte *value, const size_t capacity, const size_t size);
 
-            Blob(const Blob &binaryObject);
+      ~Blob() noexcept;
 
-            Blob &operator=(const Blob &binaryObject) noexcept;
+      Blob(const Blob &binaryObject);
 
-            Blob(Blob &&binaryObject);
+      Blob &operator=(const Blob &binaryObject) noexcept;
 
-            Blob &operator=(Blob &&binaryObject) noexcept;
+      Blob(Blob &&binaryObject);
 
-            size_t capacity() const noexcept { return capacity_; }
+      Blob &operator=(Blob &&binaryObject) noexcept;
 
-            size_t size() const noexcept { return size_; }
+      size_t capacity() const noexcept { return _capacity; }
 
-            Byte *bytes() const noexcept { return value_; }
+      size_t size() const noexcept { return _size; }
 
-            Blob &append(const void *data, size_t size);
+      Byte *bytes() const noexcept { return _value; }
 
-            size_t retrieve(void *data, size_t offset, size_t size) const;
+      Blob &append(const void *data, size_t size);
 
-        private:
-            size_t capacity_;
-            size_t size_;
-            Byte *value_;
-        };
+      size_t retrieve(void *data, size_t offset, size_t size) const;
 
-    }
+      Blob operator+(const Blob &suffix) const;
+
+    private:
+      size_t _capacity;
+      size_t _size;
+      Byte *_value;
+    };
+
+  }
 
 }
-
-
-#endif

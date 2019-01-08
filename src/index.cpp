@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,690 +19,806 @@
  *
  */
 
-#include <utility>
-#include <algorithm>
-
 #include "index.hpp"
-#include "generic.hpp"
-#include "parser.hpp"
-#include "utils.hpp"
-
-#include "nogdb_txn.h"
 
 namespace nogdb {
 
-    const std::vector<Condition::Comparator>
-            Index::validComparators = std::vector<Condition::Comparator>{
-            Condition::Comparator::EQUAL,
-            Condition::Comparator::BETWEEN_NO_BOUND,
-            Condition::Comparator::BETWEEN,
-            Condition::Comparator::BETWEEN_NO_UPPER,
-            Condition::Comparator::BETWEEN_NO_LOWER,
-            Condition::Comparator::LESS_EQUAL,
-            Condition::Comparator::LESS,
-            Condition::Comparator::GREATER_EQUAL,
-            Condition::Comparator::GREATER
-    };
+  namespace index {
 
-    auto cmpRecordDescriptor = [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) {
-        return lhs.rid < rhs.rid;
-    };
-
-    void Index::addIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                         PropertyType type, bool isUnique) {
-        auto dsTxnHandler = txn.getDsTxnHandler();
-        if (!bytesValue.empty()) {
-            auto indexRecord = Blob(sizeof(PositionId));
-            indexRecord.append(&positionId, sizeof(PositionId));
-            try {
-                switch (type) {
-                    case PropertyType::UNSIGNED_TINYINT:
-                    case PropertyType::UNSIGNED_SMALLINT:
-                    case PropertyType::UNSIGNED_INTEGER:
-                    case PropertyType::UNSIGNED_BIGINT: {
-                        auto dataIndexDBHandler = dsTxnHandler->openDbi(getIndexingName(indexId), true, isUnique);
-                        if (type == PropertyType::UNSIGNED_TINYINT) {
-                            //NOTE: convert uint8_t to uint64_t for being compatible with all compilers
-                            dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toTinyIntU()), indexRecord, false, !isUnique);
-                        } else if (type == PropertyType::UNSIGNED_SMALLINT) {
-                            dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toSmallIntU()), indexRecord, false, !isUnique);
-                        } else if (type == PropertyType::UNSIGNED_INTEGER) {
-                            dataIndexDBHandler.put(static_cast<uint64_t>(bytesValue.toIntU()), indexRecord, false, !isUnique);
-                        } else {
-                            dataIndexDBHandler.put(bytesValue.toBigIntU(), indexRecord, false, !isUnique);
-                        }
-                        break;
-                    }
-                    case PropertyType::TINYINT:
-                    case PropertyType::SMALLINT:
-                    case PropertyType::INTEGER:
-                    case PropertyType::BIGINT:
-                    case PropertyType::REAL: {
-                        auto dataIndexDBHandlerPositive = dsTxnHandler->openDbi(getIndexingName(indexId, true), true, isUnique);
-                        auto dataIndexDBHandlerNegative = dsTxnHandler->openDbi(getIndexingName(indexId, false), true, isUnique);
-                        if (type == PropertyType::TINYINT) {
-                            //NOTE: convert int8_t to int64_t for being compatible with all compilers
-                            auto value = bytesValue.toTinyInt();
-                            if (value >= 0) {
-                                dataIndexDBHandlerPositive.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            } else {
-                                dataIndexDBHandlerNegative.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            }
-                        } else if (type == PropertyType::SMALLINT) {
-                            auto value = bytesValue.toSmallInt();
-                            if (value >= 0) {
-                                dataIndexDBHandlerPositive.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            } else {
-                                dataIndexDBHandlerNegative.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            }
-                        } else if (type == PropertyType::INTEGER) {
-                            auto value = bytesValue.toInt();
-                            if (value >= 0) {
-                                dataIndexDBHandlerPositive.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            } else {
-                                dataIndexDBHandlerNegative.put(static_cast<int64_t>(value), indexRecord, false, !isUnique);
-                            }
-                        } else if (type == PropertyType::REAL) {
-                            auto value = bytesValue.toReal();
-                            if (value >= 0) {
-                                dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                            } else {
-                                dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                            }
-                        } else {
-                            auto value = bytesValue.toBigInt();
-                            if (value >= 0) {
-                                dataIndexDBHandlerPositive.put(value, indexRecord, false, !isUnique);
-                            } else {
-                                dataIndexDBHandlerNegative.put(value, indexRecord, false, !isUnique);
-                            }
-                        }
-                        break;
-                    }
-                    case PropertyType::TEXT: {
-                        auto dataIndexDBHandler = dsTxnHandler->openDbi(getIndexingName(indexId), false, isUnique);
-                        auto value = bytesValue.toText();
-                        if (!value.empty()) {
-                            dataIndexDBHandler.put(value, indexRecord, false, !isUnique);
-                        }
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            } catch (const Error &err) {
-                if (err.code() == MDB_KEYEXIST) {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNIQUE_CONSTRAINT);
-                } else {
-                    throw err;
-                }
-            }
-        }
+    void IndexInterface::initialize(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                    const ClassType &classType) {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<uint64_t>(value.toTinyIntU());
+          });
+          break;
+        case PropertyType::UNSIGNED_SMALLINT:
+          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<uint64_t>(value.toSmallIntU());
+          });
+          break;
+        case PropertyType::UNSIGNED_INTEGER:
+          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<uint64_t>(value.toIntU());
+          });
+          break;
+        case PropertyType::UNSIGNED_BIGINT:
+          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return value.toBigIntU();
+          });
+          break;
+        case PropertyType::TINYINT:
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<int64_t>(value.toTinyInt());
+          });
+          break;
+        case PropertyType::SMALLINT:
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<int64_t>(value.toSmallInt());
+          });
+          break;
+        case PropertyType::INTEGER:
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return static_cast<int64_t>(value.toInt());
+          });
+          break;
+        case PropertyType::BIGINT:
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return value.toBigInt();
+          });
+          break;
+        case PropertyType::REAL:
+          createSignedNumeric<double>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+            return value.toReal();
+          });
+          break;
+        case PropertyType::TEXT:
+          createString(propertyInfo, indexInfo, classType);
+          break;
+        default:
+          break;
+      }
     }
 
-    void Index::deleteIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                            PropertyType type, bool isUnique) {
-        auto dsTxnHandler = txn.getDsTxnHandler();
-        if (!bytesValue.empty()) {
-            switch (type) {
-                case PropertyType::UNSIGNED_TINYINT:
-                case PropertyType::UNSIGNED_SMALLINT:
-                case PropertyType::UNSIGNED_INTEGER:
-                case PropertyType::UNSIGNED_BIGINT: {
-                    auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                    if (type == PropertyType::UNSIGNED_TINYINT) {
-                        deleteIndexCursor(cursorHandler, positionId, static_cast<uint64_t>(bytesValue.toTinyIntU()));
-                    } else if (type == PropertyType::UNSIGNED_SMALLINT) {
-                        deleteIndexCursor(cursorHandler, positionId, static_cast<uint64_t>(bytesValue.toSmallIntU()));
-                    } else if (type == PropertyType::UNSIGNED_INTEGER) {
-                        deleteIndexCursor(cursorHandler, positionId, static_cast<uint64_t>(bytesValue.toIntU()));
-                    } else {
-                        deleteIndexCursor(cursorHandler, positionId, bytesValue.toBigIntU());
-                    }
-                    break;
-                }
-                case PropertyType::TINYINT:
-                case PropertyType::SMALLINT:
-                case PropertyType::INTEGER:
-                case PropertyType::BIGINT:
-                case PropertyType::REAL: {
-                    auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                    auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                    if (type == PropertyType::TINYINT) {
-                        auto value = static_cast<int64_t>(bytesValue.toTinyInt());
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
-                    } else if (type == PropertyType::SMALLINT) {
-                        auto value = static_cast<int64_t>(bytesValue.toSmallInt());
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
-                    } else if (type == PropertyType::INTEGER) {
-                        auto value = static_cast<int64_t>(bytesValue.toInt());
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
-                    } else if (type == PropertyType::REAL) {
-                        auto value = bytesValue.toReal();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
-                    } else {
-                        auto value = bytesValue.toBigInt();
-                        (value < 0) ? deleteIndexCursor(cursorHandlerNegative, positionId, value)
-                                    : deleteIndexCursor(cursorHandlerPositive, positionId, value);
-                    }
-                    break;
-                }
-                case PropertyType::TEXT: {
-                    auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                    auto value = bytesValue.toText();
-                    if (!value.empty()) {
-                        deleteIndexCursor(cursorHandler, positionId, value);
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
+    void IndexInterface::drop(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo) {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+        case PropertyType::UNSIGNED_SMALLINT:
+        case PropertyType::UNSIGNED_INTEGER:
+        case PropertyType::UNSIGNED_BIGINT: {
+          openIndexRecordPositive(indexInfo).destroy();
+          break;
         }
+        case PropertyType::TINYINT:
+        case PropertyType::SMALLINT:
+        case PropertyType::INTEGER:
+        case PropertyType::BIGINT:
+        case PropertyType::REAL: {
+          openIndexRecordPositive(indexInfo).destroy();
+          openIndexRecordNegative(indexInfo).destroy();
+          break;
+        }
+        case PropertyType::TEXT: {
+          openIndexRecordString(indexInfo).destroy();
+          break;
+        }
+        default:
+          break;
+      }
     }
 
-    std::pair<Index::IndexPropertyType, bool>
-    Index::hasIndex(ClassId classId, const ClassInfo &classInfo, const Condition &condition) {
-        if (std::find(validComparators.cbegin(), validComparators.cend(), condition.comp) != validComparators.cend()) {
-            // check if NOT is not used for EQUAL
-            if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
-                return std::make_pair(IndexPropertyType{}, false);
-            }
-            auto foundProperty = classInfo.propertyInfo.nameToDesc.find(condition.propName);
-            if (foundProperty != classInfo.propertyInfo.nameToDesc.cend()) {
-                for (const auto &index: foundProperty->second.indexInfo) {
-                    if (index.second.first == classId) {
-                        return std::make_pair(
-                                IndexPropertyType{index.first, index.second.second, foundProperty->second.type}, true);
-                    }
-                }
-            }
+    void IndexInterface::drop(const ClassId &classId, const PropertyNameMapInfo &propertyNameMapInfo) {
+      for (const auto &property: propertyNameMapInfo) {
+        auto indexInfo = _txn->_adapter->dbIndex()->getInfo(classId, property.second.id);
+        if (indexInfo.id != IndexId{}) {
+          drop(property.second, indexInfo);
         }
-        return std::make_pair(IndexPropertyType{}, false);
+      }
     }
 
-    std::pair<std::map<std::string, Index::IndexPropertyType>, bool>
-    Index::hasIndex(ClassId classId, const ClassInfo &classInfo, const MultiCondition &conditions) {
-        auto result = std::map<std::string, Index::IndexPropertyType>{};
-        auto isFoundAll = true;
-        for (const auto &condition: conditions.conditions) {
-            if (auto conditionPtr = condition.lock()) {
-                auto propertyName = conditionPtr->getCondition().propName;
-                if (result.find(propertyName) == result.cend()) {
-                    auto tmpResult = hasIndex(classId, classInfo, conditionPtr->getCondition());
-                    if (tmpResult.second) {
-                        result.emplace(propertyName, tmpResult.first);
-                    } else {
-                        isFoundAll = false;
-                        break;
-                    }
-                }
-            } else {
-                isFoundAll = false;
-                break;
-            }
-        }
-        return std::make_pair((isFoundAll) ? result : std::map<std::string, Index::IndexPropertyType>{}, isFoundAll);
-    }
-
-    std::vector<RecordDescriptor> Index::getIndexRecord(const Txn &txn,
-                                                        ClassId classId,
-                                                        IndexPropertyType indexPropertyType,
-                                                        const Condition &condition,
-                                                        bool isNegative) {
-        auto sortByRdesc = [](std::vector<RecordDescriptor>& recordDescriptors) {
-            std::sort(recordDescriptors.begin(), recordDescriptors.end(), cmpRecordDescriptor);
-        };
-
-        auto isApplyNegative = condition.isNegative ^isNegative;
-        switch (condition.comp) {
-            case Condition::Comparator::EQUAL: {
-                if (!isApplyNegative) {
-                    auto result = getEqual(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueBytes);
-                    auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
-                    lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
-                    sortByRdesc(lessResult);
-                    return lessResult;
-                }
-            }
-            case Condition::Comparator::LESS_EQUAL: {
-                if (!isApplyNegative) {
-                    auto result = getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto result = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                }
-            }
-            case Condition::Comparator::LESS: {
-                if (!isApplyNegative) {
-                    auto result = getLess(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto result = getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                }
-            }
-            case Condition::Comparator::GREATER_EQUAL: {
-                if (!isApplyNegative) {
-                    auto result = getGreaterEqual(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto result = getLess(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                }
-            }
-            case Condition::Comparator::GREATER: {
-                if (!isApplyNegative) {
-                    auto result = getGreater(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto result = getLessEqual(txn, classId, indexPropertyType, condition.valueBytes);
-                    sortByRdesc(result);
-                    return result;
-                }
-            }
-            case Condition::Comparator::BETWEEN_NO_BOUND: {
-                if (!isApplyNegative) {
-                    auto result = getBetween(txn, classId, indexPropertyType,
-                                             condition.valueSet[0], condition.valueSet[1], {false, false});
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto lessResult = getLessEqual(txn, classId, indexPropertyType, condition.valueSet[0]);
-                    auto greaterResult = getGreaterEqual(txn, classId, indexPropertyType, condition.valueSet[1]);
-                    lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
-                    sortByRdesc(lessResult);
-                    return lessResult;
-                }
-            }
-            case Condition::Comparator::BETWEEN: {
-                if (!isApplyNegative) {
-                    auto result = getBetween(txn, classId, indexPropertyType,
-                                             condition.valueSet[0], condition.valueSet[1], {true, true});
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueSet[0]);
-                    auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueSet[1]);
-                    lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
-                    sortByRdesc(lessResult);
-                    return lessResult;
-                }
-            }
-            case Condition::Comparator::BETWEEN_NO_UPPER: {
-                if (!isApplyNegative) {
-                    auto result = getBetween(txn, classId, indexPropertyType,
-                                             condition.valueSet[0], condition.valueSet[1], {true, false});
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto lessResult = getLess(txn, classId, indexPropertyType, condition.valueSet[0]);
-                    auto greaterResult = getGreaterEqual(txn, classId, indexPropertyType, condition.valueSet[1]);
-                    lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
-                    sortByRdesc(lessResult);
-                    return lessResult;
-                }
-            }
-            case Condition::Comparator::BETWEEN_NO_LOWER: {
-                if (!isApplyNegative) {
-                    auto result = getBetween(txn, classId, indexPropertyType,
-                                             condition.valueSet[0], condition.valueSet[1], {false, true});
-                    sortByRdesc(result);
-                    return result;
-                } else {
-                    auto lessResult = getLessEqual(txn, classId, indexPropertyType, condition.valueSet[0]);
-                    auto greaterResult = getGreater(txn, classId, indexPropertyType, condition.valueSet[1]);
-                    lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
-                    sortByRdesc(lessResult);
-                    return lessResult;
-                }
+    void IndexInterface::insert(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                const PositionId &posId, const Bytes &value) {
+      if (!value.empty()) {
+        try {
+          switch (propertyInfo.type) {
+            case PropertyType::UNSIGNED_TINYINT:
+              insert(indexInfo, posId, static_cast<uint64_t>(value.toTinyIntU()));
+              break;
+            case PropertyType::UNSIGNED_SMALLINT:
+              insert(indexInfo, posId, static_cast<uint64_t>(value.toSmallIntU()));
+              break;
+            case PropertyType::UNSIGNED_INTEGER:
+              insert(indexInfo, posId, static_cast<uint64_t>(value.toIntU()));
+              break;
+            case PropertyType::UNSIGNED_BIGINT:
+              insert(indexInfo, posId, value.toBigIntU());
+              break;
+            case PropertyType::TINYINT:
+              insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt()));
+              break;
+            case PropertyType::SMALLINT:
+              insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt()));
+              break;
+            case PropertyType::INTEGER:
+              insertSignedNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt()));
+              break;
+            case PropertyType::BIGINT:
+              insertSignedNumeric(indexInfo, posId, value.toBigInt());
+              break;
+            case PropertyType::REAL:
+              insertSignedNumeric(indexInfo, posId, value.toReal());
+              break;
+            case PropertyType::TEXT: {
+              auto valueString = value.toText();
+              if (!valueString.empty()) {
+                insert(indexInfo, posId, valueString);
+              }
+              break;
             }
             default:
-                break;
+              break;
+          }
+        } catch (const Error& err) {
+          if (err.code() == MDB_KEYEXIST) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNIQUE_CONSTRAINT);
+          } else {
+            throw NOGDB_FATAL_ERROR(err);
+          }
         }
-        return std::vector<RecordDescriptor>{};
+      }
     }
 
-    std::vector<RecordDescriptor> Index::getIndexRecord(const Txn &txn,
-                                                        ClassId classId,
-                                                        const std::map<std::string, IndexPropertyType> &indexPropertyTypes,
-                                                        const MultiCondition &conditions) {
-        std::function<std::vector<RecordDescriptor>(const MultiCondition::CompositeNode *, bool)>
-                getRecordFromIndex = [&](const MultiCondition::CompositeNode *compositeNode, bool isParentNegative) {
-            auto getResult = [&](const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
-                                 bool isNegative) -> std::vector<RecordDescriptor> {
-                if (!exprNode->checkIfCondition()) {
-                    auto compositeNodePtr = (MultiCondition::CompositeNode *) exprNode.get();
-                    return getRecordFromIndex(compositeNodePtr, isNegative);
-                } else {
-                    auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode.get();
-                    auto &condition = conditionNodePtr->getCondition();
-                    auto indexPropertyTypeMap = indexPropertyTypes.find(condition.propName);
-                    require(indexPropertyTypeMap != indexPropertyTypes.cend());
-                    return getIndexRecord(txn, classId, indexPropertyTypeMap->second, condition, isNegative);
-                }
-            };
-            auto &opt = compositeNode->getOperator();
-            auto &rightNode = compositeNode->getRightNode();
-            auto &leftNode = compositeNode->getLeftNode();
-            auto isApplyNegative = compositeNode->getIsNegative() ^isParentNegative;
-            auto result = std::vector<RecordDescriptor>{};
-            auto rightNodeResult = getResult(rightNode, isApplyNegative);
-            auto leftNodeResult = getResult(leftNode, isApplyNegative);
-            if ((opt == MultiCondition::Operator::AND && !isApplyNegative) ||
-                (opt == MultiCondition::Operator::OR && isApplyNegative)) {
-                // AND action
-                std::set_intersection(rightNodeResult.begin(), rightNodeResult.end(),
-                                      leftNodeResult.begin(), leftNodeResult.end(),
-                                      std::back_inserter(result), cmpRecordDescriptor);
-            } else {
-                // OR action
-                std::set_union(rightNodeResult.begin(), rightNodeResult.end(),
-                               leftNodeResult.begin(), leftNodeResult.end(),
-                               std::back_inserter(result), cmpRecordDescriptor);
+    void IndexInterface::insert(const RecordDescriptor &recordDescriptor,
+                                const Record &record,
+                                const PropertyNameMapIndex &propertyNameMapIndex) {
+      for(const auto &info: propertyNameMapIndex) {
+        auto propertyName = info.first;
+        auto propertyInfo = info.second.first;
+        auto indexInfo = info.second.second;
+        insert(propertyInfo, indexInfo, recordDescriptor.rid.second, record.get(propertyName));
+      }
+    }
+
+    void IndexInterface::remove(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                const PositionId &posId, const Bytes &value) {
+      if (!value.empty()) {
+        switch (propertyInfo.type) {
+          case PropertyType::UNSIGNED_TINYINT:
+            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toTinyIntU()));
+            break;
+          case PropertyType::UNSIGNED_SMALLINT:
+            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toSmallIntU()));
+            break;
+          case PropertyType::UNSIGNED_INTEGER:
+            removeByCursor(indexInfo, posId, static_cast<uint64_t>(value.toIntU()));
+            break;
+          case PropertyType::UNSIGNED_BIGINT:
+            removeByCursor(indexInfo, posId, value.toBigIntU());
+            break;
+          case PropertyType::TINYINT:
+            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toTinyInt()));
+            break;
+          case PropertyType::SMALLINT:
+            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toSmallInt()));
+            break;
+          case PropertyType::INTEGER:
+            removeByCursorWithSignNumeric(indexInfo, posId, static_cast<int64_t>(value.toInt()));
+            break;
+          case PropertyType::BIGINT:
+            removeByCursorWithSignNumeric(indexInfo, posId, value.toBigInt());
+            break;
+          case PropertyType::REAL:
+            removeByCursorWithSignNumeric(indexInfo, posId, value.toReal());
+            break;
+          case PropertyType::TEXT: {
+            auto valueString = value.toText();
+            if (!valueString.empty()) {
+              removeByCursor(indexInfo, posId, valueString);
             }
+            break;
+          }
+          default:
+            break;
+        }
+      }
+    }
+
+    void IndexInterface::remove(const RecordDescriptor &recordDescriptor,
+                                const Record &record,
+                                const PropertyNameMapIndex &propertyNameMapIndex) {
+      for(const auto &info: propertyNameMapIndex) {
+        auto propertyName = info.first;
+        auto propertyInfo = info.second.first;
+        auto indexInfo = info.second.second;
+        remove(propertyInfo, indexInfo, recordDescriptor.rid.second, record.get(propertyName));
+      }
+    }
+
+    std::pair<bool, IndexAccessInfo>
+    IndexInterface::hasIndex(const ClassAccessInfo &classInfo,
+                             const PropertyAccessInfo &propertyInfo,
+                             const Condition &condition) const {
+      if (isValidComparator(condition)) {
+        // check if NOT is not used for EQUAL
+        if (condition.comp == Condition::Comparator::EQUAL && condition.isNegative) {
+          return std::make_pair(false, IndexAccessInfo{});
+        }
+        auto indexInfo = _txn->_adapter->dbIndex()->getInfo(classInfo.id, propertyInfo.id);
+        return std::make_pair(indexInfo.id != IndexId{}, indexInfo);
+      }
+      return std::make_pair(false, IndexAccessInfo{});
+    }
+
+    PropertyNameMapIndex IndexInterface::getIndexInfos(const RecordDescriptor &recordDescriptor,
+                                                       const Record& record,
+                                                       const PropertyNameMapInfo &propertyNameMapInfo) {
+      auto result = std::map<std::string, std::pair<PropertyAccessInfo, IndexAccessInfo>>{};
+      for (const auto &property: record.getAll()) {
+        if (property.second.empty()) continue;
+        auto foundProperty = propertyNameMapInfo.find(property.first);
+        if (foundProperty == propertyNameMapInfo.cend()) {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        } else {
+          auto indexInfo = _txn->_adapter->dbIndex()->getInfo(recordDescriptor.rid.first, foundProperty->second.id);
+          if (indexInfo.id != IndexId{}) {
+            result.emplace(property.first, std::make_pair(foundProperty->second, indexInfo));
+          }
+        }
+      }
+      return result;
+    }
+
+    std::pair<bool, PropertyIdMapIndex>
+    IndexInterface::hasIndex(const ClassAccessInfo &classInfo,
+                             const PropertyNameMapInfo &propertyInfos,
+                             const MultiCondition &conditions) const {
+      auto isFoundAll = true;
+      auto result = PropertyIdMapIndex{};
+      auto conditionPropNames = std::unordered_set<std::string>{};
+      for (const auto &condition: conditions.conditions) {
+        if (auto conditionPtr = condition.lock()) {
+          auto propertyName = conditionPtr->getCondition().propName;
+          if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
+            auto propertyInfo = propertyInfos.find(propertyName);
+            if (propertyInfo == propertyInfos.cend()) continue;
+            conditionPropNames.emplace(propertyName);
+            auto searchIndexResult = hasIndex(classInfo, propertyInfo->second, conditionPtr->getCondition());
+            if (searchIndexResult.first) {
+              auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
+              result.emplace(propertyId, searchIndexResult.second);
+            } else {
+              isFoundAll = false;
+              break;
+            }
+          }
+        } else {
+          isFoundAll = false;
+          break;
+        }
+      }
+      return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
+    }
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getRecord(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                              const Condition &condition, bool isNegative) const {
+      auto isApplyNegative = condition.isNegative ^isNegative;
+      switch (condition.comp) {
+        case Condition::Comparator::EQUAL: {
+          if (!isApplyNegative) {
+            auto result = getEqual(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
             return result;
-        };
-        getRecordFromIndex(conditions.root.get(), false);
-        return std::vector<RecordDescriptor>{};
+          } else {
+            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+            sortByRdesc(lessResult);
+            return lessResult;
+          }
+        }
+        case Condition::Comparator::LESS_EQUAL: {
+          if (!isApplyNegative) {
+            auto result = getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto result = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          }
+        }
+        case Condition::Comparator::LESS: {
+          if (!isApplyNegative) {
+            auto result = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto result = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          }
+        }
+        case Condition::Comparator::GREATER_EQUAL: {
+          if (!isApplyNegative) {
+            auto result = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto result = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          }
+        }
+        case Condition::Comparator::GREATER: {
+          if (!isApplyNegative) {
+            auto result = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto result = getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes);
+            sortByRdesc(result);
+            return result;
+          }
+        }
+        case Condition::Comparator::BETWEEN_NO_BOUND: {
+          if (!isApplyNegative) {
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {false, false});
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+            auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+            sortByRdesc(lessResult);
+            return lessResult;
+          }
+        }
+        case Condition::Comparator::BETWEEN: {
+          if (!isApplyNegative) {
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {true, true});
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+            sortByRdesc(lessResult);
+            return lessResult;
+          }
+        }
+        case Condition::Comparator::BETWEEN_NO_UPPER: {
+          if (!isApplyNegative) {
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {true, false});
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+            auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+            sortByRdesc(lessResult);
+            return lessResult;
+          }
+        }
+        case Condition::Comparator::BETWEEN_NO_LOWER: {
+          if (!isApplyNegative) {
+            auto result = getBetween(
+                propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], {false, true});
+            sortByRdesc(result);
+            return result;
+          } else {
+            auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+            auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+            lessResult.insert(lessResult.end(), greaterResult.cbegin(), greaterResult.cend());
+            sortByRdesc(lessResult);
+            return lessResult;
+          }
+        }
+        default:
+          break;
+      }
+      return std::vector<RecordDescriptor>{};
     }
 
     std::vector<RecordDescriptor>
-    Index::getLessEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType,
-                        const Bytes &value) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toTinyIntU()), true, true);
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toSmallIntU()), true, true);
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toIntU()), true, true);
-                } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
-                }
+    IndexInterface::getRecord(const PropertyNameMapInfo &propertyInfos,
+                              const PropertyIdMapIndex &propertyIndexInfo,
+                              const MultiCondition &conditions) const {
+      return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false);
+    }
+
+    adapter::index::IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo &indexInfo) const {
+      auto indexFlags = INDEX_POSITIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      return indexAccess;
+    }
+
+    adapter::index::IndexRecord IndexInterface::openIndexRecordNegative(const IndexAccessInfo &indexInfo) const {
+      auto indexFlags = INDEX_NEGATIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      return indexAccess;
+    }
+
+    adapter::index::IndexRecord IndexInterface::openIndexRecordString(const IndexAccessInfo &indexInfo) const {
+      auto indexFlags = INDEX_STRING_UNIQUE(indexInfo.isUnique);
+      auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
+      return indexAccess;
+    }
+
+    void IndexInterface::createString(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                      const ClassType &classType) {
+      auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+      auto indexAccess = openIndexRecordString(indexInfo);
+      auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+      std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
+          [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
+            auto const record = parser::RecordParser::parseRawData(
+                result, propertyIdMapInfo, classType == ClassType::EDGE);
+            auto value = record.get(propertyInfo.name).toText();
+            if (!value.empty()) {
+              auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+              indexAccess.create(value, indexRecord);
             }
-            case PropertyType::TINYINT:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toTinyInt()), true);
-            case PropertyType::SMALLINT:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toSmallInt()), true);
-            case PropertyType::INTEGER:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toInt()), true);
-            case PropertyType::BIGINT:
-                return getLess(txn, classId, indexId, isUnique, value.toBigInt(), true);
-            case PropertyType::REAL:
-                return getLess(txn, classId, indexId, isUnique, value.toReal(), true);
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return backwardSearchIndex(cursorHandler, classId, value.toText(), true, true);
-            }
-            default:
-                break;
+          };
+      dataRecord.resultSetIter(callback);
+    }
+
+    void IndexInterface::insert(const IndexAccessInfo &indexInfo, PositionId positionId, const std::string &value) {
+      auto indexAccess = openIndexRecordString(indexInfo);
+      auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+      indexAccess.create(value, indexRecord);
+    }
+
+    void
+    IndexInterface::removeByCursor(const IndexAccessInfo &indexInfo, PositionId positionId, const std::string &value) {
+      auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+      for (auto keyValue = indexAccessCursor.find(value);
+           !keyValue.empty();
+           keyValue = indexAccessCursor.getNext()) {
+        auto key = keyValue.key.data.string();
+        if (value == key) {
+          auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
+          if (positionId == valueAsPositionId) {
+            indexAccessCursor.del();
+            break;
+          }
+        } else {
+          break;
         }
-        return std::vector<RecordDescriptor>{};
+      }
     }
 
     std::vector<RecordDescriptor>
-    Index::getLess(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toTinyIntU()), true);
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toSmallIntU()), true);
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return backwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toIntU()), true);
-                } else {
-                    return backwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
-                }
-            }
-            case PropertyType::TINYINT:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toTinyInt()));
-            case PropertyType::SMALLINT:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toSmallInt()));
-            case PropertyType::INTEGER:
-                return getLess(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toInt()));
-            case PropertyType::BIGINT:
-                return getLess(txn, classId, indexId, isUnique, value.toBigInt());
-            case PropertyType::REAL:
-                return getLess(txn, classId, indexId, isUnique, value.toReal());
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return backwardSearchIndex(cursorHandler, classId, value.toText(), true);
-            }
-            default:
-                break;
-        }
-        return std::vector<RecordDescriptor>{};
+    IndexInterface::getRecordFromMultiCondition(const PropertyNameMapInfo &propertyInfos,
+                                                const PropertyIdMapIndex &propertyIndexInfo,
+                                                const MultiCondition::CompositeNode *compositeNode,
+                                                bool isParentNegative) const {
+      auto &opt = compositeNode->getOperator();
+      auto &rightNode = compositeNode->getRightNode();
+      auto &leftNode = compositeNode->getLeftNode();
+      auto isApplyNegative = compositeNode->getIsNegative() ^isParentNegative;
+      auto result = std::vector<RecordDescriptor>{};
+      auto rightNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, rightNode, isApplyNegative);
+      auto leftNodeResult = getMultiConditionResult(propertyInfos, propertyIndexInfo, leftNode, isApplyNegative);
+
+      static const auto cmpRecordDescriptor =
+          [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
+            return lhs.rid < rhs.rid;
+          };
+
+      if ((opt == MultiCondition::Operator::AND && !isApplyNegative) ||
+          (opt == MultiCondition::Operator::OR && isApplyNegative)) {
+        // AND action
+        std::set_intersection(rightNodeResult.begin(), rightNodeResult.end(),
+                              leftNodeResult.begin(), leftNodeResult.end(),
+                              std::back_inserter(result), cmpRecordDescriptor);
+      } else {
+        // OR action
+        std::set_union(rightNodeResult.begin(), rightNodeResult.end(),
+                       leftNodeResult.begin(), leftNodeResult.end(),
+                       std::back_inserter(result), cmpRecordDescriptor);
+      }
+      return result;
+    };
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getMultiConditionResult(const PropertyNameMapInfo &propertyInfos,
+                                            const PropertyIdMapIndex &propertyIndexInfo,
+                                            const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
+                                            bool isNegative) const {
+      if (!exprNode->checkIfCondition()) {
+        auto compositeNodePtr = (MultiCondition::CompositeNode *) exprNode.get();
+        return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, compositeNodePtr, isNegative);
+      } else {
+        auto conditionNodePtr = (MultiCondition::ConditionNode *) exprNode.get();
+        auto &condition = conditionNodePtr->getCondition();
+        auto foundProperty = propertyInfos.find(condition.propName);
+        require(foundProperty != propertyInfos.cend());
+        auto &propertyInfo = foundProperty->second;
+        auto foundIndexInfo = propertyIndexInfo.find(propertyInfo.id);
+        require(foundIndexInfo != propertyIndexInfo.cend());
+        return getRecord(propertyInfo, foundIndexInfo->second, condition, isNegative);
+      }
+    };
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getLessOrEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                   const Bytes &value) const {
+      return getLessCommon(propertyInfo, indexInfo, value, true);
     }
 
     std::vector<RecordDescriptor>
-    Index::getEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return exactMatchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toTinyIntU()));
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return exactMatchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toSmallIntU()));
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return exactMatchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toIntU()));
-                } else {
-                    return exactMatchIndex(cursorHandler, classId, value.toBigIntU());
-                }
-            }
-            case PropertyType::TINYINT:
-                return getEqual(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toTinyInt()));
-            case PropertyType::SMALLINT:
-                return getEqual(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toSmallInt()));
-            case PropertyType::INTEGER:
-                return getEqual(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toInt()));
-            case PropertyType::BIGINT:
-                return getEqual(txn, classId, indexId, isUnique, value.toBigInt());
-            case PropertyType::REAL:
-                return getEqual(txn, classId, indexId, isUnique, value.toReal());
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return exactMatchIndex(cursorHandler, classId, value.toText());
-            }
-            default:
-                break;
-        }
-        return std::vector<RecordDescriptor>{};
+    IndexInterface::getLessThan(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                const Bytes &value) const {
+      return getLessCommon(propertyInfo, indexInfo, value, false);
     }
 
     std::vector<RecordDescriptor>
-    Index::getGreaterEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType,
-                           const Bytes &value) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toTinyIntU()), true, true);
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toSmallIntU()), true, true);
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toIntU()), true, true);
-                } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true, true);
-                }
-            }
-            case PropertyType::TINYINT:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toTinyInt()), true);
-            case PropertyType::SMALLINT:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toSmallInt()), true);
-            case PropertyType::INTEGER:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toInt()), true);
-            case PropertyType::BIGINT:
-                return getGreater(txn, classId, indexId, isUnique, value.toBigInt(), true);
-            case PropertyType::REAL:
-                return getGreater(txn, classId, indexId, isUnique, value.toReal(), true);
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return forwardSearchIndex(cursorHandler, classId, value.toText(), true);
-            }
-            default:
-                break;
+    IndexInterface::getEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                             const Bytes &value) const {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+        case PropertyType::UNSIGNED_SMALLINT:
+        case PropertyType::UNSIGNED_INTEGER:
+        case PropertyType::UNSIGNED_BIGINT: {
+          auto result = std::vector<RecordDescriptor>{};
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), result);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), result);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+            return exactMatchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), result);
+          } else {
+            return exactMatchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), result);
+          }
         }
-        return std::vector<RecordDescriptor>{};
+        case PropertyType::TINYINT:
+          return getEqualNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo);
+        case PropertyType::SMALLINT:
+          return getEqualNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo);
+        case PropertyType::INTEGER:
+          return getEqualNumeric(static_cast<int64_t>(value.toInt()), indexInfo);
+        case PropertyType::BIGINT:
+          return getEqualNumeric(value.toBigInt(), indexInfo);
+        case PropertyType::REAL:
+          return getEqualNumeric(value.toReal(), indexInfo);
+        case PropertyType::TEXT: {
+          auto result = std::vector<RecordDescriptor>{};
+          return exactMatchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), result);
+        }
+        default:
+          break;
+      }
+      return std::vector<RecordDescriptor>{};
     }
 
     std::vector<RecordDescriptor>
-    Index::getGreater(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toTinyIntU()), true);
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toSmallIntU()), true);
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return forwardSearchIndex(cursorHandler, classId, static_cast<uint64_t>(value.toIntU()), true);
-                } else {
-                    return forwardSearchIndex(cursorHandler, classId, value.toBigIntU(), true);
-                }
-            }
-            case PropertyType::TINYINT:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toTinyInt()));
-            case PropertyType::SMALLINT:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toSmallInt()));
-            case PropertyType::INTEGER:
-                return getGreater(txn, classId, indexId, isUnique, static_cast<int64_t>(value.toInt()));
-            case PropertyType::BIGINT:
-                return getGreater(txn, classId, indexId, isUnique, value.toBigInt());
-            case PropertyType::REAL:
-                return getGreater(txn, classId, indexId, isUnique, value.toReal());
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return forwardSearchIndex(cursorHandler, classId, value.toText());
-            }
-            default:
-                break;
-        }
-        return std::vector<RecordDescriptor>{};
+    IndexInterface::getGreaterOrEqual(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                      const Bytes &value) const {
+      return getGreaterCommon(propertyInfo, indexInfo, value, true);
     }
 
-    std::vector<RecordDescriptor> Index::getBetween(const Txn &txn,
-                                                    ClassId classId,
-                                                    const IndexPropertyType &indexPropertyType,
-                                                    const Bytes &lowerBound,
-                                                    const Bytes &upperBound,
-                                                    const std::pair<bool, bool> &isIncludeBound) {
-        auto &indexId = std::get<0>(indexPropertyType);
-        auto &isUnique = std::get<1>(indexPropertyType);
-        auto &propertyType = std::get<2>(indexPropertyType);
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        switch (propertyType) {
-            case PropertyType::UNSIGNED_TINYINT:
-            case PropertyType::UNSIGNED_SMALLINT:
-            case PropertyType::UNSIGNED_INTEGER:
-            case PropertyType::UNSIGNED_BIGINT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), true, isUnique);
-                if (propertyType == PropertyType::UNSIGNED_TINYINT) {
-                    return betweenSearchIndex(cursorHandler, classId,
-                                              static_cast<uint64_t>(lowerBound.toTinyIntU()),
-                                              static_cast<uint64_t>(upperBound.toTinyIntU()),
-                                              true, isIncludeBound);
-                } else if (propertyType == PropertyType::UNSIGNED_SMALLINT) {
-                    return betweenSearchIndex(cursorHandler, classId,
-                                              static_cast<uint64_t>(lowerBound.toSmallIntU()),
-                                              static_cast<uint64_t>(upperBound.toSmallIntU()),
-                                              true, isIncludeBound);
-                } else if (propertyType == PropertyType::UNSIGNED_INTEGER) {
-                    return betweenSearchIndex(cursorHandler, classId,
-                                              static_cast<uint64_t>(lowerBound.toIntU()),
-                                              static_cast<uint64_t>(upperBound.toIntU()),
-                                              true, isIncludeBound);
-                } else {
-                    return betweenSearchIndex(cursorHandler, classId,
-                                              lowerBound.toBigIntU(), upperBound.toBigIntU(),
-                                              true, isIncludeBound);
-                }
-            }
-            case PropertyType::TINYINT:
-                return getBetween(txn, classId, indexId, isUnique,
-                                  static_cast<int64_t>(lowerBound.toTinyInt()),
-                                  static_cast<int64_t>(upperBound.toTinyInt()),
-                                  isIncludeBound);
-            case PropertyType::SMALLINT:
-                return getBetween(txn, classId, indexId, isUnique,
-                                  static_cast<int64_t>(lowerBound.toSmallInt()),
-                                  static_cast<int64_t>(upperBound.toSmallInt()),
-                                  isIncludeBound);
-            case PropertyType::INTEGER:
-                return getBetween(txn, classId, indexId, isUnique,
-                                  static_cast<int64_t>(lowerBound.toInt()),
-                                  static_cast<int64_t>(upperBound.toInt()),
-                                  isIncludeBound);
-            case PropertyType::BIGINT:
-                return getBetween(txn, classId, indexId, isUnique,
-                                  lowerBound.toBigInt(), upperBound.toBigInt(),
-                                  isIncludeBound);
-            case PropertyType::REAL:
-                return getBetween(txn, classId, indexId, isUnique, lowerBound.toReal(), upperBound.toReal(),
-                                  isIncludeBound);
-            case PropertyType::TEXT: {
-                auto cursorHandler = dsTxnHandler->openCursor(getIndexingName(indexId), false, isUnique);
-                return betweenSearchIndex(cursorHandler, classId, lowerBound.toText(), upperBound.toText(),
-                                          isIncludeBound);
-            }
-            default:
-                break;
-        }
-        return std::vector<RecordDescriptor>{};
+    std::vector<RecordDescriptor>
+    IndexInterface::getGreaterThan(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                   const Bytes &value) const {
+      return getGreaterCommon(propertyInfo, indexInfo, value, false);
     }
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getBetween(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                               const Bytes &lowerBound, const Bytes &upperBound,
+                               const std::pair<bool, bool> &isIncludeBound) const {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+        case PropertyType::UNSIGNED_SMALLINT:
+        case PropertyType::UNSIGNED_INTEGER:
+        case PropertyType::UNSIGNED_BIGINT: {
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                      static_cast<uint64_t>(lowerBound.toTinyIntU()),
+                                      static_cast<uint64_t>(upperBound.toTinyIntU()),
+                                      true, isIncludeBound);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                      static_cast<uint64_t>(lowerBound.toSmallIntU()),
+                                      static_cast<uint64_t>(upperBound.toSmallIntU()),
+                                      true, isIncludeBound);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                      static_cast<uint64_t>(lowerBound.toIntU()),
+                                      static_cast<uint64_t>(upperBound.toIntU()),
+                                      true, isIncludeBound);
+          } else {
+            return betweenSearchIndex(indexAccessCursor, indexInfo.classId,
+                                      lowerBound.toBigIntU(), upperBound.toBigIntU(),
+                                      true, isIncludeBound);
+          }
+        }
+        case PropertyType::TINYINT:
+          return getBetweenNumeric(static_cast<int64_t>(lowerBound.toTinyInt()),
+                                   static_cast<int64_t>(upperBound.toTinyInt()),
+                                   indexInfo, isIncludeBound);
+        case PropertyType::SMALLINT:
+          return getBetweenNumeric(static_cast<int64_t>(lowerBound.toSmallInt()),
+                                   static_cast<int64_t>(upperBound.toSmallInt()),
+                                   indexInfo, isIncludeBound);
+        case PropertyType::INTEGER:
+          return getBetweenNumeric(static_cast<int64_t>(lowerBound.toInt()),
+                                   static_cast<int64_t>(upperBound.toInt()),
+                                   indexInfo, isIncludeBound);
+        case PropertyType::BIGINT:
+          return getBetweenNumeric(lowerBound.toBigInt(), upperBound.toBigInt(), indexInfo, isIncludeBound);
+        case PropertyType::REAL:
+          return getBetweenNumeric(lowerBound.toReal(), upperBound.toReal(), indexInfo, isIncludeBound);
+        case PropertyType::TEXT: {
+          return betweenSearchIndex(openIndexRecordString(indexInfo).getCursor(), indexInfo.classId,
+                                    lowerBound.toText(), upperBound.toText(), isIncludeBound);
+        }
+        default:
+          break;
+      }
+      return std::vector<RecordDescriptor>{};
+    }
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getLessCommon(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                  const Bytes &value, bool isEqual) const {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+        case PropertyType::UNSIGNED_SMALLINT:
+        case PropertyType::UNSIGNED_INTEGER:
+        case PropertyType::UNSIGNED_BIGINT: {
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+            return backwardSearchIndex(indexAccessCursor, indexInfo.classId,
+                                       static_cast<uint64_t>(value.toTinyIntU()), true, isEqual);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+            return backwardSearchIndex(indexAccessCursor, indexInfo.classId,
+                                       static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()),
+                                       true, isEqual);
+          } else {
+            return backwardSearchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), true, isEqual);
+          }
+        }
+        case PropertyType::TINYINT:
+          return getLessNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo, isEqual);
+        case PropertyType::SMALLINT:
+          return getLessNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo, isEqual);
+        case PropertyType::INTEGER:
+          return getLessNumeric(static_cast<int64_t>(value.toInt()), indexInfo, isEqual);
+        case PropertyType::BIGINT:
+          return getLessNumeric(value.toBigInt(), indexInfo, isEqual);
+        case PropertyType::REAL:
+          return getLessNumeric(value.toReal(), indexInfo, isEqual);
+        case PropertyType::TEXT: {
+          return backwardSearchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), true, isEqual);
+        }
+        default:
+          return std::vector<RecordDescriptor>{};
+      }
+    }
+
+    std::vector<RecordDescriptor>
+    IndexInterface::getGreaterCommon(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                                     const Bytes &value, bool isEqual) const {
+      switch (propertyInfo.type) {
+        case PropertyType::UNSIGNED_TINYINT:
+        case PropertyType::UNSIGNED_SMALLINT:
+        case PropertyType::UNSIGNED_INTEGER:
+        case PropertyType::UNSIGNED_BIGINT: {
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          if (propertyInfo.type == PropertyType::UNSIGNED_TINYINT) {
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toTinyIntU()), true, isEqual);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_SMALLINT) {
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toSmallIntU()), true, isEqual);
+          } else if (propertyInfo.type == PropertyType::UNSIGNED_INTEGER) {
+            return forwardSearchIndex(
+                indexAccessCursor, indexInfo.classId, static_cast<uint64_t>(value.toIntU()), true, isEqual);
+          } else {
+            return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value.toBigIntU(), true, isEqual);
+          }
+        }
+        case PropertyType::TINYINT:
+          return getGreaterNumeric(static_cast<int64_t>(value.toTinyInt()), indexInfo, isEqual);
+        case PropertyType::SMALLINT:
+          return getGreaterNumeric(static_cast<int64_t>(value.toSmallInt()), indexInfo, isEqual);
+        case PropertyType::INTEGER:
+          return getGreaterNumeric(static_cast<int64_t>(value.toInt()), indexInfo, isEqual);
+        case PropertyType::BIGINT:
+          return getGreaterNumeric(value.toBigInt(), indexInfo, isEqual);
+        case PropertyType::REAL:
+          return getGreaterNumeric(value.toReal(), indexInfo, isEqual);
+        case PropertyType::TEXT: {
+          return forwardSearchIndex(
+              openIndexRecordString(indexInfo).getCursor(), indexInfo.classId, value.toText(), isEqual);
+        }
+        default:
+          break;
+      }
+      return std::vector<RecordDescriptor>{};
+    }
+
+    std::vector<RecordDescriptor>
+    IndexInterface::exactMatchIndex(const storage_engine::lmdb::Cursor &cursorHandler,
+                                    const ClassId &classId,
+                                    const std::string &value,
+                                    std::vector<RecordDescriptor> &result) {
+      for (auto keyValue = cursorHandler.find(value);
+           !keyValue.empty();
+           keyValue = cursorHandler.getNext()) {
+        auto key = keyValue.key.data.string();
+        if (key == value) {
+          auto positionId = keyValue.val.data.numeric<PositionId>();
+          result.emplace_back(RecordDescriptor{classId, positionId});
+        } else {
+          break;
+        }
+      }
+      return std::move(result);
+    };
+
+    std::vector<RecordDescriptor>
+    IndexInterface::fullScanIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId) {
+      auto result = std::vector<RecordDescriptor>{};
+      for (auto keyValue = cursorHandler.getNext();
+           !keyValue.empty();
+           keyValue = cursorHandler.getNext()) {
+        auto positionId = keyValue.val.data.numeric<PositionId>();
+        result.emplace_back(RecordDescriptor{classId, positionId});
+      }
+      return result;
+    };
+
+    std::vector<RecordDescriptor>
+    IndexInterface::forwardSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                                       const std::string &value, bool isInclude) {
+      auto result = std::vector<RecordDescriptor>{};
+      for (auto keyValue = cursorHandler.findRange(value);
+           !keyValue.empty();
+           keyValue = cursorHandler.getNext()) {
+        if (!isInclude) {
+          auto key = keyValue.key.data.string();
+          if (key == value) continue;
+          else isInclude = true;
+        }
+        auto positionId = keyValue.val.data.numeric<PositionId>();
+        result.emplace_back(RecordDescriptor{classId, positionId});
+      }
+      return result;
+    };
+
+    std::vector<RecordDescriptor>
+    IndexInterface::betweenSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                                       const std::string &lower, const std::string &upper,
+                                       const std::pair<bool, bool> &isIncludeBound) {
+      auto result = std::vector<RecordDescriptor>{};
+      for (auto keyValue = cursorHandler.findRange(lower);
+           !keyValue.empty();
+           keyValue = cursorHandler.getNext()) {
+        auto key = keyValue.key.data.string();
+        if (!isIncludeBound.first && (key == lower)) continue;
+        if ((!isIncludeBound.second && (key == upper)) || (key > upper)) break;
+        auto positionId = keyValue.val.data.numeric<PositionId>();
+        result.emplace_back(RecordDescriptor{classId, positionId});
+      }
+      return result;
+    };
+
+  }
 
 }

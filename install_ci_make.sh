@@ -1,6 +1,14 @@
 #!/bin/sh
 
-cp ci/Makefile.ci Makefile
-cp ci/lmdb/Makefile.ci lib/lmdb/Makefile
+function install_main {
+    cp ci/Makefile.ci Makefile
+}
 
-echo "installing Makefile for CI... [Done]"
+function install_lmdb {
+    cp ci/lmdb/Makefile.ci lib/lmdb/Makefile
+}
+
+echo "\n\tInstalling Makefile for CI...\n"
+install_main && install_lmdb
+
+echo "[Done]"

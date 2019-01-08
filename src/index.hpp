@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,381 +19,482 @@
  *
  */
 
-#ifndef __INDEX_HPP_INCLUDED_
-#define __INDEX_HPP_INCLUDED_
+#pragma once
 
 #include <iostream> // for debugging
+#include <algorithm>
 #include <vector>
-#include <tuple>
+#include <unordered_set>
 #include <type_traits>
+#include <functional>
 
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
-#include "base_txn.hpp"
+#include "schema_adapter.hpp"
+#include "index_adapter.hpp"
+#include "datarecord_adapter.hpp"
 
-#include "nogdb_types.h"
-#include "nogdb_txn.h"
-#include "nogdb_compare.h"
+#include "nogdb/nogdb_types.h"
+#include "nogdb/nogdb.h"
+
+#define UNIQUE_FLAG(_unique)                        (_unique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE
+#define INDEX_POSITIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
+#define INDEX_NEGATIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_NEGATIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
+#define INDEX_STRING_UNIQUE(_unique)                INDEX_TYPE_POSITIVE | INDEX_TYPE_STRING | UNIQUE_FLAG(_unique)
 
 namespace nogdb {
-    struct Index {
-        Index() = delete;
 
-        ~Index() noexcept = delete;
+  namespace index {
 
-        typedef std::tuple<IndexId, bool, PropertyType> IndexPropertyType;
+    using namespace adapter::schema;
 
-        static void addIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                             PropertyType type, bool isUnique);
+    typedef std::map<PropertyId, IndexAccessInfo> PropertyIdMapIndex;
 
-        static void deleteIndex(BaseTxn &txn, IndexId indexId, PositionId positionId, const Bytes &bytesValue,
-                                PropertyType type, bool isUnique);
+    typedef std::map<std::string, std::pair<PropertyAccessInfo, IndexAccessInfo>> PropertyNameMapIndex;
 
-        template<typename T>
-        static void deleteIndexCursor(const storage_engine::lmdb::Cursor& cursorHandler, PositionId positionId, const T& value) {
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.template numeric<T>();
-                if (key == value) {
-                    auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
-                    if (positionId == valueAsPositionId) {
-                        cursorHandler.del();
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
+    class IndexInterface {
+    public:
+
+      IndexInterface(const Transaction *txn) : _txn{txn} {}
+
+      virtual ~IndexInterface() noexcept = default;
+
+      void initialize(const PropertyAccessInfo &propertyInfo,
+                      const IndexAccessInfo &indexInfo,
+                      const ClassType &classType);
+
+      void drop(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo);
+
+      void drop(const ClassId &classId, const PropertyNameMapInfo &propertyNameMapInfo);
+
+      void insert(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                  const PositionId &posId, const Bytes &value);
+
+      void insert(const RecordDescriptor &recordDescriptor,
+                  const Record& record,
+                  const PropertyNameMapIndex& propertyNameMapIndex);
+
+      void remove(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                  const PositionId &posId, const Bytes &value);
+
+      void remove(const RecordDescriptor &recordDescriptor,
+                  const Record& record,
+                  const PropertyNameMapIndex& propertyNameMapIndex);
+
+      PropertyNameMapIndex getIndexInfos(const RecordDescriptor &recordDescriptor,
+                                         const Record& record,
+                                         const PropertyNameMapInfo &propertyNameMapInfo);
+
+      std::pair<bool, IndexAccessInfo>
+      hasIndex(const ClassAccessInfo &classInfo,
+               const PropertyAccessInfo &propertyInfo,
+               const Condition &condition) const;
+
+      std::pair<bool, PropertyIdMapIndex>
+      hasIndex(const ClassAccessInfo &classInfo,
+               const PropertyNameMapInfo &propertyInfos,
+               const MultiCondition &conditions) const;
+
+      std::vector<RecordDescriptor>
+      getRecord(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                const Condition &condition, bool isNegative = false) const;
+
+      std::vector<RecordDescriptor>
+      getRecord(const PropertyNameMapInfo &propertyInfos,
+                const PropertyIdMapIndex &propertyIndexInfo,
+                const MultiCondition &conditions) const;
+
+    protected:
+
+      const std::vector<Condition::Comparator> validComparators{
+          Condition::Comparator::EQUAL,
+          Condition::Comparator::BETWEEN_NO_BOUND,
+          Condition::Comparator::BETWEEN,
+          Condition::Comparator::BETWEEN_NO_UPPER,
+          Condition::Comparator::BETWEEN_NO_LOWER,
+          Condition::Comparator::LESS_EQUAL,
+          Condition::Comparator::LESS,
+          Condition::Comparator::GREATER_EQUAL,
+          Condition::Comparator::GREATER
+      };
+
+    private:
+
+      const Transaction *_txn;
+
+      adapter::index::IndexRecord openIndexRecordPositive(const IndexAccessInfo &indexInfo) const;
+
+      adapter::index::IndexRecord openIndexRecordNegative(const IndexAccessInfo &indexInfo) const;
+
+      adapter::index::IndexRecord openIndexRecordString(const IndexAccessInfo &indexInfo) const;
+
+      template<typename T>
+      void createNumeric(const PropertyAccessInfo &propertyInfo,
+                         const IndexAccessInfo &indexInfo,
+                         const ClassType &classType,
+                         T(*valueRetrieve)(const Bytes &)) {
+        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto indexAccess = openIndexRecordPositive(indexInfo);
+        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+        std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
+            [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
+              auto const record = parser::RecordParser::parseRawData(
+                  result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto bytesValue = record.get(propertyInfo.name);
+              if (!bytesValue.empty()) {
+                auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                indexAccess.create(valueRetrieve(bytesValue), indexRecord);
+              }
+            };
+        dataRecord.resultSetIter(callback);
+      }
+
+      template<typename T>
+      void createSignedNumeric(const PropertyAccessInfo &propertyInfo,
+                               const IndexAccessInfo &indexInfo,
+                               const ClassType &classType,
+                               T(*valueRetrieve)(const Bytes &)) {
+        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+        auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+        std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
+            [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
+              auto const record = parser::RecordParser::parseRawData(
+                  result, propertyIdMapInfo, classType == ClassType::EDGE);
+              auto bytesValue = record.get(propertyInfo.name);
+              if (!bytesValue.empty()) {
+                auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+                auto value = valueRetrieve(bytesValue);
+                (value >= 0) ? indexPositiveAccess.create(value, indexRecord)
+                             : indexNegativeAccess.create(value, indexRecord);
+              }
+            };
+        dataRecord.resultSetIter(callback);
+      }
+
+      void createString(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+                        const ClassType &classType);
+
+      template<typename T>
+      void insert(const IndexAccessInfo &indexInfo, PositionId positionId, const T &value) {
+        auto indexAccess = openIndexRecordPositive(indexInfo);
+        auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+        indexAccess.create(value, indexRecord);
+      }
+
+      void insert(const IndexAccessInfo &indexInfo, PositionId positionId, const std::string &value);
+
+      template<typename T>
+      void insertSignedNumeric(const IndexAccessInfo &indexInfo, PositionId positionId, const T &value) {
+        auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
+        if (value >= 0) {
+          auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+          indexPositiveAccess.create(value, indexRecord);
+        } else {
+          auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+          indexNegativeAccess.create(value, indexRecord);
         }
+      }
 
-        inline static void
-        deleteIndexCursor(const storage_engine::lmdb::Cursor& cursorHandler, PositionId positionId, const std::string &value) {
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (value == key) {
-                    auto valueAsPositionId = keyValue.val.data.numeric<PositionId>();
-                    if (positionId == valueAsPositionId) {
-                        cursorHandler.del();
-                        break;
-                    }
-                } else {
-                    break;
-                }
+      template<typename T>
+      void removeByCursorNumeric(const storage_engine::lmdb::Cursor &cursor, PositionId positionId, const T &value) {
+        for (auto keyValue = cursor.find(value);
+             !keyValue.empty();
+             keyValue = cursor.getNext()) {
+          auto key = keyValue.key.data.template numeric<T>();
+          if (key == value) {
+            auto valueAsPositionId = keyValue.val.data.template numeric<PositionId>();
+            if (positionId == valueAsPositionId) {
+              cursor.del();
+              break;
             }
+          } else {
+            break;
+          }
         }
+      }
 
-        inline static std::string getIndexingName(IndexId indexId) {
-            return TB_INDEXING_PREFIX + std::to_string(indexId);
+      template<typename T>
+      void removeByCursor(const IndexAccessInfo &indexInfo, PositionId positionId, const T &value) {
+        auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+        removeByCursorNumeric(indexAccessCursor, positionId, value);
+      }
+
+      void removeByCursor(const IndexAccessInfo &indexInfo, PositionId positionId, const std::string &value);
+
+      template<typename T>
+      void removeByCursorWithSignNumeric(const IndexAccessInfo &indexInfo, const PositionId &posId, const T &value) {
+        auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+        auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+        (value < 0) ? removeByCursorNumeric(indexNegativeAccessCursor, posId, value) :
+        removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
+      }
+
+      inline static void sortByRdesc(std::vector<RecordDescriptor> &recordDescriptors) {
+        std::sort(recordDescriptors.begin(), recordDescriptors.end(),
+            [](const RecordDescriptor &lhs, const RecordDescriptor &rhs) noexcept {
+              return lhs.rid < rhs.rid;
+            });
+      };
+
+      inline bool isValidComparator(const Condition &condition) const {
+        return std::find(validComparators.cbegin(), validComparators.cend(), condition.comp) != validComparators.cend();
+      }
+
+      std::vector<RecordDescriptor>
+      getRecordFromMultiCondition(const PropertyNameMapInfo &propertyInfos,
+                                  const PropertyIdMapIndex &propertyIndexInfo,
+                                  const MultiCondition::CompositeNode *compositeNode,
+                                  bool isParentNegative) const;
+
+      std::vector<RecordDescriptor>
+      getMultiConditionResult(const PropertyNameMapInfo &propertyInfos,
+                              const PropertyIdMapIndex &propertyIndexInfo,
+                              const std::shared_ptr<MultiCondition::ExprNode> &exprNode,
+                              bool isNegative) const;
+
+      std::vector<RecordDescriptor> getLessOrEqual(const PropertyAccessInfo &propertyInfo,
+                                                   const IndexAccessInfo &indexInfo,
+                                                   const Bytes &value) const;
+
+      std::vector<RecordDescriptor> getLessThan(const PropertyAccessInfo &propertyInfo,
+                                                const IndexAccessInfo &indexInfo,
+                                                const Bytes &value) const;
+
+      std::vector<RecordDescriptor> getEqual(const PropertyAccessInfo &propertyInfo,
+                                             const IndexAccessInfo &indexInfo,
+                                             const Bytes &value) const;
+
+      std::vector<RecordDescriptor> getGreaterOrEqual(const PropertyAccessInfo &propertyInfo,
+                                                      const IndexAccessInfo &indexInfo,
+                                                      const Bytes &value) const;
+
+      std::vector<RecordDescriptor> getGreaterThan(const PropertyAccessInfo &propertyInfo,
+                                                   const IndexAccessInfo &indexInfo,
+                                                   const Bytes &value) const;
+
+      std::vector<RecordDescriptor> getBetween(const PropertyAccessInfo &propertyInfo,
+                                               const IndexAccessInfo &indexInfo,
+                                               const Bytes &lowerBound,
+                                               const Bytes &upperBound,
+                                               const std::pair<bool, bool> &isIncludeBound) const;
+
+      std::vector<RecordDescriptor> getLessCommon(const PropertyAccessInfo &propertyInfo,
+                                                  const IndexAccessInfo &indexInfo,
+                                                  const Bytes &value,
+                                                  bool isEqual) const;
+
+      std::vector<RecordDescriptor> getGreaterCommon(const PropertyAccessInfo &propertyInfo,
+                                                     const IndexAccessInfo &indexInfo,
+                                                     const Bytes &value,
+                                                     bool isEqual) const;
+
+      template<typename T>
+      std::vector<RecordDescriptor>
+      getLessNumeric(const T &value, const IndexAccessInfo &indexInfo, bool includeEqual = false) const {
+        if (value < 0) {
+          auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+          return backwardSearchIndex(indexAccessCursor, indexInfo.classId, value, false, includeEqual);
+        } else {
+          auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+          auto positiveResult = backwardSearchIndex(
+              indexPositiveAccessCursor, indexInfo.classId, value, true, includeEqual);
+          auto negativeResult = fullScanIndex(indexNegativeAccessCursor, indexInfo.classId);
+          positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+          return positiveResult;
         }
+      };
 
-        inline static std::string getIndexingName(IndexId indexId, bool isPositive) {
-            return getIndexingName(indexId) + ((isPositive)? INDEX_POSITIVE_SUFFIX: INDEX_NEGATIVE_SUFFIX);
+      template<typename T>
+      std::vector<RecordDescriptor>
+      getEqualNumeric(const T &value, const IndexAccessInfo &indexInfo) const {
+        auto result = std::vector<RecordDescriptor>{};
+        auto indexAccess = (value < 0) ? openIndexRecordNegative(indexInfo) : openIndexRecordPositive(indexInfo);
+        return exactMatchIndex(indexAccess.getCursor(), indexInfo.classId, value, result);
+      };
+
+      template<typename T>
+      std::vector<RecordDescriptor>
+      getGreaterNumeric(const T &value, const IndexAccessInfo &indexInfo, bool includeEqual = false) const {
+        if (value < 0) {
+          auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+          auto positiveResult = fullScanIndex(indexPositiveAccessCursor, indexInfo.classId);
+          auto negativeResult = forwardSearchIndex(
+              indexNegativeAccessCursor, indexInfo.classId, value, false, includeEqual);
+          positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+          return positiveResult;
+        } else {
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value, true, includeEqual);
         }
+      };
 
-        static std::pair<IndexPropertyType, bool>
-        hasIndex(ClassId classId, const ClassInfo &classInfo, const Condition &condition);
+      template<typename T>
+      std::vector<RecordDescriptor>
+      getBetweenNumeric(const T &lowerBound, const T &upperBound,
+                        const IndexAccessInfo &indexInfo, const std::pair<bool, bool> &isIncludeBound) const {
+        if (lowerBound < 0 && upperBound < 0) {
+          auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+          return betweenSearchIndex(
+              indexAccessCursor, indexInfo.classId, lowerBound, upperBound, false, isIncludeBound);
+        } else if (lowerBound < 0 && upperBound >= 0) {
+          auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+          auto positiveResult = betweenSearchIndex(indexPositiveAccessCursor, indexInfo.classId,
+                                                   static_cast<T>(0), upperBound,
+                                                   true, {true, isIncludeBound.second});
+          auto negativeResult = betweenSearchIndex(indexNegativeAccessCursor, indexInfo.classId,
+                                                   lowerBound, static_cast<T>(0),
+                                                   false, {isIncludeBound.first, true});
+          positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
+          return positiveResult;
+        } else {
+          auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+          return betweenSearchIndex(indexAccessCursor, indexInfo.classId, lowerBound, upperBound, true, isIncludeBound);
+        }
+      };
 
-        static std::pair<std::map<std::string, IndexPropertyType>, bool>
-        hasIndex(ClassId classId, const ClassInfo &classInfo, const MultiCondition &conditions);
-
-        static std::vector<RecordDescriptor> getIndexRecord(const Txn &txn,
-                                                            ClassId classId,
-                                                            IndexPropertyType indexPropertyType,
-                                                            const Condition &condition,
-                                                            bool isNegative = false);
-
-        static std::vector<RecordDescriptor> getIndexRecord(const Txn &txn, ClassId classId,
-                                                            const std::map<std::string, IndexPropertyType> &indexPropertyTypes,
-                                                            const MultiCondition &conditions);
-
-        static std::vector<RecordDescriptor>
-        getLessEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getLess(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getGreaterEqual(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType,
-                        const Bytes &value);
-
-        static std::vector<RecordDescriptor>
-        getGreater(const Txn &txn, ClassId classId, const IndexPropertyType &indexPropertyType, const Bytes &value);
-
-        static std::vector<RecordDescriptor> getBetween(const Txn &txn,
-                                                        ClassId classId,
-                                                        const IndexPropertyType &indexPropertyType,
-                                                        const Bytes &lowerBound,
-                                                        const Bytes &upperBound,
-                                                        const std::pair<bool, bool> &isIncludeBound);
-
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getLess(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value, bool includeEqual = false) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return backwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = backwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
-                auto negativeResult = fullScanIndex(cursorHandlerNegative, classId);
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
+      template<typename T>
+      static std::vector<RecordDescriptor>
+      backwardSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                          const T &value, bool positive, bool isInclude = false) {
+        auto result = std::vector<RecordDescriptor>{};
+        if (!std::is_same<T, double>::value || positive) {
+          if (isInclude) {
+            exactMatchIndex(cursorHandler, classId, value, result);
+          }
+          cursorHandler.findRange(value);
+          for (auto keyValue = cursorHandler.getPrev();
+               !keyValue.empty();
+               keyValue = cursorHandler.getPrev()) {
+            auto key = keyValue.key.data.template numeric<T>();
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        } else {
+          for (auto keyValue = cursorHandler.findRange(value);
+               !keyValue.empty();
+               keyValue = cursorHandler.getNext()) {
+            if (!isInclude) {
+              auto key = keyValue.key.data.template numeric<T>();
+              if (key == value) continue;
+              else isInclude = true;
             }
-        };
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        }
+        return result;
+      };
 
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getEqual(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return exactMatchIndex(cursorHandlerNegative, classId, value);
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return exactMatchIndex(cursorHandlerPositive, classId, value);
+      template<typename T>
+      static std::vector<RecordDescriptor>
+      exactMatchIndex(const storage_engine::lmdb::Cursor &cursorHandler,
+                      const ClassId &classId,
+                      const T &value,
+                      std::vector<RecordDescriptor> &result) {
+        for (auto keyValue = cursorHandler.find(value);
+             !keyValue.empty();
+             keyValue = cursorHandler.getNext()) {
+          auto key = keyValue.key.data.template numeric<T>();
+          if (key == value) {
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          } else {
+            break;
+          }
+        }
+        return std::move(result);
+      };
+
+      static std::vector<RecordDescriptor>
+      exactMatchIndex(const storage_engine::lmdb::Cursor &cursorHandler,
+                      const ClassId &classId,
+                      const std::string &value,
+                      std::vector<RecordDescriptor> &result);
+
+      static std::vector<RecordDescriptor>
+      fullScanIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId);
+
+      template<typename T>
+      static std::vector<RecordDescriptor>
+      forwardSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                         const T &value, bool positive, bool isInclude = false) {
+        auto result = std::vector<RecordDescriptor>{};
+        if (!std::is_same<T, double>::value || positive) {
+          for (auto keyValue = cursorHandler.findRange(value);
+               !keyValue.empty();
+               keyValue = cursorHandler.getNext()) {
+            if (!isInclude) {
+              auto key = keyValue.key.data.template numeric<T>();
+              if (key == value) continue;
+              else isInclude = true;
             }
-        };
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        } else {
+          if (isInclude) {
+            exactMatchIndex(cursorHandler, classId, value, result);
+          }
+          cursorHandler.findRange(value);
+          for (auto keyValue = cursorHandler.getPrev();
+               !keyValue.empty();
+               keyValue = cursorHandler.getPrev()) {
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        }
+        return result;
+      };
 
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        getGreater(const Txn &txn, ClassId classId, IndexId indexId, bool isUnique, T value,
-                   bool includeEqual = false) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-            if (value < 0) {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = fullScanIndex(cursorHandlerPositive, classId);
-                auto negativeResult = forwardSearchIndex(cursorHandlerNegative, classId, value, false, includeEqual);
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return forwardSearchIndex(cursorHandlerPositive, classId, value, true, includeEqual);
-            }
-        };
+      static std::vector<RecordDescriptor>
+      forwardSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                         const std::string &value, bool isInclude = false);
 
-        template<typename T>
-        static std::vector<RecordDescriptor> getBetween(const Txn &txn, ClassId classId, IndexId indexId,
-                                                        bool isUnique, T lowerBound, T upperBound,
-                                                        const std::pair<bool, bool> &isIncludeBound) {
-            auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-            if (lowerBound < 0 && upperBound < 0) {
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                return betweenSearchIndex(cursorHandlerNegative, classId, lowerBound, upperBound, false, isIncludeBound);
-            } else if (lowerBound < 0 && upperBound >= 0) {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                auto cursorHandlerNegative = dsTxnHandler->openCursor(getIndexingName(indexId, false), true, isUnique);
-                auto positiveResult = betweenSearchIndex(cursorHandlerPositive, classId,
-                                                         static_cast<T>(0), upperBound,
-                                                         true, {true, isIncludeBound.second});
-                auto negativeResult = betweenSearchIndex(cursorHandlerNegative, classId,
-                                                         lowerBound, static_cast<T>(0),
-                                                         false, {isIncludeBound.first, true});
-                positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
-                return positiveResult;
-            } else {
-                auto cursorHandlerPositive = dsTxnHandler->openCursor(getIndexingName(indexId, true), true, isUnique);
-                return betweenSearchIndex(cursorHandlerPositive, classId, lowerBound, upperBound, true, isIncludeBound);
-            }
-        };
+      template<typename T>
+      static std::vector<RecordDescriptor>
+      betweenSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                         const T &lower, const T &upper, bool isLowerPositive,
+                         const std::pair<bool, bool> &isIncludeBound) {
+        auto result = std::vector<RecordDescriptor>{};
+        if (!std::is_same<T, double>::value || isLowerPositive) {
+          for (auto keyValue = cursorHandler.findRange(lower);
+               !keyValue.empty();
+               keyValue = cursorHandler.getNext()) {
+            auto key = keyValue.key.data.template numeric<T>();
+            if (!isIncludeBound.first && key == lower) continue;
+            else if ((!isIncludeBound.second && key == upper) || key > upper) break;
+            auto positionId = keyValue.val.data.template numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        } else {
+          if (isIncludeBound.first) {
+            exactMatchIndex(cursorHandler, classId, lower, result);
+          }
+          cursorHandler.findRange(lower);
+          for (auto keyValue = cursorHandler.getPrev();
+               !keyValue.empty();
+               keyValue = cursorHandler.getPrev()) {
+            auto key = keyValue.key.data.numeric<T>();
+            if ((!isIncludeBound.second && key == upper) || key > upper) break;
+            auto positionId = keyValue.val.data.numeric<PositionId>();
+            result.emplace_back(RecordDescriptor{classId, positionId});
+          }
+        }
+        return result;
+      };
 
-        template<typename T>
-        static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId, const T &value) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.template numeric<T>();
-                if (key == value) {
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                } else {
-                    break;
-                }
-            }
-            return result;
-        };
-
-        inline static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId, const std::string &value) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.find(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (key == value) {
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                } else {
-                    break;
-                }
-            }
-            return result;
-        };
-
-        inline static std::vector<RecordDescriptor> fullScanIndex(const storage_engine::lmdb::Cursor& cursorHandler, ClassId classId) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.getNext();
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                 ClassId classId, const T &value, bool positive,
-                                                                 bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || positive) {
-                if (isInclude) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(value);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.template numeric<T>();
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            } else {
-                for (auto keyValue = cursorHandler.findRange(value);
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
-                    if (!isInclude) {
-                        auto key = keyValue.key.data.template numeric<T>();
-                        if (key == value) continue;
-                        else isInclude = true;
-                    }
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            }
-            return result;
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                ClassId classId, const T &value, bool positive,
-                                                                bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || positive) {
-                for (auto keyValue = cursorHandler.findRange(value);
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
-                    if (!isInclude) {
-                        auto key = keyValue.key.data.template numeric<T>();
-                        if (key == value) continue;
-                        else isInclude = true;
-                    }
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            } else {
-                if (isInclude) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, value);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(value);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            }
-            return result;
-        };
-
-        inline static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                       ClassId classId, const std::string &value,
-                                                                       bool isInclude = false) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.findRange(value);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                if (!isInclude) {
-                    auto key = keyValue.key.data.string();
-                    if (key == value) continue;
-                    else isInclude = true;
-                }
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        template<typename T>
-        static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                ClassId classId,
-                                                                const T &lower,
-                                                                const T &upper,
-                                                                bool isLowerPositive,
-                                                                const std::pair<bool, bool> &isIncludeBound) {
-            auto result = std::vector<RecordDescriptor>{};
-            if (!std::is_same<T, double>::value || isLowerPositive) {
-                for (auto keyValue = cursorHandler.findRange(lower);
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
-                    auto key = keyValue.key.data.template numeric<T>();
-                    if (!isIncludeBound.first && key == lower) continue;
-                    else if ((!isIncludeBound.second && key == upper) || key > upper) break;
-                    auto positionId = keyValue.val.data.template numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            } else {
-                if (isIncludeBound.first) {
-                    auto partialResult = exactMatchIndex(cursorHandler, classId, lower);
-                    result.insert(result.end(), partialResult.cbegin(), partialResult.cend());
-                }
-                cursorHandler.findRange(lower);
-                for (auto keyValue = cursorHandler.getPrev();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getPrev()) {
-                    auto key = keyValue.key.data.numeric<T>();
-                    if ((!isIncludeBound.second && key == upper) || key > upper) break;
-                    auto positionId = keyValue.val.data.numeric<PositionId>();
-                    result.emplace_back(RecordDescriptor{classId, positionId});
-                }
-            }
-            return result;
-        };
-
-        inline static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
-                                                                       ClassId classId,
-                                                                       const std::string &lower,
-                                                                       const std::string &upper,
-                                                                       const std::pair<bool, bool> &isIncludeBound) {
-            auto result = std::vector<RecordDescriptor>{};
-            for (auto keyValue = cursorHandler.findRange(lower);
-                 !keyValue.empty();
-                 keyValue = cursorHandler.getNext()) {
-                auto key = keyValue.key.data.string();
-                if (!isIncludeBound.first && (key == lower)) continue;
-                if ((!isIncludeBound.second && (key == upper)) || (key > upper)) break;
-                auto positionId = keyValue.val.data.numeric<PositionId>();
-                result.emplace_back(RecordDescriptor{classId, positionId});
-            }
-            return result;
-        };
-
-        static const std::vector<Condition::Comparator> validComparators;
+      static std::vector<RecordDescriptor>
+      betweenSearchIndex(const storage_engine::lmdb::Cursor &cursorHandler, const ClassId &classId,
+                         const std::string &lower, const std::string &upper,
+                         const std::pair<bool, bool> &isIncludeBound);
 
     };
 
-}
+  }
 
-#endif
+}

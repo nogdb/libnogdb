@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,59 +19,214 @@
  *
  */
 
-#include <cstring>
+#include <vector>
 
-#include "shared_lock.hpp"
 #include "schema.hpp"
 #include "lmdb_engine.hpp"
+#include "datarecord.hpp"
+#include "datarecord_adapter.hpp"
 #include "parser.hpp"
-#include "generic.hpp"
 
-#include "nogdb.h"
+#include "nogdb/nogdb.h"
 
 namespace nogdb {
-    Record Db::getRecord(const Txn &txn, const RecordDescriptor &recordDescriptor) {
-        auto classDescriptor = Generic::getClassDescriptor(txn, recordDescriptor.rid.first, ClassType::UNDEFINED);
-        auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-        auto className = BaseTxn::getCurrentVersion(*txn.txnBase, classDescriptor->name).first;
-        auto dsTxnHandler = txn.txnBase->getDsTxnHandler();
-        auto classDBHandler = dsTxnHandler->openDbi(std::to_string(classDescriptor->id), true);
-        auto dsResult = classDBHandler.get(recordDescriptor.rid.second);
-        if (dsResult.data.empty()) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-        }
-        return Parser::parseRawDataWithBasicInfo(className, recordDescriptor.rid, dsResult, classPropertyInfo);
-    }
 
-    const std::vector<ClassDescriptor> Db::getSchema(const Txn &txn) {
-        auto result = std::vector<ClassDescriptor>{};
-        for (const auto &c: txn.txnCtx.dbSchema->getNameToDescMapping(*txn.txnBase)) {
-            if (auto cPtr = c.second.lock()) {
-                result.push_back(cPtr->transform(*txn.txnBase));
-            }
-        }
-        return result;
-    }
+  const DbInfo Transaction::getDbInfo() const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
 
-    const ClassDescriptor Db::getSchema(const Txn &txn, const std::string &className) {
-        auto foundClass = Validate::isExistingClass(txn, className);
-        return foundClass->transform(*txn.txnBase);
-    }
+    auto dbInfo = DbInfo{};
+    dbInfo.maxClassId = _adapter->dbInfo()->getMaxClassId();
+    dbInfo.maxPropertyId = _adapter->dbInfo()->getMaxPropertyId();
+    dbInfo.maxIndexId = _adapter->dbInfo()->getMaxIndexId();
+    dbInfo.numClass = _adapter->dbInfo()->getNumClassId();
+    dbInfo.numProperty = _adapter->dbInfo()->getNumPropertyId();
+    dbInfo.numIndex = _adapter->dbInfo()->getNumIndexId();
+    return dbInfo;
+  }
 
-    const ClassDescriptor Db::getSchema(const Txn &txn, const ClassId &classId) {
-        auto foundClass = Validate::isExistingClass(txn, classId);
-        return foundClass->transform(*txn.txnBase);
-    }
+  const std::vector<ClassDescriptor> Transaction::getClasses() const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
 
-    const DBInfo Db::getDbInfo(const Txn &txn) {
-        auto ctx = txn.txnCtx;
-        if (txn.txnMode == Txn::Mode::READ_ONLY) {
-            ReadLock<boost::shared_mutex> _(*ctx.dbInfoMutex);
-            return *ctx.dbInfo;
-        } else {
-            return txn.txnBase->dbInfo;
-        }
+    auto result = std::vector<ClassDescriptor>{};
+    for (const auto &classInfo: _adapter->dbClass()->getAllInfos()) {
+      result.emplace_back(
+          ClassDescriptor{
+              classInfo.id,
+              classInfo.name,
+              classInfo.superClassId,
+              classInfo.type
+          });
     }
+    return result;
+  }
+
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const std::string &className) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted()
+        .isClassNameValid(className);
+
+    auto result = std::vector<PropertyDescriptor>{};
+    auto foundClass = _interface->schema()->getExistingClass(className);
+    // native properties
+    for (const auto &property: _interface->schema()->getNativePropertyInfo(foundClass.id)) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              false
+          });
+    }
+    // inherited properties
+    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
+        _adapter->dbClass()->getSuperClassId(foundClass.id),
+        std::vector<schema::PropertyAccessInfo>{});
+    for (const auto &property: inheritResult) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              true
+          });
+    }
+    return result;
+  }
+
+  const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDescriptor &classDescriptor) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
+
+    auto result = std::vector<PropertyDescriptor>{};
+    auto foundClass = _interface->schema()->getExistingClass(classDescriptor.id);
+    // native properties
+    for (const auto &property: _interface->schema()->getNativePropertyInfo(foundClass.id)) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              false
+          });
+    }
+    // inherited properties
+    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
+        _adapter->dbClass()->getSuperClassId(foundClass.id),
+        std::vector<schema::PropertyAccessInfo>{});
+    for (const auto &property: inheritResult) {
+      result.emplace_back(
+          PropertyDescriptor{
+              property.id,
+              property.name,
+              property.type,
+              true
+          });
+    }
+    return result;
+  }
+
+  const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor &classDescriptor) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
+
+    auto classInfo = _interface->schema()->getExistingClass(classDescriptor.id);
+    auto indexInfos = _adapter->dbIndex()->getInfos(classInfo.id);
+    auto indexDescriptors = std::vector<IndexDescriptor>{};
+    for (const auto &indexInfo: indexInfos) {
+      indexDescriptors.emplace_back(IndexDescriptor{
+          indexInfo.id,
+          indexInfo.classId,
+          indexInfo.propertyId,
+          indexInfo.isUnique
+      });
+    }
+    return indexDescriptors;
+  }
+
+  const ClassDescriptor Transaction::getClass(const std::string &className) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted()
+        .isClassNameValid(className);
+
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
+
+  const ClassDescriptor Transaction::getClass(const ClassId &classId) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
+
+    auto classInfo = _interface->schema()->getExistingClass(classId);
+    return ClassDescriptor{
+        classInfo.id,
+        classInfo.name,
+        classInfo.superClassId,
+        classInfo.type
+    };
+  }
+
+  const PropertyDescriptor Transaction::getProperty(const std::string &className,
+                                                    const std::string &propertyName) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName);
+
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    try {
+      auto propertyInfo = _interface->schema()->getExistingProperty(classInfo.id, propertyName);
+      return PropertyDescriptor{
+          propertyInfo.id,
+          propertyInfo.name,
+          propertyInfo.type,
+          false
+      };
+    } catch (const Error &error) {
+      if (error.code() == NOGDB_CTX_NOEXST_PROPERTY) {
+        auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
+        return PropertyDescriptor{
+            propertyInfo.id,
+            propertyInfo.name,
+            propertyInfo.type,
+            true
+        };
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  const IndexDescriptor Transaction::getIndex(const std::string &className, const std::string &propertyName) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted()
+        .isClassNameValid(className)
+        .isPropertyNameValid(propertyName);
+
+    auto classInfo = _interface->schema()->getExistingClass(className);
+    auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
+    auto indexInfo = _interface->schema()->getIndexInfo(classInfo.id, propertyInfo.id);
+    return IndexDescriptor{
+        indexInfo.id,
+        indexInfo.classId,
+        indexInfo.propertyId,
+        indexInfo.isUnique
+    };
+  }
+
+  Record Transaction::fetchRecord(const RecordDescriptor &recordDescriptor) const {
+    BEGIN_VALIDATION(this)
+        .isTxnCompleted();
+
+    auto classInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first);
+    return _interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+  }
 
 }
 
