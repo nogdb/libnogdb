@@ -1465,841 +1465,180 @@ txn.commit();
 
 == Find Operations
 
+A set of operations that retrieves vertex and edge records from a given class name with conditions can be performed by `nogdb::FindOperationBuilder` which is constructed and returned from `find` and `findSubClassOf` functions.
+
+[source,cpp]
+------------
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+// construct a new FindOperationBuilder object to find records in a class
+nogdb::FindOperationBuilder builder1 = txn.find(const std::string &className);
+
+// construct a new FindOperationBuilder object to find all records in a class including its sub classes
+nogdb::FindOperationBuilder builder2 = txn.findSubClassOf(const std::string &className);
+
+// find with nogdb::Condition
+builder1.where(nogdb::Condition("name").eq("test"));
+
+// find with nogdb::MultiCondition
+builder1.where(nogdb::Condition("name").eq("test") and nogdb::Condition("age").gt(25));
+
+// find with a conditional function
+auto condition = [](const nogdb::Record &r) {
+    return (!r.empty())? r.getText("name") == "test": false;
+};
+builder1.where(condition);
+
+// find only indexed columns in records (no effective without nogdb::Condition or nogdb::MultiCondition)
+builder1.indexed();
+
+// get a query result as ResultSet
+nogdb::ResultSet rs = builder1.get();
+
+// get a query result as ResultSetCursor
+nogdb::ResultSetCursor rss = builder1.getCursor();
+
+// combine all functions in one call
+auto rs = txn.find("person").where(nogdb::Condition("name").eq("Peter")).indexed().get();
+
+txn.rollback();
+------------
+
+* Exceptions:
+** `NOGDB_CTX_INVALID_CLASSNAME` - A class name is invalid.
+** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
+
 == Find Edge Operations
+
+A set of operations that retrieves edges from a given vertex with conditions can be performed by `nogdb::FindEdgeOperationBuilder` which is constructed and returned from `findEdge`, `findInEdge`, and `findOutEdge` functions.
+
+[source,cpp]
+------------
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+// construct a new FindEdgeOperationBuilder object to find edges of a vertex
+nogdb::FindEdgeOperationBuilder builder1 = txn.findEdge(const RecordDescriptor &recordDescriptor);
+
+// construct a new FindEdgeOperationBuilder object to find in-coming edges of a vertex
+nogdb::FindEdgeOperationBuilder builder2 = txn.findInEdge(const RecordDescriptor &recordDescriptor);
+
+// construct a new FindEdgeOperationBuilder object to find out-coming edges of a vertex
+nogdb::FindEdgeOperationBuilder builder3 = txn.findOutEdge(const RecordDescriptor &recordDescriptor);
+
+// find edges with nogdb::GraphFilter
+builder1.where(nogdb::GraphFilter{}.only("live_in"));
+
+// get a query result as ResultSet
+nogdb::ResultSet rs = builder1.get();
+
+// get a query result as ResultSetCursor
+nogdb::ResultSetCursor rss = builder1.getCursor();
+
+// combine all functions in one call
+auto rs = txn.findEdge(vdesc).where(nogdb::GraphFilter{}.only("live_in")).get();
+
+txn.rollback();
+------------
+
+* Exceptions:
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
 == Traverse Operations
 
+A set of operations that retrieves vertices from a graph traversal with conditions can be performed by `nogdb::TraverseOperationBuilder` which is constructed and returned from `traverse`, `traverseIn`, and `traverseOut` functions.
+
+[source,cpp]
+------------
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+// construct a new TraverseOperationBuilder object to traverse a graph from a vertex
+nogdb::FindEdgeOperationBuilder builder1 = txn.traverse(const RecordDescriptor &recordDescriptor);
+
+// construct a new TraverseOperationBuilder object to traverse a graph from a vertex
+nogdb::FindEdgeOperationBuilder builder2 = txn.traverseIn(const RecordDescriptor &recordDescriptor);
+
+// construct a new TraverseOperationBuilder object to traverse a graph from a vertex
+nogdb::FindEdgeOperationBuilder builder3 = txn.traverseOut(const RecordDescriptor &recordDescriptor);
+
+// traverse with a condition on vertices
+builder1.whereV(nogdb::GraphFilter{}.only("person"));
+
+// traverse with a condition on edges
+builder1.whereE(nogdb::GraphFilter{}.only("live_in"));
+
+// traverse with a minimum depth level
+builder1.minDepth(0); // include the root vertex
+builder1.minDepth(1); // exclude the root vertex
+
+// traverse with a maximum depth level
+builder1.minDepth(0); // return only the root vertex
+builder1.minDepth(10); // traverse until reaching the 10th hop from the root vertex
+
+// traverse with minimum and maximum depth levels
+builder1.depth(0, 10);
+
+// get a query result as ResultSet
+nogdb::ResultSet rs = builder1.get();
+
+// get a query result as ResultSetCursor
+nogdb::ResultSetCursor rss = builder1.getCursor();
+
+// combine all functions in one call
+auto rs = txn.traverse(vdesc)
+             .whereV(nogdb::GraphFilter{}.only("person"))
+             .whereE(nogdb::GraphFilter{}.only("live_in"))
+             .depth(0, 10)
+             .get();
+
+txn.rollback();
+------------
+
+* Exceptions:
+** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
+** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex does not exist.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
+
 == Shortest Path Operations
 
+A set of operations that retrieves vertices from a shortest path walking with conditions can be performed by `nogdb::ShortestPathOperationBuilder` which is constructed and returned from a `shortestPath` function.
 
-=== GET
 [source,cpp]
 ------------
-nogdb::ResultSet get(const nogdb::Txn&       txn,
-                     const std::string&      className
-                    )
+nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+// construct a new ShortestPathOperationBuilder object to find a shortest path from a source vertex to a destination vertex
+nogdb::FindEdgeOperationBuilder builder1 = txn.shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
+                                                            const RecordDescriptor &dstVertexRecordDescriptor);
+
+// find a shortest path with a condition on vertices
+builder1.whereV(nogdb::GraphFilter{}.only("person"));
+
+// find a shortest path with a condition on edges
+builder1.whereE(nogdb::GraphFilter{}.only("live_in"));
+
+// get a query result as ResultSet
+nogdb::ResultSet rs = builder1.get();
+
+// get a query result as ResultSetCursor
+nogdb::ResultSetCursor rss = builder1.getCursor();
+
+// combine all functions in one call
+auto rs = txn.shortestPath(src, dst)
+             .whereV(nogdb::GraphFilter{}.only("person"))
+             .whereE(nogdb::GraphFilter{}.only("live_in"))
+             .get();
+
+txn.rollback();
 ------------
-* Description:
-** To get all vertices in specific classes.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of a vertex.
-* Return:
-** `nogdb::ResultSet` - A set of results.
+
 * Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
 ** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-
-=== GET CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor getCursor(const nogdb::Txn&       txn,
-                                 const std::string&      className
-                                )
-------------
-* Description:
-** To get all vertices in specific classes.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of a vertex.
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-
-
-=== GET IN-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
-                           const nogdb::RecordDescriptor&    recordDescriptor,
-                           const nogdb::ClassFilter&         classFilter
-                          )
-------------
-* Description:
-** To find edges which are incoming edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET IN-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
-                                       const nogdb::RecordDescriptor&    recordDescriptor,
-                                       const nogdb::ClassFilter&         classFilter
-                                      )
-------------
-* Description:
-** To find edges which are incoming edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET OUT-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet getOutEdge(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const nogdb::ClassFilter&         classFilter
-                           )
-------------
-* Description:
-** To find edges which are outgoing edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET OUT-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const nogdb::ClassFilter&         classFilter
-                                       )
-------------
-* Description:
-** To find edges which are outgoing edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET ALL-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet getAllEdge(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const nogdb::ClassFilter&         className
-                           )
-------------
-* Description:
-** To find all edges (both direction) which are associated with a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET ALL-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const nogdb::ClassFilter&         className
-                                       )
-------------
-* Description:
-** To find all edges (both direction) which are associated with a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSet get(const nogdb::Txn&           txn,
-                     const std::string&          className,
-                     const nogdb::Condition&     condition
-                    )
-------------
-* Description: 
-** To find vertices with a given condition.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-
-=== GET CURSOR WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
-                                 const std::string&          className,
-                                 const nogdb::Condition&     condition
-                                )
-------------
-* Description:
-** To find vertices with a given condition.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-
-=== GET IN-EDGE WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSet getInEdge(const nogdb::Txn&                 txn,
-                           const nogdb::RecordDescriptor&    recordDescriptor,
-                           const nogdb::Condition&           condition,
-                           const nogdb::ClassFilter&         classFilter
-                          )
-------------
-* Description: 
-** To find edges with a given condition which are incoming edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET IN-EDGE CURSOR WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSetCursor getInEdgeCursor(const nogdb::Txn&                 txn,
-                                       const nogdb::RecordDescriptor&    recordDescriptor,
-                                       const nogdb::Condition&           condition,
-                                       const nogdb::ClassFilter&         classFilter
-                                       )
-------------
-* Description:
-** To find edges with a given condition which are incoming edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET OUT-EDGE WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSet getOutEdge(const nogdb::Txn&                txn,
-                            const nogdb::RecordDescriptor&   recordDescriptor,
-                            const nogdb::Condition&          condition,
-                            const nogdb::ClassFilter&        classFilter
-                           )
-------------
-* Description: 
-** To find edges with a given condition which are outgoing edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET OUT-EDGE CURSOR WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSetCursor getOutEdgeCursor(const nogdb::Txn&                txn,
-                                        const nogdb::RecordDescriptor&   recordDescriptor,
-                                        const nogdb::Condition&          condition,
-                                        const nogdb::ClassFilter&        classFilter
-                                       )
-------------
-* Description:
-** To find edges with a given condition which are outgoing edges of a vertex.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET ALL-EDGE WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSet getAllEdge(const nogdb::Txn&                txn,
-                            const nogdb::RecordDescriptor&   recordDescriptor,
-                            const nogdb::Condition&          condition,
-                            const nogdb::ClassFilter&        classFilter
-                           )
-------------
-* Description: 
-** To find edges (both direction) that are associated with a vertex, and with a given condition.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== GET ALL-EDGE CURSOR WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSetCursor getAllEdgeCursor(const nogdb::Txn&                txn,
-                                        const nogdb::RecordDescriptor&   recordDescriptor,
-                                        const nogdb::Condition&          condition,
-                                        const nogdb::ClassFilter&        classFilter
-                                       )
-------------
-* Description:
-** To find edges (both direction) that are associated with a vertex, and with a given condition.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - a record descriptor of a vertex.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding vertices conflicts.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-
-== Edge Operations - `nogdb::Edge`
-
-=== GET
-[source,cpp]
-------------
-nogdb::ResultSet get(const nogdb::Txn&        txn,
-                     const std::string&       className
-                    )
-------------
-* Description:
-** To get all edges in a specific class.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of an edge.
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-
-=== GET CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor getCursor(const nogdb::Txn&        txn,
-                                 const std::string&       className
-                                )
-------------
-* Description:
-** To get all edges in a specific class.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of an edge.
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-
-=== GET WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSet get(const nogdb::Txn&           txn,
-                     const std::string&          className,
-                     const nogdb::Condition&     condition
-                    )
-------------
-* Description: 
-** To find edges with a given condition.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of an edge.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
-
-=== GET CURSOR WITH CONDITION
-[source,cpp]
-------------
-nogdb::ResultSetCursor getCursor(const nogdb::Txn&           txn,
-                                 const std::string&          className,
-                                 const nogdb::Condition&     condition
-                                )
-------------
-* Description:
-** To find edges with a given condition.
-* Parameters:
-** txn - A database transaction.
-** className - A class name as `std::string` of an edge.
-** condition - A condition that consists of a name of a property, a value, and a comparator used in searching for records.
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_NOEXST_PROPERTY` - A property does not exist.
-** `NOGDB_CTX_INVALID_COMPARATOR` - A comparator is not defined.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_CTX_CONFLICT_PROPTYPE` - A type of some properties in a condition used in finding edges conflicts.
-
-== Traverse (Graph) Operations - `nogdb::Traverse`
-
-=== BFS TRAVERSE IN-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet inEdgeBfs(const nogdb::Txn&                 txn,
-                           const nogdb::RecordDescriptor&    recordDescriptor,
-                           const unsigned int                minDepth,
-                           const unsigned int                maxDepth,
-                           const nogdb::PathFilter&          pathFilter,
-                           const nogdb::ClassFilter&         classFilter
-                          )
-------------
-* Description:
-** To find vertices as a result of in-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== BFS TRAVERSE IN-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor inEdgeBfsCursor(const nogdb::Txn&                 txn,
-                                       const nogdb::RecordDescriptor&    recordDescriptor,
-                                       const unsigned int                minDepth,
-                                       const unsigned int                maxDepth,
-                                       const nogdb::PathFilter&          pathFilter,
-                                       const nogdb::ClassFilter&         classFilter
-                                      )
-------------
-* Description:
-** To find vertices as a result of in-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== BFS TRAVERSE OUT-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet outEdgeBfs(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const unsigned int                minDepth,
-                            const unsigned int                maxDepth,
-                            const nogdb::PathFilter&          pathFilter,
-                            const nogdb::ClassFilter&         classFilter
-                           )
-------------
-* Description:
-** To find vertices as a result of out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== BFS TRAVERSE OUT-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor outEdgeBfsCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const unsigned int                minDepth,
-                                        const unsigned int                maxDepth,
-                                        const nogdb::PathFilter&          pathFilter,
-                                        const nogdb::ClassFilter&         classFilter
-                                       )
-------------
-* Description:
-** To find vertices as a result of out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== BFS TRAVERSE ALL-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet allEdgeBfs(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const unsigned int                minDepth,
-                            const unsigned int                maxDepth,
-                            const nogdb::PathFilter&          pathFilter,
-                            const nogdb::ClassFilter&         classFilter
-                           )
-------------
-* Description:
-** To find vertices as a result of in- and out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== BFS TRAVERSE ALL-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor allEdgeBfsCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const unsigned int                minDepth,
-                                        const unsigned int                maxDepth,
-                                        const nogdb::PathFilter&          pathFilter,
-                                        const nogdb::ClassFilter&         classFilter
-                                       )
-------------
-* Description:
-** To find vertices as a result of in- and out-edges graph traversal (BFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE IN-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet inEdgeDfs(const nogdb::Txn&                 txn,
-                           const nogdb::RecordDescriptor&    recordDescriptor,
-                           const unsigned int                minDepth,
-                           const unsigned int                maxDepth,
-                           const nogdb::PathFilter&          pathFilter,
-                           const nogdb::ClassFilter&         classFilter
-                          )
-------------
-* Description:
-** To find vertices as a result of in-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE IN-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor inEdgeDfsCursor(const nogdb::Txn&                 txn,
-                                       const nogdb::RecordDescriptor&    recordDescriptor,
-                                       const unsigned int                minDepth,
-                                       const unsigned int                maxDepth,
-                                       const nogdb::PathFilter&          pathFilter,
-                                       const nogdb::ClassFilter&         classFilter
-                                      )
-------------
-* Description:
-** To find vertices as a result of in-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE OUT-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet outEdgeDfs(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const unsigned int                minDepth,
-                            const unsigned int                maxDepth,
-                            const nogdb::PathFilter&          pathFilter,
-                            const nogdb::ClassFilter&         classFilter
-                           )
-------------
-* Description:
-** To find vertices as a result of out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE OUT-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor outEdgeDfsCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const unsigned int                minDepth,
-                                        const unsigned int                maxDepth,
-                                        const nogdb::PathFilter&          pathFilter,
-                                        const nogdb::ClassFilter&         classFilter
-                                       )
-------------
-* Description:
-** To find vertices as a result of out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE ALL-EDGE
-[source,cpp]
-------------
-nogdb::ResultSet allEdgeDfs(const nogdb::Txn&                 txn,
-                            const nogdb::RecordDescriptor&    recordDescriptor,
-                            const unsigned int                minDepth,
-                            const unsigned int                maxDepth,
-                            const T&                          className,
-                            const PathFilter&                 pathFilter
-                           )
-------------
-* Description:
-** To find vertices as a result of in- and out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** className - A class name as `std::string` or a set of class names as `std::set<std::string>` of an edge (or edges). If this parameter is specified, only edges with a given class name (or class names) will be used for graph traversal (optional).
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== DFS TRAVERSE ALL-EDGE CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor allEdgeDfsCursor(const nogdb::Txn&                 txn,
-                                        const nogdb::RecordDescriptor&    recordDescriptor,
-                                        const unsigned int                minDepth,
-                                        const unsigned int                maxDepth,
-                                        const T&                          className,
-                                        const PathFilter&                 pathFilter
-                                       )
-------------
-* Description:
-** To find vertices as a result of in- and out-edges graph traversal (DFS) starting from a specific vertex to other vertices.
-* Parameters:
-** txn - A database transaction.
-** recordDescriptor - A record descriptor of a vertex.
-** minDepth - A minimum level of graph traversal.
-** maxDepth - A maximum level of graph traversal.
-** className - A class name as `std::string` or a set of class names as `std::set<std::string>` of an edge (or edges). If this parameter is specified, only edges with a given class name (or class names) will be used for graph traversal (optional).
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-* Return:
-** `nogdb::ResultSetCursor` - A cursor of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_VERTEX` - A vertex doesn’t exist.
-
-=== SHORTEST PATH
-[source,cpp]
-------------
-nogdb::ResultSet shortestPath(const nogdb::Txn&                 txn,
-                              const nogdb::RecordDescriptor&    srcVertexRecordDescriptor,
-                              const nogdb::RecordDescriptor&    dstVertexRecordDescriptor,
-                              const nogdb::PathFilter&          pathFilter,
-                              const nogdb::ClassFilter&         classFilter
-                             )
-------------
-* Description:
-** To find all vertices in the shortest path (BFS) from a source vertex to a destination vertex.
-* Parameters:
-** txn - A database transaction.
-** srcVertexRecordDescriptor - A record descriptor of a source vertex.
-** dstVertexRecordDescriptor - A record descriptor of a destination vertex.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
-** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
-
-=== SHORTEST PATH CURSOR
-[source,cpp]
-------------
-nogdb::ResultSetCursor shortestPathCursor(const nogdb::Txn&                 txn,
-                                          const nogdb::RecordDescriptor&    srcVertexRecordDescriptor,
-                                          const nogdb::RecordDescriptor&    dstVertexRecordDescriptor,
-                                          const nogdb::PathFilter&          pathFilter,
-                                          const nogdb::ClassFilter&         classFilter
-                                         )
-------------
-* Description:
-** To find all vertices in the shortest path (BFS) from a source vertex to a destination vertex.
-* Parameters:
-** txn - A database transaction.
-** srcVertexRecordDescriptor - A record descriptor of a source vertex.
-** dstVertexRecordDescriptor - A record descriptor of a destination vertex.
-** pathFilter - A path filtering object for conditional graph traversal (optional).
-** classFilter - A class filtering. If this parameter is specified, only edges with a given class name (or class names) will be returned (optional).
-* Return:
-** `nogdb::ResultSet` - A set of results.
-* Exceptions:
-** `NOGDB_CTX_NOEXST_CLASS` - A class does not exist.
-** `NOGDB_CTX_MISMATCH_CLASSTYPE` - A type of a class does not match as expected.
-** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex doesn’t exist.
-** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex doesn’t exist.
-
+** `NOGDB_GRAPH_NOEXST_SRC` - A source vertex does not exist.
+** `NOGDB_GRAPH_NOEXST_DST` - A destination vertex does not exist.
+** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 
 == Error Handling
 
