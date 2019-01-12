@@ -769,3 +769,105 @@ void test_invalid_ctx() {
   }
   txn.rollback();
 }
+
+void test_multiple_ctx() {
+  auto dbPath = ctx->getDBPath();
+
+  try {
+    auto ctx1 = new nogdb::Context{dbPath};
+    auto ctx2 = new nogdb::Context{dbPath};
+
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("multiCtx_node", nogdb::ClassType::VERTEX);
+    txn.addProperty("multiCtx_node", "name", nogdb::PropertyType::TEXT);
+    txn.addClass("multiCtx_edge", nogdb::ClassType::EDGE);
+
+    auto v1 = txn.addVertex("multiCtx_node", nogdb::Record{}.set("name", "v1"));
+    auto v2 = txn.addVertex("multiCtx_node", nogdb::Record{}.set("name", "v2"));
+    auto e = txn.addEdge("multiCtx_edge", v1, v2);
+
+    txn.commit();
+
+    auto txn1 = ctx1->beginTxn(nogdb::TxnMode::READ_ONLY);
+    auto txn2 = ctx2->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+    auto res1 = txn1.find("multiCtx_node").get();
+    assert(res1.size() == 2);
+    auto res2 = txn2.find("multiCtx_node").get();
+    assert(res2.size() == 2);
+    res1 = txn1.find("multiCtx_edge").get();
+    assert(res1.size() == 1);
+    res2 = txn2.find("multiCtx_edge").get();
+    assert(res2.size() == 1);
+    res1 = txn1.findEdge(v1).get();
+    assert(res1[0].descriptor == e);
+    res2 = txn2.findEdge(v2).get();
+    assert(res2[0].descriptor == e);
+    res1 = txn1.fetchSrcDst(e);
+    assert(res1[0].descriptor == v1);
+    assert(res1[1].descriptor == v2);
+    res2 = txn2.fetchSrcDst(e);
+    assert(res2[0].descriptor == v1);
+    assert(res2[1].descriptor == v2);
+
+    txn1.rollback();
+    txn2.rollback();
+
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto ctx1 = new nogdb::Context{dbPath};
+    auto ctx2 = new nogdb::Context{dbPath};
+
+    auto txn1 = ctx1->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto txn2 = ctx2->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+    auto v1 = txn1.find("multiCtx_node").where(nogdb::Condition("name").eq("v1")).get();
+    assert(v1.size() == 1);
+    auto v3 = txn1.addVertex("multiCtx_node", nogdb::Record{}.set("name", "v3"));
+    txn1.addEdge("multiCtx_edge", v1[0].descriptor, v3);
+
+    auto res = txn2.find("multiCtx_node").where(nogdb::Condition("name").eq("v3")).get();
+    assert(res.empty());
+    res = txn2.find("multiCtx_edge").get();
+    assert(res.size() == 1);
+
+    txn1.commit();
+    txn2.rollback();
+
+    txn2 = ctx2->beginTxn(nogdb::TxnMode::READ_ONLY);
+    res = txn2.find("multiCtx_node").where(nogdb::Condition("name").eq("v3")).get();
+    assert(!res.empty());
+    assert(res[0].descriptor == v3);
+    res = txn2.find("multiCtx_edge").get();
+    assert(res.size() == 2);
+
+    txn2.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto ctx1 = new nogdb::Context{dbPath};
+    auto ctx2 = new nogdb::Context{dbPath};
+
+    auto txn1 = ctx1->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn1.commit();
+
+    txn1 = ctx1->beginTxn(nogdb::TxnMode::READ_ONLY);
+
+    auto txn2 = ctx2->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn2.commit();
+
+    txn1.rollback();
+
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+}

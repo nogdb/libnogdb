@@ -373,6 +373,7 @@ int main() {
 #ifdef TEST_CONTEXT_OPERATIONS
   std::cout << "\n\x1B[96mEnd-to-end tests for a database context with indexing should:\x1B[0m\n";
   exec(test_reopen_ctx_v6, "reopening a context with records, extended classes, and indexing");
+  exec(test_multiple_ctx, "opening more than two contexts at the same time in the same process");
 #endif
   // schema txn
 #ifdef TEST_SCHEMA_TXN_OPERATIONS
