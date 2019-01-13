@@ -142,7 +142,7 @@ namespace nogdb {
       // create index metadata in schema
       _adapter->dbIndex()->create(indexProps);
       // create index record in index database
-      _interface->index()->initialize(foundProperty, indexProps, foundClass.type);
+      _interface->index()->initialize(foundProperty, indexProps, foundClass.superClassId, foundClass.type);
       _adapter->dbInfo()->setMaxIndexId(indexId);
       _adapter->dbInfo()->setNumIndexId(_adapter->dbInfo()->getNumIndexId() + IndexId{1});
       return IndexDescriptor{

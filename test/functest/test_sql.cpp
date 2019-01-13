@@ -1685,8 +1685,14 @@ void test_sql_drop_index() {
   try {
     SQL::Result result = SQL::execute(txn, "DROP INDEX V.p");
     assert(result.type() == result.NO_RESULT);
-    auto index = txn.getIndex("V", "p");
-    assert(index.id == nogdb::IndexDescriptor{}.id);
+
+    try {
+      auto index = txn.getIndex("V", "p");
+      assert(false);
+    } catch (const Error &ex) {
+      REQUIRE(ex, NOGDB_CTX_NOEXST_INDEX, "NOGDB_CTX_NOEXST_INDEX");
+    }
+
     auto indexes = txn.getIndexes(txn.getClass("V"));
     assert(indexes.size() == 0);
   } catch (const Error &e) {

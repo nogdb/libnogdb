@@ -25,56 +25,58 @@ namespace nogdb {
 
   namespace index {
 
-    void IndexInterface::initialize(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+    void IndexInterface::initialize(const PropertyAccessInfo &propertyInfo,
+                                    const IndexAccessInfo &indexInfo,
+                                    const ClassId &superClassId,
                                     const ClassType &classType) {
       switch (propertyInfo.type) {
         case PropertyType::UNSIGNED_TINYINT:
-          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createNumeric<uint64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<uint64_t>(value.toTinyIntU());
           });
           break;
         case PropertyType::UNSIGNED_SMALLINT:
-          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createNumeric<uint64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<uint64_t>(value.toSmallIntU());
           });
           break;
         case PropertyType::UNSIGNED_INTEGER:
-          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createNumeric<uint64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<uint64_t>(value.toIntU());
           });
           break;
         case PropertyType::UNSIGNED_BIGINT:
-          createNumeric<uint64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createNumeric<uint64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return value.toBigIntU();
           });
           break;
         case PropertyType::TINYINT:
-          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<int64_t>(value.toTinyInt());
           });
           break;
         case PropertyType::SMALLINT:
-          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<int64_t>(value.toSmallInt());
           });
           break;
         case PropertyType::INTEGER:
-          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return static_cast<int64_t>(value.toInt());
           });
           break;
         case PropertyType::BIGINT:
-          createSignedNumeric<int64_t>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createSignedNumeric<int64_t>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return value.toBigInt();
           });
           break;
         case PropertyType::REAL:
-          createSignedNumeric<double>(propertyInfo, indexInfo, classType, [](const Bytes &value) {
+          createSignedNumeric<double>(propertyInfo, indexInfo, superClassId, classType, [](const Bytes &value) {
             return value.toReal();
           });
           break;
         case PropertyType::TEXT:
-          createString(propertyInfo, indexInfo, classType);
+          createString(propertyInfo, indexInfo, superClassId, classType);
           break;
         default:
           break;
@@ -432,26 +434,32 @@ namespace nogdb {
     }
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo &indexInfo) const {
-      auto indexFlags = INDEX_POSITIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+      auto uniqueFlag = (indexInfo.isUnique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE;
+      auto indexFlags = INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | uniqueFlag;
       auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordNegative(const IndexAccessInfo &indexInfo) const {
-      auto indexFlags = INDEX_NEGATIVE_NUMERIC_UNIQUE(indexInfo.isUnique);
+      auto uniqueFlag = (indexInfo.isUnique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE;
+      auto indexFlags = INDEX_TYPE_NEGATIVE | INDEX_TYPE_NUMERIC | uniqueFlag;
       auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
     adapter::index::IndexRecord IndexInterface::openIndexRecordString(const IndexAccessInfo &indexInfo) const {
-      auto indexFlags = INDEX_STRING_UNIQUE(indexInfo.isUnique);
+      auto uniqueFlag = (indexInfo.isUnique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE;
+      auto indexFlags = INDEX_TYPE_POSITIVE | INDEX_TYPE_STRING | uniqueFlag;
       auto indexAccess = adapter::index::IndexRecord{_txn->_txnBase, indexInfo.id, (unsigned int) indexFlags};
       return indexAccess;
     }
 
-    void IndexInterface::createString(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+    void IndexInterface::createString(const PropertyAccessInfo &propertyInfo,
+                                      const IndexAccessInfo &indexInfo,
+                                      const ClassId &superClassId,
                                       const ClassType &classType) {
-      auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+      auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
+      require(!propertyIdMapInfo.empty());
       auto indexAccess = openIndexRecordString(indexInfo);
       auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =

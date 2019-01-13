@@ -37,11 +37,6 @@
 #include "nogdb/nogdb_types.h"
 #include "nogdb/nogdb.h"
 
-#define UNIQUE_FLAG(_unique)                        (_unique)? INDEX_TYPE_UNIQUE: INDEX_TYPE_NON_UNIQUE
-#define INDEX_POSITIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
-#define INDEX_NEGATIVE_NUMERIC_UNIQUE(_unique)      INDEX_TYPE_NEGATIVE | INDEX_TYPE_NUMERIC | UNIQUE_FLAG(_unique)
-#define INDEX_STRING_UNIQUE(_unique)                INDEX_TYPE_POSITIVE | INDEX_TYPE_STRING | UNIQUE_FLAG(_unique)
-
 namespace nogdb {
 
   namespace index {
@@ -61,6 +56,7 @@ namespace nogdb {
 
       void initialize(const PropertyAccessInfo &propertyInfo,
                       const IndexAccessInfo &indexInfo,
+                      const ClassId &superClassId,
                       const ClassType &classType);
 
       void drop(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo);
@@ -131,9 +127,11 @@ namespace nogdb {
       template<typename T>
       void createNumeric(const PropertyAccessInfo &propertyInfo,
                          const IndexAccessInfo &indexInfo,
+                         const ClassId &superClassId,
                          const ClassType &classType,
                          T(*valueRetrieve)(const Bytes &)) {
-        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
+        require(!propertyIdMapInfo.empty());
         auto indexAccess = openIndexRecordPositive(indexInfo);
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
@@ -152,9 +150,11 @@ namespace nogdb {
       template<typename T>
       void createSignedNumeric(const PropertyAccessInfo &propertyInfo,
                                const IndexAccessInfo &indexInfo,
+                               const ClassId &superClassId,
                                const ClassType &classType,
                                T(*valueRetrieve)(const Bytes &)) {
-        auto propertyIdMapInfo = _txn->_adapter->dbProperty()->getIdMapInfo(indexInfo.classId);
+        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
+        require(!propertyIdMapInfo.empty());
         auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
         auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
         auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
@@ -173,7 +173,9 @@ namespace nogdb {
         dataRecord.resultSetIter(callback);
       }
 
-      void createString(const PropertyAccessInfo &propertyInfo, const IndexAccessInfo &indexInfo,
+      void createString(const PropertyAccessInfo &propertyInfo,
+                        const IndexAccessInfo &indexInfo,
+                        const ClassId &superClassId,
                         const ClassType &classType);
 
       template<typename T>
