@@ -62,3 +62,6 @@ functest_txn
 *.o
 *_debug_address
 gtest_installer.sh
+example
+example/*
+**/example/*
