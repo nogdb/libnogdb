@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -275,8 +276,9 @@ namespace nogdb {
       constexpr char KEY_SEPARATOR = ':';
       constexpr char KEY_PADDING = ' ';
       //TODO: can we improve this const creation working faster?
-      const std::string KEY_SEARCH_BEGIN = (std::stringstream{} << std::setfill(KEY_PADDING)
-                                                                << std::setw(MAX_PROPERTY_NAME_LEN)).str();
+      const std::stringstream KEY_SEARCH_BEGIN_STREAM =
+          std::stringstream{} << std::setfill(KEY_PADDING) << std::setw(MAX_PROPERTY_NAME_LEN);
+      const std::string KEY_SEARCH_BEGIN = KEY_SEARCH_BEGIN_STREAM.str();
 
       class PropertyAccess : public storage_engine::adapter::LMDBKeyValAccess {
       public:

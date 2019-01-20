@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <vector>
 #include <utility>

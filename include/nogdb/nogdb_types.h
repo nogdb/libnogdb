@@ -861,6 +861,7 @@ namespace nogdb {
     GraphFilter &exclude(const std::string &className, const T &... classNames) {
       exclude(className);
       exclude(classNames...);
+      return *this;
     }
 
     GraphFilter &exclude(const std::vector<std::string> &classNames);
@@ -884,6 +885,7 @@ namespace nogdb {
     GraphFilter &excludeSubClassOf(const std::string &className, const T &... classNames) {
       excludeSubClassOf(className);
       excludeSubClassOf(classNames...);
+      return *this;
     }
 
     GraphFilter &excludeSubClassOf(const std::vector<std::string> &classNames);
