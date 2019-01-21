@@ -31,6 +31,7 @@
 #include <iomanip>
 #include <cstdlib>
 
+#include "utils.hpp"
 #include "constant.hpp"
 #include "storage_adapter.hpp"
 #include "dbinfo_adapter.hpp"
@@ -40,6 +41,8 @@ namespace nogdb {
   namespace adapter {
 
     namespace schema {
+
+      using namespace utils::string;
 
       /**
        * Raw record format in lmdb data storage:
@@ -275,10 +278,7 @@ namespace nogdb {
 
       constexpr char KEY_SEPARATOR = ':';
       constexpr char KEY_PADDING = ' ';
-      //TODO: can we improve this const creation working faster?
-      const std::stringstream KEY_SEARCH_BEGIN_STREAM =
-          std::stringstream{} << std::setfill(KEY_PADDING) << std::setw(MAX_PROPERTY_NAME_LEN);
-      const std::string KEY_SEARCH_BEGIN = KEY_SEARCH_BEGIN_STREAM.str();
+      const std::string KEY_SEARCH_BEGIN = frontPadding("", MAX_PROPERTY_NAME_LEN, KEY_PADDING);
 
       class PropertyAccess : public storage_engine::adapter::LMDBKeyValAccess {
       public:
@@ -415,25 +415,14 @@ namespace nogdb {
           put(buildKey(props.classId, props.name), value);
         }
 
-        //TODO: can we improve this function working faster?
-        std::string frontPadding(const std::string &str, size_t length) const {
-          std::stringstream ss{};
-          ss << std::setfill(KEY_PADDING) << std::setw((int) (length - str.length())) << str;
-          return ss.str();
-        }
-
-        //TODO: can we improve this function working faster?
         std::string buildKey(const ClassId &classId, const std::string &propertyName) const {
-          std::stringstream ss{};
-          ss << std::to_string(classId) << KEY_SEPARATOR << frontPadding(propertyName, MAX_PROPERTY_NAME_LEN);
-          return ss.str();
+          return std::to_string(classId) +
+                 std::string{KEY_SEPARATOR} +
+                 frontPadding(propertyName, MAX_PROPERTY_NAME_LEN, KEY_PADDING);
         }
 
-        //TODO: can we improve this function working faster?
         std::string buildSearchKeyBegin(const ClassId &classId) const {
-          std::stringstream ss{};
-          ss << std::to_string(classId) << KEY_SEPARATOR << KEY_SEARCH_BEGIN;
-          return ss.str();
+          return std::to_string(classId) + std::string{KEY_SEPARATOR} + KEY_SEARCH_BEGIN;
         }
 
         std::pair<ClassId, std::string> splitKey(const std::string &key) const {

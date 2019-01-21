@@ -1263,7 +1263,7 @@ namespace nogdb {
     virtual ResultSetCursor getCursor() const = 0;
 
     //TODO: improve the performance of record retrieval by having count(parallel = n);
-    virtual unsigned int count() const = 0;
+//    virtual unsigned int count() const = 0;
 
     const Transaction* _txn;
 
@@ -1284,39 +1284,39 @@ namespace nogdb {
 
     virtual FindOperationBuilder& indexed(bool onlyIndex = true);
 
-    virtual FindOperationBuilder& limit(unsigned int size);
-
-    virtual FindOperationBuilder& limit(unsigned int from, unsigned int to);
-
-    virtual FindOperationBuilder& orderBy(const std::string &propName);
-
-    template<typename ...T>
-    FindOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
-      orderBy(propName);
-      orderBy(propNames...);
-      return *this;
-    }
-
-    virtual FindOperationBuilder& orderBy(const std::vector<std::string> &propNames);
-
-    virtual FindOperationBuilder& orderBy(const std::list<std::string> &propNames);
-
-    virtual FindOperationBuilder& orderBy(const std::set<std::string> &propNames);
-
-    virtual FindOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
-                                          const std::vector<std::string>::const_iterator &end);
-
-    virtual FindOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
-                                          const std::list<std::string>::const_iterator &end);
-
-    virtual FindOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
-                                          const std::set<std::string>::const_iterator &end);
+//    virtual FindOperationBuilder& limit(unsigned int size);
+//
+//    virtual FindOperationBuilder& limit(unsigned int from, unsigned int to);
+//
+//    virtual FindOperationBuilder& orderBy(const std::string &propName);
+//
+//    template<typename ...T>
+//    FindOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
+//      orderBy(propName);
+//      orderBy(propNames...);
+//      return *this;
+//    }
+//
+//    virtual FindOperationBuilder& orderBy(const std::vector<std::string> &propNames);
+//
+//    virtual FindOperationBuilder& orderBy(const std::list<std::string> &propNames);
+//
+//    virtual FindOperationBuilder& orderBy(const std::set<std::string> &propNames);
+//
+//    virtual FindOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
+//                                          const std::vector<std::string>::const_iterator &end);
+//
+//    virtual FindOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
+//                                          const std::list<std::string>::const_iterator &end);
+//
+//    virtual FindOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
+//                                          const std::set<std::string>::const_iterator &end);
 
     ResultSet get() const;
 
     ResultSetCursor getCursor() const;
 
-    unsigned int count() const;
+//    unsigned int count() const;
 
   private:
 
@@ -1347,39 +1347,39 @@ namespace nogdb {
 
     virtual FindEdgeOperationBuilder& where(const GraphFilter& edgeFilter);
 
-    virtual FindEdgeOperationBuilder& limit(unsigned int size);
-
-    virtual FindEdgeOperationBuilder& limit(unsigned int from, unsigned int to);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::string &propName);
-
-    template<typename ...T>
-    FindEdgeOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
-      orderBy(propName);
-      orderBy(propNames...);
-      return *this;
-    }
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::vector<std::string> &propNames);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::list<std::string> &propNames);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::set<std::string> &propNames);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
-                                              const std::vector<std::string>::const_iterator &end);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
-                                              const std::list<std::string>::const_iterator &end);
-
-    virtual FindEdgeOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
-                                              const std::set<std::string>::const_iterator &end);
+//    virtual FindEdgeOperationBuilder& limit(unsigned int size);
+//
+//    virtual FindEdgeOperationBuilder& limit(unsigned int from, unsigned int to);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::string &propName);
+//
+//    template<typename ...T>
+//    FindEdgeOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
+//      orderBy(propName);
+//      orderBy(propNames...);
+//      return *this;
+//    }
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::vector<std::string> &propNames);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::list<std::string> &propNames);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::set<std::string> &propNames);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
+//                                              const std::vector<std::string>::const_iterator &end);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
+//                                              const std::list<std::string>::const_iterator &end);
+//
+//    virtual FindEdgeOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
+//                                              const std::set<std::string>::const_iterator &end);
 
     ResultSet get() const;
 
     ResultSetCursor getCursor() const;
 
-    unsigned int count() const;
+//    unsigned int count() const;
 
   private:
 
@@ -1413,35 +1413,35 @@ namespace nogdb {
 
     virtual TraverseOperationBuilder& depth(unsigned int minDepth, unsigned int maxDepth);
 
-    virtual TraverseOperationBuilder& orderBy(const std::string &propName);
-
-    template<typename ...T>
-    TraverseOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
-      orderBy(propName);
-      orderBy(propNames...);
-      return *this;
-    }
-
-    virtual TraverseOperationBuilder& orderBy(const std::vector<std::string> &propNames);
-
-    virtual TraverseOperationBuilder& orderBy(const std::list<std::string> &propNames);
-
-    virtual TraverseOperationBuilder& orderBy(const std::set<std::string> &propNames);
-
-    virtual TraverseOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
-                                              const std::vector<std::string>::const_iterator &end);
-
-    virtual TraverseOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
-                                              const std::list<std::string>::const_iterator &end);
-
-    virtual TraverseOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
-                                              const std::set<std::string>::const_iterator &end);
+//    virtual TraverseOperationBuilder& orderBy(const std::string &propName);
+//
+//    template<typename ...T>
+//    TraverseOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
+//      orderBy(propName);
+//      orderBy(propNames...);
+//      return *this;
+//    }
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::vector<std::string> &propNames);
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::list<std::string> &propNames);
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::set<std::string> &propNames);
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
+//                                              const std::vector<std::string>::const_iterator &end);
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
+//                                              const std::list<std::string>::const_iterator &end);
+//
+//    virtual TraverseOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
+//                                              const std::set<std::string>::const_iterator &end);
 
     ResultSet get() const;
 
     ResultSetCursor getCursor() const;
 
-    unsigned int count() const;
+//    unsigned int count() const;
 
   private:
 
@@ -1472,41 +1472,41 @@ namespace nogdb {
 
     virtual ShortestPathOperationBuilder& whereE(const GraphFilter& filter);
 
-    virtual ShortestPathOperationBuilder& minDepth(unsigned int depth);
-
-    virtual ShortestPathOperationBuilder& maxDepth(unsigned int depth);
-
-    virtual ShortestPathOperationBuilder& depth(unsigned int minDepth, unsigned int maxDepth);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::string &propName);
-
-    template<typename ...T>
-    ShortestPathOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
-      orderBy(propName);
-      orderBy(propNames...);
-      return *this;
-    }
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::vector<std::string> &propNames);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::list<std::string> &propNames);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::set<std::string> &propNames);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
-                                                  const std::vector<std::string>::const_iterator &end);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
-                                                  const std::list<std::string>::const_iterator &end);
-
-    virtual ShortestPathOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
-                                                  const std::set<std::string>::const_iterator &end);
+//    virtual ShortestPathOperationBuilder& minDepth(unsigned int depth);
+//
+//    virtual ShortestPathOperationBuilder& maxDepth(unsigned int depth);
+//
+//    virtual ShortestPathOperationBuilder& depth(unsigned int minDepth, unsigned int maxDepth);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::string &propName);
+//
+//    template<typename ...T>
+//    ShortestPathOperationBuilder& orderBy(const std::string &propName, const T &... propNames) {
+//      orderBy(propName);
+//      orderBy(propNames...);
+//      return *this;
+//    }
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::vector<std::string> &propNames);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::list<std::string> &propNames);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::set<std::string> &propNames);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::vector<std::string>::const_iterator &begin,
+//                                                  const std::vector<std::string>::const_iterator &end);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::list<std::string>::const_iterator &begin,
+//                                                  const std::list<std::string>::const_iterator &end);
+//
+//    virtual ShortestPathOperationBuilder& orderBy(const std::set<std::string>::const_iterator &begin,
+//                                                  const std::set<std::string>::const_iterator &end);
 
     ResultSet get() const;
 
     ResultSetCursor getCursor() const;
 
-    unsigned int count() const;
+//    unsigned int count() const;
 
   private:
 

@@ -107,9 +107,10 @@ namespace nogdb {
 
     // string utilities
     namespace string {
-      std::vector<std::string> split(const std::string &string, char delimeter);
+      std::vector<std::string> split(const std::string &str, char delimeter);
       void replaceAll(std::string &string, const std::string &from, const std::string &to);
       void toUpperCase(std::string &str);
+      std::string frontPadding(const std::string &str, const size_t length, const char paddingChar);
     }
 
     // assertion

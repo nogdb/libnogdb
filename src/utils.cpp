@@ -61,6 +61,14 @@ namespace nogdb {
       void toUpperCase(std::string &str) {
         std::transform(str.begin(), str.end(),str.begin(), ::toupper);
       }
+
+      std::string frontPadding(const std::string &str, const size_t length, const char paddingChar) {
+        auto tmp(str);
+        if (length > tmp.size()) {
+          tmp.insert(0, length - tmp.size(), paddingChar);
+        }
+        return tmp;
+      }
     }
 
     // assertion
