@@ -39,7 +39,8 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-  auto Context::_underlying = std::unordered_map<std::string, LMDBInstance>{};
+  std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying =
+      std::unordered_map<std::string, Context::LMDBInstance>{};
 
   Context::Context(const std::string &dbPath)
       : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};

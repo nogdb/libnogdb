@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-function install_main {
+install_main() {
     cp ci/Makefile.ci Makefile
 }
 
-function install_lmdb {
+install_lmdb() {
     cp ci/lmdb/Makefile.ci lib/lmdb/Makefile
 }
 
