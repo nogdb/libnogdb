@@ -136,18 +136,10 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
  ```
  - Do not use Boost libraries if a required functionality provided in standard C++11. If really needed, prefer to include only associated Boost header files (and do not forget to add them in `lib`).
  - Follow the rule of three/five/zero as much as possible. Declare its copy constructor and assignment operator with `= delete` if your type/class/struct is non-copyable.
- - Add a define guard `#define __<HEADER FILE NAMME>_<HEADER FILE EXTENSION>_INCLUDED_` in header files.
- ```cpp
- // in nogdb.h
- #ifndef __NOGDB_H_INCLUDED_
- #define __NOGDB_H_INCLUDED_
- ...
- #endif
- ```
+ - Use `#pragma once` instead of a define guard with `#ifndef` and `#define` in header files.
  - Prefer to include header files in the following order:
    - C system headers (`<unistd.h>`, etc.)
    - Standard C++ headers (`<vector>`, `<algorithm>`, etc.)
-   - Boost headers (`"boost/shared_mutex.hpp"`, etc.)
    - Local (internal) headers (`"generic.hpp"`, `"graph.hpp"`, etc.)
    - Global (exposing) headers (`"nogdb.h"`, `"nogdb_errors.h"`, etc.)
  - Prefer to include all dependencies to in \*.h/\*.hpp/\*.cpp files if only required.

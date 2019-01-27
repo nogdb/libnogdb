@@ -46,6 +46,13 @@ void init_context() {
   }
 }
 
+void destroy_context() {
+  if (ctx) {
+    delete ctx;
+    ctx = nullptr;
+  }
+}
+
 int main() {
   // prepare test environment
   init();
@@ -494,10 +501,10 @@ int main() {
   exec(test_sql_drop_index, "droping index with sql command");
 #endif
 
+  destroy_context();
+
   std::cout << "\n[\x1B[32mSuccess\x1B[0m] Test passed: " << tnum << "/" << tnum << ", "
             << "Time elapse: " << float(clock() - begin_time) / CLOCKS_PER_SEC * 1000 << "ms\n";
-
-  delete ctx;
 }
 
 

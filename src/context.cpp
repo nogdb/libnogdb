@@ -19,7 +19,6 @@
  *
  */
 
-#include <iostream> // for debugging
 #include <string>
 #include <memory>
 #include <ctime>
@@ -40,6 +39,8 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
+  auto Context::_underlying = std::unordered_map<std::string, LMDBInstance>{};
+
   Context::Context(const std::string &dbPath)
       : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
 
@@ -51,23 +52,51 @@ namespace nogdb {
 
   Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize)
       : _dbPath{dbPath}, _maxDB{maxDbNum}, _maxDBSize{maxDbSize} {
-    if (!utils::io::fileExists(dbPath)) {
-      mkdir(dbPath.c_str(), 0755);
+    auto foundContext = _underlying.find(dbPath);
+    if (foundContext == _underlying.cend()) {
+      if (!utils::io::fileExists(dbPath)) {
+        mkdir(dbPath.c_str(), 0755);
+      }
+      auto instance = LMDBInstance{};
+      instance._handler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+      instance._refCount = 1;
+      _underlying.emplace(dbPath, instance);
+      _envHandler = instance._handler;
+    } else {
+      _envHandler = foundContext->second._handler;
+      ++foundContext->second._refCount;
     }
-    _envHandler = std::make_shared<storage_engine::LMDBEnv>(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+  }
+
+  Context::~Context() noexcept {
+    auto foundContext = _underlying.find(_dbPath);
+    if (foundContext != _underlying.cend()) {
+      if (foundContext->second._refCount <= 1) {
+        delete foundContext->second._handler;
+        foundContext->second._handler = nullptr;
+        _underlying.erase(_dbPath);
+      } else {
+        --foundContext->second._refCount;
+      }
+    }
+    _envHandler = nullptr;
   }
 
   Context::Context(const Context &ctx)
       : _dbPath{ctx._dbPath},
         _maxDB{ctx._maxDB},
         _maxDBSize{ctx._maxDBSize},
-        _envHandler{ctx._envHandler} {}
+        _envHandler{ctx._envHandler} {
+    ++_underlying.find(_dbPath)->second._refCount;
+  }
 
   Context &Context::operator=(const Context &ctx) {
     if (this != &ctx) {
-      auto tmp(ctx);
-      using std::swap;
-      swap(*this, tmp);
+      _dbPath = ctx._dbPath;
+      _maxDB = ctx._maxDB;
+      _maxDBSize = ctx._maxDBSize;
+      _envHandler = ctx._envHandler;
+      ++_underlying.find(_dbPath)->second._refCount;
     }
     return *this;
   }
@@ -76,15 +105,16 @@ namespace nogdb {
       : _dbPath{ctx._dbPath},
       _maxDB{ctx._maxDB},
       _maxDBSize{ctx._maxDBSize},
-      _envHandler{std::move(ctx._envHandler)} {}
+      _envHandler{ctx._envHandler} {}
 
   Context &Context::operator=(Context &&ctx) noexcept {
     if (this != &ctx) {
-      _envHandler = std::move(ctx._envHandler);
+      _envHandler = ctx._envHandler;
       _dbPath = ctx._dbPath;
       _maxDB = ctx._maxDB;
       _maxDBSize = ctx._maxDBSize;
       ctx._dbPath = std::string{};
+      ctx._envHandler = nullptr;
       ctx._maxDB = 0;
       ctx._maxDBSize = 0;
     }

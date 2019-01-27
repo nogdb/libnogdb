@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 function install_main {
     cp ci/Makefile.ci Makefile

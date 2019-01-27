@@ -23,10 +23,14 @@
 
 namespace nogdb {
 
-  Bytes::Bytes(const unsigned char *data, size_t len)
-      : value_{nullptr}, size_{len} {
-    value_ = new(std::nothrow) unsigned char[size_];
-    std::copy(data, data + size_, value_);
+  Bytes::Bytes(const unsigned char *data, size_t len, bool copy)
+      : _value{nullptr}, _size{len} {
+    if (copy) {
+      _value = new(std::nothrow) unsigned char[_size];
+      std::copy(data, data + _size, _value);
+    } else {
+      _value = const_cast<unsigned char *>(data);
+    }
   }
 
   Bytes::Bytes(const unsigned char *data)
@@ -39,11 +43,14 @@ namespace nogdb {
       : Bytes{static_cast<const unsigned char *>((void *) data.c_str()), strlen(data.c_str())} {}
 
   Bytes::~Bytes() noexcept {
-    delete[] value_;
+    if (_value) {
+      delete[] _value;
+      _value = nullptr;
+    }
   }
 
   Bytes::Bytes(const Bytes &binaryObject)
-      : Bytes{binaryObject.value_, binaryObject.size_} {}
+      : Bytes{binaryObject._value, binaryObject._size} {}
 
   Bytes &Bytes::operator=(const Bytes &binaryObject) {
     if (this != &binaryObject) {
@@ -55,18 +62,18 @@ namespace nogdb {
   }
 
   Bytes::Bytes(Bytes &&binaryObject) noexcept
-      : value_{binaryObject.value_}, size_{binaryObject.size_} {
-    binaryObject.value_ = nullptr;
-    binaryObject.size_ = 0;
+      : _value{binaryObject._value}, _size{binaryObject._size} {
+    binaryObject._value = nullptr;
+    binaryObject._size = 0;
   }
 
   Bytes &Bytes::operator=(Bytes &&binaryObject) noexcept {
     if (this != &binaryObject) {
-      delete[] value_;
-      value_ = binaryObject.value_;
-      size_ = binaryObject.size_;
-      binaryObject.value_ = nullptr;
-      binaryObject.size_ = 0;
+      delete[] _value;
+      _value = binaryObject._value;
+      _size = binaryObject._size;
+      binaryObject._value = nullptr;
+      binaryObject._size = 0;
     }
     return *this;
   }
@@ -112,19 +119,19 @@ namespace nogdb {
   }
 
   Bytes::operator unsigned char *() const {
-    return value_;
+    return _value;
   }
 
   unsigned char *Bytes::getRaw() const {
-    return value_;
+    return _value;
   }
 
   size_t Bytes::size() const {
-    return size_;
+    return _size;
   }
 
   bool Bytes::empty() const {
-    return !size_;
+    return !_size;
   }
 
   Bytes Bytes::merge(const Bytes &bytes1, const Bytes &bytes2) {
@@ -136,7 +143,7 @@ namespace nogdb {
     std::copy(bytes1.getRaw(), bytes1.getRaw() + bytes1.size(), data);
     std::copy(bytes2.getRaw(), bytes2.getRaw() + bytes2.size(), data + bytes1.size());
 
-    return Bytes{data, total_size};
+    return Bytes{data, total_size, false};
   };
 
   Bytes Bytes::merge(const std::vector<Bytes> &bytes) {
@@ -154,6 +161,6 @@ namespace nogdb {
       idx += b.size();
     }
 
-    return Bytes{data, total_size};
+    return Bytes{data, total_size, false};
   }
 }

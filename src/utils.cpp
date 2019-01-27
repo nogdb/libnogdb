@@ -37,10 +37,10 @@ namespace nogdb {
 
     // string utilities
     namespace string {
-      std::vector<std::string> split(const std::string &string, char delimeter) {
+      std::vector<std::string> split(const std::string &str, char delimeter) {
         auto elements = std::vector<std::string>{};
         std::stringstream ss{};
-        ss.str(string);
+        ss.str(str);
         auto subStr = std::string{};
         while (std::getline(ss, subStr, delimeter)) {
           elements.push_back(subStr);

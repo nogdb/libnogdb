@@ -150,7 +150,7 @@ namespace nogdb {
 
     Bytes() = default;
 
-    Bytes(const unsigned char *data, size_t len);
+    Bytes(const unsigned char *data, size_t len, bool copy = true);
 
     template<typename T>
     explicit Bytes(T data)
@@ -202,7 +202,7 @@ namespace nogdb {
 
     template<typename T>
     void convertTo(T &object) {
-      memcpy(&object, value_, size_);
+      memcpy(&object, _value, _size);
     }
 
     template<typename T>
@@ -218,8 +218,8 @@ namespace nogdb {
     }
 
   private:
-    unsigned char *value_{nullptr};
-    size_t size_{0};
+    unsigned char *_value{nullptr};
+    size_t _size{0};
 
     static Bytes merge(const Bytes &bytes1, const Bytes &byte2);
 

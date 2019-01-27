@@ -770,7 +770,7 @@ void test_conflict_property() {
     txn.addProperty("vertex4", "prop2", nogdb::PropertyType::REAL);
 
     txn.addVertex("vertex2", nogdb::Record{}.set("prop2", 97));
-    txn.addVertex("vertex3", nogdb::Record{}.set("prop2", "a"));
+    txn.addVertex("vertex3", nogdb::Record{}.set("prop2", "abc"));
     txn.addVertex("vertex4", nogdb::Record{}.set("prop2", 97.97));
     txn.commit();
   } catch (const nogdb::Error &ex) {
@@ -783,8 +783,8 @@ void test_conflict_property() {
     auto res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq(97)).get();
     ASSERT_SIZE(res, 1);
     ASSERT_EQ(res[0].record.getInt("prop2"), 97);
-    res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq("a")).get();
-    ASSERT_SIZE(res, 2);
+    res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq("abc")).get();
+    ASSERT_SIZE(res, 1);
     res = txn.findSubClassOf("vertex1").where(nogdb::Condition("prop2").eq(97.97)).get();
     ASSERT_SIZE(res, 1);
     ASSERT_EQ(res[0].record.getReal("prop2"), 97.97);

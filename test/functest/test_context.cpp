@@ -813,6 +813,9 @@ void test_multiple_ctx() {
     txn1.rollback();
     txn2.rollback();
 
+    delete ctx1;
+    delete ctx2;
+
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -846,6 +849,10 @@ void test_multiple_ctx() {
     assert(res.size() == 2);
 
     txn2.rollback();
+
+    delete ctx1;
+    delete ctx2;
+
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);
@@ -864,6 +871,9 @@ void test_multiple_ctx() {
     txn2.commit();
 
     txn1.rollback();
+
+    delete ctx1;
+    delete ctx2;
 
   } catch (const nogdb::Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;

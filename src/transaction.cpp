@@ -103,7 +103,7 @@ namespace nogdb {
     : _txnMode{mode}, _txnCtx{&ctx} {
     try {
       _txnBase = new storage_engine::LMDBTxn(
-          _txnCtx->_envHandler.get(),
+          _txnCtx->_envHandler,
           (mode == TxnMode::READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
       _adapter = new Adapter(_txnBase);
       _interface = new Interface(this);
@@ -138,6 +138,7 @@ namespace nogdb {
       txn._txnBase = nullptr;
       txn._adapter = nullptr;
       txn._interface->destroy();
+      delete txn._interface;
       txn._interface = nullptr;
     }
     return *this;
@@ -147,6 +148,7 @@ namespace nogdb {
     if (_txnBase) {
       try {
         _txnBase->commit();
+        delete _txnBase;
         _txnBase = nullptr;
       } catch (const Error& err) {
         try { rollback(); } catch (...) {}
@@ -158,12 +160,31 @@ namespace nogdb {
     } else {
       throw NOGDB_TXN_ERROR(NOGDB_TXN_COMPLETED);
     }
+    if (_adapter) {
+      delete _adapter;
+      _adapter = nullptr;
+    }
+    if (_interface) {
+      _interface->destroy();
+      delete _interface;
+      _interface = nullptr;
+    }
   }
 
   void Transaction::rollback() noexcept {
     if (_txnBase) {
       _txnBase->rollback();
+      delete _txnBase;
       _txnBase = nullptr;
+    }
+    if (_adapter) {
+      delete _adapter;
+      _adapter = nullptr;
+    }
+    if (_interface) {
+      _interface->destroy();
+      delete _interface;
+      _interface = nullptr;
     }
   }
 
