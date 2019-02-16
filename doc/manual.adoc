@@ -12,21 +12,23 @@
 
 == Database Context
 
-A database context must be firstly initialized to create a connection to NogDB before calling any database operations.
-When the context is created, if a database directory doesn't exist on the file system, it will make a new one with a default database schema.
+A database context must be constructed to create a connection to NogDB before calling any database operations.
+A new database can be initialized via `ContextInitializer` which allows us to configure some database settings such as a maximum number of underlying (LMDB) databases, a maximum size of underlying (LMDB) databases, etc.
+`ContextInitializer` is only required when a database never exists before.
+After initializing the database context, the database connection can be normally opened and accessed via `Context`.
 
 [source,cpp]
 ------------
-// default constructor
-auto ctx = new nogdb::Context{"mygraph.db"};
+// only required at the first time of database initialization
+auto ctxi = nogdb::ContextInitializer{"mygraph.db"};
+ctxi.setMaxDB(128);
+ctxi.setMaxDBSize(4294967296UL);
+ctxi.enableVersion(); // enable database version tracking
 
-// alternative constructors with specific configuration
-// -- with a maximum database number
-auto customCtx_1 = new nogdb::Context{"mygraph.db", static_cast<unsigned int>(128)};
-// -- with a maximum database size (in Bytes)
-auto customCtx_2 = new nogdb::Context{"mygraph.db", static_cast<unsigned long>(4294967296)};
-// -- with a maximum database number and database size
-auto customCtx_3 = new nogdb::Context{"mygraph.db", 128, 4294967296UL};
+auto ctx = ctxi.init(); // create and return database context
+
+// subsequently open database context
+auto ctx = new nogdb::Context{"mygraph.db"};
 ------------
 
 == Database Information
