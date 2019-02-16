@@ -29,6 +29,7 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <fstream>
 #include <algorithm>
 #include <sstream>
 #include <sys/time.h>
@@ -120,15 +121,11 @@ namespace nogdb {
 
     namespace io {
       bool fileExists(const std::string &fileName);
-#ifdef __MINGW32__
       int mkdir(const char *pathname, int mode);
       int openLockFile(const char *pathname);
       int unlockFile(int fd);
-#else
-      int mkdir(const char *pathname, int mode);
-      int openLockFile(const char *pathname);
-      int unlockFile(int fd);
-#endif
+      void writeBinaryFile(const char* pathname, const char *data, size_t size);
+      const char* readBinaryFile(const char* pathname, size_t size);
     }
 
   }

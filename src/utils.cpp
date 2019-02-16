@@ -118,6 +118,31 @@ namespace nogdb {
       }
 
 #endif
+
+      void writeBinaryFile(const char* pathname, const char *data, size_t size) {
+        std::ofstream bin(pathname, std::ios::out | std::ios::binary);
+        bin.write(data, size);
+        bin.close();
+      }
+
+      const char* readBinaryFile(const char* pathname, size_t size) {
+        auto data = new char[size];
+        std::ifstream bin(pathname, std::ios::in | std::ios::binary | std::ios::ate);
+        if (bin.is_open()) {
+          bin.seekg(0, std::ios::end);
+          size_t fileSize = bin.tellg();
+          bin.seekg(0, std::ios::beg);
+          if (size != fileSize) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+          }
+          bin.read(data, fileSize);
+        } else {
+          throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+        }
+        bin.close();
+        return data;
+      }
+
     }
 
   }

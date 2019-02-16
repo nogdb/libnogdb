@@ -49,6 +49,8 @@ inline void init() {
     closedir(theFolder);
     rmdir(DATABASE_PATH.c_str());
   }
+  // create database
+  nogdb::ContextInitializer(DATABASE_PATH).init();
 }
 
 #define REQUIRE(_err, _exp, _msg) \

@@ -67,6 +67,9 @@
 #define NOGDB_CTX_DUPLICATE_INDEX               0x6020
 #define NOGDB_CTX_INVALID_INDEX_CONSTRAINT      0x6030
 #define NOGDB_CTX_UNIQUE_CONSTRAINT             0x6040
+#define NOGDB_CTX_UNINITIALIZED                 0x7000
+#define NOGDB_CTX_ALREADY_INITIALIZED           0x7010
+#define NOGDB_CTX_DBSETTING_MISSING             0x7020
 #define NOGDB_CTX_MAXCLASS_REACH                0x9fd0
 #define NOGDB_CTX_MAXPROPERTY_REACH             0x9fd1
 #define NOGDB_CTX_MAXINDEX_REACH                0x9fd2
@@ -278,6 +281,12 @@ namespace nogdb {
           return "NOGDB_CTX_INVALID_INDEX_CONSTRAINT: An index couldn't be created with a unique constraint due to some duplicated values in existing records";
         case NOGDB_CTX_UNIQUE_CONSTRAINT:
           return "NOGDB_CTX_UNIQUE_CONSTRAINT: A record has some duplicated values when a unique constraint is applied";
+        case NOGDB_CTX_UNINITIALIZED:
+          return "NOGDB_CTX_UNINITIALIZED: A database is not initialized";
+        case NOGDB_CTX_ALREADY_INITIALIZED:
+          return "NOGDB_CTX_ALREADY_INITIALIZED: A database already exists";
+        case NOGDB_CTX_DBSETTING_MISSING:
+          return "NOGDB_CTX_DBSETTING_MISSING: A database setting is missing";
         case NOGDB_CTX_UNKNOWN_ERR:
         default:
           return "NOGDB_CTX_UNKNOWN_ERR: Unknown";

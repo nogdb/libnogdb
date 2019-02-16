@@ -42,24 +42,78 @@ namespace nogdb {
   std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying =
       std::unordered_map<std::string, Context::LMDBInstance>{};
 
+  ContextInitializer::ContextInitializer(const std::string& dbPath)
+      : _dbPath{dbPath} {
+    _settings._maxDB = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
+    _settings._maxDBSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
+    _settings._enableVersion = false;
+  }
+
+  ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDbNum) noexcept {
+    _settings._maxDB = maxDbNum;
+    return *this;
+  }
+
+  ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDbSize) noexcept {
+    _settings._maxDBSize = maxDbSize;
+    return *this;
+  }
+
+  ContextInitializer& ContextInitializer::enableVersion() noexcept {
+    _settings._enableVersion = true;
+    return *this;
+  }
+
+  Context ContextInitializer::init() {
+    // create a database folder if not exist
+    if (!utils::io::fileExists(_dbPath)) {
+      mkdir(_dbPath.c_str(), 0755);
+      auto settingFilePath = _dbPath + DB_SETTING_NAME;
+      // write database settings to disk
+      utils::io::writeBinaryFile(
+          settingFilePath.c_str(), static_cast<const char *>((void *) &_settings), sizeof(_settings));
+      return Context(_dbPath, _settings);
+    } else {
+      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_ALREADY_INITIALIZED);
+    }
+  }
+
   Context::Context(const std::string &dbPath)
-      : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
+      : _dbPath{dbPath} {
+    if (!utils::io::fileExists(_dbPath)) {
+      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNINITIALIZED);
+    } else {
+      auto settingFilePath = _dbPath + DB_SETTING_NAME;
+      if (!utils::io::fileExists(settingFilePath)) {
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
+      } else {
+        auto foundContext = _underlying.find(dbPath);
+        if (foundContext == _underlying.cend()) {
+          // read database settings from disk
+          auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
+          memcpy(&_settings, binary, sizeof(_settings));
 
-  Context::Context(const std::string &dbPath, unsigned int maxDbNum)
-      : Context{dbPath, maxDbNum, DEFAULT_NOGDB_MAX_DATABASE_SIZE} {};
+          auto instance = LMDBInstance{};
+          instance._handler = new storage_engine::LMDBEnv(
+              _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+          instance._refCount = 1;
+          _underlying.emplace(dbPath, instance);
+          _envHandler = instance._handler;
+        } else {
+          _envHandler = foundContext->second._handler;
+          ++foundContext->second._refCount;
+        }
+      }
+    }
+  }
 
-  Context::Context(const std::string &dbPath, unsigned long maxDbSize)
-      : Context{dbPath, DEFAULT_NOGDB_MAX_DATABASE_NUMBER, maxDbSize} {};
-
-  Context::Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize)
-      : _dbPath{dbPath}, _maxDB{maxDbNum}, _maxDBSize{maxDbSize} {
+  Context::Context(const std::string &dbPath, const ContextSetting& settings)
+      : _dbPath{dbPath} {
     auto foundContext = _underlying.find(dbPath);
     if (foundContext == _underlying.cend()) {
-      if (!utils::io::fileExists(dbPath)) {
-        mkdir(dbPath.c_str(), 0755);
-      }
       auto instance = LMDBInstance{};
-      instance._handler = new storage_engine::LMDBEnv(dbPath, maxDbNum, maxDbSize, DEFAULT_NOGDB_MAX_READERS);
+      instance._handler = new storage_engine::LMDBEnv(
+          _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
       instance._refCount = 1;
       _underlying.emplace(dbPath, instance);
       _envHandler = instance._handler;
@@ -85,8 +139,7 @@ namespace nogdb {
 
   Context::Context(const Context &ctx)
       : _dbPath{ctx._dbPath},
-        _maxDB{ctx._maxDB},
-        _maxDBSize{ctx._maxDBSize},
+        _settings{ctx._settings},
         _envHandler{ctx._envHandler} {
     ++_underlying.find(_dbPath)->second._refCount;
   }
@@ -94,8 +147,7 @@ namespace nogdb {
   Context &Context::operator=(const Context &ctx) {
     if (this != &ctx) {
       _dbPath = ctx._dbPath;
-      _maxDB = ctx._maxDB;
-      _maxDBSize = ctx._maxDBSize;
+      _settings = ctx._settings;
       _envHandler = ctx._envHandler;
       ++_underlying.find(_dbPath)->second._refCount;
     }
@@ -104,20 +156,17 @@ namespace nogdb {
 
   Context::Context(Context &&ctx) noexcept
       : _dbPath{ctx._dbPath},
-      _maxDB{ctx._maxDB},
-      _maxDBSize{ctx._maxDBSize},
+      _settings{ctx._settings},
       _envHandler{ctx._envHandler} {}
 
   Context &Context::operator=(Context &&ctx) noexcept {
     if (this != &ctx) {
       _envHandler = ctx._envHandler;
       _dbPath = ctx._dbPath;
-      _maxDB = ctx._maxDB;
-      _maxDBSize = ctx._maxDBSize;
+      _settings = ctx._settings;
       ctx._dbPath = std::string{};
       ctx._envHandler = nullptr;
-      ctx._maxDB = 0;
-      ctx._maxDBSize = 0;
+      ctx._settings = ContextSetting{};
     }
     return *this;
   }

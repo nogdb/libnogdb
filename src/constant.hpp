@@ -27,6 +27,7 @@
 namespace nogdb {
 
   constexpr uint16_t INIT_NUM_CLASSES = 6;
+  const std::string DB_SETTING_NAME = "/.settings.nogdb";
   const std::string TB_DBINFO = ".dbinfo";
   const std::string TB_CLASSES = ".classes";
   const std::string TB_PROPERTIES = ".properties";
@@ -36,13 +37,15 @@ namespace nogdb {
 
   const std::string TB_INDEXING_PREFIX = ".index_";
 
-  constexpr uint16_t INIT_NUM_PROPERTIES = 3;
+  constexpr uint16_t INIT_NUM_PROPERTIES = 4;
   constexpr uint16_t CLASS_NAME_PROPERTY_ID = 0;
   const std::string CLASS_NAME_PROPERTY = "@className";
   constexpr uint16_t RECORD_ID_PROPERTY_ID = 1;
   const std::string RECORD_ID_PROPERTY = "@recordId";
   constexpr uint16_t DEPTH_PROPERTY_ID = 2;
   const std::string DEPTH_PROPERTY = "@depth";
+  constexpr uint16_t VERSION_PROPERTY_ID = 3;
+  const std::string VERSION_PROPERTY = "@version";
 
   constexpr uint32_t MAX_RECORD_NUM_EM = 0;
 

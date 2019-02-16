@@ -33,8 +33,40 @@
 
 namespace nogdb {
 
+  struct ContextSetting {
+    unsigned int _maxDB{};
+    unsigned long _maxDBSize{};
+    bool _enableVersion{};
+  };
+
+  class Context;
+
+  class ContextInitializer {
+  public:
+
+    ContextInitializer(const std::string& dbPath);
+
+    ~ContextInitializer() = default;
+
+    ContextInitializer& setMaxDB(unsigned int maxDbNum) noexcept;
+
+    ContextInitializer& setMaxDBSize(unsigned long maxDbSize) noexcept;
+
+    ContextInitializer& enableVersion() noexcept;
+
+    Context init();
+
+  private:
+    std::string _dbPath{};
+    ContextSetting _settings{};
+
+  };
+
   class Context {
   public:
+
+    friend class ContextInitializer;
+
     friend class Transaction;
 
     Context() = default;
@@ -42,12 +74,6 @@ namespace nogdb {
     ~Context() noexcept;
 
     Context(const std::string &dbPath);
-
-    explicit Context(const std::string &dbPath, unsigned int maxDbNum);
-
-    explicit Context(const std::string &dbPath, unsigned long maxDbSize);
-
-    Context(const std::string &dbPath, unsigned int maxDbNum, unsigned long maxDbSize);
 
     Context(const Context &ctx);
 
@@ -59,16 +85,20 @@ namespace nogdb {
 
     std::string getDBPath() const { return _dbPath; }
 
-    unsigned int getMaxDB() const { return _maxDB; }
+    unsigned int getMaxDB() const { return _settings._maxDB; }
 
-    unsigned long getMaxDBSize() const { return _maxDBSize; }
+    unsigned long getMaxDBSize() const { return _settings._maxDBSize; }
+
+    bool isEnableVersion() const { return _settings._enableVersion; }
 
     Transaction beginTxn(const TxnMode &txnMode = TxnMode::READ_WRITE);
 
   private:
+
+    Context(const std::string &dbPath, const ContextSetting& settings);
+
     std::string _dbPath{};
-    unsigned int _maxDB{};
-    unsigned long _maxDBSize{};
+    ContextSetting _settings{};
     storage_engine::LMDBEnv* _envHandler;
 
     struct LMDBInstance {
