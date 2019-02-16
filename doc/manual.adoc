@@ -1776,6 +1776,18 @@ A general error related to a database context and operations is represented as `
 |0x6040
 |A record has some duplicated values when a unique constraint is applied.
 
+|NOGDB_CTX_UNINITIALIZED
+|0x7000
+|A database is not initialized.
+
+|NOGDB_CTX_ALREADY_INITIALIZED
+|0x7010
+|A database already exists.
+
+|NOGDB_CTX_DBSETTING_MISSING
+|0x7020
+|A database setting is missing.
+
 |NOGDB_CTX_MAXCLASS_REACH
 |0x9fd0
 |A limitation of class number has been reached.
