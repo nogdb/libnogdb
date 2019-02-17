@@ -101,11 +101,12 @@ namespace nogdb {
     try {
       auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto existingRecord = parser::RecordParser::parseRawData(
-          recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE);
+          recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
 
       // insert an updated record
       if (classInfo.type == ClassType::EDGE) {
-        auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(recordResult.data.blob());
+        auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
+            recordResult, _txnCtx->isEnableVersion());
         dataRecord.update(recordDescriptor.rid.second, vertexBlob + newRecordBlob);
       } else {
         dataRecord.update(recordDescriptor.rid.second, newRecordBlob);
@@ -134,12 +135,12 @@ namespace nogdb {
     auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
       _interface->graph()->updateSrcRel(
           recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
           newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
-      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult, _txnCtx->isEnableVersion());
       edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
     } catch (const Error& error) {
       rollback();
@@ -158,12 +159,12 @@ namespace nogdb {
     auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+      auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
       _interface->graph()->updateDstRel(
           recordDescriptor.rid, newDstVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
           srcDstVertex.first, newDstVertexRecordDescriptor.rid);
-      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult.data.blob());
+      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult, _txnCtx->isEnableVersion());
       edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
     } catch (const Error& error) {
       rollback();
@@ -183,10 +184,11 @@ namespace nogdb {
       auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
       auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto record = parser::RecordParser::parseRawData(
-          recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE);
+          recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
 
       if (classInfo.type == ClassType::EDGE) {
-        auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult.data.blob());
+        auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
+            recordResult, _txnCtx->isEnableVersion());
         dataRecord.remove(recordDescriptor.rid.second);
         _interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       } else {
@@ -218,7 +220,8 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto recordId = RecordId{classInfo.id, positionId};
             if (classInfo.type == ClassType::EDGE) {
-              auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result.data.blob());
+              auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
+                  result, _txnCtx->isEnableVersion());
               _interface->graph()->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
             } else {
               _interface->graph()->removeRelFromVertex(recordId);

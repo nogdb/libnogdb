@@ -130,6 +130,7 @@ namespace nogdb {
   typedef uint32_t ClusterId;
   typedef std::pair<ClassId, PositionId> RecordId;
   typedef uint32_t IndexId;
+  typedef uint64_t VersionId;
   typedef std::map<std::string, PropertyType> PropertyMapType;
 
   struct DbInfo {

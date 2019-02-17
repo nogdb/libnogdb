@@ -41,16 +41,16 @@ namespace nogdb {
 
     Record RecordParser::parseRawData(const storage_engine::lmdb::Result &rawData,
                                       const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                      bool isEdge) {
+                                      bool isEdge,
+                                      bool enableVersion) {
       if (rawData.empty) {
         return Record{};
       }
       Record::PropertyToBytesMap properties{};
       auto rawDataBlob = rawData.data.blob();
       auto offset = size_t{0};
-      if (isEdge) {
-        offset = VERTEX_SRC_DST_RAW_DATA_LENGTH;
-      }
+      offset += (isEdge)? VERTEX_SRC_DST_RAW_DATA_LENGTH: size_t{0};
+      offset += (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
       if (rawDataBlob.capacity() == 0 || rawDataBlob.size() - offset == 1) {
         return Record{};
       } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
@@ -102,19 +102,31 @@ namespace nogdb {
 
     Record RecordParser::parseRawData(const storage_engine::lmdb::Result &rawData,
                                       const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                      const ClassType &classType) {
-      return parseRawData(rawData, propertyInfos, classType == ClassType::EDGE);
+                                      const ClassType &classType,
+                                      bool enableVersion) {
+      return parseRawData(rawData, propertyInfos, classType == ClassType::EDGE, enableVersion);
     }
 
     Record RecordParser::parseRawDataWithBasicInfo(const std::string &className,
                                                    const RecordId &rid,
                                                    const storage_engine::lmdb::Result &rawData,
                                                    const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                                   const ClassType &classType) {
-      return parseRawData(rawData, propertyInfos, classType == ClassType::EDGE)
+                                                   const ClassType &classType,
+                                                   bool enableVersion) {
+      auto versionId = (enableVersion)? parseRawDataVersionId(rawData): VersionId{0};
+      return parseRawData(rawData, propertyInfos, classType == ClassType::EDGE, versionId > 0)
           .setBasicInfoIfNotExists(CLASS_NAME_PROPERTY, className)
           .setBasicInfoIfNotExists(RECORD_ID_PROPERTY, rid2str(rid))
-          .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U);
+          .setBasicInfoIfNotExists(DEPTH_PROPERTY, 0U)
+          .setBasicInfoIfNotExists(VERSION_PROPERTY, versionId);
+    }
+
+    VersionId RecordParser::parseRawDataVersionId(const storage_engine::lmdb::Result &rawData) {
+      require(!rawData.data.empty());
+      auto blob = rawData.data.blob();
+      auto versionId = VersionId{0};
+      blob.retrieve(&versionId, 0, RECORD_VERSION_DATA_LENGTH);
+      return versionId;
     }
 
     Blob RecordParser::parseEdgeVertexSrcDst(const RecordId &srcRid, const RecordId &dstRid) {
@@ -126,11 +138,14 @@ namespace nogdb {
       return value;
     }
 
-    std::pair<RecordId, RecordId> RecordParser::parseEdgeRawDataVertexSrcDst(const Blob &blob) {
-      require(blob.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
+    std::pair<RecordId, RecordId> RecordParser::
+    parseEdgeRawDataVertexSrcDst(const storage_engine::lmdb::Result& rawData, bool enableVersion) {
+      require(!rawData.data.empty());
+      auto blob = rawData.data.blob();
+      auto offset = (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
+      require(blob.size() >= offset + VERTEX_SRC_DST_RAW_DATA_LENGTH);
       auto srcVertexRid = RecordId{};
       auto dstVertexRid = RecordId{};
-      auto offset = size_t{0};
       offset = blob.retrieve(&srcVertexRid.first, offset, sizeof(ClassId));
       offset = blob.retrieve(&srcVertexRid.second, offset, sizeof(PositionId));
       offset = blob.retrieve(&dstVertexRid.first, offset, sizeof(ClassId));
@@ -138,16 +153,23 @@ namespace nogdb {
       return std::make_pair(srcVertexRid, dstVertexRid);
     }
 
-    Blob RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(const Blob &blob) {
-      require(blob.size() >= VERTEX_SRC_DST_RAW_DATA_LENGTH);
+    Blob RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(const storage_engine::lmdb::Result& rawData,
+                                                          bool enableVersion) {
+      require(!rawData.data.empty());
+      auto blob = rawData.data.blob();
+      auto offset = (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
+      require(blob.size() >= offset + VERTEX_SRC_DST_RAW_DATA_LENGTH);
       Blob::Byte byteData[VERTEX_SRC_DST_RAW_DATA_LENGTH];
-      blob.retrieve(byteData, 0, VERTEX_SRC_DST_RAW_DATA_LENGTH);
+      blob.retrieve(byteData, offset, VERTEX_SRC_DST_RAW_DATA_LENGTH);
       return Blob(byteData, VERTEX_SRC_DST_RAW_DATA_LENGTH);
     }
 
-    Blob RecordParser::parseEdgeRawDataAsBlob(const Blob &blob) {
-      if (blob.size() > VERTEX_SRC_DST_RAW_DATA_LENGTH) {
-        auto offset = VERTEX_SRC_DST_RAW_DATA_LENGTH;
+    Blob RecordParser::parseEdgeRawDataAsBlob(const storage_engine::lmdb::Result& rawData,
+                                              bool enableVersion) {
+      require(!rawData.data.empty());
+      auto blob = rawData.data.blob();
+      auto offset = VERTEX_SRC_DST_RAW_DATA_LENGTH + ((enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0});
+      if (blob.size() > offset) {
         auto rawDataSize = blob.size() - offset;
         Blob::Byte byteData[rawDataSize];
         blob.retrieve(byteData, offset, sizeof(byteData));

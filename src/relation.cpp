@@ -103,8 +103,8 @@ namespace nogdb {
         return std::make_shared<DataRecord>(_txn->_txnBase, recordId.first, ClassType::EDGE);
       };
       auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
-      auto rawData = edgeDataRecord->getBlob(recordId.second);
-      return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData);
+      auto rawData = edgeDataRecord->getResult(recordId.second);
+      return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
     }
   }
 }

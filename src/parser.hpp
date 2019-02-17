@@ -45,6 +45,7 @@ namespace nogdb {
     const size_t SIZE_OF_EMPTY_STRING = strlen(EMPTY_STRING.c_str());
 
     constexpr size_t VERTEX_SRC_DST_RAW_DATA_LENGTH = 2 * (sizeof(ClassId) + sizeof(PositionId));
+    constexpr size_t RECORD_VERSION_DATA_LENGTH = sizeof(uint64_t);
 
     class RecordParser {
     public:
@@ -60,27 +61,36 @@ namespace nogdb {
 
       static Record parseRawData(const storage_engine::lmdb::Result &rawData,
                                  const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                 bool isEdge = false);
+                                 bool isEdge,
+                                 bool enableVersion);
 
       static Record parseRawData(const storage_engine::lmdb::Result &rawData,
                                  const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                 const ClassType &classType);
+                                 const ClassType &classType,
+                                 bool enableVersion);
 
       static Record parseRawDataWithBasicInfo(const std::string &className,
                                               const RecordId &rid,
                                               const storage_engine::lmdb::Result &rawData,
                                               const adapter::schema::PropertyIdMapInfo &propertyInfos,
-                                              const ClassType &classType);
+                                              const ClassType &classType,
+                                              bool enableVersion);
+      //-------------------------
+      // Version Id parsers
+      //-------------------------
+      static VersionId parseRawDataVersionId(const storage_engine::lmdb::Result &rawData);
+
       //-------------------------
       // Edge only parsers
       //-------------------------
       static Blob parseEdgeVertexSrcDst(const RecordId &srcRid, const RecordId &dstRid);
 
-      static std::pair<RecordId, RecordId> parseEdgeRawDataVertexSrcDst(const Blob &blob);
+      static std::pair<RecordId, RecordId>
+      parseEdgeRawDataVertexSrcDst(const storage_engine::lmdb::Result& rawData, bool enableVersion);
 
-      static Blob parseEdgeRawDataVertexSrcDstAsBlob(const Blob &blob);
+      static Blob parseEdgeRawDataVertexSrcDstAsBlob(const storage_engine::lmdb::Result& rawData, bool enableVersion);
 
-      static Blob parseEdgeRawDataAsBlob(const Blob &blob);
+      static Blob parseEdgeRawDataAsBlob(const storage_engine::lmdb::Result& rawData, bool enableVersion);
 
     private:
 

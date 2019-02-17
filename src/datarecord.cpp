@@ -30,7 +30,8 @@ namespace nogdb {
       auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
       auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
           .getResult(recordDescriptor.rid.second);
-      return parser::RecordParser::parseRawData(result, propertyInfos, classInfo.type);
+      return parser::RecordParser::parseRawData(
+          result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
     }
 
     Record DataRecordInterface::getRecordWithBasicInfo(const schema::ClassAccessInfo &classInfo,
@@ -39,7 +40,8 @@ namespace nogdb {
       auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
           .getResult(recordDescriptor.rid.second);
       return parser::RecordParser::parseRawDataWithBasicInfo(
-          classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
+          classInfo.name, recordDescriptor.rid, result,
+          propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
     }
 
     ResultSet DataRecordInterface::getResultSet(const schema::ClassAccessInfo &classInfo,
@@ -50,7 +52,8 @@ namespace nogdb {
       for (const auto &recordDescriptor: recordDescriptors) {
         auto result = dataRecord.getResult(recordDescriptor.rid.second);
         auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-            classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type);
+            classInfo.name, recordDescriptor.rid, result,
+            propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
         resultSet.emplace_back(Result{recordDescriptor, record});
       }
       return resultSet;
@@ -63,7 +66,8 @@ namespace nogdb {
       std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto const record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, RecordId{classInfo.id, positionId}, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, RecordId{classInfo.id, positionId},
+                result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             resultSet.emplace_back(Result{RecordDescriptor{classInfo.id, positionId}, record});
           };
       dataRecord.resultSetIter(callback);
@@ -93,7 +97,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
               resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
             }
@@ -113,7 +117,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
               recordDescriptors.emplace_back(RecordDescriptor{rid});
             }
@@ -137,7 +141,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if (multiCondition.execute(record, propertyTypes)) {
               resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
             }
@@ -161,7 +165,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if (multiCondition.execute(record, propertyTypes)) {
               recordDescriptors.emplace_back(RecordDescriptor{rid});
             }
@@ -180,7 +184,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if ((*condition)(record)) {
               resultSet.emplace_back(Result{RecordDescriptor{rid}, record});
             }
@@ -199,7 +203,7 @@ namespace nogdb {
           [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
             auto rid = RecordId{classInfo.id, positionId};
             auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type);
+                classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
             if ((*condition)(record)) {
               recordDescriptors.emplace_back(RecordDescriptor{rid});
             }
