@@ -39,6 +39,69 @@ namespace nogdb {
       return parseRecord(record, dataSize, properties);
     }
 
+    Blob RecordParser::parseVertexRecordWithVersion(const Blob &recordBlob, VersionId versionId) {
+      if (versionId > 0) {
+        auto versionIdBlob = Blob(sizeof(VersionId)).append(&versionId, sizeof(VersionId));
+        return versionIdBlob + recordBlob;
+      } else {
+        return recordBlob;
+      }
+    }
+
+    Blob RecordParser::parseEdgeRecordWithVersion(const Blob &srcDstBlob,
+                                                  const Blob &recordBlob,
+                                                  VersionId versionId) {
+      if (versionId > 0) {
+        auto versionIdBlob = Blob(sizeof(VersionId)).append(&versionId, sizeof(VersionId));
+        return versionIdBlob + srcDstBlob + recordBlob;
+      } else {
+        return srcDstBlob + recordBlob;
+      }
+    }
+
+    Blob RecordParser::parseOnlyUpdateVersion(const storage_engine::lmdb::Result &rawData,
+                                               VersionId versionId) {
+      require(!rawData.empty);
+      auto blob = rawData.data.blob();
+      blob.update(&versionId, 0, sizeof(VersionId));
+      return blob;
+    }
+
+    Blob RecordParser::parseOnlyUpdateSrcVertex(const storage_engine::lmdb::Result &rawData,
+                                                const RecordId& srcVertex,
+                                                bool enableVersion) {
+      require(!rawData.empty);
+      auto blob = rawData.data.blob();
+      auto offset = (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
+      blob.update(&srcVertex.first, offset, sizeof(ClassId));
+      blob.update(&srcVertex.second, offset + sizeof(ClassId), sizeof(PositionId));
+      return blob;
+    }
+
+    Blob RecordParser::parseOnlyUpdateDstVertex(const storage_engine::lmdb::Result &rawData,
+                                                const RecordId& dstVertex,
+                                                bool enableVersion) {
+      require(!rawData.empty);
+      auto blob = rawData.data.blob();
+      auto offset = (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
+      offset += sizeof(ClassId) + sizeof(PositionId);
+      blob.update(&dstVertex.first, offset, sizeof(ClassId));
+      blob.update(&dstVertex.second, offset + sizeof(ClassId), sizeof(PositionId));
+      return blob;
+    }
+
+    Blob RecordParser::parseOnlyUpdateRecord(const storage_engine::lmdb::Result &rawData,
+                                             const Blob& newRecordBlob,
+                                             bool isEdge,
+                                             bool enableVersion) {
+      require(!(rawData.empty && (isEdge || enableVersion)));
+      auto blob = (rawData.empty)? Blob{}: rawData.data.blob();
+      auto offset = size_t{0};
+      offset += (isEdge)? VERTEX_SRC_DST_RAW_DATA_LENGTH: size_t{0};
+      offset += (enableVersion)? RECORD_VERSION_DATA_LENGTH: size_t{0};
+      return blob.overwrite(newRecordBlob.bytes(), offset, newRecordBlob.size());
+    }
+
     Record RecordParser::parseRawData(const storage_engine::lmdb::Result &rawData,
                                       const adapter::schema::PropertyIdMapInfo &propertyInfos,
                                       bool isEdge,

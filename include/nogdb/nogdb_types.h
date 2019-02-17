@@ -1570,6 +1570,12 @@ namespace nogdb {
     return ss.str();
   }
 
+  struct RecordIdHash {
+    inline uint64_t operator()(const std::pair<ClassId, PositionId> &rid) const {
+      return (static_cast<uint64_t>(rid.first) << 32) + static_cast<uint64_t>(rid.second);
+    }
+  };
+
 }
 
 inline std::ostream &operator<<(std::ostream &os, const nogdb::RecordId &rid) {

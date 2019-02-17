@@ -104,6 +104,26 @@ namespace nogdb {
       return offset + size;
     }
 
+    Blob& Blob::update(const void *data, size_t offset, size_t size) {
+      require(offset + size <= _capacity);
+      require(offset <= _size);
+      memcpy(static_cast<void *>(_value + offset), data, size);
+      if (_size < offset + size) {
+        _size = offset + size;
+      }
+      return *this;
+    }
+
+    Blob Blob::overwrite(const void *data, size_t offset, size_t size) const {
+      require(offset <= _capacity);
+      auto capacity = offset + size;
+      auto blob = Blob(capacity);
+      memcpy(blob._value, _value, offset);
+      memcpy(blob._value + offset, data, size);
+      blob._size = capacity;
+      return blob;
+    }
+
     Blob Blob::operator+(const Blob &suffix) const {
       auto capacity = _capacity + suffix._capacity;
       auto blob = Blob{_value, capacity, _size};

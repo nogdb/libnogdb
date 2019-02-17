@@ -47,7 +47,14 @@ namespace nogdb {
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       auto vertexDataRecord = adapter::datarecord::DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
-      auto positionId = vertexDataRecord.insert(recordBlob);
+      auto positionId = PositionId{0};
+      if (_txnCtx->isEnableVersion()) {
+        auto newRecordBlob = parser::RecordParser::parseVertexRecordWithVersion(recordBlob, VersionId{1});
+        positionId = vertexDataRecord.insert(newRecordBlob);
+        _updatedRecords.insert(RecordId{vertexClassInfo.id, positionId});
+      } else {
+        positionId = vertexDataRecord.insert(recordBlob);
+      }
       auto recordDescriptor = RecordDescriptor{vertexClassInfo.id, positionId};
       auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
       _interface->index()->insert(recordDescriptor, record, indexInfos);
@@ -74,9 +81,16 @@ namespace nogdb {
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
-      auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(srcVertexRecordDescriptor.rid,
-                                                                    dstVertexRecordDescriptor.rid);
-      auto positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
+      auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
+          srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
+      auto positionId = PositionId{0};
+      if (_txnCtx->isEnableVersion()) {
+        auto newRecordBlob = parser::RecordParser::parseEdgeRecordWithVersion(vertexBlob, recordBlob, VersionId{1});
+        positionId = edgeDataRecord.insert(newRecordBlob);
+        _updatedRecords.insert(RecordId{edgeClassInfo.id, positionId});
+      } else {
+        positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
+      }
       auto recordDescriptor = RecordDescriptor{edgeClassInfo.id, positionId};
       _interface->graph()->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
       auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
@@ -104,13 +118,28 @@ namespace nogdb {
           recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
 
       // insert an updated record
-      if (classInfo.type == ClassType::EDGE) {
-        auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
-            recordResult, _txnCtx->isEnableVersion());
-        dataRecord.update(recordDescriptor.rid.second, vertexBlob + newRecordBlob);
+      auto updateRecordBlob = Blob{};
+      if (_txnCtx->isEnableVersion()) {
+        if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
+          auto versionId = parser::RecordParser::parseRawDataVersionId(recordResult);
+          if (classInfo.type == ClassType::EDGE) {
+            auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
+                recordResult, _txnCtx->isEnableVersion());
+            updateRecordBlob = parser::RecordParser::parseEdgeRecordWithVersion(
+                vertexBlob, newRecordBlob, versionId + 1);
+          } else {
+            updateRecordBlob = parser::RecordParser::parseVertexRecordWithVersion(newRecordBlob, versionId + 1);
+          }
+          _updatedRecords.insert(recordDescriptor.rid);
+        } else {
+          updateRecordBlob = parser::RecordParser::parseOnlyUpdateRecord(
+              recordResult, newRecordBlob, classInfo.type == ClassType::EDGE, true);
+        }
       } else {
-        dataRecord.update(recordDescriptor.rid.second, newRecordBlob);
+        updateRecordBlob = parser::RecordParser::parseOnlyUpdateRecord(
+            recordResult, newRecordBlob, classInfo.type == ClassType::EDGE, false);
       }
+      dataRecord.update(recordDescriptor.rid.second, updateRecordBlob);
 
       // remove index if applied in existing record
       auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
@@ -138,6 +167,12 @@ namespace nogdb {
       auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
       _interface->graph()->updateSrcRel(
           recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+      if (_txnCtx->isEnableVersion()) {
+        // update version of old src vertex
+
+        // update version of new src vertex
+      }
+
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
           newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
       auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult, _txnCtx->isEnableVersion());

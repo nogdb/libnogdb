@@ -69,6 +69,21 @@ namespace nogdb {
                                  const ClassType &classType,
                                  bool enableVersion);
 
+      static Blob parseOnlyUpdateVersion(const storage_engine::lmdb::Result &rawData, VersionId versionId);
+
+      static Blob parseOnlyUpdateSrcVertex(const storage_engine::lmdb::Result &rawData,
+                                           const RecordId& srcVertex,
+                                           bool enableVersion);
+
+      static Blob parseOnlyUpdateDstVertex(const storage_engine::lmdb::Result &rawData,
+                                           const RecordId& srcVertex,
+                                           bool enableVersion);
+
+      static Blob parseOnlyUpdateRecord(const storage_engine::lmdb::Result &rawData,
+                                        const Blob& newRecordBlob,
+                                        bool isEdge,
+                                        bool enableVersion);
+
       static Record parseRawDataWithBasicInfo(const std::string &className,
                                               const RecordId &rid,
                                               const storage_engine::lmdb::Result &rawData,
@@ -78,6 +93,10 @@ namespace nogdb {
       //-------------------------
       // Version Id parsers
       //-------------------------
+      static Blob parseVertexRecordWithVersion(const Blob &recordBlob, VersionId versionId);
+
+      static Blob parseEdgeRecordWithVersion(const Blob &srcDstBlob, const Blob &recordBlob, VersionId versionId);
+
       static VersionId parseRawDataVersionId(const storage_engine::lmdb::Result &rawData);
 
       //-------------------------

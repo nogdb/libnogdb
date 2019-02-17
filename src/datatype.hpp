@@ -57,6 +57,10 @@ namespace nogdb {
 
       size_t retrieve(void *data, size_t offset, size_t size) const;
 
+      Blob& update(const void *data, size_t offset, size_t size);
+
+      Blob overwrite(const void *data, size_t offset, size_t size) const;
+
       Blob operator+(const Blob &suffix) const;
 
     private:

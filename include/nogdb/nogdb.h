@@ -26,6 +26,7 @@
 #include <set>
 #include <utility>
 #include <memory>
+#include <unordered_set>
 
 #include "nogdb_errors.h"
 #include "nogdb_types.h"
@@ -308,6 +309,8 @@ namespace nogdb {
     storage_engine::LMDBTxn *_txnBase;
     Adapter *_adapter;
     Interface *_interface;
+
+    std::unordered_set<RecordId, RecordIdHash> _updatedRecords{};
 
   };
 

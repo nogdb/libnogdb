@@ -119,6 +119,7 @@ namespace nogdb {
       void require(bool cmp);
     }
 
+    // input/output
     namespace io {
       bool fileExists(const std::string &fileName);
       int mkdir(const char *pathname, int mode);
