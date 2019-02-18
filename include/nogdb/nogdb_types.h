@@ -595,6 +595,8 @@ namespace nogdb {
 
     uint32_t getDepth() const;
 
+    uint64_t getVersion() const;
+
     void unset(const std::string &className);
 
     size_t size() const;

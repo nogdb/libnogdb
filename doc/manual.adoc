@@ -453,6 +453,7 @@ std::string val = r.getText(const std::string& propName);
 std::string val = r.getClassName(); // identical to r.getText("@className");
 nogdb::RecordId val = r.getRecordId();
 uint32_t val = r.getDepth();    // identical to r.getIntU("@depth");
+uint64_t val = r.getVersion();  // identical to r.getBigIntU("@version");
 ------------
 * Description:
 ** To retrieve a value from basic information associated with the current record.

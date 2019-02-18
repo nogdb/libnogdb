@@ -186,141 +186,73 @@ extern void test_shortest_path_cursor_with_condition();
 
 // find operations testing
 #ifdef TEST_FIND_OPERATIONS
-
 extern void test_expression();
-
 extern void test_range_expression();
-
 extern void test_extra_string_expression();
-
 extern void test_negative_expression();
-
 extern void init_test_find();
-
 extern void test_create_informative_graph();
-
 extern void test_find_vertex();
-
 extern void test_find_invalid_vertex();
-
 extern void test_find_vertex_cursor();
-
 extern void test_find_invalid_vertex_cursor();
-
 extern void test_find_edge();
-
 extern void test_find_invalid_edge();
-
 extern void test_find_edge_cursor();
-
 extern void test_find_invalid_edge_cursor();
-
 extern void test_find_edge_in();
-
 extern void test_find_edge_out();
-
 extern void test_find_edge_all();
-
 extern void test_find_invalid_edge_in();
-
 extern void test_find_invalid_edge_out();
-
 extern void test_find_invalid_edge_all();
-
 extern void test_find_edge_in_cursor();
-
 extern void test_find_edge_out_cursor();
-
 extern void test_find_edge_all_cursor();
-
 extern void test_find_invalid_edge_in_cursor();
-
 extern void test_find_invalid_edge_out_cursor();
-
 extern void test_find_invalid_edge_all_cursor();
-
 extern void test_find_vertex_condition_function();
-
 extern void test_find_edge_condition_function();
-
 extern void test_find_vertex_cursor_condition_function();
-
 extern void test_find_edge_cursor_condition_function();
-
 extern void test_find_edge_in_condition_function();
-
 extern void test_find_edge_out_condition_function();
-
 extern void test_find_edge_all_condition_function();
-
 extern void test_find_edge_in_cursor_condition_function();
-
 extern void test_find_edge_out_cursor_condition_function();
-
 extern void test_find_edge_all_cursor_condition_function();
-
 extern void test_find_invalid_vertex_condition_function();
-
 extern void test_find_invalid_edge_condition_function();
-
 extern void test_find_invalid_vertex_cursor_condition_function();
-
 extern void test_find_invalid_edge_cursor_condition_function();
-
 extern void test_find_invalid_edge_in_condition_function();
-
 extern void test_find_invalid_edge_out_condition_function();
-
 extern void test_find_invalid_edge_all_condition_function();
-
 extern void test_find_invalid_edge_in_cursor_condition_function();
-
 extern void test_find_invalid_edge_out_cursor_condition_function();
-
 extern void test_find_invalid_edge_all_cursor_condition_function();
-
 extern void test_find_vertex_with_expression();
-
 extern void test_find_invalid_vertex_with_expression();
-
 extern void test_find_vertex_cursor_with_expression();
-
 extern void test_find_invalid_vertex_cursor_with_expression();
-
 extern void test_find_edge_with_expression();
-
 extern void test_find_invalid_edge_with_expression();
-
 extern void test_find_edge_cursor_with_expression();
-
 extern void test_find_invalid_edge_cursor_with_expression();
-
 extern void test_find_edge_in_with_expression();
-
 extern void test_find_edge_out_with_expression();
-
 extern void test_find_edge_all_with_expression();
-
 extern void test_find_invalid_edge_in_with_expression();
-
 extern void test_find_invalid_edge_out_with_expression();
-
 extern void test_find_invalid_edge_all_with_expression();
-
 extern void test_find_edge_in_cursor_with_expression();
-
 extern void test_find_edge_out_cursor_with_expression();
-
 extern void test_find_edge_all_cursor_with_expression();
-
 extern void test_find_invalid_edge_in_cursor_with_expression();
-
 extern void test_find_invalid_edge_out_cursor_with_expression();
-
 extern void test_find_invalid_edge_all_cursor_with_expression();
-
 extern void destroy_test_find();
-
 #endif
 
 // inheritance testing

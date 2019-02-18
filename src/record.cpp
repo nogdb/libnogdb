@@ -169,6 +169,10 @@ namespace nogdb {
     return getIntU(DEPTH_PROPERTY);
   }
 
+  uint64_t Record::getVersion() const {
+    return getBigIntU(VERSION_PROPERTY);
+  }
+
   void Record::unset(const std::string &propName) {
     (isBasicInfo(propName) ? basicProperties : properties).erase(propName);
   }

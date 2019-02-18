@@ -808,27 +808,504 @@ void test_conflict_property() {
 }
 
 void test_version_add_vertex_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    txn.addClass("vertex_version_1", nogdb::ClassType::VERTEX);
+    txn.addProperty("vertex_version_1", "name", nogdb::PropertyType::TEXT);
+    txn.addClass("vertex_version_2", nogdb::ClassType::VERTEX);
+    txn.addProperty("vertex_version_2", "name", nogdb::PropertyType::TEXT);
+    txn.addClass("edge_version", nogdb::ClassType::EDGE);
+    txn.addProperty("edge_version", "name", nogdb::PropertyType::TEXT);
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.addVertex("vertex_version_1", nogdb::Record{}.set("name", "v1_1"));
+    auto v2_1 = txn.addVertex("vertex_version_2", nogdb::Record{}.set("name", "v2_1"));
+    auto e11_21 = txn.addEdge("edge_version", v1_1, v2_1, nogdb::Record{}.set("name", "e11->21"));
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    if (ctx->isEnableVersion()) {
+      auto res = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("v1_1")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("v2_1")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.find("edge_version").where(nogdb::Condition("name").eq("e11->21")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+    } else {
+      auto res = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("v1_1")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("v2_1")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.find("edge_version").where(nogdb::Condition("name").eq("e11->21")).get()[0].record;
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 
 }
 
 void test_version_update_vertex_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("v1_1")).get()[0];
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("v2_1")).get()[0];
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("e11->21")).get()[0];
 
+    txn.update(v1_1.descriptor, nogdb::Record{}.set("name", "11"));
+    txn.update(v1_1.descriptor, nogdb::Record{}.set("name", "11"));
+    txn.update(v2_1.descriptor, nogdb::Record{}.set("name", "21"));
+    txn.update(e11_21.descriptor, nogdb::Record{}.set("name", "11->21"));
+    txn.update(e11_21.descriptor, nogdb::Record{}.set("name", "11->21"));
+    txn.update(e11_21.descriptor, nogdb::Record{}.set("name", "11->21"));
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(v2_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(e11_21.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+    } else {
+      auto res = txn.fetchRecord(v1_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0];
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0];
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0];
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(v2_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(e11_21.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+    } else {
+      auto res = txn.fetchRecord(v1_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21.descriptor);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 void test_version_update_src_dst_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
 
+    auto v1_2 = txn.addVertex("vertex_version_1", nogdb::Record{}.set("name", "12"));
+    auto v2_2 = txn.addVertex("vertex_version_2", nogdb::Record{}.set("name", "22"));
+    auto e12_22 = txn.addEdge("edge_version", v1_2, v2_2, nogdb::Record{}.set("name", "12->22"));
+
+    txn.updateSrc(e11_21, v2_1);
+    txn.updateSrc(e12_22, v1_1);
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
+
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.updateSrc(e11_21, v1_1);
+    txn.updateSrc(e12_22, v1_2);
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{1});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
+
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.updateDst(e11_21, v1_1);
+    txn.updateDst(e12_22, v1_1);
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{5});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{5});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{5});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
+
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.updateDst(e11_21, v2_1);
+    txn.updateDst(e12_22, v2_2);
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{6});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{6});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{6});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{2});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e11_21);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(e12_22);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.commit();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 void test_version_remove_vertex_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
 
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.remove(v1_1);
+    txn.remove(e12_22);
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 void test_version_remove_all_vertex_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
 
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.removeAll("vertex_version_1");
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
+
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.removeAll("edge_version");
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 void test_version_drop_vertex_edge() {
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
 
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.dropClass("vertex_version_1");
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
+  try {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    auto v1_1 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("11")).get()[0].descriptor;
+    auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0].descriptor;
+    auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0].descriptor;
+
+    auto v1_2 = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("12")).get()[0].descriptor;
+    auto v2_2 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("22")).get()[0].descriptor;
+    auto e12_22 = txn.find("edge_version").where(nogdb::Condition("name").eq("12->22")).get()[0].descriptor;
+
+    txn.dropClass("edge_version");
+
+    if (ctx->isEnableVersion()) {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{7});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{3});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{4});
+    } else {
+      auto res = txn.fetchRecord(v1_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_1);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v1_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+      res = txn.fetchRecord(v2_2);
+      ASSERT_EQ(res.getVersion(), uint64_t{0});
+    }
+
+    txn.rollback();
+  } catch (const nogdb::Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
 }
 
 
