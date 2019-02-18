@@ -90,6 +90,7 @@ namespace nogdb {
         // read database settings from disk
         auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
         memcpy(&_settings, binary, sizeof(_settings));
+        delete binary;
         auto foundContext = _underlying.find(dbPath);
         if (foundContext == _underlying.cend()) {
           auto instance = LMDBInstance{};

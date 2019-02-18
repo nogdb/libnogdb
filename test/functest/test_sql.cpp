@@ -603,6 +603,19 @@ void test_sql_select_property() {
     assert(false);
   }
 
+  // select @version.
+  try {
+    SQL::Result result = SQL::execute(txn, "SELECT @version FROM " + to_string(rdesc));
+    assert(result.type() == result.RESULT_SET);
+    auto res = result.get<ResultSet>();
+    ASSERT_SIZE(res, 1);
+    assert(res[0].descriptor == RecordDescriptor(-2, 0));
+    assert(res[0].record.get("@version").empty() == false);
+  } catch (const Error &ex) {
+    std::cout << "\nError: " << ex.what() << std::endl;
+    assert(false);
+  }
+
   // select non-exist property.
   try {
     SQL::Result result = SQL::execute(txn, "SELECT nonExist FROM " + to_string(rdesc));
@@ -970,7 +983,10 @@ void test_sql_select_vertex_condition() {
     result = SQL::execute(txn, "SELECT FROM v WHERE @className = 'v'");
     assert(result.type() == result.RESULT_SET);
     assert(result.get<ResultSet>() == txn.find("v").where(Condition("@className").eq("v")).get());
-    
+
+    result = SQL::execute(txn, "SELECT FROM v WHERE @version = 0");
+    assert(result.type() == result.RESULT_SET);
+    assert(result.get<ResultSet>() == txn.find("v").where(Condition("@version").eq(0ULL)).get());
   } catch (const Error &ex) {
     std::cout << "\nError: " << ex.what() << std::endl;
     assert(false);

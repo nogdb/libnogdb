@@ -806,8 +806,8 @@ nogdb::PropertyMapType Context::getPropertyMapTypeFromClassDescriptor(Transactio
     PropertyMapType map{
         {CLASS_NAME_PROPERTY, PropertyType::TEXT},
         {RECORD_ID_PROPERTY,  PropertyType::TEXT},
-        {DEPTH_PROPERTY,  PropertyType::UNSIGNED_INTEGER}/*,
-        {VERSION_PROPERTY,    PropertyType::UNSIGNED_BIGINT}*/
+        {DEPTH_PROPERTY,  PropertyType::UNSIGNED_INTEGER},
+        {VERSION_PROPERTY,    PropertyType::UNSIGNED_BIGINT}
     };
     for (const auto &p: properties) {
       map[p.name] = p.type;
@@ -829,7 +829,7 @@ ResultSet Context::executeCondition(Transaction &txn, const ResultSet &input, co
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
       mapProp[DEPTH_PROPERTY] = PropertyType::UNSIGNED_INTEGER;
-//      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
+      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
       for (const auto &prop: in->record.getAll()) {
         mapProp[prop.first] = prop.second.type();
       }
@@ -838,7 +838,7 @@ ResultSet Context::executeCondition(Transaction &txn, const ResultSet &input, co
       mapProp[RECORD_ID_PROPERTY] = PropertyType::TEXT;
       mapProp[CLASS_NAME_PROPERTY] = PropertyType::TEXT;
       mapProp[DEPTH_PROPERTY] = PropertyType::UNSIGNED_INTEGER;
-//      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
+      mapProp[VERSION_PROPERTY] = PropertyType::UNSIGNED_BIGINT;
       const ClassDescriptor classDescriptor = txn.getClass(classID);
       const vector<PropertyDescriptor> properties = txn.getProperties(classDescriptor);
       for (const auto &p: properties) {
