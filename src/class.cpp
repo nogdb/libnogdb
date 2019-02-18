@@ -117,20 +117,52 @@ namespace nogdb {
       }
       // delete all associated relations
       auto table = DataRecord(_txnBase, foundClass.id, foundClass.type);
-      auto cursorHandler = table.getCursor();
-      for (auto keyValue = cursorHandler.getNext();
-           !keyValue.empty();
-           keyValue = cursorHandler.getNext()) {
-        auto key = keyValue.key.data.numeric<PositionId>();
-        if (key == MAX_RECORD_NUM_EM) continue;
-        auto recordId = RecordId{foundClass.id, key};
-        if (foundClass.type == ClassType::EDGE) {
-          auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(keyValue.val, _txnCtx->isEnableVersion());
-          _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
-        } else {
-          _interface->graph()->removeRelFromVertex(recordId);
-        }
-      }
+      std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
+          [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
+            auto recordId = RecordId{foundClass.id, positionId};
+            if (foundClass.type == ClassType::EDGE) {
+              auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
+              _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
+              if (_txnCtx->isEnableVersion()) {
+                // update version of src vertex
+                if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
+                  auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
+                  auto srcVertexRecordResult = srcVertexDataRecord.getResult(vertices.first.second);
+                  auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                      srcVertexRecordResult, versionId + 1);
+                  srcVertexDataRecord.update(vertices.first.second, updateRecordBlob);
+                  _updatedRecords.insert(vertices.first);
+                }
+                // update version of dst vertex
+                if (_updatedRecords.find(vertices.second) == _updatedRecords.cend()) {
+                  auto dstVertexDataRecord = DataRecord(_txnBase, vertices.second.first, ClassType::VERTEX);
+                  auto dstVertexRecordResult = dstVertexDataRecord.getResult(vertices.second.second);
+                  auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                      dstVertexRecordResult, versionId + 1);
+                  dstVertexDataRecord.update(vertices.second.second, updateRecordBlob);
+                  _updatedRecords.insert(vertices.second);
+                }
+              }
+            } else {
+              auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
+              if (_txnCtx->isEnableVersion()) {
+                for(const auto& neighbour: neighbours) {
+                  if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
+                    auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
+                    auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
+                    auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                    auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                        neighbourRecordResult, versionId + 1);
+                    neighbourDataRecord.update(neighbour.second, updateRecordBlob);
+                    _updatedRecords.insert(neighbour);
+                  }
+                }
+              }
+            }
+          };
+      table.resultSetIter(callback);
       // drop the actual table
       table.destroy();
       // update a superclass of subclasses if existing

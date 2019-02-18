@@ -23,6 +23,8 @@
 #include <sstream>
 #include "functest.h"
 
+#define ENABLE_TEST_RECORD_VERSION    0
+
 nogdb::Context *ctx = nullptr;
 auto tnum = 0;
 
@@ -55,7 +57,8 @@ void destroy_context() {
 
 int main() {
   // prepare test environment
-  init();
+  init(ENABLE_TEST_RECORD_VERSION);
+
   std::cout << "#######################################################\n"
             << "########          Start Running Tests          ########\n"
             << "#######################################################\n";

@@ -36,7 +36,7 @@
 
 #include "nogdb/nogdb.h"
 
-inline void init() {
+inline void init(bool enableVersion) {
   // clear_dir
   DIR *theFolder = opendir(DATABASE_PATH.c_str());
   if (theFolder != NULL) {
@@ -50,7 +50,11 @@ inline void init() {
     rmdir(DATABASE_PATH.c_str());
   }
   // create database
-  nogdb::ContextInitializer(DATABASE_PATH).init();
+  auto ctxi = nogdb::ContextInitializer(DATABASE_PATH);
+  if (enableVersion) {
+    ctxi.enableVersion();
+  }
+  ctxi.init();
 }
 
 #define REQUIRE(_err, _exp, _msg) \

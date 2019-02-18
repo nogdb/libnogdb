@@ -278,12 +278,45 @@ namespace nogdb {
       if (classInfo.type == ClassType::EDGE) {
         auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
             recordResult, _txnCtx->isEnableVersion());
-        dataRecord.remove(recordDescriptor.rid.second);
         _interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+        if (_txnCtx->isEnableVersion()) {
+          // update version of src vertex
+          if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
+            auto srcVertexDataRecord = adapter::datarecord::DataRecord(
+                _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
+            auto srcVertexRecordResult = srcVertexDataRecord.getResult(srcDstVertex.first.second);
+            auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(srcVertexRecordResult, versionId + 1);
+            srcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
+            _updatedRecords.insert(srcDstVertex.first);
+          }
+          // update version of dst vertex
+          if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
+            auto dstVertexDataRecord = adapter::datarecord::DataRecord(
+                _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
+            auto dstVertexRecordResult = dstVertexDataRecord.getResult(srcDstVertex.second.second);
+            auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(dstVertexRecordResult, versionId + 1);
+            dstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
+            _updatedRecords.insert(srcDstVertex.second);
+          }
+        }
       } else {
-        dataRecord.remove(recordDescriptor.rid.second);
-        _interface->graph()->removeRelFromVertex(recordDescriptor.rid);
+        auto neighbours = _interface->graph()->removeRelFromVertex(recordDescriptor.rid);
+        if (_txnCtx->isEnableVersion()) {
+          for(const auto& neighbour: neighbours) {
+            if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
+              auto neighbourDataRecord = adapter::datarecord::DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
+              auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
+              auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
+              auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(neighbourRecordResult, versionId + 1);
+              neighbourDataRecord.update(neighbour.second, updateRecordBlob);
+              _updatedRecords.insert(neighbour);
+            }
+          }
+        }
       }
+      dataRecord.remove(recordDescriptor.rid.second);
 
       // remove index if applied in the record
       auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
@@ -312,12 +345,52 @@ namespace nogdb {
               auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
                   result, _txnCtx->isEnableVersion());
               _interface->graph()->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
+              if (_txnCtx->isEnableVersion()) {
+                // update version of src vertex
+                if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
+                  auto srcVertexDataRecord = adapter::datarecord::DataRecord(
+                      _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
+                  auto srcVertexRecordResult = srcVertexDataRecord.getResult(srcDstVertex.first.second);
+                  auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                      srcVertexRecordResult, versionId + 1);
+                  srcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
+                  _updatedRecords.insert(srcDstVertex.first);
+                }
+                // update version of dst vertex
+                if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
+                  auto dstVertexDataRecord = adapter::datarecord::DataRecord(
+                      _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
+                  auto dstVertexRecordResult = dstVertexDataRecord.getResult(srcDstVertex.second.second);
+                  auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                      dstVertexRecordResult, versionId + 1);
+                  dstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
+                  _updatedRecords.insert(srcDstVertex.second);
+                }
+              }
             } else {
-              _interface->graph()->removeRelFromVertex(recordId);
+              auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
+              if (_txnCtx->isEnableVersion()) {
+                for(const auto& neighbour: neighbours) {
+                  if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
+                    auto neighbourDataRecord = adapter::datarecord::DataRecord(
+                        _txnBase, neighbour.first, ClassType::VERTEX);
+                    auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
+                    auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                    auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                        neighbourRecordResult, versionId + 1);
+                    neighbourDataRecord.update(neighbour.second, updateRecordBlob);
+                    _updatedRecords.insert(neighbour);
+                  }
+                }
+              }
             }
           };
       dataRecord.resultSetIter(callback);
       dataRecord.destroy();
+
+      // drop indexes
       _interface->index()->drop(classInfo.id, propertyNameMapInfo);
     } catch (const Error& error) {
       rollback();

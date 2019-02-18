@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <memory>
+#include <unordered_set>
 #include <functional>
 
 #include "storage_engine.hpp"
@@ -72,7 +72,7 @@ namespace nogdb {
 
       void removeRelFromEdge(const RecordId &edgeRid, const RecordId &srcRid, const RecordId &dstRid);
 
-      void removeRelFromVertex(const RecordId &rid);
+      std::unordered_set<RecordId, RecordIdHash> removeRelFromVertex(const RecordId &rid);
 
       std::vector<RecordId> getInEdges(const RecordId &recordId) const;
 

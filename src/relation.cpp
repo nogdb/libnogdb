@@ -57,7 +57,8 @@ namespace nogdb {
       _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
     }
 
-    void GraphInterface::removeRelFromVertex(const RecordId &rid) {
+    std::unordered_set<RecordId, RecordIdHash> GraphInterface::removeRelFromVertex(const RecordId &rid) {
+      auto neighbours = std::unordered_set<RecordId, RecordIdHash>{};
       // source
       for (const auto &relInfo: _inRel->getInfos(rid)) {
         std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
@@ -71,6 +72,7 @@ namespace nogdb {
           }
         }
         _outRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+        neighbours.insert(relInfo.neighborId);
       }
       _inRel->remove(rid);
       // destination
@@ -86,8 +88,11 @@ namespace nogdb {
           }
         }
         _inRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
+        neighbours.insert(relInfo.neighborId);
       }
       _outRel->remove(rid);
+
+      return neighbours;
     }
 
     std::vector<RecordId> GraphInterface::getInEdges(const RecordId &recordId) const {
