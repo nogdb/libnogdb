@@ -36,7 +36,7 @@
 
 #include "nogdb/nogdb.h"
 
-inline void init(bool enableVersion) {
+inline void init() {
   // clear_dir
   DIR *theFolder = opendir(DATABASE_PATH.c_str());
   if (theFolder != NULL) {
@@ -51,9 +51,12 @@ inline void init(bool enableVersion) {
   }
   // create database
   auto ctxi = nogdb::ContextInitializer(DATABASE_PATH);
-  if (enableVersion) {
+#ifdef ENABLE_TEST_RECORD_VERSION
     ctxi.enableVersion();
-  }
+    std::cout << "Initializing Database Context with version...\n";
+#else
+    std::cout << "Initializing Database Context...\n";
+#endif
   ctxi.init();
 }
 

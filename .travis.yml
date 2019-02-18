@@ -107,6 +107,16 @@ script:
       else
         make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" TESTPREFIX=${TESTPREFIX}
       fi &&
+      valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX} &&
+
+      make clean &&
+      make CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" &&
+      make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="-ggdb" OPTFLAGS="" EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION" &&
+      if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION"
+      else
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" TESTPREFIX=${TESTPREFIX} EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION"
+      fi &&
       valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
     fi
 

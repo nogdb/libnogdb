@@ -61,6 +61,7 @@ functest_sql
 functest_txn
 *.o
 *_debug_address
+*_enable_version
 gtest_installer.sh
 example
 example/*
