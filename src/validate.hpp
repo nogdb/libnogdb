@@ -21,65 +21,67 @@
 
 #pragma once
 
-#include <regex>
 #include "constant.hpp"
+#include <regex>
 
-#include "nogdb/nogdb_errors.h"
 #include "nogdb/nogdb.h"
+#include "nogdb/nogdb_errors.h"
 
-#define BEGIN_VALIDATION(_txn)    nogdb::validate::Validator(_txn)
-#define CLASS_ID_UPPER_LIMIT      UINT16_MAX - 1
+#define BEGIN_VALIDATION(_txn) nogdb::validate::Validator(_txn)
+#define CLASS_ID_UPPER_LIMIT UINT16_MAX - 1
 
 namespace nogdb {
 
-  namespace validate {
+namespace validate {
 
     using namespace adapter::schema;
 
     class Validator {
     public:
-      Validator(const Transaction *txn) : _txn{txn} {}
+        Validator(const Transaction* txn)
+            : _txn { txn }
+        {
+        }
 
-      virtual ~Validator() noexcept = default;
+        virtual ~Validator() noexcept = default;
 
-      Validator &isTxnValid();
+        Validator& isTxnValid();
 
-      Validator &isTxnCompleted();
+        Validator& isTxnCompleted();
 
-      Validator &isClassIdMaxReach();
+        Validator& isClassIdMaxReach();
 
-      Validator &isPropertyIdMaxReach();
+        Validator& isPropertyIdMaxReach();
 
-      Validator &isIndexIdMaxReach();
+        Validator& isIndexIdMaxReach();
 
-      Validator &isClassNameValid(const std::string &className);
+        Validator& isClassNameValid(const std::string& className);
 
-      Validator &isPropertyNameValid(const std::string &propName);
+        Validator& isPropertyNameValid(const std::string& propName);
 
-      Validator &isClassTypeValid(const ClassType &type);
+        Validator& isClassTypeValid(const ClassType& type);
 
-      Validator &isPropertyTypeValid(const PropertyType &type);
+        Validator& isPropertyTypeValid(const PropertyType& type);
 
-      Validator &isNotDuplicatedClass(const std::string &className);
+        Validator& isNotDuplicatedClass(const std::string& className);
 
-      Validator &isNotDuplicatedProperty(const ClassId &classId, const std::string &propertyName);
+        Validator& isNotDuplicatedProperty(const ClassId& classId, const std::string& propertyName);
 
-      Validator &isNotOverriddenProperty(const ClassId &classId, const std::string &propertyName);
+        Validator& isNotOverriddenProperty(const ClassId& classId, const std::string& propertyName);
 
-      Validator &isExistingSrcVertex(const RecordDescriptor &vertex);
+        Validator& isExistingSrcVertex(const RecordDescriptor& vertex);
 
-      Validator &isExistingDstVertex(const RecordDescriptor &vertex);
+        Validator& isExistingDstVertex(const RecordDescriptor& vertex);
 
-      Validator &isExistingVertex(const RecordDescriptor &vertex);
+        Validator& isExistingVertex(const RecordDescriptor& vertex);
 
     private:
+        const Transaction* _txn;
 
-      const Transaction *_txn;
-
-      inline static bool isNameValid(const std::string &name) {
-        return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);
-      }
-
+        inline static bool isNameValid(const std::string& name)
+        {
+            return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);
+        }
     };
-  }
+}
 }

@@ -21,23 +21,23 @@
 
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <iomanip>
-#include <cassert>
-#include <list>
-#include <vector>
 #include <algorithm>
+#include <cassert>
+#include <iomanip>
+#include <iostream>
+#include <list>
 #include <set>
+#include <string>
+#include <vector>
 
 #include "nogdb/nogdb.h"
 
 #include "functest_config.h"
-#include "functest_utils.h"
 #include "functest_cursor_utils.h"
 #include "functest_index_utils.h"
+#include "functest_utils.h"
 
-extern nogdb::Context *ctx;
+extern nogdb::Context* ctx;
 
 // context operations testing
 #ifdef TEST_CONTEXT_OPERATIONS
@@ -107,13 +107,13 @@ extern void test_get_invalid_vertex_all();
 extern void test_get_edge_in();
 extern void test_get_edge_out();
 extern void test_get_edge_all();
-extern void	test_get_invalid_edge_in();
+extern void test_get_invalid_edge_in();
 extern void test_get_invalid_edge_out();
 extern void test_get_invalid_edge_all();
 extern void test_get_edge_in_cursor();
 extern void test_get_edge_out_cursor();
 extern void test_get_edge_all_cursor();
-extern void	test_get_invalid_edge_in_cursor();
+extern void test_get_invalid_edge_in_cursor();
 extern void test_get_invalid_edge_out_cursor();
 extern void test_get_invalid_edge_all_cursor();
 extern void test_update_edge();

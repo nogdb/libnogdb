@@ -21,131 +21,150 @@
 
 #pragma once
 
-#include <type_traits>
-#include <string>
 #include <cstdlib>
 #include <map>
-#include <unordered_map>
+#include <string>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <type_traits>
+#include <unordered_map>
 
 #include "lmdb_engine.hpp"
 #include "utils.hpp"
 
 #include "nogdb/nogdb.h"
 
-#define DEFAULT_NOGDB_MAX_DATABASE_NUMBER   1024U
-#define DEFAULT_NOGDB_MAX_DATABASE_SIZE     1073741824UL  // 1GB
-#define DEFAULT_NOGDB_MAX_READERS           65536U
+#define DEFAULT_NOGDB_MAX_DATABASE_NUMBER 1024U
+#define DEFAULT_NOGDB_MAX_DATABASE_SIZE 1073741824UL // 1GB
+#define DEFAULT_NOGDB_MAX_READERS 65536U
 
 using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-  namespace storage_engine {
+namespace storage_engine {
 
     class LMDBEnv {
     public:
-
-      LMDBEnv(const std::string &dbPath, unsigned int dbNum, unsigned long dbSize, unsigned int readers) {
-        if (!utils::io::fileExists(dbPath)) {
-          mkdir(dbPath.c_str(), 0755);
+        LMDBEnv(const std::string& dbPath, unsigned int dbNum, unsigned long dbSize, unsigned int readers)
+        {
+            if (!utils::io::fileExists(dbPath)) {
+                mkdir(dbPath.c_str(), 0755);
+            }
+            _env = std::move(lmdb::Env::create(dbNum, dbSize, readers).open(dbPath));
         }
-        _env = std::move(lmdb::Env::create(dbNum, dbSize, readers).open(dbPath));
-      }
 
-      ~LMDBEnv() noexcept {
-        try { close(); } catch (...) {}
-      }
-
-      LMDBEnv(LMDBEnv &&other) noexcept {
-        using std::swap;
-        swap(_env, other._env);
-      }
-
-      LMDBEnv &operator=(LMDBEnv &&other) noexcept {
-        if (this != &other) {
-          using std::swap;
-          swap(_env, other._env);
+        ~LMDBEnv() noexcept
+        {
+            try {
+                close();
+            } catch (...) {
+            }
         }
-        return *this;
-      }
 
-      void close() noexcept {
-        _env.close();
-      }
+        LMDBEnv(LMDBEnv&& other) noexcept
+        {
+            using std::swap;
+            swap(_env, other._env);
+        }
 
-      lmdb::EnvHandler *handle() const noexcept {
-        return _env.handle();
-      }
+        LMDBEnv& operator=(LMDBEnv&& other) noexcept
+        {
+            if (this != &other) {
+                using std::swap;
+                swap(_env, other._env);
+            }
+            return *this;
+        }
+
+        void close() noexcept
+        {
+            _env.close();
+        }
+
+        lmdb::EnvHandler* handle() const noexcept
+        {
+            return _env.handle();
+        }
 
     private:
-      lmdb::Env _env{nullptr};
+        lmdb::Env _env { nullptr };
     };
-
 
     class LMDBTxn {
     public:
-
-      LMDBTxn(LMDBEnv *const env, const unsigned int txnMode) {
-        _txn = lmdb::Transaction::begin(env->handle(), txnMode);
-      }
-
-      ~LMDBTxn() noexcept {
-        if (_txn.handle()) {
-          try { rollback(); } catch (...) {}
-          _txn = nullptr;
+        LMDBTxn(LMDBEnv* const env, const unsigned int txnMode)
+        {
+            _txn = lmdb::Transaction::begin(env->handle(), txnMode);
         }
-      }
 
-      LMDBTxn(LMDBTxn &&other) noexcept {
-        using std::swap;
-        swap(_txn, other._txn);
-      }
-
-      LMDBTxn &operator=(LMDBTxn &&other) noexcept {
-        if (this != &other) {
-          using std::swap;
-          swap(_txn, other._txn);
+        ~LMDBTxn() noexcept
+        {
+            if (_txn.handle()) {
+                try {
+                    rollback();
+                } catch (...) {
+                }
+                _txn = nullptr;
+            }
         }
-        return *this;
-      }
 
-      lmdb::Dbi openDbi(const std::string &dbName, bool numericKey = false, bool unique = true) const {
-        if (_txn.handle()) {
-          return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
-        } else {
-          throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
+        LMDBTxn(LMDBTxn&& other) noexcept
+        {
+            using std::swap;
+            swap(_txn, other._txn);
         }
-      }
 
-      lmdb::Cursor openCursor(const lmdb::Dbi &dbi) const {
-        require(_txn.handle() == dbi.txn());
-        return lmdb::Cursor::open(_txn.handle(), dbi.handle());
-      }
+        LMDBTxn& operator=(LMDBTxn&& other) noexcept
+        {
+            if (this != &other) {
+                using std::swap;
+                swap(_txn, other._txn);
+            }
+            return *this;
+        }
 
-      lmdb::Cursor openCursor(const std::string &dbName, bool numericKey = false, bool unique = true) const {
-        return openCursor(openDbi(dbName, numericKey, unique));
-      }
+        lmdb::Dbi openDbi(const std::string& dbName, bool numericKey = false, bool unique = true) const
+        {
+            if (_txn.handle()) {
+                return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+            } else {
+                throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
+            }
+        }
 
-      void commit() {
-        _txn.commit();
-        _txn = nullptr;
-      }
+        lmdb::Cursor openCursor(const lmdb::Dbi& dbi) const
+        {
+            require(_txn.handle() == dbi.txn());
+            return lmdb::Cursor::open(_txn.handle(), dbi.handle());
+        }
 
-      void rollback() noexcept {
-        _txn.abort();
-        _txn = nullptr;
-      }
+        lmdb::Cursor openCursor(const std::string& dbName, bool numericKey = false, bool unique = true) const
+        {
+            return openCursor(openDbi(dbName, numericKey, unique));
+        }
 
-      lmdb::TransactionHandler *handle() const noexcept {
-        return _txn.handle();
-      }
+        void commit()
+        {
+            _txn.commit();
+            _txn = nullptr;
+        }
+
+        void rollback() noexcept
+        {
+            _txn.abort();
+            _txn = nullptr;
+        }
+
+        lmdb::TransactionHandler* handle() const noexcept
+        {
+            return _txn.handle();
+        }
 
     private:
-      lmdb::Transaction _txn{nullptr};
+        lmdb::Transaction _txn { nullptr };
     };
 
-  }
+}
 
 }

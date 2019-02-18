@@ -21,133 +21,150 @@
 
 #include <iterator>
 
-#include "schema.hpp"
 #include "datarecord.hpp"
+#include "schema.hpp"
 
 #include "nogdb/nogdb_errors.h"
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 
-  ResultSetCursor::ResultSetCursor(const Transaction &txn_)
-      : txn{&txn_}, currentIndex{-1} {}
+ResultSetCursor::ResultSetCursor(const Transaction& txn_)
+    : txn { &txn_ }
+    , currentIndex { -1 }
+{
+}
 
-  ResultSetCursor::~ResultSetCursor() noexcept {}
+ResultSetCursor::~ResultSetCursor() noexcept {}
 
-  ResultSetCursor::ResultSetCursor(ResultSetCursor &&rc) noexcept: txn{rc.txn} {
+ResultSetCursor::ResultSetCursor(ResultSetCursor&& rc) noexcept
+    : txn { rc.txn }
+{
     metadata = std::move(rc.metadata);
     currentIndex = rc.currentIndex;
-  }
+}
 
-  ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
+ResultSetCursor& ResultSetCursor::operator=(ResultSetCursor&& rc) noexcept
+{
     if (this != &rc) {
-      txn = rc.txn;
-      metadata = std::move(rc.metadata);
-      currentIndex = rc.currentIndex;
+        txn = rc.txn;
+        metadata = std::move(rc.metadata);
+        currentIndex = rc.currentIndex;
     }
     return *this;
-  }
+}
 
-  bool ResultSetCursor::hasNext() const {
+bool ResultSetCursor::hasNext() const
+{
     return !(metadata.empty()) && (currentIndex < static_cast<long long>(metadata.size() - 1));
-  }
+}
 
-  bool ResultSetCursor::hasPrevious() const {
+bool ResultSetCursor::hasPrevious() const
+{
     return !(metadata.empty()) && (currentIndex > 0);
-  }
+}
 
-  bool ResultSetCursor::hasAt(unsigned long index) const {
+bool ResultSetCursor::hasAt(unsigned long index) const
+{
     return !(metadata.empty()) && (index < metadata.size() - 1);
-  }
+}
 
-  bool ResultSetCursor::next() {
+bool ResultSetCursor::next()
+{
     BEGIN_VALIDATION(txn)
         .isTxnCompleted();
 
     if (!metadata.empty() && (currentIndex == -1)) {
-      currentIndex = 0;
+        currentIndex = 0;
     } else if (hasNext()) {
-      ++currentIndex;
+        ++currentIndex;
     } else {
-      return false;
+        return false;
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
     auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
-    result = Result{recordDescriptor, record};
+    result = Result { recordDescriptor, record };
     return true;
-  }
+}
 
-  bool ResultSetCursor::previous() {
+bool ResultSetCursor::previous()
+{
     BEGIN_VALIDATION(txn)
         .isTxnCompleted();
 
     if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
-      currentIndex = static_cast<long long>(metadata.size() - 1);
+        currentIndex = static_cast<long long>(metadata.size() - 1);
     } else if (hasPrevious()) {
-      --currentIndex;
+        --currentIndex;
     } else {
-      return false;
+        return false;
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
     auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
-    result = Result{recordDescriptor, record};
+    result = Result { recordDescriptor, record };
     return true;
-  }
+}
 
-  bool ResultSetCursor::empty() const {
+bool ResultSetCursor::empty() const
+{
     return metadata.empty();
-  }
+}
 
-  size_t ResultSetCursor::size() const {
+size_t ResultSetCursor::size() const
+{
     return metadata.size();
-  }
+}
 
-  size_t ResultSetCursor::count() const {
+size_t ResultSetCursor::count() const
+{
     return size();
-  }
+}
 
-  void ResultSetCursor::first() {
+void ResultSetCursor::first()
+{
     BEGIN_VALIDATION(txn)
         .isTxnCompleted();
 
     if (!metadata.empty()) {
-      currentIndex = 0;
-      auto cursor = metadata.begin();
-      auto recordDescriptor = *(cursor);
-      auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-      auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
-      record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
-      result = Result{recordDescriptor, record};
+        currentIndex = 0;
+        auto cursor = metadata.begin();
+        auto recordDescriptor = *(cursor);
+        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+        result = Result { recordDescriptor, record };
     }
-  }
+}
 
-  void ResultSetCursor::last() {
+void ResultSetCursor::last()
+{
     BEGIN_VALIDATION(txn)
         .isTxnCompleted();
 
     if (!metadata.empty()) {
-      currentIndex = static_cast<long long>(metadata.size() - 1);
-      auto cursor = metadata.end() - 1;
-      auto recordDescriptor = *(cursor);
-      auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-      auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
-      record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
-      result = Result{recordDescriptor, record};
+        currentIndex = static_cast<long long>(metadata.size() - 1);
+        auto cursor = metadata.end() - 1;
+        auto recordDescriptor = *(cursor);
+        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+        result = Result { recordDescriptor, record };
     }
-  }
+}
 
-  bool ResultSetCursor::to(unsigned long index) {
+bool ResultSetCursor::to(unsigned long index)
+{
     BEGIN_VALIDATION(txn)
         .isTxnCompleted();
 
     if (index >= metadata.size()) {
-      return false;
+        return false;
     }
     currentIndex = index;
     auto cursor = metadata.begin() + currentIndex;
@@ -155,16 +172,18 @@ namespace nogdb {
     auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
     auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
-    result = Result{recordDescriptor, record};
+    result = Result { recordDescriptor, record };
     return true;
-  }
+}
 
-  const Result &ResultSetCursor::operator*() const {
+const Result& ResultSetCursor::operator*() const
+{
     return result;
-  }
+}
 
-  const Result *ResultSetCursor::operator->() const {
+const Result* ResultSetCursor::operator->() const
+{
     return &(operator*());
-  }
+}
 
 }

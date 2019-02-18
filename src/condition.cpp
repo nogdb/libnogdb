@@ -23,38 +23,45 @@
 
 namespace nogdb {
 
-  Condition::Condition(const std::string &propName_)
-      : propName{propName_}, comp{Comparator::NOT_NULL} {
-    valueBytes = Bytes{};
-    valueSet = std::vector<Bytes>{};
-  }
+Condition::Condition(const std::string& propName_)
+    : propName { propName_ }
+    , comp { Comparator::NOT_NULL }
+{
+    valueBytes = Bytes {};
+    valueSet = std::vector<Bytes> {};
+}
 
-  Condition Condition::operator!() const {
+Condition Condition::operator!() const
+{
     auto tmp(*this);
     if (tmp.comp == Comparator::NOT_NULL) {
-      tmp.comp = Comparator::IS_NULL;
+        tmp.comp = Comparator::IS_NULL;
     } else if (tmp.comp == Comparator::IS_NULL) {
-      tmp.comp = Comparator::NOT_NULL;
+        tmp.comp = Comparator::NOT_NULL;
     } else {
-      tmp.isNegative = !isNegative;
+        tmp.isNegative = !isNegative;
     }
     return tmp;
-  }
+}
 
-  MultiCondition Condition::operator&&(const Condition &c) const {
-    return MultiCondition{*this, c, MultiCondition::Operator::AND};
-  }
+MultiCondition Condition::operator&&(const Condition& c) const
+{
+    return MultiCondition { *this, c, MultiCondition::Operator::AND };
+}
 
-  MultiCondition Condition::operator&&(const MultiCondition &e) const {
-    return MultiCondition{*this, e, MultiCondition::Operator::AND};
-  }
+MultiCondition Condition::operator&&(const MultiCondition& e) const
+{
+    return MultiCondition { *this, e, MultiCondition::Operator::AND };
+}
 
-  MultiCondition Condition::operator||(const Condition &c) const {
-    return MultiCondition{*this, c, MultiCondition::Operator::OR};
-  }
+MultiCondition Condition::operator||(const Condition& c) const
+{
+    return MultiCondition { *this, c, MultiCondition::Operator::OR };
+}
 
-  MultiCondition Condition::operator||(const MultiCondition &e) const {
-    return MultiCondition{*this, e, MultiCondition::Operator::OR};
-  }
+MultiCondition Condition::operator||(const MultiCondition& e) const
+{
+    return MultiCondition { *this, e, MultiCondition::Operator::OR };
+}
 
 }

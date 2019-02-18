@@ -26,85 +26,90 @@
 #include "schema_adapter.hpp"
 #include "validate.hpp"
 
-#include "nogdb/nogdb_types.h"
 #include "nogdb/nogdb.h"
+#include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 
-  namespace schema {
+namespace schema {
 
     using adapter::schema::ClassAccessInfo;
-    using adapter::schema::PropertyAccessInfo;
     using adapter::schema::IndexAccessInfo;
-    using adapter::schema::PropertyNameMapInfo;
+    using adapter::schema::PropertyAccessInfo;
     using adapter::schema::PropertyIdMapInfo;
+    using adapter::schema::PropertyNameMapInfo;
 
     class SchemaInterface {
     public:
-      SchemaInterface(const Transaction *txn) : _txn{txn} {}
-
-      virtual ~SchemaInterface() noexcept = default;
-
-      ClassAccessInfo getExistingClass(const std::string &className);
-
-      ClassAccessInfo getExistingClass(const ClassId &classId);
-
-      PropertyAccessInfo getExistingProperty(const ClassId &classId, const std::string &propertyName);
-
-      PropertyAccessInfo getExistingPropertyExtend(const ClassId &classId, const std::string &propertyName);
-
-      template<typename T>
-      ClassAccessInfo getValidClassInfo(const T &classSearchKey, ClassType type = ClassType::UNDEFINED) {
-        auto foundClass = getExistingClass(classSearchKey);
-        if (type != ClassType::UNDEFINED) {
-          if (foundClass.type != type) {
-            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
-          }
+        SchemaInterface(const Transaction* txn)
+            : _txn { txn }
+        {
         }
-        return foundClass;
-      }
 
-      std::map<std::string, ClassAccessInfo> getSubClassInfos(const ClassId &classId);
+        virtual ~SchemaInterface() noexcept = default;
 
-      std::vector<PropertyAccessInfo> getNativePropertyInfo(const ClassId &classId);
+        ClassAccessInfo getExistingClass(const std::string& className);
 
-      std::vector<PropertyAccessInfo>
-      getInheritPropertyInfo(const ClassId &superClassId, const std::vector<PropertyAccessInfo> &result);
+        ClassAccessInfo getExistingClass(const ClassId& classId);
 
-      PropertyNameMapInfo
-      getPropertyNameMapInfo(const ClassId &classId, const ClassId &superClassId);
+        PropertyAccessInfo getExistingProperty(const ClassId& classId, const std::string& propertyName);
 
-      PropertyIdMapInfo
-      getPropertyIdMapInfo(const ClassId &classId, const ClassId &superClassId);
+        PropertyAccessInfo getExistingPropertyExtend(const ClassId& classId, const std::string& propertyName);
 
-      IndexAccessInfo
-      getIndexInfo(const ClassId &classId, const PropertyId &propertyId);
+        template <typename T>
+        ClassAccessInfo getValidClassInfo(const T& classSearchKey, ClassType type = ClassType::UNDEFINED)
+        {
+            auto foundClass = getExistingClass(classSearchKey);
+            if (type != ClassType::UNDEFINED) {
+                if (foundClass.type != type) {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
+                }
+            }
+            return foundClass;
+        }
+
+        std::map<std::string, ClassAccessInfo> getSubClassInfos(const ClassId& classId);
+
+        std::vector<PropertyAccessInfo> getNativePropertyInfo(const ClassId& classId);
+
+        std::vector<PropertyAccessInfo>
+        getInheritPropertyInfo(const ClassId& superClassId, const std::vector<PropertyAccessInfo>& result);
+
+        PropertyNameMapInfo
+        getPropertyNameMapInfo(const ClassId& classId, const ClassId& superClassId);
+
+        PropertyIdMapInfo
+        getPropertyIdMapInfo(const ClassId& classId, const ClassId& superClassId);
+
+        IndexAccessInfo
+        getIndexInfo(const ClassId& classId, const PropertyId& propertyId);
 
     private:
-      const Transaction *_txn;
+        const Transaction* _txn;
 
-      inline PropertyNameMapInfo &addBasicInfo(PropertyNameMapInfo& propertyInfo) {
-        propertyInfo[CLASS_NAME_PROPERTY] = PropertyAccessInfo(
-            0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
-        propertyInfo[RECORD_ID_PROPERTY] = PropertyAccessInfo(
-            0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
-        propertyInfo[DEPTH_PROPERTY] = PropertyAccessInfo(
-            0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
-        return propertyInfo;
-      }
+        inline PropertyNameMapInfo& addBasicInfo(PropertyNameMapInfo& propertyInfo)
+        {
+            propertyInfo[CLASS_NAME_PROPERTY] = PropertyAccessInfo(
+                0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
+            propertyInfo[RECORD_ID_PROPERTY] = PropertyAccessInfo(
+                0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+            propertyInfo[DEPTH_PROPERTY] = PropertyAccessInfo(
+                0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+            return propertyInfo;
+        }
 
-      inline PropertyIdMapInfo &addBasicInfo(PropertyIdMapInfo& propertyInfo) {
-        propertyInfo[CLASS_NAME_PROPERTY_ID] = PropertyAccessInfo(
-            0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
-        propertyInfo[RECORD_ID_PROPERTY_ID] = PropertyAccessInfo(
-            0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
-        propertyInfo[DEPTH_PROPERTY_ID] = PropertyAccessInfo(
-            0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
-        return propertyInfo;
-      }
-
+        inline PropertyIdMapInfo& addBasicInfo(PropertyIdMapInfo& propertyInfo)
+        {
+            propertyInfo[CLASS_NAME_PROPERTY_ID] = PropertyAccessInfo(
+                0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
+            propertyInfo[RECORD_ID_PROPERTY_ID] = PropertyAccessInfo(
+                0, RECORD_ID_PROPERTY, RECORD_ID_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+            propertyInfo[DEPTH_PROPERTY_ID] = PropertyAccessInfo(
+                0, DEPTH_PROPERTY, DEPTH_PROPERTY_ID, PropertyType::UNSIGNED_SMALLINT);
+            return propertyInfo;
+        }
     };
 
-  }
+}
 
 }

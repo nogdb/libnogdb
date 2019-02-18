@@ -21,65 +21,67 @@
 
 #pragma once
 
-#include "datarecord_adapter.hpp"
 #include "compare.hpp"
+#include "datarecord_adapter.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
 
-  using adapter::datarecord::DataRecord;
+using adapter::datarecord::DataRecord;
 
-  namespace datarecord {
+namespace datarecord {
 
     class DataRecordInterface {
     public:
-      DataRecordInterface(const Transaction *txn) : _txn{txn} {}
+        DataRecordInterface(const Transaction* txn)
+            : _txn { txn }
+        {
+        }
 
-      virtual ~DataRecordInterface() noexcept = default;
+        virtual ~DataRecordInterface() noexcept = default;
 
-      Record getRecord(const schema::ClassAccessInfo &classInfo, const RecordDescriptor &recordDescriptor) const;
+        Record getRecord(const schema::ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
 
-      Record getRecordWithBasicInfo(const schema::ClassAccessInfo &classInfo,
-                                    const RecordDescriptor &recordDescriptor) const;
+        Record getRecordWithBasicInfo(const schema::ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor) const;
 
-      ResultSet getResultSet(const schema::ClassAccessInfo &classInfo,
-                             const std::vector<RecordDescriptor> &recordDescriptors) const;
+        ResultSet getResultSet(const schema::ClassAccessInfo& classInfo,
+            const std::vector<RecordDescriptor>& recordDescriptors) const;
 
-      ResultSet getResultSet(const schema::ClassAccessInfo &classInfo) const;
+        ResultSet getResultSet(const schema::ClassAccessInfo& classInfo) const;
 
-      ResultSetCursor getResultSetCursor(const schema::ClassAccessInfo &classInfo) const;
+        ResultSetCursor getResultSetCursor(const schema::ClassAccessInfo& classInfo) const;
 
-      ResultSet getResultSetByCondition(const schema::ClassAccessInfo &classInfo,
-                                        const PropertyType &propertyType,
-                                        const Condition &condition) const;
+        ResultSet getResultSetByCondition(const schema::ClassAccessInfo& classInfo,
+            const PropertyType& propertyType,
+            const Condition& condition) const;
 
-      std::vector<RecordDescriptor>
-      getRecordDescriptorByCondition(const schema::ClassAccessInfo &classInfo,
-                                     const PropertyType &propertyType,
-                                     const Condition &condition) const;
+        std::vector<RecordDescriptor>
+        getRecordDescriptorByCondition(const schema::ClassAccessInfo& classInfo,
+            const PropertyType& propertyType,
+            const Condition& condition) const;
 
-      ResultSet getResultSetByMultiCondition(const schema::ClassAccessInfo &classInfo,
-                                             const schema::PropertyNameMapInfo &propertyInfos,
-                                             const MultiCondition &multiCondition) const;
+        ResultSet getResultSetByMultiCondition(const schema::ClassAccessInfo& classInfo,
+            const schema::PropertyNameMapInfo& propertyInfos,
+            const MultiCondition& multiCondition) const;
 
-      std::vector<RecordDescriptor>
-      getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo &classInfo,
-                                          const schema::PropertyNameMapInfo &propertyInfos,
-                                          const MultiCondition &multiCondition) const;
+        std::vector<RecordDescriptor>
+        getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo& classInfo,
+            const schema::PropertyNameMapInfo& propertyInfos,
+            const MultiCondition& multiCondition) const;
 
-      ResultSet getResultSetByCmpFunction(const schema::ClassAccessInfo &classInfo,
-                                          bool (*condition)(const Record &record)) const;
+        ResultSet getResultSetByCmpFunction(const schema::ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record)) const;
 
-      std::vector<RecordDescriptor>
-      getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo &classInfo,
-                                       bool (*condition)(const Record &record)) const;
+        std::vector<RecordDescriptor>
+        getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record)) const;
 
     private:
-      const Transaction *_txn;
-
+        const Transaction* _txn;
     };
 
-  }
+}
 
 }

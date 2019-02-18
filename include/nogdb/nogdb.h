@@ -22,29 +22,28 @@
 #pragma once
 
 #include <map>
-#include <vector>
-#include <set>
-#include <utility>
 #include <memory>
+#include <set>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "nogdb_errors.h"
-#include "nogdb_types.h"
 #include "nogdb_sql.h"
+#include "nogdb_types.h"
 
 namespace nogdb {
 
-  struct ContextSetting {
-    unsigned int _maxDB{};
-    unsigned long _maxDBSize{};
-    bool _enableVersion{};
-  };
+struct ContextSetting {
+    unsigned int _maxDB {};
+    unsigned long _maxDBSize {};
+    bool _enableVersion {};
+};
 
-  class Context;
+class Context;
 
-  class ContextInitializer {
-  public:
-
+class ContextInitializer {
+public:
     ContextInitializer(const std::string& dbPath);
 
     ~ContextInitializer() = default;
@@ -57,15 +56,13 @@ namespace nogdb {
 
     Context init();
 
-  private:
-    std::string _dbPath{};
-    ContextSetting _settings{};
+private:
+    std::string _dbPath {};
+    ContextSetting _settings {};
+};
 
-  };
-
-  class Context {
-  public:
-
+class Context {
+public:
     friend class ContextInitializer;
 
     friend class Transaction;
@@ -74,15 +71,15 @@ namespace nogdb {
 
     ~Context() noexcept;
 
-    Context(const std::string &dbPath);
+    Context(const std::string& dbPath);
 
-    Context(const Context &ctx);
+    Context(const Context& ctx);
 
-    Context(Context &&ctx) noexcept;
+    Context(Context&& ctx) noexcept;
 
-    Context &operator=(const Context &ctx);
+    Context& operator=(const Context& ctx);
 
-    Context &operator=(Context &&ctx) noexcept;
+    Context& operator=(Context&& ctx) noexcept;
 
     std::string getDBPath() const { return _dbPath; }
 
@@ -92,29 +89,25 @@ namespace nogdb {
 
     bool isEnableVersion() const { return _settings._enableVersion; }
 
-    Transaction beginTxn(const TxnMode &txnMode = TxnMode::READ_WRITE);
+    Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 
-  private:
+private:
+    Context(const std::string& dbPath, const ContextSetting& settings);
 
-    Context(const std::string &dbPath, const ContextSetting& settings);
-
-    std::string _dbPath{};
-    ContextSetting _settings{};
+    std::string _dbPath {};
+    ContextSetting _settings {};
     storage_engine::LMDBEnv* _envHandler;
 
     struct LMDBInstance {
-      storage_engine::LMDBEnv* _handler;
-      unsigned int _refCount;
+        storage_engine::LMDBEnv* _handler;
+        unsigned int _refCount;
     };
 
     static std::unordered_map<std::string, LMDBInstance> _underlying;
+};
 
-  };
-
-
-
-  class Transaction {
-  public:
+class Transaction {
+public:
     friend class ResultSetCursor;
 
     friend class compare::RecordCompare;
@@ -131,17 +124,17 @@ namespace nogdb {
 
     friend class algorithm::GraphTraversal;
 
-    Transaction(Context &ctx, const TxnMode& mode);
+    Transaction(Context& ctx, const TxnMode& mode);
 
     ~Transaction() noexcept;
 
-    Transaction(const Transaction &txn) = delete;
+    Transaction(const Transaction& txn) = delete;
 
-    Transaction(Transaction &&txn) noexcept;
+    Transaction(Transaction&& txn) noexcept;
 
-    Transaction &operator=(const Transaction &txn) = delete;
+    Transaction& operator=(const Transaction& txn) = delete;
 
-    Transaction &operator=(Transaction &&txn) noexcept;
+    Transaction& operator=(Transaction&& txn) noexcept;
 
     void commit();
 
@@ -151,94 +144,93 @@ namespace nogdb {
 
     bool isCompleted() const { return _txnBase == nullptr; }
 
-    const ClassDescriptor addClass(const std::string &className, ClassType type);
+    const ClassDescriptor addClass(const std::string& className, ClassType type);
 
-    const ClassDescriptor addSubClassOf(const std::string &superClass, const std::string &className);
+    const ClassDescriptor addSubClassOf(const std::string& superClass, const std::string& className);
 
-    void dropClass(const std::string &className);
+    void dropClass(const std::string& className);
 
-    void renameClass(const std::string &oldClassName, const std::string &newClassName);
+    void renameClass(const std::string& oldClassName, const std::string& newClassName);
 
-    const PropertyDescriptor addProperty(const std::string &className,
-                                         const std::string &propertyName,
-                                         PropertyType type);
+    const PropertyDescriptor addProperty(const std::string& className,
+        const std::string& propertyName,
+        PropertyType type);
 
-    void renameProperty(const std::string &className,
-                        const std::string &oldPropertyName,
-                        const std::string &newPropertyName);
+    void renameProperty(const std::string& className,
+        const std::string& oldPropertyName,
+        const std::string& newPropertyName);
 
-    void dropProperty(const std::string &className, const std::string &propertyName);
+    void dropProperty(const std::string& className, const std::string& propertyName);
 
-    const IndexDescriptor addIndex(const std::string &className,
-                                   const std::string &propertyName,
-                                   bool isUnique = false);
+    const IndexDescriptor addIndex(const std::string& className,
+        const std::string& propertyName,
+        bool isUnique = false);
 
-    void dropIndex(const std::string &className, const std::string &propertyName);
+    void dropIndex(const std::string& className, const std::string& propertyName);
 
     const DbInfo getDbInfo() const;
 
     const std::vector<ClassDescriptor> getClasses() const;
 
-    const std::vector<PropertyDescriptor> getProperties(const std::string &className) const;
+    const std::vector<PropertyDescriptor> getProperties(const std::string& className) const;
 
-    const std::vector<PropertyDescriptor> getProperties(const ClassDescriptor &classDescriptor) const;
+    const std::vector<PropertyDescriptor> getProperties(const ClassDescriptor& classDescriptor) const;
 
-    const std::vector<IndexDescriptor> getIndexes(const ClassDescriptor &classDescriptor) const;
+    const std::vector<IndexDescriptor> getIndexes(const ClassDescriptor& classDescriptor) const;
 
-    const ClassDescriptor getClass(const std::string &className) const;
+    const ClassDescriptor getClass(const std::string& className) const;
 
-    const ClassDescriptor getClass(const ClassId &classId) const;
+    const ClassDescriptor getClass(const ClassId& classId) const;
 
-    const PropertyDescriptor getProperty(const std::string &className, const std::string &propertyName) const;
+    const PropertyDescriptor getProperty(const std::string& className, const std::string& propertyName) const;
 
-    const IndexDescriptor getIndex(const std::string &className, const std::string &propertyName) const;
+    const IndexDescriptor getIndex(const std::string& className, const std::string& propertyName) const;
 
-    Record fetchRecord(const RecordDescriptor &recordDescriptor) const;
+    Record fetchRecord(const RecordDescriptor& recordDescriptor) const;
 
-    const RecordDescriptor addVertex(const std::string &className, const Record &record = Record{});
+    const RecordDescriptor addVertex(const std::string& className, const Record& record = Record {});
 
-    const RecordDescriptor addEdge(const std::string &className,
-                                   const RecordDescriptor &srcVertexRecordDescriptor,
-                                   const RecordDescriptor &dstVertexRecordDescriptor,
-                                   const Record &record = Record{});
+    const RecordDescriptor addEdge(const std::string& className,
+        const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor,
+        const Record& record = Record {});
 
-    void update(const RecordDescriptor &recordDescriptor, const Record &record);
+    void update(const RecordDescriptor& recordDescriptor, const Record& record);
 
-    void updateSrc(const RecordDescriptor &recordDescriptor, const RecordDescriptor &newSrcVertexRecordDescriptor);
+    void updateSrc(const RecordDescriptor& recordDescriptor, const RecordDescriptor& newSrcVertexRecordDescriptor);
 
-    void updateDst(const RecordDescriptor &recordDescriptor, const RecordDescriptor &newDstVertexRecordDescriptor);
+    void updateDst(const RecordDescriptor& recordDescriptor, const RecordDescriptor& newDstVertexRecordDescriptor);
 
-    void remove(const RecordDescriptor &recordDescriptor);
+    void remove(const RecordDescriptor& recordDescriptor);
 
-    void removeAll(const std::string &className);
+    void removeAll(const std::string& className);
 
-    FindOperationBuilder find(const std::string &className) const;
+    FindOperationBuilder find(const std::string& className) const;
 
-    FindOperationBuilder findSubClassOf(const std::string &className) const;
+    FindOperationBuilder findSubClassOf(const std::string& className) const;
 
-    FindEdgeOperationBuilder findInEdge(const RecordDescriptor &recordDescriptor) const;
+    FindEdgeOperationBuilder findInEdge(const RecordDescriptor& recordDescriptor) const;
 
-    FindEdgeOperationBuilder findOutEdge(const RecordDescriptor &recordDescriptor) const;
+    FindEdgeOperationBuilder findOutEdge(const RecordDescriptor& recordDescriptor) const;
 
-    FindEdgeOperationBuilder findEdge(const RecordDescriptor &recordDescriptor) const;
+    FindEdgeOperationBuilder findEdge(const RecordDescriptor& recordDescriptor) const;
 
-    Result fetchSrc(const RecordDescriptor &recordDescriptor) const;
+    Result fetchSrc(const RecordDescriptor& recordDescriptor) const;
 
-    Result fetchDst(const RecordDescriptor &recordDescriptor) const;
+    Result fetchDst(const RecordDescriptor& recordDescriptor) const;
 
-    ResultSet fetchSrcDst(const RecordDescriptor &recordDescriptor) const;
+    ResultSet fetchSrcDst(const RecordDescriptor& recordDescriptor) const;
 
-    TraverseOperationBuilder traverseIn(const RecordDescriptor &recordDescriptor) const;
+    TraverseOperationBuilder traverseIn(const RecordDescriptor& recordDescriptor) const;
 
-    TraverseOperationBuilder traverseOut(const RecordDescriptor &recordDescriptor) const;
+    TraverseOperationBuilder traverseOut(const RecordDescriptor& recordDescriptor) const;
 
-    TraverseOperationBuilder traverse(const RecordDescriptor &recordDescriptor) const;
+    TraverseOperationBuilder traverse(const RecordDescriptor& recordDescriptor) const;
 
-    ShortestPathOperationBuilder shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
-                                              const RecordDescriptor &dstVertexRecordDescriptor) const;
+    ShortestPathOperationBuilder shortestPath(const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor) const;
 
-  private:
-
+private:
     friend class FindOperationBuilder;
 
     friend class FindEdgeOperationBuilder;
@@ -249,69 +241,68 @@ namespace nogdb {
 
     class Adapter {
     public:
-      Adapter();
+        Adapter();
 
-      Adapter(const storage_engine::LMDBTxn *txn);
+        Adapter(const storage_engine::LMDBTxn* txn);
 
-      ~Adapter() noexcept;
+        ~Adapter() noexcept;
 
-      Adapter(Adapter &&other) noexcept = delete;
+        Adapter(Adapter&& other) noexcept = delete;
 
-      Adapter& operator=(Adapter &&other) noexcept = delete;
+        Adapter& operator=(Adapter&& other) noexcept = delete;
 
-      adapter::metadata::DBInfoAccess *dbInfo() const { return _dbInfo; }
+        adapter::metadata::DBInfoAccess* dbInfo() const { return _dbInfo; }
 
-      adapter::schema::ClassAccess *dbClass() const { return _class; }
+        adapter::schema::ClassAccess* dbClass() const { return _class; }
 
-      adapter::schema::PropertyAccess *dbProperty() const { return _property; }
+        adapter::schema::PropertyAccess* dbProperty() const { return _property; }
 
-      adapter::schema::IndexAccess *dbIndex() const { return _index; }
+        adapter::schema::IndexAccess* dbIndex() const { return _index; }
 
     private:
-      adapter::metadata::DBInfoAccess *_dbInfo;
-      adapter::schema::ClassAccess *_class;
-      adapter::schema::PropertyAccess *_property;
-      adapter::schema::IndexAccess *_index;
+        adapter::metadata::DBInfoAccess* _dbInfo;
+        adapter::schema::ClassAccess* _class;
+        adapter::schema::PropertyAccess* _property;
+        adapter::schema::IndexAccess* _index;
     };
 
     class Interface {
     public:
-      Interface();
+        Interface();
 
-      Interface(const Transaction *txn);
+        Interface(const Transaction* txn);
 
-      ~Interface() noexcept;
+        ~Interface() noexcept;
 
-      Interface(Interface &&other) noexcept = delete;
+        Interface(Interface&& other) noexcept = delete;
 
-      Interface& operator=(Interface &&other) noexcept = delete;
+        Interface& operator=(Interface&& other) noexcept = delete;
 
-      schema::SchemaInterface *schema() const { return _schema; }
+        schema::SchemaInterface* schema() const { return _schema; }
 
-      index::IndexInterface *index() const { return _index; }
+        index::IndexInterface* index() const { return _index; }
 
-      relation::GraphInterface *graph() const { return _graph; }
+        relation::GraphInterface* graph() const { return _graph; }
 
-      datarecord::DataRecordInterface *record() const { return _record; }
+        datarecord::DataRecordInterface* record() const { return _record; }
 
-      void destroy();
+        void destroy();
 
     private:
-      const Transaction* _txn;
-      schema::SchemaInterface *_schema;
-      datarecord::DataRecordInterface *_record;
-      relation::GraphInterface *_graph;
-      index::IndexInterface *_index;
+        const Transaction* _txn;
+        schema::SchemaInterface* _schema;
+        datarecord::DataRecordInterface* _record;
+        relation::GraphInterface* _graph;
+        index::IndexInterface* _index;
     };
 
     TxnMode _txnMode;
-    const Context *_txnCtx;
-    storage_engine::LMDBTxn *_txnBase;
-    Adapter *_adapter;
-    Interface *_interface;
+    const Context* _txnCtx;
+    storage_engine::LMDBTxn* _txnBase;
+    Adapter* _adapter;
+    Interface* _interface;
 
-    std::unordered_set<RecordId, RecordIdHash> _updatedRecords{};
-
-  };
+    std::unordered_set<RecordId, RecordIdHash> _updatedRecords {};
+};
 
 }

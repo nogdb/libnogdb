@@ -19,15 +19,14 @@
  *
  */
 
-#include <iostream>
-#include <cassert>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "../../include/nogdb/nogdb.h"
+#include <cassert>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <iostream>
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-
-

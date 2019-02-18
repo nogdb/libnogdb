@@ -19,19 +19,19 @@
  *
  */
 
-#include <string>
-#include <memory>
 #include <ctime>
 #include <iomanip>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <sys/file.h>
 #include <sys/stat.h>
 
-#include "utils.hpp"
 #include "constant.hpp"
-#include "storage_engine.hpp"
-#include "validate.hpp"
 #include "schema.hpp"
+#include "storage_engine.hpp"
+#include "utils.hpp"
+#include "validate.hpp"
 
 #include "nogdb/nogdb.h"
 
@@ -39,140 +39,153 @@ using namespace nogdb::utils::assertion;
 
 namespace nogdb {
 
-  std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying =
-      std::unordered_map<std::string, Context::LMDBInstance>{};
+std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying = std::unordered_map<std::string, Context::LMDBInstance> {};
 
-  ContextInitializer::ContextInitializer(const std::string& dbPath)
-      : _dbPath{dbPath} {
+ContextInitializer::ContextInitializer(const std::string& dbPath)
+    : _dbPath { dbPath }
+{
     _settings._maxDB = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
     _settings._maxDBSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
     _settings._enableVersion = false;
-  }
+}
 
-  ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDbNum) noexcept {
+ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDbNum) noexcept
+{
     _settings._maxDB = maxDbNum;
     return *this;
-  }
+}
 
-  ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDbSize) noexcept {
+ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDbSize) noexcept
+{
     _settings._maxDBSize = maxDbSize;
     return *this;
-  }
+}
 
-  ContextInitializer& ContextInitializer::enableVersion() noexcept {
+ContextInitializer& ContextInitializer::enableVersion() noexcept
+{
     _settings._enableVersion = true;
     return *this;
-  }
+}
 
-  Context ContextInitializer::init() {
+Context ContextInitializer::init()
+{
     // create a database folder if not exist
     if (!utils::io::fileExists(_dbPath)) {
-      mkdir(_dbPath.c_str(), 0755);
-      auto settingFilePath = _dbPath + DB_SETTING_NAME;
-      // write database settings to disk
-      utils::io::writeBinaryFile(
-          settingFilePath.c_str(), static_cast<const char *>((void *) &_settings), sizeof(_settings));
-      return Context(_dbPath, _settings);
+        mkdir(_dbPath.c_str(), 0755);
+        auto settingFilePath = _dbPath + DB_SETTING_NAME;
+        // write database settings to disk
+        utils::io::writeBinaryFile(
+            settingFilePath.c_str(), static_cast<const char*>((void*)&_settings), sizeof(_settings));
+        return Context(_dbPath, _settings);
     } else {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_ALREADY_INITIALIZED);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_ALREADY_INITIALIZED);
     }
-  }
+}
 
-  Context::Context(const std::string &dbPath)
-      : _dbPath{dbPath} {
+Context::Context(const std::string& dbPath)
+    : _dbPath { dbPath }
+{
     if (!utils::io::fileExists(_dbPath)) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNINITIALIZED);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNINITIALIZED);
     } else {
-      auto settingFilePath = _dbPath + DB_SETTING_NAME;
-      if (!utils::io::fileExists(settingFilePath)) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
-      } else {
-        // read database settings from disk
-        auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
-        memcpy(&_settings, binary, sizeof(_settings));
-        delete binary;
-        auto foundContext = _underlying.find(dbPath);
-        if (foundContext == _underlying.cend()) {
-          auto instance = LMDBInstance{};
-          instance._handler = new storage_engine::LMDBEnv(
-              _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
-          instance._refCount = 1;
-          _underlying.emplace(dbPath, instance);
-          _envHandler = instance._handler;
+        auto settingFilePath = _dbPath + DB_SETTING_NAME;
+        if (!utils::io::fileExists(settingFilePath)) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         } else {
-          _envHandler = foundContext->second._handler;
-          ++foundContext->second._refCount;
+            // read database settings from disk
+            auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
+            memcpy(&_settings, binary, sizeof(_settings));
+            delete binary;
+            auto foundContext = _underlying.find(dbPath);
+            if (foundContext == _underlying.cend()) {
+                auto instance = LMDBInstance {};
+                instance._handler = new storage_engine::LMDBEnv(
+                    _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+                instance._refCount = 1;
+                _underlying.emplace(dbPath, instance);
+                _envHandler = instance._handler;
+            } else {
+                _envHandler = foundContext->second._handler;
+                ++foundContext->second._refCount;
+            }
         }
-      }
     }
-  }
+}
 
-  Context::Context(const std::string &dbPath, const ContextSetting& settings)
-      : _dbPath{dbPath} {
+Context::Context(const std::string& dbPath, const ContextSetting& settings)
+    : _dbPath { dbPath }
+{
     auto foundContext = _underlying.find(dbPath);
     if (foundContext == _underlying.cend()) {
-      auto instance = LMDBInstance{};
-      instance._handler = new storage_engine::LMDBEnv(
-          _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
-      instance._refCount = 1;
-      _underlying.emplace(dbPath, instance);
-      _envHandler = instance._handler;
+        auto instance = LMDBInstance {};
+        instance._handler = new storage_engine::LMDBEnv(
+            _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+        instance._refCount = 1;
+        _underlying.emplace(dbPath, instance);
+        _envHandler = instance._handler;
     } else {
-      _envHandler = foundContext->second._handler;
-      ++foundContext->second._refCount;
+        _envHandler = foundContext->second._handler;
+        ++foundContext->second._refCount;
     }
-  }
+}
 
-  Context::~Context() noexcept {
+Context::~Context() noexcept
+{
     auto foundContext = _underlying.find(_dbPath);
     if (foundContext != _underlying.cend()) {
-      if (foundContext->second._refCount <= 1) {
-        delete foundContext->second._handler;
-        foundContext->second._handler = nullptr;
-        _underlying.erase(_dbPath);
-      } else {
-        --foundContext->second._refCount;
-      }
+        if (foundContext->second._refCount <= 1) {
+            delete foundContext->second._handler;
+            foundContext->second._handler = nullptr;
+            _underlying.erase(_dbPath);
+        } else {
+            --foundContext->second._refCount;
+        }
     }
     _envHandler = nullptr;
-  }
+}
 
-  Context::Context(const Context &ctx)
-      : _dbPath{ctx._dbPath},
-        _settings{ctx._settings},
-        _envHandler{ctx._envHandler} {
+Context::Context(const Context& ctx)
+    : _dbPath { ctx._dbPath }
+    , _settings { ctx._settings }
+    , _envHandler { ctx._envHandler }
+{
     ++_underlying.find(_dbPath)->second._refCount;
-  }
+}
 
-  Context &Context::operator=(const Context &ctx) {
+Context& Context::operator=(const Context& ctx)
+{
     if (this != &ctx) {
-      _dbPath = ctx._dbPath;
-      _settings = ctx._settings;
-      _envHandler = ctx._envHandler;
-      ++_underlying.find(_dbPath)->second._refCount;
+        _dbPath = ctx._dbPath;
+        _settings = ctx._settings;
+        _envHandler = ctx._envHandler;
+        ++_underlying.find(_dbPath)->second._refCount;
     }
     return *this;
-  }
+}
 
-  Context::Context(Context &&ctx) noexcept
-      : _dbPath{ctx._dbPath},
-      _settings{ctx._settings},
-      _envHandler{ctx._envHandler} {}
+Context::Context(Context&& ctx) noexcept
+    : _dbPath { ctx._dbPath }
+    , _settings { ctx._settings }
+    , _envHandler { ctx._envHandler }
+{
+}
 
-  Context &Context::operator=(Context &&ctx) noexcept {
+Context& Context::operator=(Context&& ctx) noexcept
+{
     if (this != &ctx) {
-      _envHandler = ctx._envHandler;
-      _dbPath = ctx._dbPath;
-      _settings = ctx._settings;
-      ctx._dbPath = std::string{};
-      ctx._envHandler = nullptr;
-      ctx._settings = ContextSetting{};
+        _envHandler = ctx._envHandler;
+        _dbPath = ctx._dbPath;
+        _settings = ctx._settings;
+        ctx._dbPath = std::string {};
+        ctx._envHandler = nullptr;
+        ctx._settings = ContextSetting {};
     }
     return *this;
-  }
+}
 
-  Transaction Context::beginTxn(const TxnMode &txnMode) {
+Transaction Context::beginTxn(const TxnMode& txnMode)
+{
     return Transaction(*this, txnMode);
-  }
+}
 
 }

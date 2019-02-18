@@ -23,95 +23,122 @@
 
 namespace nogdb {
 
+OperationBuilder::OperationBuilder(const Transaction* txn)
+    : _txn { txn }
+{
+}
 
-  OperationBuilder::OperationBuilder(const Transaction* txn)
-      : _txn{txn} {}
+FindOperationBuilder::FindOperationBuilder(const Transaction* txn,
+    const std::string& className,
+    bool includeSubClassOf)
+    : OperationBuilder { txn }
+    , _className { className }
+    , _conditionType { ConditionType::UNDEFINED }
+    , _includeSubClassOf { includeSubClassOf }
+{
+}
 
-  FindOperationBuilder::FindOperationBuilder(const Transaction *txn,
-                                             const std::string &className,
-                                             bool includeSubClassOf)
-      : OperationBuilder{txn},
-        _className{className},
-        _conditionType{ConditionType::UNDEFINED},
-        _includeSubClassOf{includeSubClassOf} {}
-
-  FindOperationBuilder& FindOperationBuilder::where(const Condition &condition) {
+FindOperationBuilder& FindOperationBuilder::where(const Condition& condition)
+{
     _conditionType = ConditionType::CONDITION;
     _condition = std::make_shared<Condition>(condition);
     return *this;
-  }
+}
 
-  FindOperationBuilder& FindOperationBuilder::where(const MultiCondition &multiCondition) {
+FindOperationBuilder& FindOperationBuilder::where(const MultiCondition& multiCondition)
+{
     _conditionType = ConditionType::MULTI_CONDITION;
     _multiCondition = std::make_shared<MultiCondition>(multiCondition);
     return *this;
-  }
+}
 
-  FindOperationBuilder& FindOperationBuilder::where(bool (*condition)(const Record &record)) {
+FindOperationBuilder& FindOperationBuilder::where(bool (*condition)(const Record& record))
+{
     _conditionType = ConditionType::COMPARE_FUNCTION;
     _function = condition;
     return *this;
-  }
+}
 
-  FindOperationBuilder& FindOperationBuilder::indexed(bool onlyIndex) {
+FindOperationBuilder& FindOperationBuilder::indexed(bool onlyIndex)
+{
     _indexed = onlyIndex;
     return *this;
-  }
+}
 
-  FindEdgeOperationBuilder::FindEdgeOperationBuilder(const Transaction* txn,
-                                                     const RecordDescriptor& recordDescriptor,
-                                                     const EdgeDirection& direction)
-     : OperationBuilder{txn}, _rdesc{recordDescriptor}, _direction{direction} {}
+FindEdgeOperationBuilder::FindEdgeOperationBuilder(const Transaction* txn,
+    const RecordDescriptor& recordDescriptor,
+    const EdgeDirection& direction)
+    : OperationBuilder { txn }
+    , _rdesc { recordDescriptor }
+    , _direction { direction }
+{
+}
 
-  FindEdgeOperationBuilder& FindEdgeOperationBuilder::where(const GraphFilter &edgeFilter) {
+FindEdgeOperationBuilder& FindEdgeOperationBuilder::where(const GraphFilter& edgeFilter)
+{
     _filter = edgeFilter;
     return *this;
-  }
+}
 
-  TraverseOperationBuilder::TraverseOperationBuilder(const Transaction* txn,
-                                                     const RecordDescriptor& recordDescriptor,
-                                                     const EdgeDirection& direction)
-     : OperationBuilder{txn}, _rdesc{recordDescriptor}, _direction{direction} {}
+TraverseOperationBuilder::TraverseOperationBuilder(const Transaction* txn,
+    const RecordDescriptor& recordDescriptor,
+    const EdgeDirection& direction)
+    : OperationBuilder { txn }
+    , _rdesc { recordDescriptor }
+    , _direction { direction }
+{
+}
 
-  TraverseOperationBuilder& TraverseOperationBuilder::whereV(const GraphFilter &filter) {
+TraverseOperationBuilder& TraverseOperationBuilder::whereV(const GraphFilter& filter)
+{
     _vertexFilter = filter;
     return *this;
-  }
+}
 
-  TraverseOperationBuilder& TraverseOperationBuilder::whereE(const GraphFilter &filter) {
+TraverseOperationBuilder& TraverseOperationBuilder::whereE(const GraphFilter& filter)
+{
     _edgeFilter = filter;
     return *this;
-  }
+}
 
-  TraverseOperationBuilder& TraverseOperationBuilder::minDepth(unsigned int depth) {
+TraverseOperationBuilder& TraverseOperationBuilder::minDepth(unsigned int depth)
+{
     _minDepth = depth;
     return *this;
-  }
+}
 
-  TraverseOperationBuilder& TraverseOperationBuilder::maxDepth(unsigned int depth) {
+TraverseOperationBuilder& TraverseOperationBuilder::maxDepth(unsigned int depth)
+{
     _maxDepth = depth;
     return *this;
-  }
+}
 
-  TraverseOperationBuilder& TraverseOperationBuilder::depth(unsigned int minDepth, unsigned int maxDepth) {
+TraverseOperationBuilder& TraverseOperationBuilder::depth(unsigned int minDepth, unsigned int maxDepth)
+{
     _minDepth = minDepth;
     _maxDepth = maxDepth;
     return *this;
-  }
+}
 
-  ShortestPathOperationBuilder::ShortestPathOperationBuilder(const Transaction* txn,
-                                                             const RecordDescriptor &srcVertexRecordDescriptor,
-                                                             const RecordDescriptor &dstVertexRecordDescriptor)
-     : OperationBuilder{txn}, _srcRdesc{srcVertexRecordDescriptor}, _dstRdesc{dstVertexRecordDescriptor} {}
+ShortestPathOperationBuilder::ShortestPathOperationBuilder(const Transaction* txn,
+    const RecordDescriptor& srcVertexRecordDescriptor,
+    const RecordDescriptor& dstVertexRecordDescriptor)
+    : OperationBuilder { txn }
+    , _srcRdesc { srcVertexRecordDescriptor }
+    , _dstRdesc { dstVertexRecordDescriptor }
+{
+}
 
-  ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereV(const GraphFilter &filter) {
+ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereV(const GraphFilter& filter)
+{
     _vertexFilter = filter;
     return *this;
-  }
+}
 
-  ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereE(const GraphFilter &filter) {
+ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereE(const GraphFilter& filter)
+{
     _edgeFilter = filter;
     return *this;
-  }
+}
 
 }

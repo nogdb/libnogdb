@@ -22,24 +22,25 @@
 #include <memory>
 
 #include "constant.hpp"
-#include "storage_engine.hpp"
-#include "lmdb_engine.hpp"
 #include "datarecord_adapter.hpp"
+#include "lmdb_engine.hpp"
+#include "parser.hpp"
 #include "relation.hpp"
 #include "schema.hpp"
-#include "parser.hpp"
-#include "validate.hpp"
+#include "storage_engine.hpp"
 #include "utils.hpp"
+#include "validate.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
 
-  using namespace utils::assertion;
-  using namespace adapter::schema;
-  using namespace adapter::datarecord;
+using namespace utils::assertion;
+using namespace adapter::schema;
+using namespace adapter::datarecord;
 
-  const ClassDescriptor Transaction::addClass(const std::string &className, ClassType type) {
+const ClassDescriptor Transaction::addClass(const std::string& className, ClassType type)
+{
     BEGIN_VALIDATION(this)
         .isTxnValid()
         .isTxnCompleted()
@@ -49,22 +50,23 @@ namespace nogdb {
         .isClassIdMaxReach();
 
     try {
-      auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId{1};
-      _adapter->dbClass()->create(ClassAccessInfo{className, classId, ClassId{0}, type});
-      _adapter->dbInfo()->setMaxClassId(classId);
-      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId{1});
-      DataRecord(_txnBase, classId, type).init();
-      return ClassDescriptor{classId, className, ClassId{0}, type};
+        auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId { 1 };
+        _adapter->dbClass()->create(ClassAccessInfo { className, classId, ClassId { 0 }, type });
+        _adapter->dbInfo()->setMaxClassId(classId);
+        _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId { 1 });
+        DataRecord(_txnBase, classId, type).init();
+        return ClassDescriptor { classId, className, ClassId { 0 }, type };
     } catch (const Error& err) {
-      rollback();
-      throw NOGDB_FATAL_ERROR(err);
+        rollback();
+        throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      rollback();
-      std::rethrow_exception(std::current_exception());
+        rollback();
+        std::rethrow_exception(std::current_exception());
     }
-  }
+}
 
-  const ClassDescriptor Transaction::addSubClassOf(const std::string &superClass, const std::string &className) {
+const ClassDescriptor Transaction::addSubClassOf(const std::string& superClass, const std::string& className)
+{
     BEGIN_VALIDATION(this)
         .isTxnValid()
         .isTxnCompleted()
@@ -75,22 +77,23 @@ namespace nogdb {
 
     auto superClassInfo = _interface->schema()->getExistingClass(superClass);
     try {
-      auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId{1};
-      _adapter->dbClass()->create(ClassAccessInfo{className, classId, superClassInfo.id, superClassInfo.type});
-      _adapter->dbInfo()->setMaxClassId(classId);
-      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId{1});
-      DataRecord(_txnBase, classId, superClassInfo.type).init();
-      return ClassDescriptor{classId, className, superClassInfo.id, superClassInfo.type};
+        auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId { 1 };
+        _adapter->dbClass()->create(ClassAccessInfo { className, classId, superClassInfo.id, superClassInfo.type });
+        _adapter->dbInfo()->setMaxClassId(classId);
+        _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId { 1 });
+        DataRecord(_txnBase, classId, superClassInfo.type).init();
+        return ClassDescriptor { classId, className, superClassInfo.id, superClassInfo.type };
     } catch (const Error& err) {
-      rollback();
-      throw NOGDB_FATAL_ERROR(err);
+        rollback();
+        throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      rollback();
-      std::rethrow_exception(std::current_exception());
+        rollback();
+        std::rethrow_exception(std::current_exception());
     }
-  }
+}
 
-  void Transaction::dropClass(const std::string &className) {
+void Transaction::dropClass(const std::string& className)
+{
     BEGIN_VALIDATION(this)
         .isTxnValid()
         .isTxnCompleted()
@@ -99,97 +102,96 @@ namespace nogdb {
     auto foundClass = _interface->schema()->getExistingClass(className);
     // retrieve relevant properties information
     auto propertyInfos = _adapter->dbProperty()->getInfos(foundClass.id);
-    for (const auto &property: propertyInfos) {
-      // check if all index tables associated with the column have been removed beforehand
-      auto foundIndex = _adapter->dbIndex()->getInfo(foundClass.id, property.id);
-      if (foundIndex.id != IndexId{0}) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
-      }
+    for (const auto& property : propertyInfos) {
+        // check if all index tables associated with the column have been removed beforehand
+        auto foundIndex = _adapter->dbIndex()->getInfo(foundClass.id, property.id);
+        if (foundIndex.id != IndexId { 0 }) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_IN_USED_PROPERTY);
+        }
     }
     try {
-      auto rids = std::vector<RecordId>{};
-      // delete class from schema
-      _adapter->dbClass()->remove(className);
-      // delete properties from schema
-      for (const auto &property : propertyInfos) {
-        _adapter->dbProperty()->remove(property.classId, property.name);
-        //TODO: implement existing index deletion if needed
-      }
-      // delete all associated relations
-      auto table = DataRecord(_txnBase, foundClass.id, foundClass.type);
-      std::function<void(const PositionId &, const storage_engine::lmdb::Result &)> callback =
-          [&](const PositionId &positionId, const storage_engine::lmdb::Result &result) {
-            auto recordId = RecordId{foundClass.id, positionId};
-            if (foundClass.type == ClassType::EDGE) {
-              auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
-              _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
-              if (_txnCtx->isEnableVersion()) {
-                // update version of src vertex
-                if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
-                  auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
-                  auto srcVertexRecordResult = srcVertexDataRecord.getResult(vertices.first.second);
-                  auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
-                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
-                      srcVertexRecordResult, versionId + 1);
-                  srcVertexDataRecord.update(vertices.first.second, updateRecordBlob);
-                  _updatedRecords.insert(vertices.first);
+        auto rids = std::vector<RecordId> {};
+        // delete class from schema
+        _adapter->dbClass()->remove(className);
+        // delete properties from schema
+        for (const auto& property : propertyInfos) {
+            _adapter->dbProperty()->remove(property.classId, property.name);
+            //TODO: implement existing index deletion if needed
+        }
+        // delete all associated relations
+        auto table = DataRecord(_txnBase, foundClass.id, foundClass.type);
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+            [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                auto recordId = RecordId { foundClass.id, positionId };
+                if (foundClass.type == ClassType::EDGE) {
+                    auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
+                    _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
+                    if (_txnCtx->isEnableVersion()) {
+                        // update version of src vertex
+                        if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
+                            auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
+                            auto srcVertexRecordResult = srcVertexDataRecord.getResult(vertices.first.second);
+                            auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                                srcVertexRecordResult, versionId + 1);
+                            srcVertexDataRecord.update(vertices.first.second, updateRecordBlob);
+                            _updatedRecords.insert(vertices.first);
+                        }
+                        // update version of dst vertex
+                        if (_updatedRecords.find(vertices.second) == _updatedRecords.cend()) {
+                            auto dstVertexDataRecord = DataRecord(_txnBase, vertices.second.first, ClassType::VERTEX);
+                            auto dstVertexRecordResult = dstVertexDataRecord.getResult(vertices.second.second);
+                            auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                                dstVertexRecordResult, versionId + 1);
+                            dstVertexDataRecord.update(vertices.second.second, updateRecordBlob);
+                            _updatedRecords.insert(vertices.second);
+                        }
+                    }
+                } else {
+                    auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
+                    if (_txnCtx->isEnableVersion()) {
+                        for (const auto& neighbour : neighbours) {
+                            if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
+                                auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
+                                auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
+                                auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                                    neighbourRecordResult, versionId + 1);
+                                neighbourDataRecord.update(neighbour.second, updateRecordBlob);
+                                _updatedRecords.insert(neighbour);
+                            }
+                        }
+                    }
                 }
-                // update version of dst vertex
-                if (_updatedRecords.find(vertices.second) == _updatedRecords.cend()) {
-                  auto dstVertexDataRecord = DataRecord(_txnBase, vertices.second.first, ClassType::VERTEX);
-                  auto dstVertexRecordResult = dstVertexDataRecord.getResult(vertices.second.second);
-                  auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
-                  auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
-                      dstVertexRecordResult, versionId + 1);
-                  dstVertexDataRecord.update(vertices.second.second, updateRecordBlob);
-                  _updatedRecords.insert(vertices.second);
-                }
-              }
-            } else {
-              auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
-              if (_txnCtx->isEnableVersion()) {
-                for(const auto& neighbour: neighbours) {
-                  if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
-                    auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
-                    auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
-                    auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
-                    auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
-                        neighbourRecordResult, versionId + 1);
-                    neighbourDataRecord.update(neighbour.second, updateRecordBlob);
-                    _updatedRecords.insert(neighbour);
-                  }
-                }
-              }
-            }
-          };
-      table.resultSetIter(callback);
-      // drop the actual table
-      table.destroy();
-      // update a superclass of subclasses if existing
-      for (const auto &subClassInfo: _adapter->dbClass()->getSubClassInfos(foundClass.id)) {
-        _adapter->dbClass()->update(
-            ClassAccessInfo{
-                subClassInfo.name,
-                subClassInfo.id,
-                foundClass.superClassId,
-                subClassInfo.type
-            });
-      }
-      // update database info
-      _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() - ClassId{1});
-      _adapter->dbInfo()->setNumPropertyId(
-          _adapter->dbInfo()->getNumPropertyId() - PropertyId{static_cast<uint16_t>(propertyInfos.size())});
+            };
+        table.resultSetIter(callback);
+        // drop the actual table
+        table.destroy();
+        // update a superclass of subclasses if existing
+        for (const auto& subClassInfo : _adapter->dbClass()->getSubClassInfos(foundClass.id)) {
+            _adapter->dbClass()->update(
+                ClassAccessInfo {
+                    subClassInfo.name,
+                    subClassInfo.id,
+                    foundClass.superClassId,
+                    subClassInfo.type });
+        }
+        // update database info
+        _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() - ClassId { 1 });
+        _adapter->dbInfo()->setNumPropertyId(
+            _adapter->dbInfo()->getNumPropertyId() - PropertyId { static_cast<uint16_t>(propertyInfos.size()) });
     } catch (const Error& err) {
-      rollback();
-      throw NOGDB_FATAL_ERROR(err);
+        rollback();
+        throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      rollback();
-      std::rethrow_exception(std::current_exception());
+        rollback();
+        std::rethrow_exception(std::current_exception());
     }
+}
 
-  }
-
-  void Transaction::renameClass(const std::string &oldClassName, const std::string &newClassName) {
+void Transaction::renameClass(const std::string& oldClassName, const std::string& newClassName)
+{
     BEGIN_VALIDATION(this)
         .isTxnValid()
         .isTxnCompleted()
@@ -199,14 +201,13 @@ namespace nogdb {
 
     auto foundClass = _interface->schema()->getExistingClass(oldClassName);
     try {
-      _adapter->dbClass()->alterClassName(oldClassName, newClassName);
+        _adapter->dbClass()->alterClassName(oldClassName, newClassName);
     } catch (const Error& err) {
-      rollback();
-      throw NOGDB_FATAL_ERROR(err);
+        rollback();
+        throw NOGDB_FATAL_ERROR(err);
     } catch (...) {
-      rollback();
-      std::rethrow_exception(std::current_exception());
+        rollback();
+        std::rethrow_exception(std::current_exception());
     }
-  }
 }
-
+}

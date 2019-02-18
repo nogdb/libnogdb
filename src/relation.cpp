@@ -23,93 +23,101 @@
 
 namespace nogdb {
 
-  namespace relation {
+namespace relation {
 
-    void GraphInterface::addRel(const RecordId &edgeRid,
-                                const RecordId &srcRid,
-                                const RecordId &dstRid) {
-      _outRel->create(RelationAccessInfo{srcRid, edgeRid, dstRid});
-      _inRel->create(RelationAccessInfo{dstRid, edgeRid, srcRid});
+    void GraphInterface::addRel(const RecordId& edgeRid,
+        const RecordId& srcRid,
+        const RecordId& dstRid)
+    {
+        _outRel->create(RelationAccessInfo { srcRid, edgeRid, dstRid });
+        _inRel->create(RelationAccessInfo { dstRid, edgeRid, srcRid });
     }
 
-    void GraphInterface::updateSrcRel(const RecordId &edgeRid,
-                                      const RecordId &newSrcRid,
-                                      const RecordId &srcRid,
-                                      const RecordId &dstRid) {
-      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
-      _outRel->create(RelationAccessInfo{newSrcRid, edgeRid, dstRid});
-      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
-      _inRel->create(RelationAccessInfo{dstRid, edgeRid, newSrcRid});
+    void GraphInterface::updateSrcRel(const RecordId& edgeRid,
+        const RecordId& newSrcRid,
+        const RecordId& srcRid,
+        const RecordId& dstRid)
+    {
+        _outRel->removeByCursor(RelationAccessInfo { srcRid, edgeRid, dstRid });
+        _outRel->create(RelationAccessInfo { newSrcRid, edgeRid, dstRid });
+        _inRel->removeByCursor(RelationAccessInfo { dstRid, edgeRid, srcRid });
+        _inRel->create(RelationAccessInfo { dstRid, edgeRid, newSrcRid });
     }
 
-    void GraphInterface::updateDstRel(const RecordId &edgeRid,
-                                      const RecordId &newDstRid,
-                                      const RecordId &srcRid,
-                                      const RecordId &dstRid) {
-      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
-      _outRel->create(RelationAccessInfo{srcRid, edgeRid, newDstRid});
-      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
-      _inRel->create(RelationAccessInfo{newDstRid, edgeRid, srcRid});
+    void GraphInterface::updateDstRel(const RecordId& edgeRid,
+        const RecordId& newDstRid,
+        const RecordId& srcRid,
+        const RecordId& dstRid)
+    {
+        _outRel->removeByCursor(RelationAccessInfo { srcRid, edgeRid, dstRid });
+        _outRel->create(RelationAccessInfo { srcRid, edgeRid, newDstRid });
+        _inRel->removeByCursor(RelationAccessInfo { dstRid, edgeRid, srcRid });
+        _inRel->create(RelationAccessInfo { newDstRid, edgeRid, srcRid });
     }
 
-    void GraphInterface::removeRelFromEdge(const RecordId &edgeRid, const RecordId &srcRid, const RecordId &dstRid) {
-      _inRel->removeByCursor(RelationAccessInfo{dstRid, edgeRid, srcRid});
-      _outRel->removeByCursor(RelationAccessInfo{srcRid, edgeRid, dstRid});
+    void GraphInterface::removeRelFromEdge(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid)
+    {
+        _inRel->removeByCursor(RelationAccessInfo { dstRid, edgeRid, srcRid });
+        _outRel->removeByCursor(RelationAccessInfo { srcRid, edgeRid, dstRid });
     }
 
-    std::unordered_set<RecordId, RecordIdHash> GraphInterface::removeRelFromVertex(const RecordId &rid) {
-      auto neighbours = std::unordered_set<RecordId, RecordIdHash>{};
-      // source
-      for (const auto &relInfo: _inRel->getInfos(rid)) {
-        std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-          return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
-        };
-        try {
-          _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
-        } catch (const Error &err) {
-          if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
-            throw err;
-          }
+    std::unordered_set<RecordId, RecordIdHash> GraphInterface::removeRelFromVertex(const RecordId& rid)
+    {
+        auto neighbours = std::unordered_set<RecordId, RecordIdHash> {};
+        // source
+        for (const auto& relInfo : _inRel->getInfos(rid)) {
+            std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
+                return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+            };
+            try {
+                _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
+            } catch (const Error& err) {
+                if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
+                    throw err;
+                }
+            }
+            _outRel->removeByCursor(RelationAccessInfo { relInfo.neighborId, relInfo.edgeId, rid });
+            neighbours.insert(relInfo.neighborId);
         }
-        _outRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
-        neighbours.insert(relInfo.neighborId);
-      }
-      _inRel->remove(rid);
-      // destination
-      for (const auto &relInfo: _outRel->getInfos(rid)) {
-        std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-          return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
-        };
-        try {
-          _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
-        } catch (const Error &err) {
-          if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
-            throw err;
-          }
+        _inRel->remove(rid);
+        // destination
+        for (const auto& relInfo : _outRel->getInfos(rid)) {
+            std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
+                return std::make_shared<DataRecord>(_txn->_txnBase, relInfo.edgeId.first, ClassType::EDGE);
+            };
+            try {
+                _edgeDataRecordCache.get(relInfo.edgeId.first, callback)->remove(relInfo.edgeId.second);
+            } catch (const Error& err) {
+                if (err.code() != NOGDB_CTX_NOEXST_RECORD) {
+                    throw err;
+                }
+            }
+            _inRel->removeByCursor(RelationAccessInfo { relInfo.neighborId, relInfo.edgeId, rid });
+            neighbours.insert(relInfo.neighborId);
         }
-        _inRel->removeByCursor(RelationAccessInfo{relInfo.neighborId, relInfo.edgeId, rid});
-        neighbours.insert(relInfo.neighborId);
-      }
-      _outRel->remove(rid);
+        _outRel->remove(rid);
 
-      return neighbours;
+        return neighbours;
     }
 
-    std::vector<RecordId> GraphInterface::getInEdges(const RecordId &recordId) const {
-      return _inRel->getEdges(recordId);
+    std::vector<RecordId> GraphInterface::getInEdges(const RecordId& recordId) const
+    {
+        return _inRel->getEdges(recordId);
     }
 
-    std::vector<RecordId> GraphInterface::getOutEdges(const RecordId &recordId) const {
-      return _outRel->getEdges(recordId);
+    std::vector<RecordId> GraphInterface::getOutEdges(const RecordId& recordId) const
+    {
+        return _outRel->getEdges(recordId);
     }
 
-    std::pair<RecordId, RecordId> GraphInterface::getSrcDstVertices(const RecordId &recordId) const {
-      std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
-        return std::make_shared<DataRecord>(_txn->_txnBase, recordId.first, ClassType::EDGE);
-      };
-      auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
-      auto rawData = edgeDataRecord->getResult(recordId.second);
-      return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
+    std::pair<RecordId, RecordId> GraphInterface::getSrcDstVertices(const RecordId& recordId) const
+    {
+        std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {
+            return std::make_shared<DataRecord>(_txn->_txnBase, recordId.first, ClassType::EDGE);
+        };
+        auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
+        auto rawData = edgeDataRecord->getResult(recordId.second);
+        return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
     }
-  }
+}
 }

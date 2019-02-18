@@ -23,87 +23,86 @@
 
 #include <functional>
 #include <queue>
-#include <unordered_set>
-#include <unordered_map>
-#include <vector>
 #include <stack>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
+#include "compare.hpp"
 #include "constant.hpp"
+#include "datarecord.hpp"
 #include "lmdb_engine.hpp"
 #include "parser.hpp"
-#include "schema.hpp"
-#include "datarecord.hpp"
 #include "relation.hpp"
-#include "compare.hpp"
+#include "schema.hpp"
 
-#include "nogdb/nogdb_types.h"
 #include "nogdb/nogdb.h"
+#include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 
-  namespace algorithm {
+namespace algorithm {
 
     class GraphTraversal {
     public:
-      GraphTraversal() = delete;
+        GraphTraversal() = delete;
 
-      ~GraphTraversal() noexcept = delete;
+        ~GraphTraversal() noexcept = delete;
 
-      static ResultSet breadthFirstSearch(const Transaction &txn,
-                                          const schema::ClassAccessInfo &classInfo,
-                                          const RecordDescriptor &recordDescriptor,
-                                          unsigned int minDepth,
-                                          unsigned int maxDepth,
-                                          const adapter::relation::Direction &direction,
-                                          const GraphFilter &edgeFilter,
-                                          const GraphFilter &vertexFilter);
+        static ResultSet breadthFirstSearch(const Transaction& txn,
+            const schema::ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const adapter::relation::Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
 
-      static std::vector<RecordDescriptor>
-      breadthFirstSearchRdesc(const Transaction &txn,
-                              const schema::ClassAccessInfo &classInfo,
-                              const RecordDescriptor &recordDescriptor,
-                              unsigned int minDepth,
-                              unsigned int maxDepth,
-                              const adapter::relation::Direction &direction,
-                              const GraphFilter &edgeFilter,
-                              const GraphFilter &vertexFilter);
+        static std::vector<RecordDescriptor>
+        breadthFirstSearchRdesc(const Transaction& txn,
+            const schema::ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const adapter::relation::Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
 
-      static ResultSet depthFirstSearch(const Transaction &txn,
-                                        const schema::ClassAccessInfo &classInfo,
-                                        const RecordDescriptor &recordDescriptor,
-                                        unsigned int minDepth,
-                                        unsigned int maxDepth,
-                                        const adapter::relation::Direction &direction,
-                                        const GraphFilter &edgeFilter,
-                                        const GraphFilter &vertexFilter);
+        static ResultSet depthFirstSearch(const Transaction& txn,
+            const schema::ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const adapter::relation::Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
 
-      static std::vector<RecordDescriptor>
-      depthFirstSearchRdesc(const Transaction &txn,
-                            const schema::ClassAccessInfo &classInfo,
-                            const RecordDescriptor &recordDescriptor,
-                            unsigned int minDepth,
-                            unsigned int maxDepth,
-                            const adapter::relation::Direction &direction,
-                            const GraphFilter &edgeFilter,
-                            const GraphFilter &vertexFilter);
+        static std::vector<RecordDescriptor>
+        depthFirstSearchRdesc(const Transaction& txn,
+            const schema::ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const adapter::relation::Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
 
-      static ResultSet bfsShortestPath(const Transaction &txn,
-                                       const schema::ClassAccessInfo &srcVertexClassInfo,
-                                       const schema::ClassAccessInfo &dstVertexClassInfo,
-                                       const RecordDescriptor &srcVertexRecordDescriptor,
-                                       const RecordDescriptor &dstVertexRecordDescriptor,
-                                       const GraphFilter &edgeFilter,
-                                       const GraphFilter &vertexFilter);
+        static ResultSet bfsShortestPath(const Transaction& txn,
+            const schema::ClassAccessInfo& srcVertexClassInfo,
+            const schema::ClassAccessInfo& dstVertexClassInfo,
+            const RecordDescriptor& srcVertexRecordDescriptor,
+            const RecordDescriptor& dstVertexRecordDescriptor,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
 
-      static std::vector<RecordDescriptor>
-      bfsShortestPathRdesc(const Transaction &txn,
-                           const schema::ClassAccessInfo &srcVertexClassInfo,
-                           const schema::ClassAccessInfo &dstVertexClassInfo,
-                           const RecordDescriptor &srcVertexRecordDescriptor,
-                           const RecordDescriptor &dstVertexRecordDescriptor,
-                           const GraphFilter &edgeFilter,
-                           const GraphFilter &vertexFilter);
-
+        static std::vector<RecordDescriptor>
+        bfsShortestPathRdesc(const Transaction& txn,
+            const schema::ClassAccessInfo& srcVertexClassInfo,
+            const schema::ClassAccessInfo& dstVertexClassInfo,
+            const RecordDescriptor& srcVertexRecordDescriptor,
+            const RecordDescriptor& dstVertexRecordDescriptor,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
     };
-  }
+}
 }

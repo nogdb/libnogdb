@@ -21,18 +21,18 @@
 
 #pragma once
 
-#include <unordered_set>
 #include <functional>
+#include <unordered_set>
 
-#include "storage_engine.hpp"
-#include "relation_adapter.hpp"
 #include "datarecord_adapter.hpp"
-#include "utils.hpp"
 #include "parser.hpp"
+#include "relation_adapter.hpp"
+#include "storage_engine.hpp"
+#include "utils.hpp"
 
 namespace nogdb {
 
-  namespace relation {
+namespace relation {
 
     using namespace adapter::schema;
     using namespace adapter::relation;
@@ -40,53 +40,56 @@ namespace nogdb {
 
     class GraphInterface {
     public:
-      explicit GraphInterface(const Transaction *txn)
-          : _txn{txn},
-            _inRel{new RelationAccess(txn->_txnBase, Direction::IN)},
-            _outRel{new RelationAccess(txn->_txnBase, Direction::OUT)} {}
-
-      virtual ~GraphInterface() noexcept {
-        if (_inRel) {
-          delete _inRel;
-          _inRel = nullptr;
+        explicit GraphInterface(const Transaction* txn)
+            : _txn { txn }
+            , _inRel { new RelationAccess(txn->_txnBase, Direction::IN) }
+            , _outRel { new RelationAccess(txn->_txnBase, Direction::OUT) }
+        {
         }
-        if (_outRel) {
-          delete _outRel;
-          _outRel = nullptr;
-        }
-      };
 
-      void addRel(const RecordId &edgeRid,
-                  const RecordId &srcRid,
-                  const RecordId &dstRid);
+        virtual ~GraphInterface() noexcept
+        {
+            if (_inRel) {
+                delete _inRel;
+                _inRel = nullptr;
+            }
+            if (_outRel) {
+                delete _outRel;
+                _outRel = nullptr;
+            }
+        };
 
-      void updateSrcRel(const RecordId &edgeRid,
-                        const RecordId &newSrcRid,
-                        const RecordId &srcRid,
-                        const RecordId &dstRid);
+        void addRel(const RecordId& edgeRid,
+            const RecordId& srcRid,
+            const RecordId& dstRid);
 
-      void updateDstRel(const RecordId &edgeRid,
-                        const RecordId &newDstRid,
-                        const RecordId &srcRid,
-                        const RecordId &dstRid);
+        void updateSrcRel(const RecordId& edgeRid,
+            const RecordId& newSrcRid,
+            const RecordId& srcRid,
+            const RecordId& dstRid);
 
-      void removeRelFromEdge(const RecordId &edgeRid, const RecordId &srcRid, const RecordId &dstRid);
+        void updateDstRel(const RecordId& edgeRid,
+            const RecordId& newDstRid,
+            const RecordId& srcRid,
+            const RecordId& dstRid);
 
-      std::unordered_set<RecordId, RecordIdHash> removeRelFromVertex(const RecordId &rid);
+        void removeRelFromEdge(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid);
 
-      std::vector<RecordId> getInEdges(const RecordId &recordId) const;
+        std::unordered_set<RecordId, RecordIdHash> removeRelFromVertex(const RecordId& rid);
 
-      std::vector<RecordId> getOutEdges(const RecordId &recordId) const;
+        std::vector<RecordId> getInEdges(const RecordId& recordId) const;
 
-      std::pair<RecordId, RecordId> getSrcDstVertices(const RecordId& recordId) const;
+        std::vector<RecordId> getOutEdges(const RecordId& recordId) const;
+
+        std::pair<RecordId, RecordId> getSrcDstVertices(const RecordId& recordId) const;
 
     private:
-      const Transaction *_txn;
-      RelationAccess *_inRel;
-      RelationAccess *_outRel;
+        const Transaction* _txn;
+        RelationAccess* _inRel;
+        RelationAccess* _outRel;
 
-      using InternalCache = utils::caching::UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;
-      InternalCache _edgeDataRecordCache{};
+        using InternalCache = utils::caching::UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;
+        InternalCache _edgeDataRecordCache {};
     };
-  }
+}
 }

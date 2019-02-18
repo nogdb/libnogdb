@@ -33,172 +33,197 @@
 
 namespace nogdb {
 
-  const Record::PropertyToBytesMap &Record::getAll() const {
+const Record::PropertyToBytesMap& Record::getAll() const
+{
     return properties;
-  }
+}
 
-  const Record::PropertyToBytesMap &Record::getBasicInfo() const {
+const Record::PropertyToBytesMap& Record::getBasicInfo() const
+{
     return basicProperties;
-  }
+}
 
-  Bytes Record::get(const std::string &propName) const {
-    const PropertyToBytesMap &prop = (isBasicInfo(propName) ? basicProperties : properties);
+Bytes Record::get(const std::string& propName) const
+{
+    const PropertyToBytesMap& prop = (isBasicInfo(propName) ? basicProperties : properties);
     const PropertyToBytesMap::const_iterator it = prop.find(propName);
-    return it == prop.cend() ? Bytes{} : it->second;
-  }
+    return it == prop.cend() ? Bytes {} : it->second;
+}
 
-  std::vector<std::string> Record::getProperties() const {
-    auto propertyNames = std::vector<std::string>{};
-    for (const auto &property: properties) {
-      propertyNames.emplace_back(property.first);
+std::vector<std::string> Record::getProperties() const
+{
+    auto propertyNames = std::vector<std::string> {};
+    for (const auto& property : properties) {
+        propertyNames.emplace_back(property.first);
     }
     return propertyNames;
-  }
+}
 
-  uint8_t Record::getTinyIntU(const std::string &propName) const {
+uint8_t Record::getTinyIntU(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toTinyIntU();
+        return bytes.toTinyIntU();
     }
-  }
+}
 
-  int8_t Record::getTinyInt(const std::string &propName) const {
+int8_t Record::getTinyInt(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toTinyInt();
+        return bytes.toTinyInt();
     }
-  }
+}
 
-  uint16_t Record::getSmallIntU(const std::string &propName) const {
+uint16_t Record::getSmallIntU(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toSmallIntU();
+        return bytes.toSmallIntU();
     }
-  }
+}
 
-  int16_t Record::getSmallInt(const std::string &propName) const {
+int16_t Record::getSmallInt(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toSmallInt();
+        return bytes.toSmallInt();
     }
-  }
+}
 
-  uint32_t Record::getIntU(const std::string &propName) const {
+uint32_t Record::getIntU(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toIntU();
+        return bytes.toIntU();
     }
-  }
+}
 
-  int32_t Record::getInt(const std::string &propName) const {
+int32_t Record::getInt(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toInt();
+        return bytes.toInt();
     }
-  }
+}
 
-  uint64_t Record::getBigIntU(const std::string &propName) const {
+uint64_t Record::getBigIntU(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toBigIntU();
+        return bytes.toBigIntU();
     }
-  }
+}
 
-  int64_t Record::getBigInt(const std::string &propName) const {
+int64_t Record::getBigInt(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toBigInt();
+        return bytes.toBigInt();
     }
-  }
+}
 
-  double Record::getReal(const std::string &propName) const {
+double Record::getReal(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
+        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
     } else {
-      return bytes.toReal();
+        return bytes.toReal();
     }
-  }
+}
 
-  std::string Record::getText(const std::string &propName) const {
+std::string Record::getText(const std::string& propName) const
+{
     auto bytes = get(propName);
     if (bytes.empty()) {
-      return "";
+        return "";
     } else {
-      return bytes.toText();
+        return bytes.toText();
     }
-  }
+}
 
-  std::string Record::getClassName() const {
+std::string Record::getClassName() const
+{
     return getText(CLASS_NAME_PROPERTY);
-  }
+}
 
-  RecordId Record::getRecordId() const {
+RecordId Record::getRecordId() const
+{
     auto ridAsString = getText(RECORD_ID_PROPERTY);
     auto sp = utils::string::split(ridAsString, ':');
     if (sp.size() != 2) {
-      try {
-        auto classId = strtoul(sp[0].c_str(), nullptr, 0);
-        auto positionId = strtoul(sp[1].c_str(), nullptr, 0);;
-        return RecordId{classId, positionId};
-      } catch (...) {
-        throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INTERNAL_ERR);
-      }
+        try {
+            auto classId = strtoul(sp[0].c_str(), nullptr, 0);
+            auto positionId = strtoul(sp[1].c_str(), nullptr, 0);
+            ;
+            return RecordId { classId, positionId };
+        } catch (...) {
+            throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_INTERNAL_ERR);
+        }
     } else {
-      return RecordId{};
+        return RecordId {};
     }
-  }
+}
 
-  uint32_t Record::getDepth() const {
+uint32_t Record::getDepth() const
+{
     return getIntU(DEPTH_PROPERTY);
-  }
+}
 
-  uint64_t Record::getVersion() const {
+uint64_t Record::getVersion() const
+{
     return getBigIntU(VERSION_PROPERTY);
-  }
+}
 
-  void Record::unset(const std::string &propName) {
+void Record::unset(const std::string& propName)
+{
     (isBasicInfo(propName) ? basicProperties : properties).erase(propName);
-  }
+}
 
-  size_t Record::size() const {
+size_t Record::size() const
+{
     return properties.size();
-  }
+}
 
-  bool Record::empty() const {
+bool Record::empty() const
+{
     return properties.empty();
-  }
+}
 
-  void Record::clear() {
+void Record::clear()
+{
     basicProperties.clear();
     properties.clear();
-  }
+}
 
-  Record::Record(PropertyToBytesMap properties) : properties(std::move(properties)) {
+Record::Record(PropertyToBytesMap properties)
+    : properties(std::move(properties))
+{
     for (auto it = this->properties.begin(); it != this->properties.end();) {
-      if (isBasicInfo(it->first)) {
-        basicProperties.insert(*it);
-        this->properties.erase(it++);
-      } else {
-        ++it;
-      }
+        if (isBasicInfo(it->first)) {
+            basicProperties.insert(*it);
+            this->properties.erase(it++);
+        } else {
+            ++it;
+        }
     }
-  }
+}
 
 }

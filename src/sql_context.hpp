@@ -25,7 +25,7 @@
 #include "sql.hpp"
 
 namespace nogdb {
-  namespace sql_parser {
+namespace sql_parser {
     /*
      * An SQL parser context. A reference of this structure is passed through
      * the parser and down into all the parser action routine in order to
@@ -33,125 +33,127 @@ namespace nogdb {
      */
     class Context : public lemon_base<Token> {
     public:
-      friend class Function;
+        friend class Function;
 
-      Context(Transaction &txn_) : txn(txn_) {}
+        Context(Transaction& txn_)
+            : txn(txn_)
+        {
+        }
 
-      Transaction &txn;
-      enum {
-        SQL_OK,
-        SQL_ERROR,
-      } rc{SQL_OK};
-      SQL::Result result;
+        Transaction& txn;
+        enum {
+            SQL_OK,
+            SQL_ERROR,
+        } rc { SQL_OK };
+        SQL::Result result;
 
+        // parser error.
+        void syntax_error(int tokenType, Token& token)
+        {
+            cerr << "nogdb::SQL::execute: syntax error near '" << string(token.z, token.n) << "'" << endl;
+            rc = SQL_ERROR;
+            result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
+        }
 
-      // parser error.
-      void syntax_error(int tokenType, Token &token) {
-        cerr << "nogdb::SQL::execute: syntax error near '" << string(token.z, token.n) << "'" << endl;
-        rc = SQL_ERROR;
-        result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
-      }
+        void parse_failure()
+        {
+            cerr << "nogdb::SQL::execute: parse failure." << endl;
+            rc = SQL_ERROR;
+            result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
+        }
 
-      void parse_failure() {
-        cerr << "nogdb::SQL::execute: parse failure." << endl;
-        rc = SQL_ERROR;
-        result = SQL::Result(new NOGDB_SQL_ERROR(NOGDB_SQL_SYNTAX_ERROR));
-      }
+        // CLASS operations
+        void createClass(const Token& tName, const Token& tExtends, bool checkIfNotExists);
 
+        void alterClass(const Token& tName, const Token& tAttr, const Bytes& value);
 
-      // CLASS operations
-      void createClass(const Token &tName, const Token &tExtends, bool checkIfNotExists);
+        void dropClass(const Token& tName, bool checkIfExists);
 
-      void alterClass(const Token &tName, const Token &tAttr, const Bytes &value);
+        // PROPERTY operations
+        void
+        createProperty(const Token& tClassName, const Token& tPropName, const Token& tType, bool checkIfNotExists);
 
-      void dropClass(const Token &tName, bool checkIfExists);
+        void alterProperty(const Token& tClassName, const Token& tPropName, const Token& tAttr, const Bytes& value);
 
-      // PROPERTY operations
-      void
-      createProperty(const Token &tClassName, const Token &tPropName, const Token &tType, bool checkIfNotExists);
+        void dropProperty(const Token& tClassName, const Token& tPropName, bool checkIfExists);
 
-      void alterProperty(const Token &tClassName, const Token &tPropName, const Token &tAttr, const Bytes &value);
+        // VERTEX operations
+        void createVertex(const Token& tClassName, const nogdb::Record& prop);
 
-      void dropProperty(const Token &tClassName, const Token &tPropName, bool checkIfExists);
+        // EDGE operations
+        void createEdge(const CreateEdgeArgs& args);
 
-      // VERTEX operations
-      void createVertex(const Token &tClassName, const nogdb::Record &prop);
+        // SELECT operations
+        void select(const SelectArgs& args);
 
-      // EDGE operations
-      void createEdge(const CreateEdgeArgs &args);
+        // UPDATE operations
+        void update(const UpdateArgs& args);
 
-      // SELECT operations
-      void select(const SelectArgs &args);
+        // DELETE operations
+        void deleteVertex(const DeleteVertexArgs& args);
 
-      // UPDATE operations
-      void update(const UpdateArgs &args);
+        void deleteEdge(const DeleteEdgeArgs& args);
 
-      // DELETE operations
-      void deleteVertex(const DeleteVertexArgs &args);
+        // TRAVERSE operations
+        void traverse(const TraverseArgs& args);
 
-      void deleteEdge(const DeleteEdgeArgs &args);
+        // INDEX operations
+        void createIndex(const Token& tClassName, const Token& tPropName, const Token& tIndexType);
 
-      // TRAVERSE operations
-      void traverse(const TraverseArgs &args);
-
-      // INDEX operations
-      void createIndex(const Token &tClassName, const Token &tPropName, const Token &tIndexType);
-
-      void dropIndex(const Token &tClassName, const Token &tPropName);
-
+        void dropIndex(const Token& tClassName, const Token& tPropName);
 
     private:
-      void newTxnIfRootStmt(bool isRoot, TxnMode mode);
+        void newTxnIfRootStmt(bool isRoot, TxnMode mode);
 
-      void commitIfRootStmt(bool isRoot);
+        void commitIfRootStmt(bool isRoot);
 
-      void rollbackIfRootStmt(bool isRoot);
+        void rollbackIfRootStmt(bool isRoot);
 
-      ResultSet selectPrivate(const SelectArgs &stmt);
+        ResultSet selectPrivate(const SelectArgs& stmt);
 
-      ResultSet select(const Target &target, const Where &where);
+        ResultSet select(const Target& target, const Where& where);
 
-      ResultSet select(const Target &target, const Where &where, int skip, int limit);
+        ResultSet select(const Target& target, const Where& where, int skip, int limit);
 
-      ResultSet select(const RecordDescriptorSet &rids);
+        ResultSet select(const RecordDescriptorSet& rids);
 
-      ResultSetCursor selectVertex(const string &className, const Where &where);
+        ResultSetCursor selectVertex(const string& className, const Where& where);
 
-      ResultSetCursor selectEdge(const string &className, const Where &where);
+        ResultSetCursor selectEdge(const string& className, const Where& where);
 
-      ResultSet selectWhere(ResultSet &input, const Where &where);
+        ResultSet selectWhere(ResultSet& input, const Where& where);
 
-      ResultSet selectProjection(ResultSet &input, const vector <Projection> projs);
+        ResultSet selectProjection(ResultSet& input, const vector<Projection> projs);
 
-      ResultSet selectGroupBy(ResultSet &input, const string &group);
+        ResultSet selectGroupBy(ResultSet& input, const string& group);
 
-      ResultSet traversePrivate(const TraverseArgs &stmt);
+        ResultSet traversePrivate(const TraverseArgs& stmt);
 
-      static Bytes getProjectionItem(Transaction &txn, const Result &input, const Projection &proj, const PropertyMapType &map);
+        static Bytes getProjectionItem(Transaction& txn, const Result& input, const Projection& proj, const PropertyMapType& map);
 
-      static Bytes
-      getProjectionItemProperty(Transaction &txn, const Result &input, const string &propName, const PropertyMapType &map);
+        static Bytes
+        getProjectionItemProperty(Transaction& txn, const Result& input, const string& propName, const PropertyMapType& map);
 
-      static Bytes
-      getProjectionItemMethod(Transaction &txn, const Result &input, const Projection &firstProj, const Projection &secondProj,
-                              const PropertyMapType &map);
+        static Bytes
+        getProjectionItemMethod(Transaction& txn, const Result& input, const Projection& firstProj, const Projection& secondProj,
+            const PropertyMapType& map);
 
-      static Bytes
-      getProjectionItemArraySelector(Transaction &txn, const Result &input, const Projection &proj, unsigned long index,
-                                     const PropertyMapType &map);
+        static Bytes
+        getProjectionItemArraySelector(Transaction& txn, const Result& input, const Projection& proj, unsigned long index,
+            const PropertyMapType& map);
 
-      static Bytes
-      getProjectionItemCondition(Transaction &txn, const Result &input, const Function &func, const Condition &cond);
+        static Bytes
+        getProjectionItemCondition(Transaction& txn, const Result& input, const Function& func, const Condition& cond);
 
-      static ClassType findClassType(Transaction &txn, const string &className);
+        static ClassType findClassType(Transaction& txn, const string& className);
 
-      static PropertyMapType getPropertyMapTypeFromClassDescriptor(Transaction &txn, ClassId classID);
+        static PropertyMapType getPropertyMapTypeFromClassDescriptor(Transaction& txn, ClassId classID);
 
-      static ResultSet executeCondition(Transaction &txn, const ResultSet &input, const MultiCondition &conds);
+        static ResultSet executeCondition(Transaction& txn, const ResultSet& input, const MultiCondition& conds);
 
-      /* LEMONXX base */
+        /* LEMONXX base */
     public:
-      static std::unique_ptr<Context> create(Transaction &txn);
+        static std::unique_ptr<Context> create(Transaction& txn);
     };
-  }
+}
 }

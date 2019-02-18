@@ -23,144 +23,175 @@
 
 namespace nogdb {
 
-  Bytes::Bytes(const unsigned char *data, size_t len, bool copy)
-      : _value{nullptr}, _size{len} {
+Bytes::Bytes(const unsigned char* data, size_t len, bool copy)
+    : _value { nullptr }
+    , _size { len }
+{
     if (copy) {
-      _value = new(std::nothrow) unsigned char[_size];
-      std::copy(data, data + _size, _value);
+        _value = new (std::nothrow) unsigned char[_size];
+        std::copy(data, data + _size, _value);
     } else {
-      _value = const_cast<unsigned char *>(data);
+        _value = const_cast<unsigned char*>(data);
     }
-  }
+}
 
-  Bytes::Bytes(const unsigned char *data)
-      : Bytes{data, strlen((char *) data)} {}
+Bytes::Bytes(const unsigned char* data)
+    : Bytes { data, strlen((char*)data) }
+{
+}
 
-  Bytes::Bytes(const char *data)
-      : Bytes{reinterpret_cast<const unsigned char *>(data), strlen(data)} {}
+Bytes::Bytes(const char* data)
+    : Bytes { reinterpret_cast<const unsigned char*>(data), strlen(data) }
+{
+}
 
-  Bytes::Bytes(const std::string &data)
-      : Bytes{static_cast<const unsigned char *>((void *) data.c_str()), strlen(data.c_str())} {}
+Bytes::Bytes(const std::string& data)
+    : Bytes { static_cast<const unsigned char*>((void*)data.c_str()), strlen(data.c_str()) }
+{
+}
 
-  Bytes::~Bytes() noexcept {
+Bytes::~Bytes() noexcept
+{
     if (_value) {
-      delete[] _value;
-      _value = nullptr;
+        delete[] _value;
+        _value = nullptr;
     }
-  }
+}
 
-  Bytes::Bytes(const Bytes &binaryObject)
-      : Bytes{binaryObject._value, binaryObject._size} {}
+Bytes::Bytes(const Bytes& binaryObject)
+    : Bytes { binaryObject._value, binaryObject._size }
+{
+}
 
-  Bytes &Bytes::operator=(const Bytes &binaryObject) {
+Bytes& Bytes::operator=(const Bytes& binaryObject)
+{
     if (this != &binaryObject) {
-      auto tmp(binaryObject);
-      using std::swap;
-      swap(tmp, *this);
+        auto tmp(binaryObject);
+        using std::swap;
+        swap(tmp, *this);
     }
     return *this;
-  }
+}
 
-  Bytes::Bytes(Bytes &&binaryObject) noexcept
-      : _value{binaryObject._value}, _size{binaryObject._size} {
+Bytes::Bytes(Bytes&& binaryObject) noexcept
+    : _value { binaryObject._value }
+    , _size { binaryObject._size }
+{
     binaryObject._value = nullptr;
     binaryObject._size = 0;
-  }
+}
 
-  Bytes &Bytes::operator=(Bytes &&binaryObject) noexcept {
+Bytes& Bytes::operator=(Bytes&& binaryObject) noexcept
+{
     if (this != &binaryObject) {
-      delete[] _value;
-      _value = binaryObject._value;
-      _size = binaryObject._size;
-      binaryObject._value = nullptr;
-      binaryObject._size = 0;
+        delete[] _value;
+        _value = binaryObject._value;
+        _size = binaryObject._size;
+        binaryObject._value = nullptr;
+        binaryObject._size = 0;
     }
     return *this;
-  }
+}
 
-  uint8_t Bytes::toTinyIntU() const {
+uint8_t Bytes::toTinyIntU() const
+{
     return convert<uint8_t>();
-  }
+}
 
-  int8_t Bytes::toTinyInt() const {
+int8_t Bytes::toTinyInt() const
+{
     return convert<int8_t>();
-  }
+}
 
-  uint16_t Bytes::toSmallIntU() const {
+uint16_t Bytes::toSmallIntU() const
+{
     return convert<uint16_t>();
-  }
+}
 
-  int16_t Bytes::toSmallInt() const {
+int16_t Bytes::toSmallInt() const
+{
     return convert<int16_t>();
-  }
+}
 
-  uint32_t Bytes::toIntU() const {
+uint32_t Bytes::toIntU() const
+{
     return convert<uint32_t>();
-  }
+}
 
-  int32_t Bytes::toInt() const {
+int32_t Bytes::toInt() const
+{
     return convert<int32_t>();
-  }
+}
 
-  uint64_t Bytes::toBigIntU() const {
+uint64_t Bytes::toBigIntU() const
+{
     return convert<uint64_t>();
-  }
+}
 
-  int64_t Bytes::toBigInt() const {
+int64_t Bytes::toBigInt() const
+{
     return convert<int64_t>();
-  }
+}
 
-  double Bytes::toReal() const {
+double Bytes::toReal() const
+{
     return convert<double>();
-  }
+}
 
-  std::string Bytes::toText() const {
+std::string Bytes::toText() const
+{
     return convert<std::string>();
-  }
+}
 
-  Bytes::operator unsigned char *() const {
+Bytes::operator unsigned char*() const
+{
     return _value;
-  }
+}
 
-  unsigned char *Bytes::getRaw() const {
+unsigned char* Bytes::getRaw() const
+{
     return _value;
-  }
+}
 
-  size_t Bytes::size() const {
+size_t Bytes::size() const
+{
     return _size;
-  }
+}
 
-  bool Bytes::empty() const {
+bool Bytes::empty() const
+{
     return !_size;
-  }
+}
 
-  Bytes Bytes::merge(const Bytes &bytes1, const Bytes &bytes2) {
+Bytes Bytes::merge(const Bytes& bytes1, const Bytes& bytes2)
+{
 
     const size_t total_size = bytes1.size() + bytes2.size();
 
-    auto *data = new unsigned char[total_size];
+    auto* data = new unsigned char[total_size];
 
     std::copy(bytes1.getRaw(), bytes1.getRaw() + bytes1.size(), data);
     std::copy(bytes2.getRaw(), bytes2.getRaw() + bytes2.size(), data + bytes1.size());
 
-    return Bytes{data, total_size, false};
-  };
+    return Bytes { data, total_size, false };
+};
 
-  Bytes Bytes::merge(const std::vector<Bytes> &bytes) {
+Bytes Bytes::merge(const std::vector<Bytes>& bytes)
+{
 
     size_t total_size = 0u;
-    for (const Bytes &b : bytes) {
-      total_size += b.size();
+    for (const Bytes& b : bytes) {
+        total_size += b.size();
     }
 
-    auto *data = new unsigned char[total_size];
+    auto* data = new unsigned char[total_size];
 
     size_t idx = 0;
-    for (const Bytes &b : bytes) {
-      std::copy(b.getRaw(), b.getRaw() + b.size(), data + idx);
-      idx += b.size();
+    for (const Bytes& b : bytes) {
+        std::copy(b.getRaw(), b.getRaw() + b.size(), data + idx);
+        idx += b.size();
     }
 
-    return Bytes{data, total_size, false};
-  }
+    return Bytes { data, total_size, false };
+}
 }

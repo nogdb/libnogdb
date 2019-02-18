@@ -23,308 +23,344 @@
 
 namespace nogdb {
 
-  GraphFilter::GraphFilter() {
+GraphFilter::GraphFilter()
+{
     _function = nullptr;
     _mode = FilterMode::COMPARE_FUNCTION;
-  }
+}
 
-  GraphFilter::GraphFilter(const Condition& condition) {
+GraphFilter::GraphFilter(const Condition& condition)
+{
     _condition = std::make_shared<Condition>(condition);
     _mode = FilterMode::CONDITION;
-  }
+}
 
-  GraphFilter::GraphFilter(const MultiCondition& multiCondition) {
+GraphFilter::GraphFilter(const MultiCondition& multiCondition)
+{
     _multiCondition = std::make_shared<MultiCondition>(multiCondition);
     _mode = FilterMode::MULTI_CONDITION;
-  }
+}
 
-  GraphFilter::GraphFilter(bool (*function)(const Record &record)) {
+GraphFilter::GraphFilter(bool (*function)(const Record& record))
+{
     _function = function;
     _mode = FilterMode::COMPARE_FUNCTION;
-  }
+}
 
-  GraphFilter::GraphFilter(const GraphFilter& other)
-    : _mode{other._mode},
-      _onlyClasses{other._onlyClasses},
-      _onlySubOfClasses{other._onlySubOfClasses},
-      _ignoreClasses{other._ignoreClasses},
-      _ignoreSubOfClasses{other._ignoreSubOfClasses} {
-    switch(_mode) {
-      case FilterMode::CONDITION:
+GraphFilter::GraphFilter(const GraphFilter& other)
+    : _mode { other._mode }
+    , _onlyClasses { other._onlyClasses }
+    , _onlySubOfClasses { other._onlySubOfClasses }
+    , _ignoreClasses { other._ignoreClasses }
+    , _ignoreSubOfClasses { other._ignoreSubOfClasses }
+{
+    switch (_mode) {
+    case FilterMode::CONDITION:
         _condition = other._condition;
         break;
-      case FilterMode::MULTI_CONDITION:
+    case FilterMode::MULTI_CONDITION:
         _multiCondition = other._multiCondition;
         break;
-      case FilterMode::COMPARE_FUNCTION:
+    case FilterMode::COMPARE_FUNCTION:
         _function = other._function;
         break;
     }
-  }
+}
 
-  GraphFilter& GraphFilter::operator=(const GraphFilter& other) {
+GraphFilter& GraphFilter::operator=(const GraphFilter& other)
+{
     if (this != &other) {
-      _mode = other._mode;
-      _onlyClasses = other._onlyClasses;
-      _onlySubOfClasses = other._onlySubOfClasses;
-      _ignoreClasses = other._ignoreClasses;
-      _ignoreSubOfClasses = other._ignoreSubOfClasses;
-      switch(_mode) {
+        _mode = other._mode;
+        _onlyClasses = other._onlyClasses;
+        _onlySubOfClasses = other._onlySubOfClasses;
+        _ignoreClasses = other._ignoreClasses;
+        _ignoreSubOfClasses = other._ignoreSubOfClasses;
+        switch (_mode) {
         case FilterMode::CONDITION:
-          _condition = other._condition;
-          break;
+            _condition = other._condition;
+            break;
         case FilterMode::MULTI_CONDITION:
-          _multiCondition = other._multiCondition;
-          break;
+            _multiCondition = other._multiCondition;
+            break;
         case FilterMode::COMPARE_FUNCTION:
-          _function = other._function;
-          break;
-      }
+            _function = other._function;
+            break;
+        }
     }
     return *this;
-  }
+}
 
-  GraphFilter::GraphFilter(GraphFilter&& other) noexcept {
+GraphFilter::GraphFilter(GraphFilter&& other) noexcept
+{
     _mode = other._mode;
     _onlyClasses = std::move(other._onlyClasses);
     _onlySubOfClasses = std::move(other._onlySubOfClasses);
     _ignoreClasses = std::move(other._ignoreClasses);
     _ignoreSubOfClasses = std::move(other._ignoreSubOfClasses);
-    switch(_mode) {
-      case FilterMode::CONDITION:
+    switch (_mode) {
+    case FilterMode::CONDITION:
         _condition = std::move(other._condition);
         break;
-      case FilterMode::MULTI_CONDITION:
+    case FilterMode::MULTI_CONDITION:
         _multiCondition = std::move(other._multiCondition);
         break;
-      case FilterMode::COMPARE_FUNCTION:
+    case FilterMode::COMPARE_FUNCTION:
         _function = other._function;
         other._function = nullptr;
         break;
     }
-  }
+}
 
-  GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept {
+GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept
+{
     if (this != &other) {
-      _mode = other._mode;
-      _onlyClasses = std::move(other._onlyClasses);
-      _onlySubOfClasses = std::move(other._onlySubOfClasses);
-      _ignoreClasses = std::move(other._ignoreClasses);
-      _ignoreSubOfClasses = std::move(other._ignoreSubOfClasses);
-      switch(_mode) {
+        _mode = other._mode;
+        _onlyClasses = std::move(other._onlyClasses);
+        _onlySubOfClasses = std::move(other._onlySubOfClasses);
+        _ignoreClasses = std::move(other._ignoreClasses);
+        _ignoreSubOfClasses = std::move(other._ignoreSubOfClasses);
+        switch (_mode) {
         case FilterMode::CONDITION:
-          _condition = std::move(other._condition);
-          break;
+            _condition = std::move(other._condition);
+            break;
         case FilterMode::MULTI_CONDITION:
-          _multiCondition = std::move(other._multiCondition);
-          break;
+            _multiCondition = std::move(other._multiCondition);
+            break;
         case FilterMode::COMPARE_FUNCTION:
-          _function = other._function;
-          other._function = nullptr;
-          break;
-      }
+            _function = other._function;
+            other._function = nullptr;
+            break;
+        }
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::string &className) {
+GraphFilter& GraphFilter::only(const std::string& className)
+{
     _onlyClasses.insert(className);
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::vector<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlyClasses.insert(value);
+GraphFilter& GraphFilter::only(const std::vector<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlyClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::list<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlyClasses.insert(value);
+GraphFilter& GraphFilter::only(const std::list<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlyClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::set<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlyClasses.insert(value);
+GraphFilter& GraphFilter::only(const std::set<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlyClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::vector<std::string>::const_iterator &begin,
-                                 const std::vector<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::only(const std::vector<std::string>::const_iterator& begin,
+    const std::vector<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlyClasses.insert(*it);
+        _onlyClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::list<std::string>::const_iterator &begin,
-                                 const std::list<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::only(const std::list<std::string>::const_iterator& begin,
+    const std::list<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlyClasses.insert(*it);
+        _onlyClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::only(const std::set<std::string>::const_iterator &begin,
-                                 const std::set<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::only(const std::set<std::string>::const_iterator& begin,
+    const std::set<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlyClasses.insert(*it);
+        _onlyClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::string &className) {
+GraphFilter& GraphFilter::onlySubClassOf(const std::string& className)
+{
     _onlySubOfClasses.insert(className);
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::vector<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlySubOfClasses.insert(value);
+GraphFilter& GraphFilter::onlySubClassOf(const std::vector<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlySubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::list<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlySubOfClasses.insert(value);
+GraphFilter& GraphFilter::onlySubClassOf(const std::list<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlySubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::set<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _onlySubOfClasses.insert(value);
+GraphFilter& GraphFilter::onlySubClassOf(const std::set<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _onlySubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::vector<std::string>::const_iterator &begin,
-                                           const std::vector<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::onlySubClassOf(const std::vector<std::string>::const_iterator& begin,
+    const std::vector<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlySubOfClasses.insert(*it);
+        _onlySubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::list<std::string>::const_iterator &begin,
-                                           const std::list<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::onlySubClassOf(const std::list<std::string>::const_iterator& begin,
+    const std::list<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlySubOfClasses.insert(*it);
+        _onlySubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::onlySubClassOf(const std::set<std::string>::const_iterator &begin,
-                                           const std::set<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::onlySubClassOf(const std::set<std::string>::const_iterator& begin,
+    const std::set<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _onlySubOfClasses.insert(*it);
+        _onlySubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::string &className) {
+GraphFilter& GraphFilter::exclude(const std::string& className)
+{
     _ignoreClasses.insert(className);
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::vector<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreClasses.insert(value);
+GraphFilter& GraphFilter::exclude(const std::vector<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::list<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreClasses.insert(value);
+GraphFilter& GraphFilter::exclude(const std::list<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::set<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreClasses.insert(value);
+GraphFilter& GraphFilter::exclude(const std::set<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::vector<std::string>::const_iterator &begin,
-                                    const std::vector<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::exclude(const std::vector<std::string>::const_iterator& begin,
+    const std::vector<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreClasses.insert(*it);
+        _ignoreClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::list<std::string>::const_iterator &begin,
-                                    const std::list<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::exclude(const std::list<std::string>::const_iterator& begin,
+    const std::list<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreClasses.insert(*it);
+        _ignoreClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::exclude(const std::set<std::string>::const_iterator &begin,
-                                    const std::set<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::exclude(const std::set<std::string>::const_iterator& begin,
+    const std::set<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreClasses.insert(*it);
+        _ignoreClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::string &className) {
+GraphFilter& GraphFilter::excludeSubClassOf(const std::string& className)
+{
     _ignoreSubOfClasses.insert(className);
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::vector<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreSubOfClasses.insert(value);
+GraphFilter& GraphFilter::excludeSubClassOf(const std::vector<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreSubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::list<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreSubOfClasses.insert(value);
+GraphFilter& GraphFilter::excludeSubClassOf(const std::list<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreSubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::set<std::string> &classNames) {
-    for (const auto &value: classNames) {
-      _ignoreSubOfClasses.insert(value);
+GraphFilter& GraphFilter::excludeSubClassOf(const std::set<std::string>& classNames)
+{
+    for (const auto& value : classNames) {
+        _ignoreSubOfClasses.insert(value);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::vector<std::string>::const_iterator &begin,
-                                              const std::vector<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::excludeSubClassOf(const std::vector<std::string>::const_iterator& begin,
+    const std::vector<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreSubOfClasses.insert(*it);
+        _ignoreSubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::list<std::string>::const_iterator &begin,
-                                              const std::list<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::excludeSubClassOf(const std::list<std::string>::const_iterator& begin,
+    const std::list<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreSubOfClasses.insert(*it);
+        _ignoreSubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
-  GraphFilter &GraphFilter::excludeSubClassOf(const std::set<std::string>::const_iterator &begin,
-                                              const std::set<std::string>::const_iterator &end) {
+GraphFilter& GraphFilter::excludeSubClassOf(const std::set<std::string>::const_iterator& begin,
+    const std::set<std::string>::const_iterator& end)
+{
     for (auto it = begin; it != end; ++it) {
-      _ignoreSubOfClasses.insert(*it);
+        _ignoreSubOfClasses.insert(*it);
     }
     return *this;
-  }
+}
 
 }
