@@ -142,6 +142,12 @@ extern void test_alter_class_with_records();
 extern void test_drop_class_with_relations();
 extern void test_drop_and_find_extended_class();
 extern void test_conflict_property();
+extern void test_version_add_vertex_edge();
+extern void test_version_update_vertex_edge();
+extern void test_version_update_src_dst_edge();
+extern void test_version_remove_vertex_edge();
+extern void test_version_remove_all_vertex_edge();
+extern void test_version_drop_vertex_edge();
 #endif
 
 // graph operations testing

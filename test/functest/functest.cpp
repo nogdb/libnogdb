@@ -23,7 +23,7 @@
 #include <sstream>
 #include "functest.h"
 
-#define ENABLE_TEST_RECORD_VERSION    0
+#define ENABLE_TEST_RECORD_VERSION    1
 
 nogdb::Context *ctx = nullptr;
 auto tnum = 0;
@@ -178,6 +178,14 @@ int main() {
   exec(test_add_delete_prop_with_records, "adding/deleting properties with records");
   exec(test_alter_class_with_records, "modifying a class name with records");
   exec(test_drop_class_with_relations, "dropping a class with some relations and reloading the database");
+
+  std::cout << "\n\x1B[96mEnd-to-end tests for create/update/delete operations with record versioning should:\x1B[0m\n";
+  exec(test_version_add_vertex_edge, "adding new vertices and edges with record versioning");
+  exec(test_version_update_vertex_edge, "updating vertices and edges with record versioning");
+  exec(test_version_update_src_dst_edge, "updating src and dst vertices of edges with record versioning");
+  exec(test_version_remove_vertex_edge, "removing vertices and edges with record versioning");
+  exec(test_version_remove_all_vertex_edge, "removing all vertices and edges with record versioning");
+  exec(test_version_drop_vertex_edge, "droping vertice and edge classes with record versioning");
 #endif
   // graph
 #ifdef TEST_GRAPH_OPERATIONS
@@ -384,6 +392,8 @@ int main() {
 #ifdef TEST_CONTEXT_OPERATIONS
   std::cout << "\n\x1B[96mEnd-to-end tests for a database context with indexing should:\x1B[0m\n";
   exec(test_reopen_ctx_v6, "reopening a context with records, extended classes, and indexing");
+
+  std::cout << "\n\x1B[96mEnd-to-end tests for multiple database contexts should:\x1B[0m\n";
   exec(test_multiple_ctx, "opening more than two contexts at the same time in the same process");
 #endif
   // schema txn

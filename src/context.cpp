@@ -87,12 +87,11 @@ namespace nogdb {
       if (!utils::io::fileExists(settingFilePath)) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
       } else {
+        // read database settings from disk
+        auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
+        memcpy(&_settings, binary, sizeof(_settings));
         auto foundContext = _underlying.find(dbPath);
         if (foundContext == _underlying.cend()) {
-          // read database settings from disk
-          auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
-          memcpy(&_settings, binary, sizeof(_settings));
-
           auto instance = LMDBInstance{};
           instance._handler = new storage_engine::LMDBEnv(
               _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);

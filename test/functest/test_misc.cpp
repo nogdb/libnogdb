@@ -807,5 +807,29 @@ void test_conflict_property() {
   }
 }
 
+void test_version_add_vertex_edge() {
+
+}
+
+void test_version_update_vertex_edge() {
+
+}
+
+void test_version_update_src_dst_edge() {
+
+}
+
+void test_version_remove_vertex_edge() {
+
+}
+
+void test_version_remove_all_vertex_edge() {
+
+}
+
+void test_version_drop_vertex_edge() {
+
+}
+
 
 
