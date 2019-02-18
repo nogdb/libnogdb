@@ -69,6 +69,8 @@ namespace nogdb {
                                  const ClassType &classType,
                                  bool enableVersion);
 
+      static Blob& parseOnlyUpdateVersion(Blob& blob, VersionId versionId);
+
       static Blob parseOnlyUpdateVersion(const storage_engine::lmdb::Result &rawData, VersionId versionId);
 
       static Blob parseOnlyUpdateSrcVertex(const storage_engine::lmdb::Result &rawData,
@@ -76,7 +78,7 @@ namespace nogdb {
                                            bool enableVersion);
 
       static Blob parseOnlyUpdateDstVertex(const storage_engine::lmdb::Result &rawData,
-                                           const RecordId& srcVertex,
+                                           const RecordId& dstVertex,
                                            bool enableVersion);
 
       static Blob parseOnlyUpdateRecord(const storage_engine::lmdb::Result &rawData,

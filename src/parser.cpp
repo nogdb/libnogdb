@@ -59,8 +59,12 @@ namespace nogdb {
       }
     }
 
-    Blob RecordParser::parseOnlyUpdateVersion(const storage_engine::lmdb::Result &rawData,
-                                               VersionId versionId) {
+    Blob& RecordParser::parseOnlyUpdateVersion(Blob &blob, VersionId versionId) {
+      blob.update(&versionId, 0, sizeof(VersionId));
+      return blob;
+    }
+
+    Blob RecordParser::parseOnlyUpdateVersion(const storage_engine::lmdb::Result &rawData, VersionId versionId) {
       require(!rawData.empty);
       auto blob = rawData.data.blob();
       blob.update(&versionId, 0, sizeof(VersionId));

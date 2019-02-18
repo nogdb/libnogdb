@@ -43,7 +43,8 @@ namespace nogdb {
         .isClassNameValid(className);
 
     auto vertexClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
+        vertexClassInfo.id, vertexClassInfo.superClassId);
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       auto vertexDataRecord = adapter::datarecord::DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
@@ -77,7 +78,8 @@ namespace nogdb {
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
+        edgeClassInfo.id, edgeClassInfo.superClassId);
     auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
       auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
@@ -167,16 +169,39 @@ namespace nogdb {
       auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
       _interface->graph()->updateSrcRel(
           recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
-      if (_txnCtx->isEnableVersion()) {
-        // update version of old src vertex
-
-        // update version of new src vertex
-      }
-
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
           newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
-      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult, _txnCtx->isEnableVersion());
-      edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
+      auto updateEdgeRecordBlob = parser::RecordParser::parseOnlyUpdateSrcVertex(
+          recordResult, newSrcVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
+      if (_txnCtx->isEnableVersion()) {
+        // update version of old src vertex
+        if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
+          auto oldSrcVertexDataRecord = adapter::datarecord::DataRecord(
+              _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
+          auto oldSrcVertexRecordResult = oldSrcVertexDataRecord.getResult(srcDstVertex.first.second);
+          auto versionId = parser::RecordParser::parseRawDataVersionId(oldSrcVertexRecordResult);
+          auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(oldSrcVertexRecordResult, versionId + 1);
+          oldSrcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
+          _updatedRecords.insert(srcDstVertex.first);
+        }
+        // update version of new src vertex
+        if (_updatedRecords.find(newSrcVertexRecordDescriptor.rid) == _updatedRecords.cend()) {
+          auto newSrcVertexDataRecord = adapter::datarecord::DataRecord(
+              _txnBase, newSrcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+          auto newSrcVertexRecordResult = newSrcVertexDataRecord.getResult(newSrcVertexRecordDescriptor.rid.second);
+          auto versionId = parser::RecordParser::parseRawDataVersionId(newSrcVertexRecordResult);
+          auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(newSrcVertexRecordResult, versionId + 1);
+          newSrcVertexDataRecord.update(newSrcVertexRecordDescriptor.rid.second, updateRecordBlob);
+          _updatedRecords.insert(newSrcVertexRecordDescriptor.rid);
+        }
+        // update version of edge
+        if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
+          auto edgeVersionId = parser::RecordParser::parseRawDataVersionId(recordResult);
+          parser::RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
+          _updatedRecords.insert(recordDescriptor.rid);
+        }
+      }
+      edgeDataRecord.update(recordDescriptor.rid.second, updateEdgeRecordBlob);
     } catch (const Error& error) {
       rollback();
       throw NOGDB_FATAL_ERROR(error);
@@ -199,8 +224,37 @@ namespace nogdb {
           recordDescriptor.rid, newDstVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
       auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
           srcDstVertex.first, newDstVertexRecordDescriptor.rid);
-      auto dataBlob = parser::RecordParser::parseEdgeRawDataAsBlob(recordResult, _txnCtx->isEnableVersion());
-      edgeDataRecord.update(recordDescriptor.rid.second, newVertexBlob + dataBlob);
+      auto updateEdgeRecordBlob = parser::RecordParser::parseOnlyUpdateDstVertex(
+          recordResult, newDstVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
+      if (_txnCtx->isEnableVersion()) {
+        // update version of old dst vertex
+        if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
+          auto oldDstVertexDataRecord = adapter::datarecord::DataRecord(
+              _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
+          auto oldDstVertexRecordResult = oldDstVertexDataRecord.getResult(srcDstVertex.second.second);
+          auto versionId = parser::RecordParser::parseRawDataVersionId(oldDstVertexRecordResult);
+          auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(oldDstVertexRecordResult, versionId + 1);
+          oldDstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
+          _updatedRecords.insert(srcDstVertex.second);
+        }
+        // update version of new dst vertex
+        if (_updatedRecords.find(newDstVertexRecordDescriptor.rid) == _updatedRecords.cend()) {
+          auto newDstVertexDataRecord = adapter::datarecord::DataRecord(
+              _txnBase, newDstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
+          auto newDstVertexRecordResult = newDstVertexDataRecord.getResult(newDstVertexRecordDescriptor.rid.second);
+          auto versionId = parser::RecordParser::parseRawDataVersionId(newDstVertexRecordResult);
+          auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(newDstVertexRecordResult, versionId + 1);
+          newDstVertexDataRecord.update(newDstVertexRecordDescriptor.rid.second, updateRecordBlob);
+          _updatedRecords.insert(newDstVertexRecordDescriptor.rid);
+        }
+        // update version of edge
+        if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
+          auto edgeVersionId = parser::RecordParser::parseRawDataVersionId(recordResult);
+          parser::RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
+          _updatedRecords.insert(recordDescriptor.rid);
+        }
+      }
+      edgeDataRecord.update(recordDescriptor.rid.second, updateEdgeRecordBlob);
     } catch (const Error& error) {
       rollback();
       throw NOGDB_FATAL_ERROR(error);
