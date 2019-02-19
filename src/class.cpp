@@ -36,8 +36,9 @@
 namespace nogdb {
 
 using namespace utils::assertion;
-using namespace adapter::schema;
-using namespace adapter::datarecord;
+using adapter::schema::ClassAccessInfo;
+using adapter::datarecord::DataRecord;
+using parser::RecordParser;
 
 const ClassDescriptor Transaction::addClass(const std::string& className, ClassType type)
 {
@@ -124,15 +125,15 @@ void Transaction::dropClass(const std::string& className)
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto recordId = RecordId { foundClass.id, positionId };
                 if (foundClass.type == ClassType::EDGE) {
-                    auto vertices = parser::RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
+                    auto vertices = RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
                     _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
                     if (_txnCtx->isEnableVersion()) {
                         // update version of src vertex
                         if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
                             auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
                             auto srcVertexRecordResult = srcVertexDataRecord.getResult(vertices.first.second);
-                            auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
-                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                            auto versionId = RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                            auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                 srcVertexRecordResult, versionId + 1);
                             srcVertexDataRecord.update(vertices.first.second, updateRecordBlob);
                             _updatedRecords.insert(vertices.first);
@@ -141,8 +142,8 @@ void Transaction::dropClass(const std::string& className)
                         if (_updatedRecords.find(vertices.second) == _updatedRecords.cend()) {
                             auto dstVertexDataRecord = DataRecord(_txnBase, vertices.second.first, ClassType::VERTEX);
                             auto dstVertexRecordResult = dstVertexDataRecord.getResult(vertices.second.second);
-                            auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
-                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                            auto versionId = RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                            auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                 dstVertexRecordResult, versionId + 1);
                             dstVertexDataRecord.update(vertices.second.second, updateRecordBlob);
                             _updatedRecords.insert(vertices.second);
@@ -155,8 +156,8 @@ void Transaction::dropClass(const std::string& className)
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
                                 auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
                                 auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
-                                auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
-                                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                                auto versionId = RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                     neighbourRecordResult, versionId + 1);
                                 neighbourDataRecord.update(neighbour.second, updateRecordBlob);
                                 _updatedRecords.insert(neighbour);

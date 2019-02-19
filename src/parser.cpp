@@ -23,9 +23,12 @@
 
 namespace nogdb {
 
+using adapter::schema::PropertyIdMapInfo;
+using adapter::schema::PropertyNameMapInfo;
+
 namespace parser {
 
-    Blob RecordParser::parseRecord(const Record& record, const adapter::schema::PropertyNameMapInfo& properties)
+    Blob RecordParser::parseRecord(const Record& record, const PropertyNameMapInfo& properties)
     {
         auto dataSize = size_t { 0 };
         // calculate a raw data size of properties in a record
@@ -115,7 +118,7 @@ namespace parser {
     }
 
     Record RecordParser::parseRawData(const storage_engine::lmdb::Result& rawData,
-        const adapter::schema::PropertyIdMapInfo& propertyInfos,
+        const PropertyIdMapInfo& propertyInfos,
         bool isEdge,
         bool enableVersion)
     {
@@ -132,16 +135,16 @@ namespace parser {
         } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
             //TODO: should be concerned about ENDIAN?
             /**
-         * NOTE: each property block consists of property id, flag, size, and value
-         * when option flag = 0
-         * +----------------------+--------------------+-----------------------+-----------+
-         * | propertyId (16bits)  | option flag (1bit) | propertySize (7bits)  |   value   | (next block) ...
-         * +----------------------+--------------------+-----------------------+-----------+
-         * when option flag = 1 (for extra large size of value)
-         * +----------------------+--------------------+------------------------+-----------+
-         * | propertyId (16bits)  | option flag (1bit) | propertySize (31bits)  |   value   | (next block) ...
-         * +----------------------+--------------------+------------------------+-----------+
-         */
+             * NOTE: each property block consists of property id, flag, size, and value
+             * when option flag = 0
+             * +----------------------+--------------------+-----------------------+-----------+
+             * | propertyId (16bits)  | option flag (1bit) | propertySize (7bits)  |   value   | (next block) ...
+             * +----------------------+--------------------+-----------------------+-----------+
+             * when option flag = 1 (for extra large size of value)
+             * +----------------------+--------------------+------------------------+-----------+
+             * | propertyId (16bits)  | option flag (1bit) | propertySize (31bits)  |   value   | (next block) ...
+             * +----------------------+--------------------+------------------------+-----------+
+             */
             while (offset < rawDataBlob.size()) {
                 auto propertyId = PropertyId {};
                 auto optionFlag = uint8_t {};
@@ -177,7 +180,7 @@ namespace parser {
     }
 
     Record RecordParser::parseRawData(const storage_engine::lmdb::Result& rawData,
-        const adapter::schema::PropertyIdMapInfo& propertyInfos,
+        const PropertyIdMapInfo& propertyInfos,
         const ClassType& classType,
         bool enableVersion)
     {
@@ -187,7 +190,7 @@ namespace parser {
     Record RecordParser::parseRawDataWithBasicInfo(const std::string& className,
         const RecordId& rid,
         const storage_engine::lmdb::Result& rawData,
-        const adapter::schema::PropertyIdMapInfo& propertyInfos,
+        const PropertyIdMapInfo& propertyInfos,
         const ClassType& classType,
         bool enableVersion)
     {
@@ -234,8 +237,7 @@ namespace parser {
         return std::make_pair(srcVertexRid, dstVertexRid);
     }
 
-    Blob RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(const storage_engine::lmdb::Result& rawData,
-        bool enableVersion)
+    Blob RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(const storage_engine::lmdb::Result& rawData, bool enableVersion)
     {
         require(!rawData.data.empty());
         auto blob = rawData.data.blob();
@@ -246,8 +248,7 @@ namespace parser {
         return Blob(byteData, VERTEX_SRC_DST_RAW_DATA_LENGTH);
     }
 
-    Blob RecordParser::parseEdgeRawDataAsBlob(const storage_engine::lmdb::Result& rawData,
-        bool enableVersion)
+    Blob RecordParser::parseEdgeRawDataAsBlob(const storage_engine::lmdb::Result& rawData, bool enableVersion)
     {
         require(!rawData.data.empty());
         auto blob = rawData.data.blob();
@@ -279,7 +280,7 @@ namespace parser {
 
     Blob RecordParser::parseRecord(const Record& record,
         const size_t dataSize,
-        const adapter::schema::PropertyNameMapInfo& properties)
+        const PropertyNameMapInfo& properties)
     {
         if (dataSize <= 0) {
             // create an empty property as a raw data for a class

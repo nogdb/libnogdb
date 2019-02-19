@@ -23,53 +23,54 @@
 
 namespace nogdb {
 
+using adapter::schema::ClassAccessInfo;
+using adapter::schema::PropertyNameMapInfo;
+using adapter::datarecord::DataRecord;
+using parser::RecordParser;
+using compare::RecordCompare;
+
 namespace datarecord {
 
-    Record DataRecordInterface::getRecord(const schema::ClassAccessInfo& classInfo,
+    Record DataRecordInterface::getRecord(const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor) const
     {
         auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
-                          .getResult(recordDescriptor.rid.second);
-        return parser::RecordParser::parseRawData(
-            result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+        auto result = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type).getResult(recordDescriptor.rid.second);
+        return RecordParser::parseRawData(result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
     }
 
-    Record DataRecordInterface::getRecordWithBasicInfo(const schema::ClassAccessInfo& classInfo,
+    Record DataRecordInterface::getRecordWithBasicInfo(const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor) const
     {
         auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        auto result = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type)
-                          .getResult(recordDescriptor.rid.second);
-        return parser::RecordParser::parseRawDataWithBasicInfo(
-            classInfo.name, recordDescriptor.rid, result,
-            propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+        auto result = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type).getResult(recordDescriptor.rid.second);
+        return RecordParser::parseRawDataWithBasicInfo(
+            classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
     }
 
-    ResultSet DataRecordInterface::getResultSet(const schema::ClassAccessInfo& classInfo,
+    ResultSet DataRecordInterface::getResultSet(const ClassAccessInfo& classInfo,
         const std::vector<RecordDescriptor>& recordDescriptors) const
     {
         auto resultSet = ResultSet {};
         auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         for (const auto& recordDescriptor : recordDescriptors) {
             auto result = dataRecord.getResult(recordDescriptor.rid.second);
-            auto record = parser::RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, recordDescriptor.rid, result,
-                propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+            auto record = RecordParser::parseRawDataWithBasicInfo(
+                classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
             resultSet.emplace_back(Result { recordDescriptor, record });
         }
         return resultSet;
     }
 
-    ResultSet DataRecordInterface::getResultSet(const schema::ClassAccessInfo& classInfo) const
+    ResultSet DataRecordInterface::getResultSet(const ClassAccessInfo& classInfo) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSet = ResultSet {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                auto const record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto const record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, RecordId { classInfo.id, positionId },
                     result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
                 resultSet.emplace_back(Result { RecordDescriptor { classInfo.id, positionId }, record });
@@ -78,9 +79,9 @@ namespace datarecord {
         return resultSet;
     }
 
-    ResultSetCursor DataRecordInterface::getResultSetCursor(const schema::ClassAccessInfo& classInfo) const
+    ResultSetCursor DataRecordInterface::getResultSetCursor(const ClassAccessInfo& classInfo) const
     {
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto vertexDataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
@@ -92,19 +93,19 @@ namespace datarecord {
     }
 
     ResultSet
-    DataRecordInterface::getResultSetByCondition(const schema::ClassAccessInfo& classInfo,
+    DataRecordInterface::getResultSetByCondition(const ClassAccessInfo& classInfo,
         const PropertyType& propertyType,
         const Condition& condition) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSet = ResultSet {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
-                if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
+                if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
                 }
             };
@@ -113,19 +114,19 @@ namespace datarecord {
     }
 
     std::vector<RecordDescriptor>
-    DataRecordInterface::getRecordDescriptorByCondition(const schema::ClassAccessInfo& classInfo,
+    DataRecordInterface::getRecordDescriptorByCondition(const ClassAccessInfo& classInfo,
         const PropertyType& propertyType,
         const Condition& condition) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto recordDescriptors = std::vector<RecordDescriptor> {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
-                if (compare::RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
+                if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
                 }
             };
@@ -134,11 +135,11 @@ namespace datarecord {
     }
 
     ResultSet
-    DataRecordInterface::getResultSetByMultiCondition(const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyInfos,
+    DataRecordInterface::getResultSetByMultiCondition(const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyInfos,
         const MultiCondition& multiCondition) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto propertyTypes = PropertyMapType {};
         for (const auto& property : propertyInfos) {
@@ -148,7 +149,7 @@ namespace datarecord {
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
                 if (multiCondition.execute(record, propertyTypes)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
@@ -159,11 +160,11 @@ namespace datarecord {
     }
 
     std::vector<RecordDescriptor>
-    DataRecordInterface::getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyInfos,
+    DataRecordInterface::getRecordDescriptorByMultiCondition(const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyInfos,
         const MultiCondition& multiCondition) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto propertyTypes = PropertyMapType {};
         for (const auto& property : propertyInfos) {
@@ -173,7 +174,7 @@ namespace datarecord {
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
                 if (multiCondition.execute(record, propertyTypes)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
@@ -184,16 +185,16 @@ namespace datarecord {
     }
 
     ResultSet
-    DataRecordInterface::getResultSetByCmpFunction(const schema::ClassAccessInfo& classInfo,
+    DataRecordInterface::getResultSetByCmpFunction(const ClassAccessInfo& classInfo,
         bool (*condition)(const Record& record)) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSet = ResultSet {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
                 if ((*condition)(record)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
@@ -204,16 +205,16 @@ namespace datarecord {
     }
 
     std::vector<RecordDescriptor>
-    DataRecordInterface::getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo& classInfo,
+    DataRecordInterface::getRecordDescriptorByCmpFunction(const ClassAccessInfo& classInfo,
         bool (*condition)(const Record& record)) const
     {
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto recordDescriptors = std::vector<RecordDescriptor> {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
-                auto record = parser::RecordParser::parseRawDataWithBasicInfo(
+                auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
                 if ((*condition)(record)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });

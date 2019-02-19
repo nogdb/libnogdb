@@ -38,9 +38,9 @@
 #define DEFAULT_NOGDB_MAX_DATABASE_SIZE 1073741824UL // 1GB
 #define DEFAULT_NOGDB_MAX_READERS 65536U
 
-using namespace nogdb::utils::assertion;
-
 namespace nogdb {
+
+using namespace utils::assertion;
 
 namespace storage_engine {
 

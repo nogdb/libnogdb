@@ -30,6 +30,11 @@
 
 namespace nogdb {
 
+using adapter::schema::ClassAccessInfo;
+using adapter::schema::PropertyNameMapInfo;
+using adapter::relation::Direction;
+using compare::RecordCompare;
+
 namespace compare {
 
     bool RecordCompare::compareBytesValue(const Bytes& value, PropertyType type, const Condition& condition)
@@ -76,22 +81,22 @@ namespace compare {
     }
 
     bool RecordCompare::compareRecordByCondition(const Record& record,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const Condition& condition)
     {
         auto foundProperty = propertyNameMapInfo.find(condition.propName);
         if (foundProperty == propertyNameMapInfo.cend()) {
             /**
-         * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
-         * multiple edge comparison with a different set of properties
-         */
+             * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+             * multiple edge comparison with a different set of properties
+             */
             return false;
         }
         return compareRecordByCondition(record, foundProperty->second.type, condition);
     }
 
     bool RecordCompare::compareRecordByMultiCondition(const Record& record,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const MultiCondition& multiCondition)
     {
         auto propertyTypes = PropertyMapType {};
@@ -103,9 +108,9 @@ namespace compare {
             if (foundConditionProperty == propertyTypes.cend()) {
                 auto foundProperty = propertyNameMapInfo.find(condition.propName);
                 /**
-           * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
-           * multiple edge comparison with a different set of properties
-           */
+                 * Do not throw NOGDB_CTX_NOEXST_PROPERTY as it is used in graph filter which has
+                 * multiple edge comparison with a different set of properties
+                 */
                 if (foundProperty != propertyNameMapInfo.cend()) {
                     propertyTypes.emplace(condition.propName, foundProperty->second.type);
                 }
@@ -173,12 +178,12 @@ namespace compare {
         if (filter._mode == GraphFilter::FilterMode::CONDITION) {
             auto condition = filter._condition.get();
             auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-            auto cmpResult = compare::RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
+            auto cmpResult = RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
             return cmpResult ? Result { recordDescriptor, record } : Result {};
         } else if (filter._mode == GraphFilter::FilterMode::MULTI_CONDITION) {
             auto multiCondition = filter._multiCondition.get();
             auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-            auto cmpResult = compare::RecordCompare::compareRecordByMultiCondition(
+            auto cmpResult = RecordCompare::compareRecordByMultiCondition(
                 record, propertyNameMapInfo, *multiCondition);
             return cmpResult ? Result { recordDescriptor, record } : Result {};
         } else {
@@ -192,20 +197,20 @@ namespace compare {
     std::vector<RecordDescriptor>
     RecordCompare::filterIncidentEdges(const Transaction& txn,
         const RecordId& vertex,
-        const adapter::relation::Direction& direction,
+        const Direction& direction,
         const GraphFilter& filter,
         const ClassFilter& classFilter)
     {
         auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
         auto edgeNeighbours = std::vector<RecordId> {};
         switch (direction) {
-        case adapter::relation::Direction::IN:
+        case Direction::IN:
             edgeNeighbours = txn._interface->graph()->getInEdges(vertex);
             break;
-        case adapter::relation::Direction::OUT:
+        case Direction::OUT:
             edgeNeighbours = txn._interface->graph()->getOutEdges(vertex);
             break;
-        case adapter::relation::Direction::ALL:
+        case Direction::ALL:
             edgeNeighbours = txn._interface->graph()->getInEdges(vertex);
             auto moreEdges = txn._interface->graph()->getOutEdges(vertex);
             edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
@@ -243,8 +248,8 @@ namespace compare {
     }
 
     ResultSet RecordCompare::compareCondition(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const Condition& condition,
         bool searchIndexOnly)
     {
@@ -266,12 +271,12 @@ namespace compare {
     }
 
     ResultSet RecordCompare::compareMultiCondition(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const MultiCondition& multiCondition,
         bool searchIndexOnly)
     {
-        auto conditionProperties = schema::PropertyNameMapInfo {};
+        auto conditionProperties = PropertyNameMapInfo {};
         for (const auto& conditionNode : multiCondition.conditions) {
             auto conditionNodePtr = conditionNode.lock();
             require(conditionNodePtr != nullptr);
@@ -299,8 +304,8 @@ namespace compare {
 
     std::vector<RecordDescriptor>
     RecordCompare::compareConditionRdesc(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const Condition& condition,
         bool searchIndexOnly)
     {
@@ -322,12 +327,12 @@ namespace compare {
 
     std::vector<RecordDescriptor>
     RecordCompare::compareMultiConditionRdesc(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
-        const schema::PropertyNameMapInfo& propertyNameMapInfo,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
         const MultiCondition& conditions,
         bool searchIndexOnly)
     {
-        auto conditionProperties = schema::PropertyNameMapInfo {};
+        auto conditionProperties = PropertyNameMapInfo {};
         for (const auto& conditionNode : conditions.conditions) {
             auto conditionNodePtr = conditionNode.lock();
             require(conditionNodePtr != nullptr);
@@ -360,15 +365,16 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto resultSet = ResultSet {};
-        auto edgeInfos = std::map<ClassId, std::pair<schema::ClassAccessInfo, PropertyType>> {};
+        auto edgeInfos = std::map<ClassId, std::pair<ClassAccessInfo, PropertyType>> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
             auto propertyType = PropertyType::UNDEFINED;
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
                 edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
-                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(
+                    edgeClassInfo.id, edgeClassInfo.superClassId);
                 auto foundProperty = propertyNameMapInfo.find(condition.propName);
                 if (foundProperty == propertyNameMapInfo.cend()) {
                     continue;
@@ -395,9 +401,9 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto resultSet = ResultSet {};
-        auto edgeInfos = std::map<ClassId, schema::ClassAccessInfo> {};
+        auto edgeInfos = std::map<ClassId, ClassAccessInfo> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
@@ -422,9 +428,9 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto resultSet = ResultSet {};
-        auto edgeInfos = std::map<ClassId, std::pair<schema::ClassAccessInfo, PropertyMapType>> {};
+        auto edgeInfos = std::map<ClassId, std::pair<ClassAccessInfo, PropertyMapType>> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
             auto propertyTypes = PropertyMapType {};
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
@@ -456,9 +462,9 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto recordDescriptors = std::vector<RecordDescriptor> {};
-        auto edgeInfos = std::map<ClassId, std::pair<schema::ClassAccessInfo, PropertyType>> {};
+        auto edgeInfos = std::map<ClassId, std::pair<ClassAccessInfo, PropertyType>> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
             auto propertyType = PropertyType::UNDEFINED;
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
@@ -492,9 +498,9 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto recordDescriptors = std::vector<RecordDescriptor> {};
-        auto edgeInfos = std::map<ClassId, schema::ClassAccessInfo> {};
+        auto edgeInfos = std::map<ClassId, ClassAccessInfo> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
@@ -520,9 +526,9 @@ namespace compare {
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto recordDescriptors = std::vector<RecordDescriptor> {};
-        auto edgeInfos = std::map<ClassId, std::pair<schema::ClassAccessInfo, PropertyMapType>> {};
+        auto edgeInfos = std::map<ClassId, std::pair<ClassAccessInfo, PropertyMapType>> {};
         for (const auto& edgeRecordId : edgeRecordIds) {
-            auto edgeClassInfo = schema::ClassAccessInfo {};
+            auto edgeClassInfo = ClassAccessInfo {};
             auto propertyTypes = PropertyMapType {};
 
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);

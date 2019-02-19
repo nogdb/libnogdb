@@ -35,9 +35,10 @@
 
 #include "nogdb/nogdb.h"
 
-using namespace nogdb::utils::assertion;
-
 namespace nogdb {
+
+using namespace nogdb::utils::assertion;
+using namespace utils::io;
 
 std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying = std::unordered_map<std::string, Context::LMDBInstance> {};
 
@@ -70,12 +71,11 @@ ContextInitializer& ContextInitializer::enableVersion() noexcept
 Context ContextInitializer::init()
 {
     // create a database folder if not exist
-    if (!utils::io::fileExists(_dbPath)) {
+    if (!fileExists(_dbPath)) {
         mkdir(_dbPath.c_str(), 0755);
         auto settingFilePath = _dbPath + DB_SETTING_NAME;
         // write database settings to disk
-        utils::io::writeBinaryFile(
-            settingFilePath.c_str(), static_cast<const char*>((void*)&_settings), sizeof(_settings));
+        writeBinaryFile(settingFilePath.c_str(), static_cast<const char*>((void*)&_settings), sizeof(_settings));
         return Context(_dbPath, _settings);
     } else {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_ALREADY_INITIALIZED);
@@ -85,15 +85,15 @@ Context ContextInitializer::init()
 Context::Context(const std::string& dbPath)
     : _dbPath { dbPath }
 {
-    if (!utils::io::fileExists(_dbPath)) {
+    if (!fileExists(_dbPath)) {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNINITIALIZED);
     } else {
         auto settingFilePath = _dbPath + DB_SETTING_NAME;
-        if (!utils::io::fileExists(settingFilePath)) {
+        if (!fileExists(settingFilePath)) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         } else {
             // read database settings from disk
-            auto binary = utils::io::readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
+            auto binary = readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
             memcpy(&_settings, binary, sizeof(_settings));
             delete binary;
             auto foundContext = _underlying.find(dbPath);

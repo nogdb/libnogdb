@@ -29,6 +29,8 @@
 namespace nogdb {
 
 using adapter::datarecord::DataRecord;
+using adapter::schema::ClassAccessInfo;
+using adapter::schema::PropertyNameMapInfo;
 
 namespace datarecord {
 
@@ -41,41 +43,40 @@ namespace datarecord {
 
         virtual ~DataRecordInterface() noexcept = default;
 
-        Record getRecord(const schema::ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
+        Record getRecord(const ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
 
-        Record getRecordWithBasicInfo(const schema::ClassAccessInfo& classInfo,
-            const RecordDescriptor& recordDescriptor) const;
+        Record getRecordWithBasicInfo(const ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
 
-        ResultSet getResultSet(const schema::ClassAccessInfo& classInfo,
+        ResultSet getResultSet(const ClassAccessInfo& classInfo,
             const std::vector<RecordDescriptor>& recordDescriptors) const;
 
-        ResultSet getResultSet(const schema::ClassAccessInfo& classInfo) const;
+        ResultSet getResultSet(const ClassAccessInfo& classInfo) const;
 
-        ResultSetCursor getResultSetCursor(const schema::ClassAccessInfo& classInfo) const;
+        ResultSetCursor getResultSetCursor(const ClassAccessInfo& classInfo) const;
 
-        ResultSet getResultSetByCondition(const schema::ClassAccessInfo& classInfo,
+        ResultSet getResultSetByCondition(const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
             const Condition& condition) const;
 
         std::vector<RecordDescriptor>
-        getRecordDescriptorByCondition(const schema::ClassAccessInfo& classInfo,
+        getRecordDescriptorByCondition(const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
             const Condition& condition) const;
 
-        ResultSet getResultSetByMultiCondition(const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyInfos,
+        ResultSet getResultSetByMultiCondition(const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyInfos,
             const MultiCondition& multiCondition) const;
 
         std::vector<RecordDescriptor>
-        getRecordDescriptorByMultiCondition(const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyInfos,
+        getRecordDescriptorByMultiCondition(const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyInfos,
             const MultiCondition& multiCondition) const;
 
-        ResultSet getResultSetByCmpFunction(const schema::ClassAccessInfo& classInfo,
+        ResultSet getResultSetByCmpFunction(const ClassAccessInfo& classInfo,
             bool (*condition)(const Record& record)) const;
 
         std::vector<RecordDescriptor>
-        getRecordDescriptorByCmpFunction(const schema::ClassAccessInfo& classInfo,
+        getRecordDescriptorByCmpFunction(const ClassAccessInfo& classInfo,
             bool (*condition)(const Record& record)) const;
 
     private:

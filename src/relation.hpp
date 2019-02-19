@@ -32,11 +32,12 @@
 
 namespace nogdb {
 
-namespace relation {
+using namespace adapter::schema;
+using namespace adapter::relation;
+using namespace adapter::datarecord;
+using utils::caching::UnorderedCache;
 
-    using namespace adapter::schema;
-    using namespace adapter::relation;
-    using namespace adapter::datarecord;
+namespace relation {
 
     class GraphInterface {
     public:
@@ -88,7 +89,7 @@ namespace relation {
         RelationAccess* _inRel;
         RelationAccess* _outRel;
 
-        using InternalCache = utils::caching::UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;
+        using InternalCache = UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;
         InternalCache _edgeDataRecordCache {};
     };
 }

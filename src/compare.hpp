@@ -35,6 +35,8 @@
 namespace nogdb {
 
 using namespace utils::assertion;
+using adapter::schema::ClassAccessInfo;
+using adapter::schema::PropertyNameMapInfo;
 using adapter::relation::Direction;
 
 namespace compare {
@@ -57,12 +59,12 @@ namespace compare {
 
         static bool
         compareRecordByCondition(const Record& record,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const Condition& condition);
 
         static bool
         compareRecordByMultiCondition(const Record& record,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const MultiCondition& multiCondition);
 
         static ClassFilter getFilterClasses(const Transaction& txn, const GraphFilter& filter);
@@ -80,7 +82,7 @@ namespace compare {
         static std::vector<RecordDescriptor>
         filterIncidentEdges(const Transaction& txn,
             const RecordId& vertex,
-            const adapter::relation::Direction& direction,
+            const Direction& direction,
             const GraphFilter& filter,
             const ClassFilter& classFilter);
 
@@ -88,28 +90,28 @@ namespace compare {
         resolveEdgeRecordIds(const Transaction& txn, const RecordId& recordId, const Direction& direction);
 
         static ResultSet compareCondition(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const Condition& condition,
             bool searchIndexOnly = false);
 
         static ResultSet compareMultiCondition(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const MultiCondition& conditions,
             bool searchIndexOnly = false);
 
         static std::vector<RecordDescriptor>
         compareConditionRdesc(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const Condition& condition,
             bool searchIndexOnly = false);
 
         static std::vector<RecordDescriptor>
         compareMultiConditionRdesc(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
-            const schema::PropertyNameMapInfo& propertyNameMapInfo,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
             const MultiCondition& conditions,
             bool searchIndexOnly = false);
 

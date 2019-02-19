@@ -39,9 +39,11 @@
 
 namespace nogdb {
 
-namespace index {
+using namespace adapter::schema;
+using adapter::datarecord::DataRecord;
+using parser::RecordParser;
 
-    using namespace adapter::schema;
+namespace index {
 
     typedef std::map<PropertyId, IndexAccessInfo> PropertyIdMapIndex;
 
@@ -65,15 +67,19 @@ namespace index {
 
         void drop(const ClassId& classId, const PropertyNameMapInfo& propertyNameMapInfo);
 
-        void insert(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-            const PositionId& posId, const Bytes& value);
+        void insert(const PropertyAccessInfo& propertyInfo,
+            const IndexAccessInfo& indexInfo,
+            const PositionId& posId,
+            const Bytes& value);
 
         void insert(const RecordDescriptor& recordDescriptor,
             const Record& record,
             const PropertyNameMapIndex& propertyNameMapIndex);
 
-        void remove(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-            const PositionId& posId, const Bytes& value);
+        void remove(const PropertyAccessInfo& propertyInfo,
+            const IndexAccessInfo& indexInfo,
+            const PositionId& posId,
+            const Bytes& value);
 
         void remove(const RecordDescriptor& recordDescriptor,
             const Record& record,
@@ -94,8 +100,10 @@ namespace index {
             const MultiCondition& conditions) const;
 
         std::vector<RecordDescriptor>
-        getRecord(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-            const Condition& condition, bool isNegative = false) const;
+        getRecord(const PropertyAccessInfo& propertyInfo,
+            const IndexAccessInfo& indexInfo,
+            const Condition& condition,
+            bool isNegative = false) const;
 
         std::vector<RecordDescriptor>
         getRecord(const PropertyNameMapInfo& propertyInfos,
@@ -134,10 +142,10 @@ namespace index {
             auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
             require(!propertyIdMapInfo.empty());
             auto indexAccess = openIndexRecordPositive(indexInfo);
-            auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+            auto dataRecord = DataRecord(_txn->_txnBase, indexInfo.classId, classType);
             std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
                 [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                    auto const record = parser::RecordParser::parseRawData(
+                    auto const record = RecordParser::parseRawData(
                         result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
@@ -159,10 +167,10 @@ namespace index {
             require(!propertyIdMapInfo.empty());
             auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
             auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
-            auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+            auto dataRecord = DataRecord(_txn->_txnBase, indexInfo.classId, classType);
             std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
                 [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                    auto const record = parser::RecordParser::parseRawData(
+                    auto const record = RecordParser::parseRawData(
                         result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
@@ -348,8 +356,10 @@ namespace index {
 
         template <typename T>
         std::vector<RecordDescriptor>
-        getBetweenNumeric(const T& lowerBound, const T& upperBound,
-            const IndexAccessInfo& indexInfo, const std::pair<bool, bool>& isIncludeBound) const
+        getBetweenNumeric(const T& lowerBound,
+            const T& upperBound,
+            const IndexAccessInfo& indexInfo,
+            const std::pair<bool, bool>& isIncludeBound) const
         {
             if (lowerBound < 0 && upperBound < 0) {
                 auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
@@ -374,8 +384,11 @@ namespace index {
 
         template <typename T>
         static std::vector<RecordDescriptor>
-        backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-            const T& value, bool positive, bool isInclude = false)
+        backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId,
+            const T& value,
+            bool positive,
+            bool isInclude = false)
         {
             auto result = std::vector<RecordDescriptor> {};
             if (!std::is_same<T, double>::value || positive) {
@@ -440,8 +453,11 @@ namespace index {
 
         template <typename T>
         static std::vector<RecordDescriptor>
-        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-            const T& value, bool positive, bool isInclude = false)
+        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId,
+            const T& value,
+            bool positive,
+            bool isInclude = false)
         {
             auto result = std::vector<RecordDescriptor> {};
             if (!std::is_same<T, double>::value || positive) {
@@ -474,13 +490,18 @@ namespace index {
         };
 
         static std::vector<RecordDescriptor>
-        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-            const std::string& value, bool isInclude = false);
+        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId,
+            const std::string& value,
+            bool isInclude = false);
 
         template <typename T>
         static std::vector<RecordDescriptor>
-        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-            const T& lower, const T& upper, bool isLowerPositive,
+        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId,
+            const T& lower,
+            const T& upper,
+            bool isLowerPositive,
             const std::pair<bool, bool>& isIncludeBound)
         {
             auto result = std::vector<RecordDescriptor> {};
@@ -515,8 +536,10 @@ namespace index {
         };
 
         static std::vector<RecordDescriptor>
-        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-            const std::string& lower, const std::string& upper,
+        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId,
+            const std::string& lower,
+            const std::string& upper,
             const std::pair<bool, bool>& isIncludeBound);
     };
 

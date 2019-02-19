@@ -28,9 +28,10 @@
 
 namespace nogdb {
 
-namespace validate {
+using namespace adapter::schema;
+using adapter::datarecord::DataRecord;
 
-    using namespace adapter::schema;
+namespace validate {
 
     Validator& Validator::isTxnValid()
     {
@@ -159,7 +160,7 @@ namespace validate {
     {
         auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
-            auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+            auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
                 vertexDataRecord.getBlob(vertex.rid.second);
             } catch (const Error& error) {
@@ -179,7 +180,7 @@ namespace validate {
     {
         auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
-            auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+            auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
                 vertexDataRecord.getBlob(vertex.rid.second);
             } catch (const Error& error) {
@@ -199,7 +200,7 @@ namespace validate {
     {
         auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
-            auto vertexDataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
+            auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
                 vertexDataRecord.getBlob(vertex.rid.second);
             } catch (const Error& error) {

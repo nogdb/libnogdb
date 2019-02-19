@@ -24,6 +24,8 @@
 
 namespace nogdb {
 
+using compare::RecordCompare;
+
 MultiCondition& MultiCondition::operator&&(const MultiCondition& e)
 {
     auto newRoot = std::make_shared<CompositeNode>(root, e.root, Operator::AND);
@@ -184,7 +186,7 @@ bool MultiCondition::ConditionNode::check(const Record& r, const PropertyMapType
     }
     if (cond.comp != Condition::Comparator::IS_NULL && cond.comp != Condition::Comparator::NOT_NULL) {
         if (!value.empty()) {
-            return compare::RecordCompare::compareBytesValue(value, type->second, cond);
+            return RecordCompare::compareBytesValue(value, type->second, cond);
         }
         return false;
     } else {

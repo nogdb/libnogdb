@@ -41,6 +41,9 @@
 
 namespace nogdb {
 
+using adapter::schema::ClassAccessInfo;
+using adapter::relation::Direction;
+
 namespace algorithm {
 
     class GraphTraversal {
@@ -50,36 +53,36 @@ namespace algorithm {
         ~GraphTraversal() noexcept = delete;
 
         static ResultSet breadthFirstSearch(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
+            const ClassAccessInfo& classInfo,
             const RecordDescriptor& recordDescriptor,
             unsigned int minDepth,
             unsigned int maxDepth,
-            const adapter::relation::Direction& direction,
+            const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
 
         static std::vector<RecordDescriptor>
         breadthFirstSearchRdesc(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
+            const ClassAccessInfo& classInfo,
             const RecordDescriptor& recordDescriptor,
             unsigned int minDepth,
             unsigned int maxDepth,
-            const adapter::relation::Direction& direction,
+            const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
 
         static ResultSet depthFirstSearch(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
+            const ClassAccessInfo& classInfo,
             const RecordDescriptor& recordDescriptor,
             unsigned int minDepth,
             unsigned int maxDepth,
-            const adapter::relation::Direction& direction,
+            const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
 
         static std::vector<RecordDescriptor>
         depthFirstSearchRdesc(const Transaction& txn,
-            const schema::ClassAccessInfo& classInfo,
+            const ClassAccessInfo& classInfo,
             const RecordDescriptor& recordDescriptor,
             unsigned int minDepth,
             unsigned int maxDepth,
@@ -88,8 +91,8 @@ namespace algorithm {
             const GraphFilter& vertexFilter);
 
         static ResultSet bfsShortestPath(const Transaction& txn,
-            const schema::ClassAccessInfo& srcVertexClassInfo,
-            const schema::ClassAccessInfo& dstVertexClassInfo,
+            const ClassAccessInfo& srcVertexClassInfo,
+            const ClassAccessInfo& dstVertexClassInfo,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
             const GraphFilter& edgeFilter,
@@ -97,8 +100,8 @@ namespace algorithm {
 
         static std::vector<RecordDescriptor>
         bfsShortestPathRdesc(const Transaction& txn,
-            const schema::ClassAccessInfo& srcVertexClassInfo,
-            const schema::ClassAccessInfo& dstVertexClassInfo,
+            const ClassAccessInfo& srcVertexClassInfo,
+            const ClassAccessInfo& dstVertexClassInfo,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
             const GraphFilter& edgeFilter,

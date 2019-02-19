@@ -31,6 +31,8 @@
 
 namespace nogdb {
 
+using adapter::schema::PropertyAccessInfo;
+
 const DbInfo Transaction::getDbInfo() const
 {
     BEGIN_VALIDATION(this)
@@ -82,8 +84,7 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const std::stri
     }
     // inherited properties
     auto inheritResult = _interface->schema()->getInheritPropertyInfo(
-        _adapter->dbClass()->getSuperClassId(foundClass.id),
-        std::vector<schema::PropertyAccessInfo> {});
+        _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
     for (const auto& property : inheritResult) {
         result.emplace_back(
             PropertyDescriptor {
@@ -113,8 +114,7 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDesc
     }
     // inherited properties
     auto inheritResult = _interface->schema()->getInheritPropertyInfo(
-        _adapter->dbClass()->getSuperClassId(foundClass.id),
-        std::vector<schema::PropertyAccessInfo> {});
+        _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
     for (const auto& property : inheritResult) {
         result.emplace_back(
             PropertyDescriptor {

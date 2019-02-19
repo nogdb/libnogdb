@@ -36,6 +36,11 @@
 
 namespace nogdb {
 
+using adapter::schema::ClassAccessInfo;
+using adapter::datarecord::DataRecord;
+using parser::RecordParser;
+using compare::RecordCompare;
+
 const RecordDescriptor Transaction::addVertex(const std::string& className, const Record& record)
 {
     BEGIN_VALIDATION(this)
@@ -46,12 +51,12 @@ const RecordDescriptor Transaction::addVertex(const std::string& className, cons
     auto vertexClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
     auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
         vertexClassInfo.id, vertexClassInfo.superClassId);
-    auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
+    auto recordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-        auto vertexDataRecord = adapter::datarecord::DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
+        auto vertexDataRecord = DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
         auto positionId = PositionId { 0 };
         if (_txnCtx->isEnableVersion()) {
-            auto newRecordBlob = parser::RecordParser::parseVertexRecordWithVersion(recordBlob, VersionId { 1 });
+            auto newRecordBlob = RecordParser::parseVertexRecordWithVersion(recordBlob, VersionId { 1 });
             positionId = vertexDataRecord.insert(newRecordBlob);
             _updatedRecords.insert(RecordId { vertexClassInfo.id, positionId });
         } else {
@@ -82,14 +87,14 @@ const RecordDescriptor Transaction::addEdge(const std::string& className,
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::EDGE);
     auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
         edgeClassInfo.id, edgeClassInfo.superClassId);
-    auto recordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
+    auto recordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-        auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
-        auto vertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
+        auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
+        auto vertexBlob = RecordParser::parseEdgeVertexSrcDst(
             srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
         auto positionId = PositionId { 0 };
         if (_txnCtx->isEnableVersion()) {
-            auto newRecordBlob = parser::RecordParser::parseEdgeRecordWithVersion(vertexBlob, recordBlob, VersionId { 1 });
+            auto newRecordBlob = RecordParser::parseEdgeRecordWithVersion(vertexBlob, recordBlob, VersionId { 1 });
             positionId = edgeDataRecord.insert(newRecordBlob);
             _updatedRecords.insert(RecordId { edgeClassInfo.id, positionId });
         } else {
@@ -113,35 +118,35 @@ void Transaction::update(const RecordDescriptor& recordDescriptor, const Record&
         .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    auto dataRecord = adapter::datarecord::DataRecord(_txnBase, classInfo.id, classInfo.type);
+    auto dataRecord = DataRecord(_txnBase, classInfo.id, classInfo.type);
     auto recordResult = dataRecord.getResult(recordDescriptor.rid.second);
     auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-    auto newRecordBlob = parser::RecordParser::parseRecord(record, propertyNameMapInfo);
+    auto newRecordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
         auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        auto existingRecord = parser::RecordParser::parseRawData(
+        auto existingRecord = RecordParser::parseRawData(
             recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
 
         // insert an updated record
         auto updateRecordBlob = Blob {};
         if (_txnCtx->isEnableVersion()) {
             if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
-                auto versionId = parser::RecordParser::parseRawDataVersionId(recordResult);
+                auto versionId = RecordParser::parseRawDataVersionId(recordResult);
                 if (classInfo.type == ClassType::EDGE) {
-                    auto vertexBlob = parser::RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
+                    auto vertexBlob = RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
                         recordResult, _txnCtx->isEnableVersion());
-                    updateRecordBlob = parser::RecordParser::parseEdgeRecordWithVersion(
+                    updateRecordBlob = RecordParser::parseEdgeRecordWithVersion(
                         vertexBlob, newRecordBlob, versionId + 1);
                 } else {
-                    updateRecordBlob = parser::RecordParser::parseVertexRecordWithVersion(newRecordBlob, versionId + 1);
+                    updateRecordBlob = RecordParser::parseVertexRecordWithVersion(newRecordBlob, versionId + 1);
                 }
                 _updatedRecords.insert(recordDescriptor.rid);
             } else {
-                updateRecordBlob = parser::RecordParser::parseOnlyUpdateRecord(
+                updateRecordBlob = RecordParser::parseOnlyUpdateRecord(
                     recordResult, newRecordBlob, classInfo.type == ClassType::EDGE, true);
             }
         } else {
-            updateRecordBlob = parser::RecordParser::parseOnlyUpdateRecord(
+            updateRecordBlob = RecordParser::parseOnlyUpdateRecord(
                 recordResult, newRecordBlob, classInfo.type == ClassType::EDGE, false);
         }
         dataRecord.update(recordDescriptor.rid.second, updateRecordBlob);
@@ -166,41 +171,40 @@ void Transaction::updateSrc(const RecordDescriptor& recordDescriptor,
         .isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-        auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
+        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
         _interface->graph()->updateSrcRel(
             recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
-        auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
+        auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
-        auto updateEdgeRecordBlob = parser::RecordParser::parseOnlyUpdateSrcVertex(
+        auto updateEdgeRecordBlob = RecordParser::parseOnlyUpdateSrcVertex(
             recordResult, newSrcVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
         if (_txnCtx->isEnableVersion()) {
             // update version of old src vertex
             if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
-                auto oldSrcVertexDataRecord = adapter::datarecord::DataRecord(
-                    _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
+                auto oldSrcVertexDataRecord = DataRecord(_txnBase, srcDstVertex.first.first, ClassType::VERTEX);
                 auto oldSrcVertexRecordResult = oldSrcVertexDataRecord.getResult(srcDstVertex.first.second);
-                auto versionId = parser::RecordParser::parseRawDataVersionId(oldSrcVertexRecordResult);
-                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(oldSrcVertexRecordResult, versionId + 1);
+                auto versionId = RecordParser::parseRawDataVersionId(oldSrcVertexRecordResult);
+                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(oldSrcVertexRecordResult, versionId + 1);
                 oldSrcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
                 _updatedRecords.insert(srcDstVertex.first);
             }
             // update version of new src vertex
             if (_updatedRecords.find(newSrcVertexRecordDescriptor.rid) == _updatedRecords.cend()) {
-                auto newSrcVertexDataRecord = adapter::datarecord::DataRecord(
+                auto newSrcVertexDataRecord =DataRecord(
                     _txnBase, newSrcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
                 auto newSrcVertexRecordResult = newSrcVertexDataRecord.getResult(newSrcVertexRecordDescriptor.rid.second);
-                auto versionId = parser::RecordParser::parseRawDataVersionId(newSrcVertexRecordResult);
-                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(newSrcVertexRecordResult, versionId + 1);
+                auto versionId = RecordParser::parseRawDataVersionId(newSrcVertexRecordResult);
+                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(newSrcVertexRecordResult, versionId + 1);
                 newSrcVertexDataRecord.update(newSrcVertexRecordDescriptor.rid.second, updateRecordBlob);
                 _updatedRecords.insert(newSrcVertexRecordDescriptor.rid);
             }
             // update version of edge
             if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
-                auto edgeVersionId = parser::RecordParser::parseRawDataVersionId(recordResult);
-                parser::RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
+                auto edgeVersionId = RecordParser::parseRawDataVersionId(recordResult);
+                RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
                 _updatedRecords.insert(recordDescriptor.rid);
             }
         }
@@ -220,41 +224,40 @@ void Transaction::updateDst(const RecordDescriptor& recordDescriptor,
         .isExistingDstVertex(newDstVertexRecordDescriptor);
 
     auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto edgeDataRecord = adapter::datarecord::DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
+    auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-        auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
+        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
         _interface->graph()->updateDstRel(
             recordDescriptor.rid, newDstVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
-        auto newVertexBlob = parser::RecordParser::parseEdgeVertexSrcDst(
+        auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             srcDstVertex.first, newDstVertexRecordDescriptor.rid);
-        auto updateEdgeRecordBlob = parser::RecordParser::parseOnlyUpdateDstVertex(
+        auto updateEdgeRecordBlob = RecordParser::parseOnlyUpdateDstVertex(
             recordResult, newDstVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
         if (_txnCtx->isEnableVersion()) {
             // update version of old dst vertex
             if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
-                auto oldDstVertexDataRecord = adapter::datarecord::DataRecord(
-                    _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
+                auto oldDstVertexDataRecord = DataRecord(_txnBase, srcDstVertex.second.first, ClassType::VERTEX);
                 auto oldDstVertexRecordResult = oldDstVertexDataRecord.getResult(srcDstVertex.second.second);
-                auto versionId = parser::RecordParser::parseRawDataVersionId(oldDstVertexRecordResult);
-                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(oldDstVertexRecordResult, versionId + 1);
+                auto versionId = RecordParser::parseRawDataVersionId(oldDstVertexRecordResult);
+                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(oldDstVertexRecordResult, versionId + 1);
                 oldDstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
                 _updatedRecords.insert(srcDstVertex.second);
             }
             // update version of new dst vertex
             if (_updatedRecords.find(newDstVertexRecordDescriptor.rid) == _updatedRecords.cend()) {
-                auto newDstVertexDataRecord = adapter::datarecord::DataRecord(
+                auto newDstVertexDataRecord = DataRecord(
                     _txnBase, newDstVertexRecordDescriptor.rid.first, ClassType::VERTEX);
                 auto newDstVertexRecordResult = newDstVertexDataRecord.getResult(newDstVertexRecordDescriptor.rid.second);
-                auto versionId = parser::RecordParser::parseRawDataVersionId(newDstVertexRecordResult);
-                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(newDstVertexRecordResult, versionId + 1);
+                auto versionId = RecordParser::parseRawDataVersionId(newDstVertexRecordResult);
+                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(newDstVertexRecordResult, versionId + 1);
                 newDstVertexDataRecord.update(newDstVertexRecordDescriptor.rid.second, updateRecordBlob);
                 _updatedRecords.insert(newDstVertexRecordDescriptor.rid);
             }
             // update version of edge
             if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
-                auto edgeVersionId = parser::RecordParser::parseRawDataVersionId(recordResult);
-                parser::RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
+                auto edgeVersionId = RecordParser::parseRawDataVersionId(recordResult);
+                RecordParser::parseOnlyUpdateVersion(updateEdgeRecordBlob, edgeVersionId + 1);
                 _updatedRecords.insert(recordDescriptor.rid);
             }
         }
@@ -272,36 +275,36 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
         .isTxnCompleted();
 
     auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    auto dataRecord = adapter::datarecord::DataRecord(_txnBase, classInfo.id, classInfo.type);
+    auto dataRecord = DataRecord(_txnBase, classInfo.id, classInfo.type);
     auto recordResult = dataRecord.getResult(recordDescriptor.rid.second);
     try {
         auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
-        auto record = parser::RecordParser::parseRawData(
+        auto record = RecordParser::parseRawData(
             recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
 
         if (classInfo.type == ClassType::EDGE) {
-            auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
+            auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
                 recordResult, _txnCtx->isEnableVersion());
             _interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
             if (_txnCtx->isEnableVersion()) {
                 // update version of src vertex
                 if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
-                    auto srcVertexDataRecord = adapter::datarecord::DataRecord(
+                    auto srcVertexDataRecord = DataRecord(
                         _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
                     auto srcVertexRecordResult = srcVertexDataRecord.getResult(srcDstVertex.first.second);
-                    auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
-                    auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(srcVertexRecordResult, versionId + 1);
+                    auto versionId = RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                    auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(srcVertexRecordResult, versionId + 1);
                     srcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
                     _updatedRecords.insert(srcDstVertex.first);
                 }
                 // update version of dst vertex
                 if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
-                    auto dstVertexDataRecord = adapter::datarecord::DataRecord(
+                    auto dstVertexDataRecord = DataRecord(
                         _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
                     auto dstVertexRecordResult = dstVertexDataRecord.getResult(srcDstVertex.second.second);
-                    auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
-                    auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(dstVertexRecordResult, versionId + 1);
+                    auto versionId = RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                    auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(dstVertexRecordResult, versionId + 1);
                     dstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
                     _updatedRecords.insert(srcDstVertex.second);
                 }
@@ -311,10 +314,10 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
             if (_txnCtx->isEnableVersion()) {
                 for (const auto& neighbour : neighbours) {
                     if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
-                        auto neighbourDataRecord = adapter::datarecord::DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
+                        auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
                         auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
-                        auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
-                        auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(neighbourRecordResult, versionId + 1);
+                        auto versionId = RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                        auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(neighbourRecordResult, versionId + 1);
                         neighbourDataRecord.update(neighbour.second, updateRecordBlob);
                         _updatedRecords.insert(neighbour);
                     }
@@ -341,35 +344,35 @@ void Transaction::removeAll(const std::string& className)
 
     auto classInfo = _interface->schema()->getExistingClass(className);
     try {
-        auto dataRecord = adapter::datarecord::DataRecord(_txnBase, classInfo.id, ClassType::VERTEX);
+        auto dataRecord = DataRecord(_txnBase, classInfo.id, ClassType::VERTEX);
         auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto result = std::map<RecordId, std::pair<RecordId, RecordId>> {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto recordId = RecordId { classInfo.id, positionId };
                 if (classInfo.type == ClassType::EDGE) {
-                    auto srcDstVertex = parser::RecordParser::parseEdgeRawDataVertexSrcDst(
+                    auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
                         result, _txnCtx->isEnableVersion());
                     _interface->graph()->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
                     if (_txnCtx->isEnableVersion()) {
                         // update version of src vertex
                         if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
-                            auto srcVertexDataRecord = adapter::datarecord::DataRecord(
+                            auto srcVertexDataRecord = DataRecord(
                                 _txnBase, srcDstVertex.first.first, ClassType::VERTEX);
                             auto srcVertexRecordResult = srcVertexDataRecord.getResult(srcDstVertex.first.second);
-                            auto versionId = parser::RecordParser::parseRawDataVersionId(srcVertexRecordResult);
-                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                            auto versionId = RecordParser::parseRawDataVersionId(srcVertexRecordResult);
+                            auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                 srcVertexRecordResult, versionId + 1);
                             srcVertexDataRecord.update(srcDstVertex.first.second, updateRecordBlob);
                             _updatedRecords.insert(srcDstVertex.first);
                         }
                         // update version of dst vertex
                         if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
-                            auto dstVertexDataRecord = adapter::datarecord::DataRecord(
+                            auto dstVertexDataRecord = DataRecord(
                                 _txnBase, srcDstVertex.second.first, ClassType::VERTEX);
                             auto dstVertexRecordResult = dstVertexDataRecord.getResult(srcDstVertex.second.second);
-                            auto versionId = parser::RecordParser::parseRawDataVersionId(dstVertexRecordResult);
-                            auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                            auto versionId = RecordParser::parseRawDataVersionId(dstVertexRecordResult);
+                            auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                 dstVertexRecordResult, versionId + 1);
                             dstVertexDataRecord.update(srcDstVertex.second.second, updateRecordBlob);
                             _updatedRecords.insert(srcDstVertex.second);
@@ -380,11 +383,11 @@ void Transaction::removeAll(const std::string& className)
                     if (_txnCtx->isEnableVersion()) {
                         for (const auto& neighbour : neighbours) {
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
-                                auto neighbourDataRecord = adapter::datarecord::DataRecord(
+                                auto neighbourDataRecord = DataRecord(
                                     _txnBase, neighbour.first, ClassType::VERTEX);
                                 auto neighbourRecordResult = neighbourDataRecord.getResult(neighbour.second);
-                                auto versionId = parser::RecordParser::parseRawDataVersionId(neighbourRecordResult);
-                                auto updateRecordBlob = parser::RecordParser::parseOnlyUpdateVersion(
+                                auto versionId = RecordParser::parseRawDataVersionId(neighbourRecordResult);
+                                auto updateRecordBlob = RecordParser::parseOnlyUpdateVersion(
                                     neighbourRecordResult, versionId + 1);
                                 neighbourDataRecord.update(neighbour.second, updateRecordBlob);
                                 _updatedRecords.insert(neighbour);
@@ -508,16 +511,15 @@ ResultSet FindOperationBuilder::get() const
         .isClassNameValid(_className);
 
     auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
-    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, schema::ClassAccessInfo> {};
+    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
     switch (_conditionType) {
     case ConditionType::CONDITION: {
         auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto resultSet = compare::RecordCompare::compareCondition(
-            *_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
+        auto resultSet = RecordCompare::compareCondition(*_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
             auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = compare::RecordCompare::compareCondition(
+            auto resultSetExtend = RecordCompare::compareCondition(
                 *_txn, currentClassInfo, currentPropertyInfo, *_condition, _indexed);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
         }
@@ -525,12 +527,12 @@ ResultSet FindOperationBuilder::get() const
     }
     case ConditionType::MULTI_CONDITION: {
         auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto resultSet = compare::RecordCompare::compareMultiCondition(
+        auto resultSet = RecordCompare::compareMultiCondition(
             *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
             auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = compare::RecordCompare::compareMultiCondition(
+            auto resultSetExtend = RecordCompare::compareMultiCondition(
                 *_txn, currentClassInfo, currentPropertyInfo, *_multiCondition, _indexed);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
         }
@@ -565,18 +567,18 @@ ResultSetCursor FindOperationBuilder::getCursor() const
         .isClassNameValid(_className);
 
     auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
-    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, schema::ClassAccessInfo> {};
+    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
     switch (_conditionType) {
     case ConditionType::CONDITION: {
         auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
-        auto result = compare::RecordCompare::compareConditionRdesc(
+        auto result = RecordCompare::compareConditionRdesc(
             *_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
         resultSetCursor.addMetadata(result);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
             auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = compare::RecordCompare::compareConditionRdesc(
+            auto resultSetExtend = RecordCompare::compareConditionRdesc(
                 *_txn, classInfo, currentPropertyInfo, *_condition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
         }
@@ -585,13 +587,13 @@ ResultSetCursor FindOperationBuilder::getCursor() const
     case ConditionType::MULTI_CONDITION: {
         auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
-        auto result = compare::RecordCompare::compareMultiConditionRdesc(
+        auto result = RecordCompare::compareMultiConditionRdesc(
             *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
         resultSetCursor.addMetadata(result);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
             auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = compare::RecordCompare::compareMultiConditionRdesc(
+            auto resultSetExtend = RecordCompare::compareMultiConditionRdesc(
                 *_txn, classInfo, currentPropertyInfo, *_multiCondition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
         }
@@ -654,10 +656,10 @@ ResultSet FindEdgeOperationBuilder::get() const
     }
     }
     auto result = ResultSet {};
-    auto classFilter = compare::RecordCompare::getFilterClasses(*_txn, _filter);
+    auto classFilter = RecordCompare::getFilterClasses(*_txn, _filter);
     for (const auto& recordId : edgeRecordIds) {
         auto edgeRecordDescriptor = RecordDescriptor { recordId };
-        auto filterResult = compare::RecordCompare::filterResult(*_txn, edgeRecordDescriptor, _filter, classFilter);
+        auto filterResult = RecordCompare::filterResult(*_txn, edgeRecordDescriptor, _filter, classFilter);
         if (filterResult.descriptor != RecordDescriptor {}) {
             result.emplace_back(filterResult);
         }
@@ -693,10 +695,10 @@ ResultSetCursor FindEdgeOperationBuilder::getCursor() const
     }
     }
     auto result = ResultSetCursor { *_txn };
-    auto classFilter = compare::RecordCompare::getFilterClasses(*_txn, _filter);
+    auto classFilter = RecordCompare::getFilterClasses(*_txn, _filter);
     for (const auto& recordId : edgeRecordIds) {
         auto edgeRecordDescriptor = RecordDescriptor { recordId };
-        auto filterRecord = compare::RecordCompare::filterRecord(*_txn, edgeRecordDescriptor, _filter, classFilter);
+        auto filterRecord = RecordCompare::filterRecord(*_txn, edgeRecordDescriptor, _filter, classFilter);
         if (filterRecord != RecordDescriptor {}) {
             result.addMetadata(filterRecord);
         }

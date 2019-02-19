@@ -23,6 +23,10 @@
 
 namespace nogdb {
 
+using adapter::index::IndexRecord;
+using adapter::datarecord::DataRecord;
+using parser::RecordParser;
+
 namespace index {
 
     void IndexInterface::initialize(const PropertyAccessInfo& propertyInfo,
@@ -122,8 +126,10 @@ namespace index {
         }
     }
 
-    void IndexInterface::insert(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-        const PositionId& posId, const Bytes& value)
+    void IndexInterface::insert(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
+        const PositionId& posId,
+        const Bytes& value)
     {
         if (!value.empty()) {
             try {
@@ -187,8 +193,10 @@ namespace index {
         }
     }
 
-    void IndexInterface::remove(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-        const PositionId& posId, const Bytes& value)
+    void IndexInterface::remove(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
+        const PositionId& posId,
+        const Bytes& value)
     {
         if (!value.empty()) {
             switch (propertyInfo.type) {
@@ -315,8 +323,10 @@ namespace index {
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getRecord(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-        const Condition& condition, bool isNegative) const
+    IndexInterface::getRecord(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
+        const Condition& condition,
+        bool isNegative) const
     {
         auto isApplyNegative = condition.isNegative ^ isNegative;
         switch (condition.comp) {
@@ -447,27 +457,27 @@ namespace index {
         return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false);
     }
 
-    adapter::index::IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo& indexInfo) const
+    IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo& indexInfo) const
     {
         auto uniqueFlag = (indexInfo.isUnique) ? INDEX_TYPE_UNIQUE : INDEX_TYPE_NON_UNIQUE;
         auto indexFlags = INDEX_TYPE_POSITIVE | INDEX_TYPE_NUMERIC | uniqueFlag;
-        auto indexAccess = adapter::index::IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
+        auto indexAccess = IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
         return indexAccess;
     }
 
-    adapter::index::IndexRecord IndexInterface::openIndexRecordNegative(const IndexAccessInfo& indexInfo) const
+    IndexRecord IndexInterface::openIndexRecordNegative(const IndexAccessInfo& indexInfo) const
     {
         auto uniqueFlag = (indexInfo.isUnique) ? INDEX_TYPE_UNIQUE : INDEX_TYPE_NON_UNIQUE;
         auto indexFlags = INDEX_TYPE_NEGATIVE | INDEX_TYPE_NUMERIC | uniqueFlag;
-        auto indexAccess = adapter::index::IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
+        auto indexAccess = IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
         return indexAccess;
     }
 
-    adapter::index::IndexRecord IndexInterface::openIndexRecordString(const IndexAccessInfo& indexInfo) const
+    IndexRecord IndexInterface::openIndexRecordString(const IndexAccessInfo& indexInfo) const
     {
         auto uniqueFlag = (indexInfo.isUnique) ? INDEX_TYPE_UNIQUE : INDEX_TYPE_NON_UNIQUE;
         auto indexFlags = INDEX_TYPE_POSITIVE | INDEX_TYPE_STRING | uniqueFlag;
-        auto indexAccess = adapter::index::IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
+        auto indexAccess = IndexRecord { _txn->_txnBase, indexInfo.id, (unsigned int)indexFlags };
         return indexAccess;
     }
 
@@ -479,10 +489,10 @@ namespace index {
         auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
         require(!propertyIdMapInfo.empty());
         auto indexAccess = openIndexRecordString(indexInfo);
-        auto dataRecord = adapter::datarecord::DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+        auto dataRecord = DataRecord(_txn->_txnBase, indexInfo.classId, classType);
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
-                auto const record = parser::RecordParser::parseRawData(
+                auto const record = RecordParser::parseRawData(
                     result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
                 auto value = record.get(propertyInfo.name).toText();
                 if (!value.empty()) {
@@ -576,21 +586,24 @@ namespace index {
     };
 
     std::vector<RecordDescriptor>
-    IndexInterface::getLessOrEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getLessOrEqual(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value) const
     {
         return getLessCommon(propertyInfo, indexInfo, value, true);
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getLessThan(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getLessThan(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value) const
     {
         return getLessCommon(propertyInfo, indexInfo, value, false);
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getEqual(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value) const
     {
         switch (propertyInfo.type) {
@@ -635,21 +648,24 @@ namespace index {
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getGreaterOrEqual(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getGreaterOrEqual(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value) const
     {
         return getGreaterCommon(propertyInfo, indexInfo, value, true);
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getGreaterThan(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getGreaterThan(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value) const
     {
         return getGreaterCommon(propertyInfo, indexInfo, value, false);
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getBetween(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getBetween(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& lowerBound, const Bytes& upperBound,
         const std::pair<bool, bool>& isIncludeBound) const
     {
@@ -707,7 +723,8 @@ namespace index {
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getLessCommon(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
+    IndexInterface::getLessCommon(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
         const Bytes& value, bool isEqual) const
     {
         switch (propertyInfo.type) {
@@ -749,8 +766,10 @@ namespace index {
     }
 
     std::vector<RecordDescriptor>
-    IndexInterface::getGreaterCommon(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo,
-        const Bytes& value, bool isEqual) const
+    IndexInterface::getGreaterCommon(const PropertyAccessInfo& propertyInfo,
+        const IndexAccessInfo& indexInfo,
+        const Bytes& value,
+        bool isEqual) const
     {
         switch (propertyInfo.type) {
         case PropertyType::UNSIGNED_TINYINT:
@@ -825,8 +844,10 @@ namespace index {
     };
 
     std::vector<RecordDescriptor>
-    IndexInterface::forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-        const std::string& value, bool isInclude)
+    IndexInterface::forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        const ClassId& classId,
+        const std::string& value,
+        bool isInclude)
     {
         auto result = std::vector<RecordDescriptor> {};
         for (auto keyValue = cursorHandler.findRange(value);
@@ -846,8 +867,10 @@ namespace index {
     };
 
     std::vector<RecordDescriptor>
-    IndexInterface::betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId,
-        const std::string& lower, const std::string& upper,
+    IndexInterface::betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        const ClassId& classId,
+        const std::string& lower,
+        const std::string& upper,
         const std::pair<bool, bool>& isIncludeBound)
     {
         auto result = std::vector<RecordDescriptor> {};

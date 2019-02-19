@@ -35,6 +35,9 @@
 
 namespace nogdb {
 
+using adapter::schema::PropertyIdMapInfo;
+using adapter::schema::PropertyNameMapInfo;
+
 namespace parser {
 
     constexpr size_t UINT8_BITS_COUNT = 8 * sizeof(uint8_t);
@@ -56,16 +59,15 @@ namespace parser {
         //-------------------------
         // Common parsers
         //-------------------------
-        static Blob parseRecord(const Record& record,
-            const adapter::schema::PropertyNameMapInfo& properties);
+        static Blob parseRecord(const Record& record, const PropertyNameMapInfo& properties);
 
         static Record parseRawData(const storage_engine::lmdb::Result& rawData,
-            const adapter::schema::PropertyIdMapInfo& propertyInfos,
+            const PropertyIdMapInfo& propertyInfos,
             bool isEdge,
             bool enableVersion);
 
         static Record parseRawData(const storage_engine::lmdb::Result& rawData,
-            const adapter::schema::PropertyIdMapInfo& propertyInfos,
+            const PropertyIdMapInfo& propertyInfos,
             const ClassType& classType,
             bool enableVersion);
 
@@ -89,7 +91,7 @@ namespace parser {
         static Record parseRawDataWithBasicInfo(const std::string& className,
             const RecordId& rid,
             const storage_engine::lmdb::Result& rawData,
-            const adapter::schema::PropertyIdMapInfo& propertyInfos,
+            const PropertyIdMapInfo& propertyInfos,
             const ClassType& classType,
             bool enableVersion);
         //-------------------------
@@ -118,7 +120,7 @@ namespace parser {
 
         static Blob parseRecord(const Record& record,
             const size_t dataSize,
-            const adapter::schema::PropertyNameMapInfo& properties);
+            const PropertyNameMapInfo& properties);
 
         inline static size_t getRawDataSize(size_t size)
         {

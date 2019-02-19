@@ -31,13 +31,13 @@
 
 namespace nogdb {
 
-namespace schema {
+using adapter::schema::ClassAccessInfo;
+using adapter::schema::IndexAccessInfo;
+using adapter::schema::PropertyAccessInfo;
+using adapter::schema::PropertyIdMapInfo;
+using adapter::schema::PropertyNameMapInfo;
 
-    using adapter::schema::ClassAccessInfo;
-    using adapter::schema::IndexAccessInfo;
-    using adapter::schema::PropertyAccessInfo;
-    using adapter::schema::PropertyIdMapInfo;
-    using adapter::schema::PropertyNameMapInfo;
+namespace schema {
 
     class SchemaInterface {
     public:

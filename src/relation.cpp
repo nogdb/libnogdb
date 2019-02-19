@@ -23,6 +23,8 @@
 
 namespace nogdb {
 
+using parser::RecordParser;
+
 namespace relation {
 
     void GraphInterface::addRel(const RecordId& edgeRid,
@@ -117,7 +119,7 @@ namespace relation {
         };
         auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
         auto rawData = edgeDataRecord->getResult(recordId.second);
-        return parser::RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
+        return RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
     }
 }
 }

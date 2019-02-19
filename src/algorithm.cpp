@@ -23,15 +23,21 @@
 
 namespace nogdb {
 
+using adapter::schema::ClassAccessInfo;
+using adapter::relation::Direction;
+using compare::RecordCompare;
+using compare::ClassFilter;
+
 namespace algorithm {
+
 
     ResultSet
     GraphTraversal::breadthFirstSearch(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
+        const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor,
         unsigned int minDepth,
         unsigned int maxDepth,
-        const adapter::relation::Direction& direction,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
@@ -51,11 +57,11 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::breadthFirstSearchRdesc(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
+        const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor,
         unsigned int minDepth,
         unsigned int maxDepth,
-        const adapter::relation::Direction& direction,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
@@ -67,12 +73,12 @@ namespace algorithm {
         queue.push(recordDescriptor.rid);
 
         try {
-            auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
-            auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
+            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
             auto addUniqueVertex = [&](const RecordId& vertex) {
                 if (visited.find(vertex) != visited.cend())
                     return;
-                auto vertexRdesc = compare::RecordCompare::filterRecord(
+                auto vertexRdesc = RecordCompare::filterRecord(
                     txn, RecordDescriptor { vertex }, vertexFilter, vertexClassFilter);
                 if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
                     vertexRdesc._depth = currentLevel + 1;
@@ -100,16 +106,16 @@ namespace algorithm {
                 }
 
                 for (const auto& edge :
-                    compare::RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
+                    RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
                     auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
                     switch (direction) {
-                    case adapter::relation::Direction::IN:
+                    case Direction::IN:
                         addUniqueVertex(srcDstVertex.first);
                         break;
-                    case adapter::relation::Direction::OUT:
+                    case Direction::OUT:
                         addUniqueVertex(srcDstVertex.second);
                         break;
-                    case adapter::relation::Direction::ALL:
+                    case Direction::ALL:
                         addUniqueVertex(srcDstVertex.first != vertexId ? srcDstVertex.first : srcDstVertex.second);
                         break;
                     }
@@ -128,11 +134,11 @@ namespace algorithm {
     //TODO: DO NOT USE UNTIL "depthFirstSearchRdesc" IS FIXED
     ResultSet
     GraphTraversal::depthFirstSearch(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
+        const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor,
         unsigned int minDepth,
         unsigned int maxDepth,
-        const adapter::relation::Direction& direction,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
@@ -153,11 +159,11 @@ namespace algorithm {
     //TODO: a buggy version of DFS, please fix this... DO NOT USE UNTIL IT IS FIXED
     std::vector<RecordDescriptor>
     GraphTraversal::depthFirstSearchRdesc(const Transaction& txn,
-        const schema::ClassAccessInfo& classInfo,
+        const ClassAccessInfo& classInfo,
         const RecordDescriptor& recordDescriptor,
         unsigned int minDepth,
         unsigned int maxDepth,
-        const adapter::relation::Direction& direction,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
@@ -166,8 +172,8 @@ namespace algorithm {
         auto stack = std::vector<std::vector<RecordId>> { { recordDescriptor.rid } };
         auto currentLevel = 0U;
         try {
-            auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
-            auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
+            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
             while (!stack[currentLevel].empty()) {
                 const RecordId vertexId = stack[currentLevel].back();
                 stack[currentLevel].pop_back();
@@ -176,9 +182,9 @@ namespace algorithm {
                     visited.insert(vertexId);
 
                     if (currentLevel >= minDepth) {
-                        auto vertexRdesc = compare::RecordCompare::filterRecord(
+                        auto vertexRdesc = RecordCompare::filterRecord(
                             txn, RecordDescriptor { vertexId }, currentLevel ? vertexFilter : GraphFilter {},
-                            currentLevel ? vertexClassFilter : compare::ClassFilter {});
+                            currentLevel ? vertexClassFilter : ClassFilter {});
                         if (vertexRdesc != RecordDescriptor {}) {
                             vertexRdesc._depth = currentLevel;
                             result.emplace_back(vertexRdesc);
@@ -191,20 +197,20 @@ namespace algorithm {
                             stack.emplace_back(decltype(stack)::value_type());
                         }
 
-                        const auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
+                        const auto incidentEdges = RecordCompare::filterIncidentEdges(
                             txn, vertexId, direction, edgeFilter, edgeClassFilter);
                         for (auto it = incidentEdges.crbegin(); it != incidentEdges.crend(); ++it) {
                             const RecordDescriptor& edge = *it;
                             RecordId nextVertex;
                             auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
                             switch (direction) {
-                            case adapter::relation::Direction::IN:
+                            case Direction::IN:
                                 nextVertex = srcDstVertex.first;
                                 break;
-                            case adapter::relation::Direction::OUT:
+                            case Direction::OUT:
                                 nextVertex = srcDstVertex.second;
                                 break;
-                            case adapter::relation::Direction::ALL:
+                            case Direction::ALL:
                                 nextVertex = srcDstVertex.first != vertexId ? srcDstVertex.first : srcDstVertex.second;
                                 break;
                             }
@@ -231,8 +237,8 @@ namespace algorithm {
 
     ResultSet
     GraphTraversal::bfsShortestPath(const Transaction& txn,
-        const schema::ClassAccessInfo& srcVertexClassInfo,
-        const schema::ClassAccessInfo& dstVertexClassInfo,
+        const ClassAccessInfo& srcVertexClassInfo,
+        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,
@@ -256,8 +262,8 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::bfsShortestPathRdesc(const Transaction& txn,
-        const schema::ClassAccessInfo& srcVertexClassInfo,
-        const schema::ClassAccessInfo& dstVertexClassInfo,
+        const ClassAccessInfo& srcVertexClassInfo,
+        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,
@@ -268,8 +274,8 @@ namespace algorithm {
             if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
                 result.emplace_back(srcVertexRecordDescriptor);
             } else {
-                auto edgeClassFilter = compare::RecordCompare::getFilterClasses(txn, edgeFilter);
-                auto vertexClassFilter = compare::RecordCompare::getFilterClasses(txn, vertexFilter);
+                auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+                auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
                 auto found = false;
                 auto visited = std::unordered_map<RecordId, std::pair<RecordDescriptor, RecordId>, RecordIdHash> {};
                 visited.insert({ srcVertexRecordDescriptor.rid, { RecordDescriptor {}, RecordId {} } });
@@ -279,12 +285,12 @@ namespace algorithm {
                     auto vertex = queue.front();
                     queue.pop();
 
-                    auto incidentEdges = compare::RecordCompare::filterIncidentEdges(
-                        txn, vertex, adapter::relation::Direction::OUT, edgeFilter, edgeClassFilter);
+                    auto incidentEdges = RecordCompare::filterIncidentEdges(
+                        txn, vertex, Direction::OUT, edgeFilter, edgeClassFilter);
                     for (const auto& edge : incidentEdges) {
                         auto nextVertex = txn._interface->graph()->getSrcDstVertices(edge.rid).second;
                         if (visited.find(nextVertex) == visited.cend()) {
-                            auto vertexRdesc = compare::RecordCompare::filterRecord(
+                            auto vertexRdesc = RecordCompare::filterRecord(
                                 txn, nextVertex, vertexFilter, vertexClassFilter);
                             if (vertexRdesc != RecordDescriptor {}) {
                                 visited.insert({ nextVertex, { vertexRdesc, vertex } });
