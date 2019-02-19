@@ -2252,8 +2252,7 @@ void test_schema_txn_create_class_extend_multiversion_commit()
             if (txn.getTxnMode() == nogdb::TxnMode::READ_WRITE) {
                 txn.addVertex("test_mv_101", nogdb::Record {}.set("prop100", 1).set("prop101", 1));
                 txn.addVertex("test_mv_102", nogdb::Record {}.set("prop100", 1).set("prop102", 1));
-                txn.addVertex("test_mv_103",
-                    nogdb::Record {}.set("prop100", 1).set("prop101", 1).set("prop103", 1));
+                txn.addVertex("test_mv_103", nogdb::Record {}.set("prop100", 1).set("prop101", 1).set("prop103", 1));
             }
         };
 

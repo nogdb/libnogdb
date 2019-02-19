@@ -1,8 +1,9 @@
-# NogDB
+# NogDB - Native Graph Database (C++) Library 
 
+[![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/nogdb/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nogdb/libnogdb.svg?branch=develop)](https://travis-ci.org/nogdb/libnogdb)
-[![Version](https://img.shields.io/badge/version-0.14.0%20beta-blue.svg)]()
-[![Production Status](https://img.shields.io/badge/status-unstable-red.svg)]()
+[![Version](https://img.shields.io/badge/version-1.0.0%20beta-blue.svg)]()
+[![Production Status](https://img.shields.io/badge/status-stable-green.svg)]()
 
 ## Welcome
 **NogDB is a fast & lightweight native graph database library that provides features in graph manipulations.**

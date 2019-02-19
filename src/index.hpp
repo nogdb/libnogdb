@@ -112,15 +112,15 @@ namespace index {
 
     protected:
         const std::vector<Condition::Comparator> validComparators {
-            Condition::Comparator::EQUAL,
-            Condition::Comparator::BETWEEN_NO_BOUND,
-            Condition::Comparator::BETWEEN,
-            Condition::Comparator::BETWEEN_NO_UPPER,
-            Condition::Comparator::BETWEEN_NO_LOWER,
-            Condition::Comparator::LESS_EQUAL,
-            Condition::Comparator::LESS,
-            Condition::Comparator::GREATER_EQUAL,
-            Condition::Comparator::GREATER
+            Condition::Comparator::EQUAL//,
+//            Condition::Comparator::BETWEEN_NO_BOUND,
+//            Condition::Comparator::BETWEEN,
+//            Condition::Comparator::BETWEEN_NO_UPPER,
+//            Condition::Comparator::BETWEEN_NO_LOWER,
+//            Condition::Comparator::LESS_EQUAL,
+//            Condition::Comparator::LESS,
+//            Condition::Comparator::GREATER_EQUAL,
+//            Condition::Comparator::GREATER
         };
 
     private:

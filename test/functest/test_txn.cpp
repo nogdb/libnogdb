@@ -532,11 +532,11 @@ void test_txn_get_vertex_edge()
 
         auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-        std::vector<std::function<void(nogdb::Transaction&)>> testCases {
-            [&](const nogdb::Transaction& txn) {
-                auto res = txn.fetchSrc(e1);
-                assert(res.record.get("name").toText() == "1");
-            },
+        std::vector<std::function<void(nogdb::Transaction&)>> testCases { [&](const nogdb::Transaction& txn) {
+                                                                             auto res = txn.fetchSrc(e1);
+                                                                             assert(res.record.get("name").toText()
+                                                                                 == "1");
+                                                                         },
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.fetchDst(e1);
                 assert(res.record.get("name").toText() == "2");
@@ -568,8 +568,7 @@ void test_txn_get_vertex_edge()
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter {}.only("flight")).get();
                 assert(res[0].record.get("name").toText() == "13");
-            }
-        };
+            } };
 
         runTestCases(txnRw1, testCases, true);
         runTestCases(txnRo1, testCases, false);
@@ -622,11 +621,10 @@ void test_txn_alter_vertex_edge_commit()
         txnRw1.updateDst(e2, v2);
 
         auto txnRo3 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-        std::vector<std::function<void(nogdb::Transaction&)>> oldTestCases {
-            [&](const nogdb::Transaction& txn) {
-                auto res = txn.fetchSrc(e1);
-                assert(res.descriptor == v1);
-            },
+        std::vector<std::function<void(nogdb::Transaction&)>> oldTestCases { [&](const nogdb::Transaction& txn) {
+                                                                                auto res = txn.fetchSrc(e1);
+                                                                                assert(res.descriptor == v1);
+                                                                            },
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.fetchSrc(e2);
                 assert(res.descriptor == v1);
@@ -658,14 +656,12 @@ void test_txn_alter_vertex_edge_commit()
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter {}.only("flight")).get();
                 assert(res[0].descriptor == e2);
-            }
-        };
+            } };
 
-        std::vector<std::function<void(nogdb::Transaction&)>> newTestCases {
-            [&](const nogdb::Transaction& txn) {
-                auto res = txn.fetchSrc(e1);
-                assert(res.descriptor == v3);
-            },
+        std::vector<std::function<void(nogdb::Transaction&)>> newTestCases { [&](const nogdb::Transaction& txn) {
+                                                                                auto res = txn.fetchSrc(e1);
+                                                                                assert(res.descriptor == v3);
+                                                                            },
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.fetchSrc(e2);
                 assert(res.descriptor == v1);
@@ -697,8 +693,7 @@ void test_txn_alter_vertex_edge_commit()
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.findInEdge(v2).where(nogdb::GraphFilter {}.only("flight")).get();
                 assert(res[0].descriptor == e2);
-            }
-        };
+            } };
 
         runTestCases(txnRw1, newTestCases, true);
         runTestCases(txnRo1, oldTestCases, true);
@@ -751,11 +746,10 @@ void test_txn_alter_vertex_edge_rollback()
         txnRw1.updateSrc(e1, v1);
         txnRw1.updateDst(e2, v3);
 
-        std::vector<std::function<void(nogdb::Transaction&)>> newTestCases {
-            [&](const nogdb::Transaction& txn) {
-                auto res = txn.fetchSrc(e1);
-                assert(res.descriptor == v1);
-            },
+        std::vector<std::function<void(nogdb::Transaction&)>> newTestCases { [&](const nogdb::Transaction& txn) {
+                                                                                auto res = txn.fetchSrc(e1);
+                                                                                assert(res.descriptor == v1);
+                                                                            },
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.fetchSrc(e2);
                 assert(res.descriptor == v1);
@@ -787,14 +781,12 @@ void test_txn_alter_vertex_edge_rollback()
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.findOutEdge(v1).where(nogdb::GraphFilter {}.only("flight")).get();
                 assert(res[0].descriptor == e2);
-            }
-        };
+            } };
 
-        std::vector<std::function<void(nogdb::Transaction&)>> oldTestCases {
-            [&](const nogdb::Transaction& txn) {
-                auto res = txn.fetchSrc(e1);
-                assert(res.descriptor == v3);
-            },
+        std::vector<std::function<void(nogdb::Transaction&)>> oldTestCases { [&](const nogdb::Transaction& txn) {
+                                                                                auto res = txn.fetchSrc(e1);
+                                                                                assert(res.descriptor == v3);
+                                                                            },
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.fetchSrc(e2);
                 assert(res.descriptor == v1);
@@ -826,8 +818,7 @@ void test_txn_alter_vertex_edge_rollback()
             [&](const nogdb::Transaction& txn) {
                 auto res = txn.findInEdge(v2).where(nogdb::GraphFilter {}.only("flight")).get();
                 assert(res[0].descriptor == e2);
-            }
-        };
+            } };
 
         runTestCases(txnRw1, newTestCases, true);
 
@@ -1693,7 +1684,8 @@ void test_txn_reopen_ctx()
     init_vertex_island();
 
     try {
-        auto txn = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_WRITE)));
+        auto txn
+            = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_WRITE)));
         auto v1 = txn->addVertex("islands", nogdb::Record {}.set("name", "Koh Samui"));
         auto v2 = txn->addVertex("islands", nogdb::Record {}.set("name", "Koh Tao"));
         txn->commit();
@@ -1714,7 +1706,8 @@ void test_txn_reopen_ctx()
     init_edge_bridge();
 
     try {
-        auto txn = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_WRITE)));
+        auto txn
+            = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_WRITE)));
         auto v1 = txn->find("islands").where(nogdb::Condition("name").eq("Koh Samui")).get();
         auto v2 = txn->find("islands").where(nogdb::Condition("name").eq("Koh Tao")).get();
         txn->addEdge("bridge", v1[0].descriptor, v2[0].descriptor, nogdb::Record {}.set("name", "red"));
@@ -1734,7 +1727,8 @@ void test_txn_reopen_ctx()
     }
 
     try {
-        auto txn = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_ONLY)));
+        auto txn
+            = std::unique_ptr<nogdb::Transaction>(new nogdb::Transaction(ctx->beginTxn(nogdb::TxnMode::READ_ONLY)));
         auto resE = txn->find("bridge").where(nogdb::Condition("name").eq("red")).get();
         assert(!resE.empty());
         auto res = txn->fetchSrcDst(resE[0].descriptor);

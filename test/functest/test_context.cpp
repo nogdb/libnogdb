@@ -56,7 +56,8 @@ void assert_schema(const std::vector<ClassSchema>& sc1, const std::vector<ClassS
         // compare class
         auto tmp = std::find_if(sc2.cbegin(), sc2.cend(), [&sc1Class](const ClassSchema& c) {
             auto cdesc = c.classDescriptor;
-            return (sc1Class.name == cdesc.name) && (sc1Class.id == cdesc.id) && (sc1Class.type == cdesc.type) && (sc1Class.base == cdesc.base);
+            return (sc1Class.name == cdesc.name) && (sc1Class.id == cdesc.id) && (sc1Class.type == cdesc.type)
+                && (sc1Class.base == cdesc.base);
         });
         assert(tmp != sc2.cend());
         // compare property
@@ -64,9 +65,11 @@ void assert_schema(const std::vector<ClassSchema>& sc1, const std::vector<ClassS
         auto sc2Property = tmp->propertyDescriptors;
         assert(sc1Property.size() == sc2Property.size());
         for (auto pit = sc1Property.cbegin(); pit != sc1Property.cend(); ++pit) {
-            auto ptmp = std::find_if(sc2Property.cbegin(), sc2Property.cend(), [&pit](const nogdb::PropertyDescriptor& p) {
-                return (pit->name == p.name) && (pit->type == p.type) && (pit->id == p.id) && (pit->inherited == p.inherited);
-            });
+            auto ptmp
+                = std::find_if(sc2Property.cbegin(), sc2Property.cend(), [&pit](const nogdb::PropertyDescriptor& p) {
+                      return (pit->name == p.name) && (pit->type == p.type) && (pit->id == p.id)
+                          && (pit->inherited == p.inherited);
+                  });
             assert(ptmp != sc2Property.cend());
         }
         // compare index
@@ -75,7 +78,8 @@ void assert_schema(const std::vector<ClassSchema>& sc1, const std::vector<ClassS
         assert(sc1Index.size() == sc2Index.size());
         for (auto iit = sc1Index.cbegin(); iit != sc1Index.cend(); ++iit) {
             auto itmp = std::find_if(sc2Index.cbegin(), sc2Index.cend(), [&iit](const nogdb::IndexDescriptor& i) {
-                return (iit->id == i.id) && (iit->classId == i.classId) && (iit->propertyId == i.propertyId) && (iit->unique == i.unique);
+                return (iit->id == i.id) && (iit->classId == i.classId) && (iit->propertyId == i.propertyId)
+                    && (iit->unique == i.unique);
             });
             assert(itmp != sc2Index.cend());
         }
@@ -266,7 +270,9 @@ void test_reopen_ctx_v2()
         nogdb::Record r;
         r.set("property1", "hello1").set("property2", 15U);
         txn.addVertex("test1", r);
-        r.set("property1", 42.42).set("property2", 15LL).set("property3", nogdb::Bytes { myobject { 42U, 42424242424242ULL, 42.42 } });
+        r.set("property1", 42.42)
+            .set("property2", 15LL)
+            .set("property3", nogdb::Bytes { myobject { 42U, 42424242424242ULL, 42.42 } });
         txn.addVertex("test2", r);
         schema.clear();
         for (const auto& cdesc : txn.getClasses()) {
@@ -752,7 +758,7 @@ void test_reopen_ctx_v6()
     }
 }
 
-//void test_locked_ctx() {
+// void test_locked_ctx() {
 //  try {
 //    new nogdb::Context(DATABASE_PATH);
 //    assert(false);

@@ -596,10 +596,9 @@ void test_drop_and_find_extended_class()
         v4 = txn.addSubClassOf("vertex2", "vertex4");
         txn.addProperty("vertex4", "prop3", nogdb::PropertyType::TEXT);
 
-        txn.addVertex("vertex3",
-            nogdb::Record {}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", 1.1));
-        txn.addVertex("vertex4",
-            nogdb::Record {}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", "hello"));
+        txn.addVertex("vertex3", nogdb::Record {}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", 1.1));
+        txn.addVertex(
+            "vertex4", nogdb::Record {}.set("prop0", 0U).set("prop1", 1U).set("prop2", 1).set("prop3", "hello"));
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;

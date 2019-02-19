@@ -376,19 +376,18 @@ int main()
     exec(test_drop_index_with_records, "dropping indexes for some properties with existing records");
     exec(test_drop_index_extended_class_with_records, "dropping indexes for some properties which belong to super classes with existing records");
     exec(test_drop_invalid_index_with_records, "dropping invalid indexes with existing records");
-//TODO: fix me
-//  exec(test_search_by_index_unique_condition, "getting records from unique indexing with condition");
-//  exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
-//  exec(test_search_by_index_unique_multicondition, "getting records from unique indexing with multi-condition");
-//  exec(test_search_by_index_non_unique_multicondition, "getting records from non-unique indexing with multi-condition");
-//  exec(test_search_by_index_unique_cursor_condition, "getting cursor from unique indexing with condition");
-//  exec(test_search_by_index_non_unique_cursor_condition, "getting cursor from non-unique indexing with condition");
-//  exec(test_search_by_index_unique_cursor_multicondition, "getting cursor from unique indexing with multi-condition");
-//  exec(test_search_by_index_non_unique_cursor_multicondition, "getting cursor from non-unique indexing with multi-condition");
-//  exec(test_search_by_index_extended_class_condition, "getting records from indexing with extended class with condition");
-//  exec(test_search_by_index_extended_class_cursor_condition, "getting cursor from indexing with extended class with condition");
-//  exec(test_search_by_index_extended_class_multicondition, "getting records from indexing with extended class with condition");
-//  exec(test_search_by_index_extended_class_cursor_multicondition, "getting cursor from indexing with extended class with condition");
+    exec(test_search_by_index_unique_condition, "getting records from unique indexing with condition");
+    exec(test_search_by_index_non_unique_condition, "getting records from non-unique indexing with condition");
+//    exec(test_search_by_index_unique_multicondition, "getting records from unique indexing with multi-condition");
+//    exec(test_search_by_index_non_unique_multicondition, "getting records from non-unique indexing with multi-condition");
+    exec(test_search_by_index_unique_cursor_condition, "getting cursor from unique indexing with condition");
+    exec(test_search_by_index_non_unique_cursor_condition, "getting cursor from non-unique indexing with condition");
+//    exec(test_search_by_index_unique_cursor_multicondition, "getting cursor from unique indexing with multi-condition");
+//    exec(test_search_by_index_non_unique_cursor_multicondition, "getting cursor from non-unique indexing with multi-condition");
+    exec(test_search_by_index_extended_class_condition, "getting records from indexing with extended class with condition");
+    exec(test_search_by_index_extended_class_cursor_condition, "getting cursor from indexing with extended class with condition");
+//    exec(test_search_by_index_extended_class_multicondition, "getting records from indexing with extended class with condition");
+//    exec(test_search_by_index_extended_class_cursor_multicondition, "getting cursor from indexing with extended class with condition");
 #endif
     // ctx
 #ifdef TEST_CONTEXT_OPERATIONS

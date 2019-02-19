@@ -39,10 +39,7 @@ inline bool operator==(const Bytes& lhs, const Bytes& rhs)
     return lhs.size() == rhs.size() && memcmp(lhs.getRaw(), rhs.getRaw(), lhs.size()) == 0;
 }
 
-inline bool operator==(const Record& lhs, const Record& rhs)
-{
-    return lhs.getAll() == rhs.getAll();
-}
+inline bool operator==(const Record& lhs, const Record& rhs) { return lhs.getAll() == rhs.getAll(); }
 
 inline bool operator==(const Result& lhs, const Result& rhs)
 {
@@ -431,8 +428,8 @@ void test_sql_create_vertex()
     init_vertex_book();
     auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
     try {
-        SQL::Result result = SQL::execute(txn,
-            "CREATE VERTEX books SET title='Harry Potter', words=4242424242, pages=865, price=49.99");
+        SQL::Result result = SQL::execute(
+            txn, "CREATE VERTEX books SET title='Harry Potter', words=4242424242, pages=865, price=49.99");
         assert(result.type() == SQL::Result::RECORD_DESCRIPTORS);
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -460,9 +457,11 @@ void test_sql_create_edges()
     }
 
     try {
-        SQL::execute(txn, "CREATE EDGE authors FROM " + to_string(v1_1) + " TO " + to_string(v2) + " SET time_used=365");
+        SQL::execute(
+            txn, "CREATE EDGE authors FROM " + to_string(v1_1) + " TO " + to_string(v2) + " SET time_used=365");
         SQL::execute(txn,
-            "CREATE EDGE authors FROM (" + to_string(v1_1) + ", " + to_string(v1_2) + ") TO " + to_string(v2) + " SET time_used=180");
+            "CREATE EDGE authors FROM (" + to_string(v1_1) + ", " + to_string(v1_2) + ") TO " + to_string(v2)
+                + " SET time_used=180");
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -483,14 +482,8 @@ void test_sql_select_vertex()
     auto txn = ctx->beginTxn(TxnMode::READ_WRITE);
     try {
         auto records = std::vector<Record> {};
-        records.push_back(Record {}
-                              .set("title", "Percy Jackson")
-                              .set("pages", 456)
-                              .set("price", 24.5));
-        records.push_back(Record {}
-                              .set("title", "Batman VS Superman")
-                              .set("words", 9999999ULL)
-                              .set("price", 36.0));
+        records.push_back(Record {}.set("title", "Percy Jackson").set("pages", 456).set("price", 24.5));
+        records.push_back(Record {}.set("title", "Batman VS Superman").set("words", 9999999ULL).set("price", 36.0));
         for (const auto& record : records) {
             txn.addVertex("books", record);
         }
@@ -881,7 +874,8 @@ void test_sql_select_method_property()
         assert(res[0].record.get("out").toText() == "v3");
 
         // normal property, out of range array select and method with empty result from walk
-        result = SQL::execute(txn, "SELECT propV, out('e')[2].propV, outE()[propE='e1->5'].inV().propV as out_propV FROM " + to_string(v1));
+        result = SQL::execute(txn,
+            "SELECT propV, out('e')[2].propV, outE()[propE='e1->5'].inV().propV as out_propV FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         assert(res[0].descriptor == RecordDescriptor(-2, 0));
@@ -962,11 +956,37 @@ void test_sql_select_vertex_condition()
     txn.addProperty("v", "bigint", nogdb::PropertyType::BIGINT);
     txn.addProperty("v", "ubigint", nogdb::PropertyType::UNSIGNED_BIGINT);
     txn.addProperty("v", "real", nogdb::PropertyType::REAL);
-    auto v1 = txn.addVertex("v", nogdb::Record {}.set("text", "A").set("int", 11).set("uint", 10200U).set("bigint", 200000LL).set("ubigint", 2000ULL).set("real", 4.5));
-    txn.addVertex("v", nogdb::Record {}.set("text", "B1Y").set("int", 37).set("bigint", 280000LL).set("ubigint", 1800ULL).set("real", 5.0));
-    txn.addVertex("v", nogdb::Record {}.set("text", "B2Y").set("uint", 10250U).set("bigint", 220000LL).set("ubigint", 2400ULL).set("real", 4.5));
-    txn.addVertex("v", nogdb::Record {}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real", 3.5));
-    txn.addVertex("v", nogdb::Record {}.set("text", "DX").set("int", 18).set("uint", 10475U).set("bigint", 300000LL).set("ubigint", 900ULL));
+    auto v1 = txn.addVertex("v",
+        nogdb::Record {}
+            .set("text", "A")
+            .set("int", 11)
+            .set("uint", 10200U)
+            .set("bigint", 200000LL)
+            .set("ubigint", 2000ULL)
+            .set("real", 4.5));
+    txn.addVertex("v",
+        nogdb::Record {}
+            .set("text", "B1Y")
+            .set("int", 37)
+            .set("bigint", 280000LL)
+            .set("ubigint", 1800ULL)
+            .set("real", 5.0));
+    txn.addVertex("v",
+        nogdb::Record {}
+            .set("text", "B2Y")
+            .set("uint", 10250U)
+            .set("bigint", 220000LL)
+            .set("ubigint", 2400ULL)
+            .set("real", 4.5));
+    txn.addVertex("v",
+        nogdb::Record {}.set("text", "CX").set("int", 28).set("uint", 11600U).set("ubigint", 900ULL).set("real", 3.5));
+    txn.addVertex("v",
+        nogdb::Record {}
+            .set("text", "DX")
+            .set("int", 18)
+            .set("uint", 10475U)
+            .set("bigint", 300000LL)
+            .set("ubigint", 900ULL));
 
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE text='A'");
@@ -1103,7 +1123,8 @@ void test_sql_select_vertex_condition()
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text IN ['B1Y', 'A']");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.find("v").where(Condition("text").in(vector<string> { "B1Y", "A" }).ignoreCase()).get());
+        assert(result.get<ResultSet>()
+            == txn.find("v").where(Condition("text").in(vector<string> { "B1Y", "A" }).ignoreCase()).get());
 
         result = SQL::execute(txn, "SELECT FROM v WHERE text LIKE '%1%'");
         assert(result.type() == result.RESULT_SET);
@@ -1126,7 +1147,8 @@ void test_sql_select_vertex_with_multi_condition()
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE prop1 END WITH 'X' OR prop2 >= 2");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.find("v").where(Condition("prop1").endWith("X").ignoreCase() or Condition("prop2").ge(2)).get());
+        assert(result.get<ResultSet>()
+            == txn.find("v").where(Condition("prop1").endWith("X").ignoreCase() or Condition("prop2").ge(2)).get());
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1135,7 +1157,10 @@ void test_sql_select_vertex_with_multi_condition()
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'C' AND prop2 = 3) OR prop1 = 'AX'");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.find("v").where((Condition("prop1").eq("C") and Condition("prop2").eq(3)) or Condition("prop1").eq("AX")).get());
+        assert(result.get<ResultSet>()
+            == txn.find("v")
+                   .where((Condition("prop1").eq("C") and Condition("prop2").eq(3)) or Condition("prop1").eq("AX"))
+                   .get());
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1144,16 +1169,24 @@ void test_sql_select_vertex_with_multi_condition()
     try {
         auto result = SQL::execute(txn, "SELECT FROM v WHERE (prop1 = 'AX') OR (prop1 = 'C' AND prop2 = 3)");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.find("v").where(Condition("prop1").eq("AX") or (Condition("prop1").eq("C") and Condition("prop2").eq(3))).get());
+        assert(result.get<ResultSet>()
+            == txn.find("v")
+                   .where(Condition("prop1").eq("AX") or (Condition("prop1").eq("C") and Condition("prop2").eq(3)))
+                   .get());
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
     }
 
     try {
-        auto result = SQL::execute(txn, "SELECT FROM v WHERE (@className='v' AND prop2<2) OR (@className='x' AND prop2>0)");
+        auto result
+            = SQL::execute(txn, "SELECT FROM v WHERE (@className='v' AND prop2<2) OR (@className='x' AND prop2>0)");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.find("v").where((Condition("@className").eq("v") and Condition("prop2").lt(2)) or (Condition("@className").eq("x") and Condition("prop2").gt(0))).get());
+        assert(result.get<ResultSet>()
+            == txn.find("v")
+                   .where((Condition("@className").eq("v") and Condition("prop2").lt(2))
+                       or (Condition("@className").eq("x") and Condition("prop2").gt(0)))
+                   .get());
     } catch (const Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
         assert(false);
@@ -1182,8 +1215,8 @@ void test_sql_select_nested_condition()
         ASSERT_SIZE(res, 1);
         assert(res[0].record.get("prop1").toText() == "C");
 
-        result = SQL::execute(txn,
-            "SELECT * FROM (SELECT @className, prop1, prop2 FROM v) WHERE @className='v' AND prop2<2");
+        result = SQL::execute(
+            txn, "SELECT * FROM (SELECT @className, prop1, prop2 FROM v) WHERE @className='v' AND prop2<2");
         assert(result.type() == result.RESULT_SET);
         res = result.get<ResultSet>();
         ASSERT_SIZE(res, 1);
@@ -1488,7 +1521,8 @@ void test_sql_delete_edge_with_condition()
         assert(record.get("time_used").toIntU() == 365U);
 
         auto result = SQL::execute(txn,
-            "DELETE EDGE authors FROM (SELECT FROM books WHERE title='Harry Potter') TO (SELECT FROM persons WHERE name='J.K. Rowlings') WHERE time_used=365");
+            "DELETE EDGE authors FROM (SELECT FROM books WHERE title='Harry Potter') TO (SELECT FROM persons WHERE "
+            "name='J.K. Rowlings') WHERE time_used=365");
         assert(result.type() == result.RECORD_DESCRIPTORS);
         assert(result.get<vector<RecordDescriptor>>() == vector<RecordDescriptor> { e1 });
 
@@ -1552,38 +1586,30 @@ void test_sql_validate_property_type()
         props.set("blob", blob);
         txn.addVertex("sql_valid_type", props);
 
-        string sqlCreate = (string("CREATE VERTEX sql_valid_type ")
-            + "SET tiny=" + to_string(tiny)
-            + ", utiny=" + to_string(utiny)
-            + ", small=" + to_string(small)
-            + ", usmall=" + to_string(usmall)
-            + ", integer=" + to_string(integer)
-            + ", uinteger=" + to_string(uinteger)
-            + ", bigint=" + to_string(bigint)
-            + ", ubigint=" + to_string(ubigint)
-            + ", text='" + text + "'"
-            + ", real=" + to_string(real)
-            + ", blob=X'" + blob.toHex() + "'");
+        string sqlCreate = (string("CREATE VERTEX sql_valid_type ") + "SET tiny=" + to_string(tiny)
+            + ", utiny=" + to_string(utiny) + ", small=" + to_string(small) + ", usmall=" + to_string(usmall)
+            + ", integer=" + to_string(integer) + ", uinteger=" + to_string(uinteger) + ", bigint=" + to_string(bigint)
+            + ", ubigint=" + to_string(ubigint) + ", text='" + text + "'" + ", real=" + to_string(real) + ", blob=X'"
+            + blob.toHex() + "'");
         SQL::execute(txn, sqlCreate);
 
         auto res = txn.find("sql_valid_type").get();
         ASSERT_SIZE(res, 2);
 
-        res = txn.find("sql_valid_type").where(Condition("tiny").eq(tiny) && Condition("utiny").eq(utiny) && Condition("small").eq(small) && Condition("usmall").eq(usmall) && Condition("integer").eq(integer) && Condition("uinteger").eq(uinteger) && Condition("bigint").eq(bigint) && Condition("ubigint").eq(ubigint) && Condition("text").eq(baseText) && Condition("real").eq(real) && Condition("blob").eq(blob)).get();
+        res = txn.find("sql_valid_type")
+                  .where(Condition("tiny").eq(tiny) && Condition("utiny").eq(utiny) && Condition("small").eq(small)
+                      && Condition("usmall").eq(usmall) && Condition("integer").eq(integer)
+                      && Condition("uinteger").eq(uinteger) && Condition("bigint").eq(bigint)
+                      && Condition("ubigint").eq(ubigint) && Condition("text").eq(baseText)
+                      && Condition("real").eq(real) && Condition("blob").eq(blob))
+                  .get();
         ASSERT_SIZE(res, 2);
 
-        string sqlSelect = (string("SELECT * FROM sql_valid_type ")
-            + "WHERE tiny=" + to_string(tiny)
-            + " AND utiny=" + to_string(utiny)
-            + " AND small=" + to_string(small)
-            + " AND usmall=" + to_string(usmall)
-            + " AND integer=" + to_string(integer)
-            + " AND uinteger=" + to_string(uinteger)
-            + " AND bigint=" + to_string(bigint)
-            + " AND ubigint=" + to_string(ubigint)
-            + " AND text='" + text + "'"
-            + " AND real=" + to_string(real)
-            + " AND blob=X'" + blob.toHex() + "'");
+        string sqlSelect = (string("SELECT * FROM sql_valid_type ") + "WHERE tiny=" + to_string(tiny)
+            + " AND utiny=" + to_string(utiny) + " AND small=" + to_string(small) + " AND usmall=" + to_string(usmall)
+            + " AND integer=" + to_string(integer) + " AND uinteger=" + to_string(uinteger)
+            + " AND bigint=" + to_string(bigint) + " AND ubigint=" + to_string(ubigint) + " AND text='" + text + "'"
+            + " AND real=" + to_string(real) + " AND blob=X'" + blob.toHex() + "'");
         auto result = SQL::execute(txn, sqlSelect);
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>().size() == 2);
@@ -1632,13 +1658,16 @@ void test_sql_traverse()
 
         result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter {}.only("EL")).get());
+        assert(result.get<ResultSet>()
+            == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter {}.only("EL")).get());
 
         result = SQL::execute(txn, "TRAVERSE in('ER') FROM " + to_string(v33) + " MINDEPTH 2");
         assert(result.type() == result.RESULT_SET);
-        assert(result.get<ResultSet>() == txn.traverseIn(v33).depth(2, UINT_MAX).whereE(nogdb::GraphFilter {}.only("ER")).get());
+        assert(result.get<ResultSet>()
+            == txn.traverseIn(v33).depth(2, UINT_MAX).whereE(nogdb::GraphFilter {}.only("ER")).get());
 
-        result = SQL::execute(txn, "TRAVERSE all('EL') FROM " + to_string(v21) + " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
+        result = SQL::execute(
+            txn, "TRAVERSE all('EL') FROM " + to_string(v21) + " MINDEPTH 1 MAXDEPTH 1 STRATEGY BREADTH_FIRST");
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>() == txn.traverse(v21).depth(1, 1).whereE(nogdb::GraphFilter {}.only("EL")).get());
 
@@ -1647,11 +1676,10 @@ void test_sql_traverse()
         {
             auto traverseResult = txn.traverseOut(v1).depth(0, UINT_MAX).get();
             vector<string> traverseRid(traverseResult.size());
-            transform(traverseResult.cbegin(),
-                traverseResult.cend(),
-                traverseRid.begin(),
+            transform(traverseResult.cbegin(), traverseResult.cend(), traverseRid.begin(),
                 [](const Result& r) { return rid2str(r.descriptor.rid); });
-            auto selectResult = txn.find("V").where(Condition("@recordId").in(traverseRid) && Condition("p").eq("v22")).get();
+            auto selectResult
+                = txn.find("V").where(Condition("@recordId").in(traverseRid) && Condition("p").eq("v22")).get();
             assert(result.get<ResultSet>() == selectResult);
         }
     } catch (const Error& e) {

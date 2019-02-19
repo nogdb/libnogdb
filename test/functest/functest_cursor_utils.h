@@ -33,9 +33,8 @@
 
 #include "nogdb/nogdb.h"
 
-inline void cursorContains(nogdb::ResultSetCursor& rsCursor,
-    const std::set<std::string>& expectedResults,
-    const std::string& testColumn)
+inline void cursorContains(
+    nogdb::ResultSetCursor& rsCursor, const std::set<std::string>& expectedResults, const std::string& testColumn)
 {
     assert(rsCursor.empty() == expectedResults.empty());
     assert(rsCursor.size() == expectedResults.size());
@@ -48,9 +47,8 @@ inline void cursorContains(nogdb::ResultSetCursor& rsCursor,
     }
 }
 
-inline void cursorTester(nogdb::ResultSetCursor& rsCursor,
-    const std::vector<std::string>& expectedResults,
-    const std::string& testColumn)
+inline void cursorTester(
+    nogdb::ResultSetCursor& rsCursor, const std::vector<std::string>& expectedResults, const std::string& testColumn)
 {
     assert(rsCursor.empty() == expectedResults.empty());
     assert(rsCursor.size() == expectedResults.size());
@@ -101,9 +99,8 @@ inline void cursorTester(nogdb::ResultSetCursor& rsCursor,
     }
 }
 
-inline void cursorTester(nogdb::ResultSetCursor& rsCursor,
-    const std::vector<unsigned int>& expectedResults,
-    const std::string& testColumn)
+inline void cursorTester(
+    nogdb::ResultSetCursor& rsCursor, const std::vector<unsigned int>& expectedResults, const std::string& testColumn)
 {
     assert(rsCursor.empty() == expectedResults.empty());
     assert(rsCursor.size() == expectedResults.size());
@@ -154,8 +151,7 @@ inline void cursorTester(nogdb::ResultSetCursor& rsCursor,
     }
 }
 
-inline bool rdescCursorCompare(const std::string& propertyName,
-    nogdb::ResultSetCursor& res,
+inline bool rdescCursorCompare(const std::string& propertyName, nogdb::ResultSetCursor& res,
     const std::vector<nogdb::RecordDescriptor>& expectedResult)
 {
     auto compareRes = true;
@@ -164,8 +160,7 @@ inline bool rdescCursorCompare(const std::string& propertyName,
         std::cout << propertyName << "\n";
         std::cout << "\x1B[31m"
                   << "\n[error] Expect:\t" << expectedResult.size() << "\n"
-                  << "        Actual:\t" << res.size()
-                  << "\x1B[0m\n";
+                  << "        Actual:\t" << res.size() << "\x1B[0m\n";
         std::cout << "\x1B[31m"
                   << "\n[error] Expect:\t [ ";
         for (const auto& r : expectedResult) {
@@ -181,9 +176,7 @@ inline bool rdescCursorCompare(const std::string& propertyName,
         auto index = 0;
         auto expectedResultSorted = expectedResult;
         std::sort(expectedResultSorted.begin(), expectedResultSorted.end(),
-            [](const nogdb::RecordDescriptor& lhs, const nogdb::RecordDescriptor& rhs) {
-                return lhs.rid < rhs.rid;
-            });
+            [](const nogdb::RecordDescriptor& lhs, const nogdb::RecordDescriptor& rhs) { return lhs.rid < rhs.rid; });
         for (res.next(); res.hasNext(); res.next()) {
             auto cmp = res->descriptor.rid == expectedResultSorted[index].rid;
             compareRes &= cmp;
@@ -191,8 +184,7 @@ inline bool rdescCursorCompare(const std::string& propertyName,
                 std::cout << propertyName << "\n";
                 std::cout << "\x1B[31m"
                           << "\n[error] Expect:\t" << expectedResultSorted[index].rid << "\n"
-                          << "        Actual:\t" << res->descriptor.rid
-                          << ".\x1B[0m\n";
+                          << "        Actual:\t" << res->descriptor.rid << ".\x1B[0m\n";
             }
             ++index;
         }

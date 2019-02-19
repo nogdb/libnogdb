@@ -400,7 +400,8 @@ void test_bfs_traverse_all()
         count = 0;
         for (const auto& res : txn.traverse(F).depth(0, 2).whereE(nogdb::GraphFilter {}.only("link")).get()) {
             auto name = res.record.get("name").toText();
-            assert(name == "F" || name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c");
+            assert(
+                name == "F" || name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c");
             if (name == "d" || name == "C" || name == "H" || name == "e") {
                 assert(res.record.getDepth() == 1);
             } else if (name == "F") {
@@ -415,7 +416,8 @@ void test_bfs_traverse_all()
         count = 0;
         for (const auto& res : txn.traverse(F).depth(1, 3).whereE(nogdb::GraphFilter {}.only("link")).get()) {
             auto name = res.record.get("name").toText();
-            assert(name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c" || name == "a" || name == "B");
+            assert(name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c" || name == "a"
+                || name == "B");
             if (name == "d" || name == "C" || name == "H" || name == "e") {
                 assert(res.record.getDepth() == 1);
             } else if (name == "A" || name == "c") {
@@ -472,8 +474,10 @@ void test_bfs_traverse_all()
     try {
         auto count = 0;
         auto classNames = std::list<std::string> { "link", "symbolic" };
-        for (const auto& res :
-            txn.traverse(A).depth(1, 1).whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend())).get()) {
+        for (const auto& res : txn.traverse(A)
+                                   .depth(1, 1)
+                                   .whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend()))
+                                   .get()) {
             auto name = res.record.get("name").toText();
             assert(name == "B" || name == "a" || name == "C" || name == "D");
             count++;
@@ -1234,9 +1238,7 @@ void test_bfs_traverse_with_condition()
     }
 
     try {
-        auto edgeCondition = [](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() < 100U);
-        };
+        auto edgeCondition = [](const nogdb::Record& record) { return (record.get("distance").toIntU() < 100U); };
         auto edgeFilter = nogdb::GraphFilter(edgeCondition);
         auto res = txn.traverseOut(a).depth(0, 1).whereE(edgeFilter).get();
         ASSERT_SIZE(res, 2);
@@ -1252,9 +1254,8 @@ void test_bfs_traverse_with_condition()
         assert(res[1].record.get("name").toText() == "Z");
         assert(res[1].record.getDepth() == 1);
 
-        auto vertexCondition = [](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() > 1000ULL);
-        };
+        auto vertexCondition
+            = [](const nogdb::Record& record) { return (record.get("population").toBigIntU() > 1000ULL); };
         auto vertexFilter = nogdb::GraphFilter(vertexCondition);
         res = txn.traverseOut(a).depth(0, 1).whereE(edgeFilter).whereV(vertexFilter).get();
         ASSERT_SIZE(res, 1);
@@ -1266,9 +1267,7 @@ void test_bfs_traverse_with_condition()
     }
 
     try {
-        auto edgeCondition = [](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() > 100U);
-        };
+        auto edgeCondition = [](const nogdb::Record& record) { return (record.get("distance").toIntU() > 100U); };
         auto edgeFilter = nogdb::GraphFilter(edgeCondition);
         auto res = txn.traverse(a).depth(1, 3).whereE(edgeFilter).get();
         ASSERT_SIZE(res, 3);
@@ -1284,9 +1283,8 @@ void test_bfs_traverse_with_condition()
         assert(res[0].record.get("name").toText() == "F");
         assert(res[0].record.getDepth() == 2);
 
-        auto vertexCondition = [](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() < 4000ULL);
-        };
+        auto vertexCondition
+            = [](const nogdb::Record& record) { return (record.get("population").toBigIntU() < 4000ULL); };
         auto vertexFilter = nogdb::GraphFilter(vertexCondition);
         res = txn.traverse(a).depth(0, 4).whereV(vertexFilter).get();
         ASSERT_SIZE(res, 6);
@@ -1348,9 +1346,8 @@ void test_shortest_path_with_condition()
 
     try {
         auto res = txn.shortestPath(a, f)
-                       .whereE(nogdb::GraphFilter([](const nogdb::Record& record) {
-                           return (record.get("distance").toIntU() <= 120U);
-                       }))
+                       .whereE(nogdb::GraphFilter(
+                           [](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 120U); }))
                        .whereV(nogdb::GraphFilter([](const nogdb::Record& record) {
                            return (record.get("population").toBigIntU() >= 1000ULL);
                        }))
@@ -1368,12 +1365,10 @@ void test_shortest_path_with_condition()
         assert(res[4].record.getDepth() == 4);
 
         res = txn.shortestPath(a, f)
-                  .whereE(nogdb::GraphFilter([](const nogdb::Record& record) {
-                      return (record.get("distance").toIntU() <= 200U);
-                  }))
-                  .whereV(nogdb::GraphFilter([](const nogdb::Record& record) {
-                      return (record.get("population").toBigIntU() < 5000ULL);
-                  }))
+                  .whereE(nogdb::GraphFilter(
+                      [](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 200U); }))
+                  .whereV(nogdb::GraphFilter(
+                      [](const nogdb::Record& record) { return (record.get("population").toBigIntU() < 5000ULL); }))
                   .get();
         ASSERT_SIZE(res, 4);
         assert(res[0].record.get("name").toText() == "A");
@@ -1386,9 +1381,8 @@ void test_shortest_path_with_condition()
         assert(res[3].record.getDepth() == 3);
 
         res = txn.shortestPath(a, f)
-                  .whereE(nogdb::GraphFilter([](const nogdb::Record& record) {
-                      return (record.get("distance").toIntU() <= 200U);
-                  }))
+                  .whereE(nogdb::GraphFilter(
+                      [](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 200U); }))
                   .get();
         ASSERT_SIZE(res, 4);
         assert(res[0].record.get("name").toText() == "A");
@@ -1416,9 +1410,8 @@ void test_shortest_path_with_condition()
         assert(res[3].record.getDepth() == 3);
 
         res = txn.shortestPath(a, f)
-                  .whereE(nogdb::GraphFilter([](const nogdb::Record& record) {
-                      return record.get("distance").toIntU() >= 1000U;
-                  }))
+                  .whereE(nogdb::GraphFilter(
+                      [](const nogdb::Record& record) { return record.get("distance").toIntU() >= 1000U; }))
                   .get();
         assert(res.empty());
     } catch (const nogdb::Error& ex) {
@@ -1563,7 +1556,10 @@ void test_bfs_traverse_in_cursor()
 
     try {
         auto classNames = std::set<std::string> { "link", "symbolic" };
-        auto rsCursor = txn.traverseIn(b).depth(0, 1).whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend())).getCursor();
+        auto rsCursor = txn.traverseIn(b)
+                            .depth(0, 1)
+                            .whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend()))
+                            .getCursor();
         assert(rsCursor.size() == 2);
         rsCursor = txn.traverseIn(b).depth(1, 2).getCursor();
         assert(rsCursor.size() == 2);
@@ -1696,7 +1692,10 @@ void test_bfs_traverse_out_cursor()
 
     try {
         auto classNames = std::vector<std::string> { "link", "symbolic" };
-        auto rsCursor = txn.traverseOut(B).depth(1, 1).whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend())).getCursor();
+        auto rsCursor = txn.traverseOut(B)
+                            .depth(1, 1)
+                            .whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend()))
+                            .getCursor();
         assert(rsCursor.size() == 3);
         rsCursor = txn.traverseOut(C).depth(0, 1).getCursor();
         assert(rsCursor.size() == 4);
@@ -1797,14 +1796,16 @@ void test_bfs_traverse_all_cursor()
         rsCursor = txn.traverse(F).depth(0, 2).whereE(nogdb::GraphFilter {}.only("link")).getCursor();
         while (rsCursor.next()) {
             auto name = rsCursor->record.get("name").toText();
-            assert(name == "F" || name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c");
+            assert(
+                name == "F" || name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c");
         }
         assert(rsCursor.size() == 7);
 
         rsCursor = txn.traverse(F).depth(1, 3).whereE(nogdb::GraphFilter {}.only("link")).getCursor();
         while (rsCursor.next()) {
             auto name = rsCursor->record.get("name").toText();
-            assert(name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c" || name == "a" || name == "B");
+            assert(name == "d" || name == "C" || name == "H" || name == "e" || name == "A" || name == "c" || name == "a"
+                || name == "B");
         }
         assert(rsCursor.count() == 8);
 
@@ -1845,7 +1846,10 @@ void test_bfs_traverse_all_cursor()
 
     try {
         auto classNames = std::list<std::string> { "link", "symbolic" };
-        auto rsCursor = txn.traverse(A).depth(1, 1).whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend())).getCursor();
+        auto rsCursor = txn.traverse(A)
+                            .depth(1, 1)
+                            .whereE(nogdb::GraphFilter {}.only(classNames.cbegin(), classNames.cend()))
+                            .getCursor();
         while (rsCursor.next()) {
             auto name = rsCursor->record.get("name").toText();
             assert(name == "B" || name == "a" || name == "C" || name == "D");
@@ -2595,9 +2599,8 @@ void test_bfs_traverse_cursor_with_condition()
     }
 
     try {
-        auto edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() < 100U);
-        });
+        auto edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return (record.get("distance").toIntU() < 100U); });
         auto res = txn.traverseOut(a).depth(0, 1).whereE(edgeFilter).getCursor();
         ASSERT_SIZE(res, 2);
         cursorContains(res, std::set<std::string> { "A", "B" }, "name");
@@ -2606,9 +2609,8 @@ void test_bfs_traverse_cursor_with_condition()
         ASSERT_SIZE(res, 2);
         cursorContains(res, std::set<std::string> { "A", "Z" }, "name");
 
-        auto vertexFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() > 1000ULL);
-        });
+        auto vertexFilter = nogdb::GraphFilter(
+            [](const nogdb::Record& record) { return (record.get("population").toBigIntU() > 1000ULL); });
         res = txn.traverseOut(a).depth(0, 1).whereE(edgeFilter).whereV(vertexFilter).getCursor();
         ASSERT_SIZE(res, 1);
         res.next();
@@ -2620,9 +2622,8 @@ void test_bfs_traverse_cursor_with_condition()
     }
 
     try {
-        auto edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() > 100U);
-        });
+        auto edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return (record.get("distance").toIntU() > 100U); });
         auto res = txn.traverse(a).depth(1, 3).whereE(edgeFilter).getCursor();
         ASSERT_SIZE(res, 3);
         cursorContains(res, std::set<std::string> { "C", "D", "F" }, "name");
@@ -2632,9 +2633,8 @@ void test_bfs_traverse_cursor_with_condition()
         res.first();
         assert(res->record.get("name").toText() == "F");
 
-        auto vertexFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() < 4000ULL);
-        });
+        auto vertexFilter = nogdb::GraphFilter(
+            [](const nogdb::Record& record) { return (record.get("population").toBigIntU() < 4000ULL); });
         res = txn.traverse(a).depth(0, 4).whereV(vertexFilter).getCursor();
         ASSERT_SIZE(res, 6);
         cursorContains(res, std::set<std::string> { "A", "Z", "B", "C", "E", "F" }, "name");
@@ -2684,29 +2684,24 @@ void test_shortest_path_cursor_with_condition()
     }
 
     try {
-        auto edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() <= 120U);
-        });
-        auto vertexFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() >= 1000ULL);
-        });
+        auto edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 120U); });
+        auto vertexFilter = nogdb::GraphFilter(
+            [](const nogdb::Record& record) { return (record.get("population").toBigIntU() >= 1000ULL); });
         auto res = txn.shortestPath(a, f).whereE(edgeFilter).whereV(vertexFilter).getCursor();
         ASSERT_SIZE(res, 5);
         cursorContains(res, std::set<std::string> { "A", "B", "C", "D", "F" }, "name");
 
-        edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() <= 200U);
-        });
-        vertexFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("population").toBigIntU() < 5000ULL);
-        });
+        edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 200U); });
+        vertexFilter = nogdb::GraphFilter(
+            [](const nogdb::Record& record) { return (record.get("population").toBigIntU() < 5000ULL); });
         res = txn.shortestPath(a, f).whereE(edgeFilter).whereV(vertexFilter).getCursor();
         ASSERT_SIZE(res, 4);
         cursorContains(res, std::set<std::string> { "A", "B", "C", "F" }, "name");
 
-        edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return (record.get("distance").toIntU() <= 200U);
-        });
+        edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return (record.get("distance").toIntU() <= 200U); });
         res = txn.shortestPath(a, f).whereE(edgeFilter).getCursor();
         ASSERT_SIZE(res, 4);
         cursorContains(res, std::set<std::string> { "A", "B", "C", "F" }, "name");
@@ -2718,9 +2713,8 @@ void test_shortest_path_cursor_with_condition()
         ASSERT_SIZE(res, 4);
         cursorContains(res, std::set<std::string> { "A", "C", "D", "F" }, "name");
 
-        edgeFilter = nogdb::GraphFilter([](const nogdb::Record& record) {
-            return record.get("distance").toIntU() >= 1000U;
-        });
+        edgeFilter
+            = nogdb::GraphFilter([](const nogdb::Record& record) { return record.get("distance").toIntU() >= 1000U; });
         res = txn.shortestPath(a, f).whereE(edgeFilter).getCursor();
         assert(res.empty());
     } catch (const nogdb::Error& ex) {

@@ -61,103 +61,72 @@ inline void init()
     ctxi.init();
 }
 
-#define REQUIRE(_err, _exp, _msg) \
-    require(_err, _exp, _msg, __FUNCTION__, __LINE__, __FILE__)
+#define REQUIRE(_err, _exp, _msg) require(_err, _exp, _msg, __FUNCTION__, __LINE__, __FILE__)
 
-inline void require(const nogdb::Error& err,
-    const int expect,
-    const std::string& msg,
-    const std::string& funcName,
-    const int lineNumber,
-    const std::string& fileName)
+inline void require(const nogdb::Error& err, const int expect, const std::string& msg, const std::string& funcName,
+    const int lineNumber, const std::string& fileName)
 {
     if (err.code() != expect) {
         std::cout << "\x1B[31m"
-                  << "\n[error] Expect:\t" << msg
-                  << " to be returned in " << funcName
-                  << ", file " << fileName
+                  << "\n[error] Expect:\t" << msg << " to be returned in " << funcName << ", file " << fileName
                   << ", line " << std::dec << lineNumber << ".\n"
-                  << "        Actual:\t" << err.what()
-                  << ".\x1B[0m\n";
+                  << "        Actual:\t" << err.what() << ".\x1B[0m\n";
         assert(0);
     }
 }
 
-#define ASSERT_SIZE(_rs, _exp) \
-    assertSize(_rs, _exp, __FUNCTION__, __LINE__, __FILE__)
+#define ASSERT_SIZE(_rs, _exp) assertSize(_rs, _exp, __FUNCTION__, __LINE__, __FILE__)
 
-inline void assertSize(const nogdb::ResultSet& rs,
-    const size_t expectedSize,
-    const std::string& funcName,
-    const int lineNumber,
-    const std::string& fileName)
+inline void assertSize(const nogdb::ResultSet& rs, const size_t expectedSize, const std::string& funcName,
+    const int lineNumber, const std::string& fileName)
 {
     if (rs.size() != expectedSize) {
         std::cout << "\x1B[31m"
-                  << "\n[error] Expect:\t" << expectedSize << " in "
-                  << funcName << ", file " << fileName
-                  << ", line " << std::dec << lineNumber << ".\n"
-                  << "        Actual:\t" << rs.size()
-                  << ".\x1B[0m\n";
+                  << "\n[error] Expect:\t" << expectedSize << " in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << rs.size() << ".\x1B[0m\n";
         assert(0);
     }
 }
 
-inline void assertSize(const nogdb::ResultSetCursor& rs,
-    const size_t expectedSize,
-    const std::string& funcName,
-    const int lineNumber,
-    const std::string& fileName)
+inline void assertSize(const nogdb::ResultSetCursor& rs, const size_t expectedSize, const std::string& funcName,
+    const int lineNumber, const std::string& fileName)
 {
     if (rs.size() != expectedSize) {
         std::cout << "\x1B[31m"
-                  << "\n[error] Expect:\t" << expectedSize << " in "
-                  << funcName << ", file " << fileName
-                  << ", line " << std::dec << lineNumber << ".\n"
-                  << "        Actual:\t" << rs.size()
-                  << ".\x1B[0m\n";
+                  << "\n[error] Expect:\t" << expectedSize << " in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << rs.size() << ".\x1B[0m\n";
         assert(0);
     }
 }
 
-#define ASSERT_EQ(_val, _exp) \
-    assertEqual(_val, _exp, __FUNCTION__, __LINE__, __FILE__)
+#define ASSERT_EQ(_val, _exp) assertEqual(_val, _exp, __FUNCTION__, __LINE__, __FILE__)
 
 template <typename T>
-inline void assertEqual(const T& value,
-    const T& expected,
-    const std::string& funcName,
-    const int lineNumber,
-    const std::string& fileName)
+inline void assertEqual(
+    const T& value, const T& expected, const std::string& funcName, const int lineNumber, const std::string& fileName)
 {
     if (value != expected) {
         std::cout << "\x1B[31m"
-                  << "\n[error] Expect:\t" << expected << " in "
-                  << funcName << ", file " << fileName
-                  << ", line " << std::dec << lineNumber << ".\n"
-                  << "        Actual:\t" << value
-                  << ".\x1B[0m\n";
+                  << "\n[error] Expect:\t" << expected << " in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << value << ".\x1B[0m\n";
         assert(0);
     }
 }
 
-#define ASSERT_NE(_val, _exp) \
-    assertNotEqual(_val, _exp, __FUNCTION__, __LINE__, __FILE__)
+#define ASSERT_NE(_val, _exp) assertNotEqual(_val, _exp, __FUNCTION__, __LINE__, __FILE__)
 
 template <typename T>
-inline void assertNotEqual(const T& value,
-    const T& expected,
-    const std::string& funcName,
-    const int lineNumber,
-    const std::string& fileName)
+inline void assertNotEqual(
+    const T& value, const T& expected, const std::string& funcName, const int lineNumber, const std::string& fileName)
 {
     if (value == expected) {
         std::cout << "\x1B[31m"
-                  << "\n[error] Expect:\t" << expected << " in "
-                  << funcName << ", file " << fileName
-                  << ", line " << std::dec << lineNumber << ".\n"
-                  << "        Actual:\t" << value
-                  << ".\x1B[0m\n";
+                  << "\n[error] Expect:\t" << expected << " in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << value << ".\x1B[0m\n";
         assert(0);
     }
 }
@@ -170,8 +139,8 @@ inline void verbose(const nogdb::ResultSet& rs)
     }
 }
 
-inline bool
-compareText(const nogdb::ResultSet& rss, const std::string& propName, const std::vector<std::string>& expectedRss)
+inline bool compareText(
+    const nogdb::ResultSet& rss, const std::string& propName, const std::vector<std::string>& expectedRss)
 {
     auto result = true;
     for (const auto& rs : rss) {
@@ -181,9 +150,8 @@ compareText(const nogdb::ResultSet& rss, const std::string& propName, const std:
     return result;
 }
 
-inline void runTestCases(nogdb::Transaction& txn,
-    const std::vector<std::function<void(nogdb::Transaction&)>>& testCases,
-    bool mustPass)
+inline void runTestCases(
+    nogdb::Transaction& txn, const std::vector<std::function<void(nogdb::Transaction&)>>& testCases, bool mustPass)
 {
     auto counter = 0;
     for (auto& testCase : testCases) {
@@ -247,8 +215,7 @@ inline nogdb::ResultSet getEdgeMultipleClassExtend(nogdb::Transaction& txn, cons
     return res;
 }
 
-inline bool rdescCompare(const std::string& propertyName,
-    const nogdb::ResultSet& res,
+inline bool rdescCompare(const std::string& propertyName, const nogdb::ResultSet& res,
     const std::vector<nogdb::RecordDescriptor>& expectedResult)
 {
     auto compareRes = true;
@@ -257,8 +224,7 @@ inline bool rdescCompare(const std::string& propertyName,
         std::cout << propertyName << "\n";
         std::cout << "\x1B[31m"
                   << "\n[error] Expect:\t" << expectedResult.size() << "\n"
-                  << "        Actual:\t" << res.size()
-                  << "\x1B[0m\n";
+                  << "        Actual:\t" << res.size() << "\x1B[0m\n";
         std::cout << "\x1B[31m"
                   << "\n[error] Expect:\t [ ";
         for (const auto& r : expectedResult) {
@@ -274,9 +240,7 @@ inline bool rdescCompare(const std::string& propertyName,
         auto index = 0;
         auto expectedResultSorted = expectedResult;
         std::sort(expectedResultSorted.begin(), expectedResultSorted.end(),
-            [](const nogdb::RecordDescriptor& lhs, const nogdb::RecordDescriptor& rhs) {
-                return lhs.rid < rhs.rid;
-            });
+            [](const nogdb::RecordDescriptor& lhs, const nogdb::RecordDescriptor& rhs) { return lhs.rid < rhs.rid; });
         for (const auto& r : res) {
             auto cmp = r.descriptor.rid == expectedResultSorted[index].rid;
             compareRes &= cmp;
@@ -284,8 +248,7 @@ inline bool rdescCompare(const std::string& propertyName,
                 std::cout << propertyName << "\n";
                 std::cout << "\x1B[31m"
                           << "\n[error] Expect:\t" << expectedResultSorted[index].rid << "\n"
-                          << "        Actual:\t" << r.descriptor.rid
-                          << ".\x1B[0m\n";
+                          << "        Actual:\t" << r.descriptor.rid << ".\x1B[0m\n";
             }
             ++index;
         }

@@ -39,20 +39,11 @@ protected:
     nogdb::storage_engine::LMDBEnv* env = nullptr;
     nogdb::storage_engine::LMDBTxn* txn = nullptr;
 
-    virtual void SetUp()
-    {
-        beforeAll();
-    }
+    virtual void SetUp() { beforeAll(); }
 
-    virtual void TearDown()
-    {
-        afterAll();
-    }
+    virtual void TearDown() { afterAll(); }
 
-    virtual void beforeEach()
-    {
-        txn = new nogdb::storage_engine::LMDBTxn(env, 0);
-    }
+    virtual void beforeEach() { txn = new nogdb::storage_engine::LMDBTxn(env, 0); }
 
     virtual void afterEach()
     {
@@ -65,10 +56,8 @@ private:
 
     inline void beforeAll()
     {
-        env = new nogdb::storage_engine::LMDBEnv(_dbName.c_str(),
-            DEFAULT_NOGDB_MAX_DATABASE_NUMBER,
-            DEFAULT_NOGDB_MAX_DATABASE_SIZE,
-            DEFAULT_NOGDB_MAX_READERS);
+        env = new nogdb::storage_engine::LMDBEnv(_dbName.c_str(), DEFAULT_NOGDB_MAX_DATABASE_NUMBER,
+            DEFAULT_NOGDB_MAX_DATABASE_SIZE, DEFAULT_NOGDB_MAX_READERS);
     }
 
     inline void afterAll()

@@ -123,14 +123,9 @@ void test_get_vertex()
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     try {
         auto records = std::vector<nogdb::Record> {};
-        records.push_back(nogdb::Record {}
-                              .set("title", "Percy Jackson")
-                              .set("pages", 456)
-                              .set("price", 24.5));
-        records.push_back(nogdb::Record {}
-                              .set("title", "Batman VS Superman")
-                              .set("words", 9999999ULL)
-                              .set("price", 36.0));
+        records.push_back(nogdb::Record {}.set("title", "Percy Jackson").set("pages", 456).set("price", 24.5));
+        records.push_back(
+            nogdb::Record {}.set("title", "Batman VS Superman").set("words", 9999999ULL).set("price", 36.0));
         for (const auto& record : records) {
             txn.addVertex("books", record);
         }
@@ -252,11 +247,8 @@ void test_get_invalid_vertices()
     init_edge_author();
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     try {
-        auto v = txn.addVertex("books",
-            nogdb::Record {}
-                .set("title", "Percy Jackson")
-                .set("pages", 456)
-                .set("price", 24.5));
+        auto v = txn.addVertex(
+            "books", nogdb::Record {}.set("title", "Percy Jackson").set("pages", 456).set("price", 24.5));
         txn.addVertex("persons", nogdb::Record {}.set("name", "Jack Mah"));
         txn.addEdge("authors", v, v, nogdb::Record {}.set("time_used", 10U));
     } catch (const nogdb::Error& ex) {
@@ -322,11 +314,8 @@ void test_get_invalid_vertex_cursor()
     init_edge_author();
     auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
     try {
-        auto v = txn.addVertex("books",
-            nogdb::Record {}
-                .set("title", "Percy Jackson")
-                .set("pages", 456)
-                .set("price", 24.5));
+        auto v = txn.addVertex(
+            "books", nogdb::Record {}.set("title", "Percy Jackson").set("pages", 456).set("price", 24.5));
         txn.addVertex("persons", nogdb::Record {}.set("name", "Jack Mah"));
         txn.addEdge("authors", v, v, nogdb::Record {}.set("time_used", 10U));
     } catch (const nogdb::Error& ex) {
@@ -364,7 +353,7 @@ void test_update_vertex()
         assert(record.get("title").toText() == "Lion King");
         assert(record.get("price").toReal() == 100);
         assert(record.get("pages").toInt() == 320);
-        //assert(record.getVersion() == 1ULL);
+        // assert(record.getVersion() == 1ULL);
         record.set("price", 50.0).set("pages", 400).set("words", 90000ULL);
         txn.update(rdesc1, record);
 

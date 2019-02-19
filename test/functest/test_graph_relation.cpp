@@ -636,7 +636,7 @@ void test_get_invalid_edge_out_more()
             auto teacher = res.descriptor;
             auto clsset = nogdb::GraphFilter {}.only("workfor", "teach", "knew");
             auto edges = txn.findOutEdge(teacher).where(clsset).get();
-            //ASSERT_SIZE(edges, 0);
+            // ASSERT_SIZE(edges, 0);
         }
         txn.rollback();
     } catch (const nogdb::Error& ex) {
@@ -650,7 +650,7 @@ void test_get_invalid_edge_out_more()
             auto teacher = res.descriptor;
             auto clsset = nogdb::GraphFilter {}.only("teach", "students");
             auto edges = txn.findOutEdge(teacher).where(clsset).get();
-            //ASSERT_SIZE(edges, 0);
+            // ASSERT_SIZE(edges, 0);
         }
         txn.rollback();
     } catch (const nogdb::Error& ex) {
@@ -694,7 +694,7 @@ void test_get_invalid_edge_all_more()
             auto teacher = res.descriptor;
             auto clsset = nogdb::GraphFilter {}.only("workfor", "teach", "knew");
             auto edges = txn.findEdge(teacher).where(clsset).get();
-            //ASSERT_SIZE(edges, 0);
+            // ASSERT_SIZE(edges, 0);
         }
         txn.rollback();
     } catch (const nogdb::Error& ex) {
@@ -708,7 +708,7 @@ void test_get_invalid_edge_all_more()
             auto teacher = res.descriptor;
             auto clsset = nogdb::GraphFilter {}.only("teach", "students");
             auto edges = txn.findEdge(teacher).where(clsset).get();
-            //ASSERT_SIZE(edges, 0);
+            // ASSERT_SIZE(edges, 0);
         }
         txn.rollback();
     } catch (const nogdb::Error& ex) {

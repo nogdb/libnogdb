@@ -116,9 +116,24 @@ void test_range_expression()
     propTypes.emplace("status", nogdb::PropertyType::TEXT);
 
     nogdb::Record r1 {}, r2 {}, r3 {};
-    r1.set("firstname", "hello").set("lastname", "world").set("age", 26U).set("gpa", 3.67).set("#awards", 3U).set("balance", -200);
-    r2.set("firstname", "james").set("lastname", "cookie").set("age", 56U).set("gpa", 2.89).set("#awards", 0U).set("balance", 100000);
-    r3.set("firstname", "jessica").set("lastname", "apollo").set("age", 18U).set("gpa", 3.24).set("#awards", 10U).set("balance", 5000);
+    r1.set("firstname", "hello")
+        .set("lastname", "world")
+        .set("age", 26U)
+        .set("gpa", 3.67)
+        .set("#awards", 3U)
+        .set("balance", -200);
+    r2.set("firstname", "james")
+        .set("lastname", "cookie")
+        .set("age", 56U)
+        .set("gpa", 2.89)
+        .set("#awards", 0U)
+        .set("balance", 100000);
+    r3.set("firstname", "jessica")
+        .set("lastname", "apollo")
+        .set("age", 18U)
+        .set("gpa", 3.24)
+        .set("#awards", 10U)
+        .set("balance", 5000);
 
     auto baseCondition = nogdb::Condition("status").null();
 

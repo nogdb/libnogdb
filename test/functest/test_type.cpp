@@ -50,29 +50,20 @@ const std::string text_value = "hello world";
 const myobject blob_value = { 42, 42424242424242ULL, 42.42 };
 const std::vector<int> vector_int_value = { 1, 2, 3, 4, 5 };
 const std::vector<const char*> vector_c_str { "hello", "world", "this", "is ", " a ", "test" };
-const std::vector<std::vector<const char*>> vv_c_str { { "hello", "world1" },
-    { "hello2", "world2" },
+const std::vector<std::vector<const char*>> vv_c_str { { "hello", "world1" }, { "hello2", "world2" },
     { "data 1", " data2", "   " } };
-const std::set<std::pair<int, int>> set_pii { { 2, 3 },
-    { 4, 5 },
-    { 6, 7 },
-    { 8, 9 } };
-const std::map<int, const char*> map_p_int_c_str { { 0, "helloQWE@!#" },
-    { 1, "กดฟหฟหกดก่าฟหกสดว" } };
+const std::set<std::pair<int, int>> set_pii { { 2, 3 }, { 4, 5 }, { 6, 7 }, { 8, 9 } };
+const std::map<int, const char*> map_p_int_c_str { { 0, "helloQWE@!#" }, { 1, "กดฟหฟหกดก่าฟหกสดว" } };
 const int array_int[] = { 3, 4, 5, 6, 10 };
 
 void test_bytes_only()
 {
-    nogdb::Bytes int_vb { int_value }, uint_vb { uint_value },
-        tinyint_vb { tinyint_value }, utinyint_vb { utinyint_value },
-        smallint_vb { smallint_value }, usmallint_vb { usmallint_value },
-        bigint_vb { bigint_value }, ubigint_vb { ubigint_value },
-        real_vb { real_value }, text_vb { text_value },
+    nogdb::Bytes int_vb { int_value }, uint_vb { uint_value }, tinyint_vb { tinyint_value },
+        utinyint_vb { utinyint_value }, smallint_vb { smallint_value }, usmallint_vb { usmallint_value },
+        bigint_vb { bigint_value }, ubigint_vb { ubigint_value }, real_vb { real_value }, text_vb { text_value },
         blob_vb { blob_value }, vector_int_vb { nogdb::Bytes::toBytes(vector_int_value) },
-        vector_c_str_vb { nogdb::Bytes::toBytes(vector_c_str) },
-        vv_c_str_vb { nogdb::Bytes::toBytes(vv_c_str) },
-        set_pii_vb { nogdb::Bytes::toBytes(set_pii) },
-        map_p_int_c_str_vb { nogdb::Bytes::toBytes(map_p_int_c_str) };
+        vector_c_str_vb { nogdb::Bytes::toBytes(vector_c_str) }, vv_c_str_vb { nogdb::Bytes::toBytes(vv_c_str) },
+        set_pii_vb { nogdb::Bytes::toBytes(set_pii) }, map_p_int_c_str_vb { nogdb::Bytes::toBytes(map_p_int_c_str) };
 
     assert(int_vb.toInt() == int_value);
     assert(uint_vb.toIntU() == uint_value);

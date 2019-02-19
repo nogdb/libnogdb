@@ -57,7 +57,7 @@ void test_create_edges()
         txn.addEdge("authors", v1_1, v2, r);
 
         auto v1 = txn.fetchRecord(v1_1);
-        //assert(v1.getVersion() == 2ULL);
+        // assert(v1.getVersion() == 2ULL);
 
         txn.commit();
     } catch (const nogdb::Error& ex) {
@@ -195,7 +195,7 @@ void test_get_edge()
         for (const auto& it : res) {
             auto& record = it.record;
             assert(record.getText("@className") == "authors");
-            //assert(record.getBigIntU("@version") == 1UL);
+            // assert(record.getBigIntU("@version") == 1UL);
             if (count == 0) {
                 assert(record.get("time_used").toIntU() == 365U);
                 assert(record.getText("@recordId") == nogdb::rid2str(e1.rid));
@@ -299,7 +299,7 @@ void test_get_vertex_src()
         auto res = txn.find("authors").get();
         auto count = 0;
         for (const auto& it : res) {
-            //auto &record = it.record;
+            // auto &record = it.record;
             if (count == 0) {
                 auto src_vertex = txn.fetchSrc(it.descriptor);
                 assert(src_vertex.record.get("title").toText() == "Harry Potter");
@@ -355,7 +355,7 @@ void test_get_vertex_dst()
         auto res = txn.find("authors").get();
         auto count = 0;
         for (const auto& it : res) {
-            //auto &record = it.record;
+            // auto &record = it.record;
             if (count == 0) {
                 auto dst_vertex = txn.fetchDst(it.descriptor);
                 assert(dst_vertex.record.get("name").toText() == "J.K. Rowlings");
@@ -411,7 +411,7 @@ void test_get_vertex_all()
         auto res = txn.find("authors").get();
         auto count = 0;
         for (const auto& it : res) {
-            //auto &record = it.record;
+            // auto &record = it.record;
             if (count == 0) {
                 auto vertices = txn.fetchSrcDst(it.descriptor);
                 assert(vertices[0].record.get("title").toText() == "Harry Potter");
@@ -678,10 +678,10 @@ void test_update_edge()
         auto e1 = txn.addEdge("authors", v1, v2, r3);
 
         auto rec_book = txn.find("books").get()[0].record;
-        //assert(rec_book.getVersion() == 1ULL);
+        // assert(rec_book.getVersion() == 1ULL);
 
         auto rec_person = txn.find("persons").get()[0].record;
-        //assert(rec_person.getVersion() == 1ULL);
+        // assert(rec_person.getVersion() == 1ULL);
 
         auto record = txn.fetchRecord(e1);
         assert(record.get("time_used").toIntU() == 365U);
@@ -692,17 +692,17 @@ void test_update_edge()
         assert(res[0].record.get("time_used").toIntU() == 400U);
         assert(res[0].record.getText("@className") == "authors");
         assert(res[0].record.getText("@recordId") == nogdb::rid2str(e1.rid));
-        //assert(res[0].record.getBigIntU("@version") == 1ULL);
-        //assert(res[0].record.getVersion() == 1ULL);
+        // assert(res[0].record.getBigIntU("@version") == 1ULL);
+        // assert(res[0].record.getVersion() == 1ULL);
 
         // update 10 times
         for (size_t i = 0; i < 10; ++i) {
 
             res[0].record.set("time_used", 1000U);
 
-            //assert(res[0].record.getVersion() == 1ULL);
+            // assert(res[0].record.getVersion() == 1ULL);
             txn.update(res[0].descriptor, res[0].record);
-            //assert(res[0].record.getVersion() == 1ULL);
+            // assert(res[0].record.getVersion() == 1ULL);
         }
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -1134,12 +1134,12 @@ void test_update_version()
 
             for (int j = 0; j < E; ++j) {
                 nogdb::Record r3 = txn.fetchRecord(edge[j]);
-                //assert(r3.getVersion() == 1ULL + j);
+                // assert(r3.getVersion() == 1ULL + j);
                 r3.set("time_used", 365U + j + E);
-                //assert(r3.getVersion() == 2ULL + j);
+                // assert(r3.getVersion() == 2ULL + j);
 
                 r3.set("time_used", 365U + j + E * i);
-                //assert(r3.getVersion() == 2ULL + j);
+                // assert(r3.getVersion() == 2ULL + j);
             }
 
             txn.commit();
