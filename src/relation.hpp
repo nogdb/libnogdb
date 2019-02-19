@@ -82,6 +82,10 @@ namespace relation {
 
         std::vector<RecordId> getOutEdges(const RecordId& recordId) const;
 
+        std::vector<std::pair<RecordId, RecordId>> getInEdgeAndNeighbours(const RecordId& recordId) const;
+
+        std::vector<std::pair<RecordId, RecordId>> getOutEdgeAndNeighbours(const RecordId& recordId) const;
+
         std::pair<RecordId, RecordId> getSrcDstVertices(const RecordId& recordId) const;
 
     private:

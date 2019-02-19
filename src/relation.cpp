@@ -112,6 +112,16 @@ namespace relation {
         return _outRel->getEdges(recordId);
     }
 
+    std::vector<std::pair<RecordId, RecordId>> GraphInterface::getInEdgeAndNeighbours(const RecordId& recordId) const
+    {
+        return _inRel->getEdgeAndNeighbours(recordId);
+    }
+
+    std::vector<std::pair<RecordId, RecordId>> GraphInterface::getOutEdgeAndNeighbours(const RecordId& recordId) const
+    {
+        return _outRel->getEdgeAndNeighbours(recordId);
+    }
+
     std::pair<RecordId, RecordId> GraphInterface::getSrcDstVertices(const RecordId& recordId) const
     {
         std::function<std::shared_ptr<DataRecord>(void)> callback = [&]() {

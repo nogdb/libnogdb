@@ -194,33 +194,34 @@ namespace compare {
         return Result { recordDescriptor, record };
     }
 
-    std::vector<RecordDescriptor>
+    std::vector<std::pair<RecordDescriptor, RecordDescriptor>>
     RecordCompare::filterIncidentEdges(const Transaction& txn,
         const RecordId& vertex,
         const Direction& direction,
         const GraphFilter& filter,
         const ClassFilter& classFilter)
     {
-        auto edgeRecordDescriptors = std::vector<RecordDescriptor> {};
-        auto edgeNeighbours = std::vector<RecordId> {};
+        auto edgeRecordDescriptors = std::vector<std::pair<RecordDescriptor, RecordDescriptor>> {};
+        auto edgeNeighbours = std::vector<std::pair<RecordId, RecordId>> {};
         switch (direction) {
         case Direction::IN:
-            edgeNeighbours = txn._interface->graph()->getInEdges(vertex);
+            edgeNeighbours = txn._interface->graph()->getInEdgeAndNeighbours(vertex);
             break;
         case Direction::OUT:
-            edgeNeighbours = txn._interface->graph()->getOutEdges(vertex);
+            edgeNeighbours = txn._interface->graph()->getOutEdgeAndNeighbours(vertex);
             break;
         case Direction::ALL:
-            edgeNeighbours = txn._interface->graph()->getInEdges(vertex);
-            auto moreEdges = txn._interface->graph()->getOutEdges(vertex);
+            edgeNeighbours = txn._interface->graph()->getInEdgeAndNeighbours(vertex);
+            auto moreEdges = txn._interface->graph()->getOutEdgeAndNeighbours(vertex);
             edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
             break;
         }
 
-        for (const auto& edge : edgeNeighbours) {
-            auto edgeRdesc = RecordDescriptor { edge };
+        for (const auto& edgeNeighbour : edgeNeighbours) {
+            auto edgeRdesc = RecordDescriptor { edgeNeighbour.first };
+            auto neighbourRdesc = RecordDescriptor { edgeNeighbour.second };
             if (filterRecord(txn, edgeRdesc, filter, classFilter) != RecordDescriptor {}) {
-                edgeRecordDescriptors.emplace_back(edgeRdesc);
+                edgeRecordDescriptors.emplace_back(std::make_pair(edgeRdesc, neighbourRdesc));
             }
         }
 

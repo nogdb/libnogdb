@@ -79,7 +79,7 @@ namespace compare {
             const GraphFilter& filter,
             const ClassFilter& classFilter);
 
-        static std::vector<RecordDescriptor>
+        static std::vector<std::pair<RecordDescriptor, RecordDescriptor>>
         filterIncidentEdges(const Transaction& txn,
             const RecordId& vertex,
             const Direction& direction,

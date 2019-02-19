@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "constant.hpp"
 #include "storage_adapter.hpp"
@@ -156,6 +157,22 @@ namespace adapter {
                     if (key != vertexId)
                         break;
                     result.emplace_back(parseEdgeId(keyValue.val.data.blob()));
+                }
+                return result;
+            }
+
+            std::vector<std::pair<RecordId, RecordId>> getEdgeAndNeighbours(const RecordId& vertexId) const
+            {
+                auto result = std::vector<std::pair<RecordId, RecordId>> {};
+                auto cursorHandler = cursor();
+                for (auto keyValue = cursorHandler.find(rid2str(vertexId));
+                     !keyValue.empty();
+                     keyValue = cursorHandler.getNext()) {
+                    auto key = str2rid(keyValue.key.data.string());
+                    if (key != vertexId)
+                        break;
+                    auto blob = keyValue.val.data.blob();
+                    result.emplace_back(std::make_pair(parseEdgeId(blob), parseNeighborId(blob)));
                 }
                 return result;
             }
