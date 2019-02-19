@@ -95,7 +95,7 @@ Context::Context(const std::string& dbPath)
             // read database settings from disk
             auto binary = readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
             memcpy(&_settings, binary, sizeof(_settings));
-            delete binary;
+            delete [] binary;
             auto foundContext = _underlying.find(dbPath);
             if (foundContext == _underlying.cend()) {
                 auto instance = LMDBInstance {};
