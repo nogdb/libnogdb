@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,355 +19,303 @@
  *
  */
 
-#include <unordered_set>
-#include <unordered_map>
-#include <vector>
-#include <queue>
-#include <stack>
-
-#include "datatype.hpp"
-#include "storage_engine.hpp"
-#include "lmdb_engine.hpp"
-#include "schema.hpp"
 #include "algorithm.hpp"
-
-#include "nogdb_errors.h"
-#include "nogdb_compare.h"
 
 namespace nogdb {
 
-    ResultSet Algorithm::breadthFirstSearch(const Txn &txn,
-                                           const RecordDescriptor &recordDescriptor,
-                                           const unsigned int minDepth,
-                                           const unsigned int maxDepth,
-                                           const std::vector<ClassId> &edgeClassIds,
-                                           std::vector<RecordId>
-                                           (Graph::*edgeFunc)(const BaseTxn &baseTxn, const RecordId &rid,
-                                                              const ClassId &classId),
-                                           RecordId (Graph::*vertexFunc)(const BaseTxn &baseTxn, const RecordId &rid),
-                                           const PathFilter &pathFilter) {
-        const auto searchResultDescriptor = breadthFirstSearchRdesc(txn, recordDescriptor, minDepth, maxDepth,
-                                                                  edgeClassIds, edgeFunc, vertexFunc, pathFilter);
+using adapter::schema::ClassAccessInfo;
+using adapter::relation::Direction;
+using compare::RecordCompare;
+using compare::ClassFilter;
 
-        ResultSet result (searchResultDescriptor.size());
+namespace algorithm {
+
+
+    ResultSet
+    GraphTraversal::breadthFirstSearch(const Transaction& txn,
+        const ClassAccessInfo& classInfo,
+        const RecordDescriptor& recordDescriptor,
+        unsigned int minDepth,
+        unsigned int maxDepth,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        const auto searchResultDescriptor = breadthFirstSearchRdesc(
+            txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+        ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
-                       [&txn] (const RecordDescriptor& descriptor) {
-            const auto &record = retrieveRecord(txn, descriptor);
-            record.setBasicInfo(DEPTH_PROPERTY, descriptor.depth);
-            return Result(descriptor, record);
-        });
-
-        return result;
-    }
-
-    ResultSet Algorithm::depthFirstSearch(const Txn &txn,
-                                          const RecordDescriptor &recordDescriptor,
-                                          const unsigned int minDepth,
-                                          const unsigned int maxDepth,
-                                          const std::vector<ClassId> &edgeClassIds,
-                                          std::vector<RecordId>
-                                          (Graph::*edgeFunc)(const BaseTxn &baseTxn, const RecordId &rid,
-                                                             const ClassId &classId),
-                                          RecordId (Graph::*vertexFunc)(const BaseTxn &baseTxn, const RecordId &rid),
-                                          const PathFilter &pathFilter) {
-        const auto searchResultDescriptor = depthFirstSearchRdesc(txn, recordDescriptor, minDepth, maxDepth,
-                                                                  edgeClassIds, edgeFunc, vertexFunc, pathFilter);
-        ResultSet result (searchResultDescriptor.size());
-        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
-                       [&txn] (const RecordDescriptor& descriptor) {
-            const auto &record = retrieveRecord(txn, descriptor);
-            record.setBasicInfo(DEPTH_PROPERTY, descriptor.depth);
-            return Result(descriptor, record);
-        });
-
-        return result;
-    }
-
-    ResultSet Algorithm::bfsShortestPath(const Txn &txn,
-                                         const RecordDescriptor &srcVertexRecordDescriptor,
-                                         const RecordDescriptor &dstVertexRecordDescriptor,
-                                         const std::vector<ClassId> &edgeClassIds,
-                                         const PathFilter &pathFilter) {
-        const auto searchResultDescriptor = bfsShortestPathRdesc(txn, srcVertexRecordDescriptor,
-                                                                 dstVertexRecordDescriptor, edgeClassIds, pathFilter);
-
-        ResultSet result (searchResultDescriptor.size());
-        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
-                       [&txn] (const RecordDescriptor& descriptor) {
-                           const auto &record = retrieveRecord(txn, descriptor);
-                           record.setBasicInfo(DEPTH_PROPERTY, descriptor.depth);
-                           return Result(descriptor, record);
-                       });
+            [&txn](const RecordDescriptor& descriptor) {
+                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
+                return Result(descriptor, record);
+            });
 
         return result;
     }
 
     std::vector<RecordDescriptor>
-    Algorithm::breadthFirstSearchRdesc(const Txn &txn,
-                                      const RecordDescriptor &recordDescriptor,
-                                      const unsigned int minDepth,
-                                      const unsigned int maxDepth,
-                                      const std::vector<ClassId> &edgeClassIds,
-                                      std::vector<RecordId> (Graph::*edgeFunc)(const BaseTxn &baseTxn,
-                                                                               const RecordId &rid,
-                                                                               const ClassId &classId),
-                                      RecordId (Graph::*vertexFunc)(const BaseTxn &baseTxn, const RecordId &rid),
-                                      const PathFilter &pathFilter) {
-        switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
-            case RECORD_NOT_EXIST:
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
-            case RECORD_NOT_EXIST_IN_MEMORY:
-                return ((minDepth == 0) && (minDepth <= maxDepth)) ?
-                       std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
-            default:
-                auto result = std::vector<RecordDescriptor>{};
-                auto classDescriptor = Schema::ClassDescriptorPtr{};
-                auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = storage_engine::lmdb::Dbi{};
-                auto visited = std::unordered_set<RecordId, Graph::RecordIdHash>{recordDescriptor.rid};
-                auto queue = std::queue<RecordId> {};
+    GraphTraversal::breadthFirstSearchRdesc(const Transaction& txn,
+        const ClassAccessInfo& classInfo,
+        const RecordDescriptor& recordDescriptor,
+        unsigned int minDepth,
+        unsigned int maxDepth,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        auto result = std::vector<RecordDescriptor> {};
+        auto visited = std::unordered_set<RecordId, RecordIdHash> { recordDescriptor.rid };
+        auto queue = std::queue<RecordId> {};
+        auto currentLevel = 0U;
+        auto firstRecordId = RecordId { recordDescriptor.rid };
+        queue.push(recordDescriptor.rid);
 
-                unsigned int currentLevel = 0u;
-                RecordId firstRecordId{recordDescriptor.rid};
-
-                queue.push(recordDescriptor.rid);
-
-                try {
-                    auto addUniqueVertex = [&](const RecordId &vertex, const PathFilter &pathFilter) {
-                        if (visited.find(vertex) != visited.cend()) return;
-                        auto tmpRdesc = pathFilter.isEnable() ?
-                                        retrieveRdesc(txn, classDescriptor, classPropertyInfo,
-                                                      classDBHandler, vertex, pathFilter, ClassType::VERTEX) :
-                                        RecordDescriptor{vertex};
-                        if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) &&
-                            (tmpRdesc != RecordDescriptor{})) {
-                            tmpRdesc.depth = currentLevel + 1;
-                            result.emplace_back(tmpRdesc);
-                        }
-
-                        visited.insert(vertex);
-
-                        if (firstRecordId == RecordId{}) {
-                            firstRecordId = vertex;
-                        }
-
-                        if ((currentLevel + 1 < maxDepth) && (tmpRdesc != RecordDescriptor{})) {
-                            queue.push(vertex);
-                        }
-                    };
-
-                    if (minDepth == 0) {
-                        result.emplace_back(recordDescriptor);
-                    }
-
-                    while (!queue.empty()) {
-                        auto vertexId = queue.front();
-                        queue.pop();
-
-                        if (vertexId == firstRecordId) {
-                            currentLevel += (vertexId != recordDescriptor.rid);
-                            firstRecordId = RecordId{};
-                        }
-
-                        const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor, classPropertyInfo,
-                                                                            classDBHandler, edgeFunc, vertexId, pathFilter, edgeClassIds);
-
-                        for (const auto &edge: edgeRecordDescriptors) {
-                            if (vertexFunc != nullptr) {
-                                addUniqueVertex(((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid), pathFilter);
-                            } else {
-                                auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
-                                addUniqueVertex(vertices.first != vertexId ? vertices.first : vertices.second, pathFilter);
-                            }
-                        }
-                    }
-                } catch (const Error &err) {
-                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
-                    } else {
-                        throw err;
-                    }
+        try {
+            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
+            auto addUniqueVertex = [&](const RecordId& vertex) {
+                if (visited.find(vertex) != visited.cend())
+                    return;
+                auto vertexRdesc = RecordCompare::filterRecord(
+                    txn, RecordDescriptor { vertex }, vertexFilter, vertexClassFilter);
+                if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    vertexRdesc._depth = currentLevel + 1;
+                    result.emplace_back(vertexRdesc);
                 }
-                return result;
-        }
-    }
-
-    std::vector<RecordDescriptor>
-    Algorithm::depthFirstSearchRdesc(const Txn &txn,
-                                     const RecordDescriptor &recordDescriptor,
-                                     const unsigned int minDepth,
-                                     const unsigned int maxDepth,
-                                     const std::vector<ClassId> &edgeClassIds,
-                                     std::vector<RecordId> (Graph::*edgeFunc)(const BaseTxn &baseTxn,
-                                                                              const RecordId &rid,
-                                                                              const ClassId &classId),
-                                     RecordId (Graph::*vertexFunc)(const BaseTxn &baseTxn, const RecordId &rid),
-                                     const PathFilter &pathFilter) {
-        switch (Generic::checkIfRecordExist(txn, recordDescriptor)) {
-            case RECORD_NOT_EXIST:
-                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
-            case RECORD_NOT_EXIST_IN_MEMORY:
-                return ((minDepth == 0) && (minDepth <= maxDepth)) ?
-                       std::vector<RecordDescriptor>{recordDescriptor} : std::vector<RecordDescriptor>{};
-            default:
-                auto result = std::vector<RecordDescriptor>{};
-                auto classDescriptor = Schema::ClassDescriptorPtr{};
-                auto classPropertyInfo = ClassPropertyInfo{};
-                auto classDBHandler = storage_engine::lmdb::Dbi{};
-                try {
-
-                    std::unordered_set<RecordId, Graph::RecordIdHash> visited {};
-                    std::vector<std::vector<RecordId>> stk {{recordDescriptor.rid}};
-                    unsigned int currentLevel = 0u;
-
-                    while (!stk[currentLevel].empty()) {
-
-                        const RecordId vertex = stk[currentLevel].back();
-                        stk[currentLevel].pop_back();
-
-                        if (visited.find(vertex) == visited.cend()) {
-                            visited.insert(vertex);
-
-                            if (currentLevel >= minDepth) {
-                                auto tmpRdesc = pathFilter.isEnable() ?
-                                                retrieveRdesc(txn, classDescriptor, classPropertyInfo,
-                                                              classDBHandler, vertex,
-                                                              currentLevel ? pathFilter : PathFilter{},
-                                                              ClassType::VERTEX) :
-                                                RecordDescriptor{vertex};
-
-                                if (tmpRdesc != RecordDescriptor{}) {
-                                    tmpRdesc.depth = currentLevel;
-                                    result.push_back(tmpRdesc);
-                                }
-                            }
-
-                            if (currentLevel < maxDepth) {
-
-                                ++currentLevel;
-                                if (currentLevel == stk.size()) {
-                                    stk.emplace_back(decltype(stk)::value_type());
-                                }
-
-                                const auto edgeRecordDescriptors = getIncidentEdges(txn, classDescriptor,
-                                                                                    classPropertyInfo,
-                                                                                    classDBHandler, edgeFunc, vertex,
-                                                                                    pathFilter,
-                                                                                    edgeClassIds);
-
-                                for (auto it = edgeRecordDescriptors.crbegin(); it != edgeRecordDescriptors.crend(); ++it) {
-                                    const RecordDescriptor &edge = *it;
-
-                                    RecordId nextVertex;
-                                    if (vertexFunc != nullptr) {
-                                        nextVertex = ((*txn.txnCtx.dbRelation).*vertexFunc)(*(txn.txnBase), edge.rid);
-                                    } else {
-                                        auto vertices = txn.txnCtx.dbRelation->getVertexSrcDst(*(txn.txnBase), edge.rid);
-                                        nextVertex = (vertices.first != vertex ? vertices.first : vertices.second);
-                                    }
-
-                                    if (visited.find(nextVertex) != visited.cend()) continue;
-
-                                    stk[currentLevel].emplace_back(std::move(nextVertex));
-                                }
-                            }
-                        }
-
-                        while (currentLevel && stk[currentLevel].empty()) {
-                            --currentLevel;
-                        }
-                    }
-                } catch (const Error &err) {
-                    if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
-                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
-                    } else {
-                        throw err;
-                    }
+                visited.insert(vertex);
+                if (firstRecordId == RecordId {}) {
+                    firstRecordId = vertex;
                 }
-                return result;
-        }
-    }
-
-    std::vector<RecordDescriptor>
-    Algorithm::bfsShortestPathRdesc(const Txn &txn,
-                                    const RecordDescriptor &srcVertexRecordDescriptor,
-                                    const RecordDescriptor &dstVertexRecordDescriptor,
-                                    const std::vector<ClassId> &edgeClassIds,
-                                    const PathFilter &pathFilter) {
-        auto srcStatus = Generic::checkIfRecordExist(txn, srcVertexRecordDescriptor);
-        auto dstStatus = Generic::checkIfRecordExist(txn, dstVertexRecordDescriptor);
-        if (srcStatus == RECORD_NOT_EXIST) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_SRC);
-        } else if (dstStatus == RECORD_NOT_EXIST) {
-            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_DST);
-        } else if (srcStatus == RECORD_NOT_EXIST_IN_MEMORY || dstStatus == RECORD_NOT_EXIST_IN_MEMORY) {
-            return std::vector<RecordDescriptor>{};
-        } else {
-            auto result = std::vector<RecordDescriptor>{};
-            auto classDescriptor = Schema::ClassDescriptorPtr{};
-            auto classPropertyInfo = ClassPropertyInfo{};
-            auto classDBHandler = storage_engine::lmdb::Dbi{};
-            try {
-                if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
-                    result.emplace_back(srcVertexRecordDescriptor);
-                } else {
-                    bool found = false;
-                    auto visited = std::unordered_map<RecordId, std::pair<RecordDescriptor, RecordId>, Graph::RecordIdHash> {};
-                    visited.insert({srcVertexRecordDescriptor.rid, {RecordDescriptor{}, RecordId{}}});
-                    auto queue = std::queue<RecordId> {};
-                    queue.push(srcVertexRecordDescriptor.rid);
-                    while (!queue.empty() && !found) {
-                        auto vertex = queue.front();
-                        queue.pop();
-
-                        const auto edgeRecordDescriptors = getOutEdges(txn, classDescriptor, classPropertyInfo,
-                                                                            classDBHandler, vertex, pathFilter, edgeClassIds);
-
-                        for (const auto &edge: edgeRecordDescriptors) {
-                            auto nextVertex = txn.txnCtx.dbRelation->getVertexDst(*(txn.txnBase), edge.rid);
-                            if (visited.find(nextVertex) == visited.cend()) {
-                                auto tmpRdesc = (pathFilter.isSetVertex() || pathFilter.isSetEdge()) ?
-                                                retrieveRdesc(txn, classDescriptor, classPropertyInfo,
-                                                              classDBHandler, nextVertex, pathFilter, ClassType::VERTEX)
-                                                                                                     : RecordDescriptor{nextVertex};
-                                if (tmpRdesc != RecordDescriptor{}) {
-                                    visited.insert({nextVertex, {tmpRdesc, vertex}});
-                                    queue.push(nextVertex);
-                                }
-                            }
-                            if (nextVertex == dstVertexRecordDescriptor.rid) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (found) {
-                        auto vertex = dstVertexRecordDescriptor.rid;
-                        while (vertex != srcVertexRecordDescriptor.rid) {
-                            auto data = visited.at(vertex);
-                            result.emplace_back(data.first);
-                            vertex = data.second;
-                        }
-                        result.emplace_back(srcVertexRecordDescriptor);
-                        std::reverse(result.begin(), result.end());
-                        auto currentLevel = 0U;
-                        for(auto& res: result) {
-                            res.depth = currentLevel++;
-                        }
-                    }
+                if ((currentLevel + 1 < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    queue.push(vertex);
                 }
-            } catch (const Error &err) {
-                if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
-                    throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
-                } else {
-                    throw err;
+            };
+
+            if (minDepth == 0) {
+                result.emplace_back(recordDescriptor);
+            }
+            while (!queue.empty()) {
+                auto vertexId = queue.front();
+                queue.pop();
+
+                if (vertexId == firstRecordId) {
+                    currentLevel += (vertexId != recordDescriptor.rid);
+                    firstRecordId = RecordId {};
+                }
+
+                for (const auto& edgeNeighbour :
+                    RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
+                    addUniqueVertex(edgeNeighbour.second.rid);
                 }
             }
-            return result;
+        } catch (const Error& err) {
+            if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
+            } else {
+                throw NOGDB_FATAL_ERROR(err);
+            }
         }
+        return result;
+    }
+
+    //TODO: DO NOT USE UNTIL "depthFirstSearchRdesc" IS FIXED
+//    ResultSet
+//    GraphTraversal::depthFirstSearch(const Transaction& txn,
+//        const ClassAccessInfo& classInfo,
+//        const RecordDescriptor& recordDescriptor,
+//        unsigned int minDepth,
+//        unsigned int maxDepth,
+//        const Direction& direction,
+//        const GraphFilter& edgeFilter,
+//        const GraphFilter& vertexFilter)
+//    {
+//        const auto searchResultDescriptor = depthFirstSearchRdesc(
+//            txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+//        ResultSet result(searchResultDescriptor.size());
+//        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
+//            [&txn](const RecordDescriptor& descriptor) {
+//                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+//                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+//                record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
+//                return Result(descriptor, record);
+//            });
+//
+//        return result;
+//    }
+
+    //TODO: a buggy version of DFS, please fix this... DO NOT USE UNTIL IT IS FIXED
+//    std::vector<RecordDescriptor>
+//    GraphTraversal::depthFirstSearchRdesc(const Transaction& txn,
+//        const ClassAccessInfo& classInfo,
+//        const RecordDescriptor& recordDescriptor,
+//        unsigned int minDepth,
+//        unsigned int maxDepth,
+//        const Direction& direction,
+//        const GraphFilter& edgeFilter,
+//        const GraphFilter& vertexFilter)
+//    {
+//        auto result = std::vector<RecordDescriptor> {};
+//        auto visited = std::unordered_set<RecordId, RecordIdHash> {};
+//        auto stack = std::vector<std::vector<RecordId>> { { recordDescriptor.rid } };
+//        auto currentLevel = 0U;
+//        try {
+//            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+//            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
+//            while (!stack[currentLevel].empty()) {
+//                const RecordId vertexId = stack[currentLevel].back();
+//                stack[currentLevel].pop_back();
+//
+//                if (visited.find(vertexId) == visited.cend()) {
+//                    visited.insert(vertexId);
+//
+//                    if (currentLevel >= minDepth) {
+//                        auto vertexRdesc = RecordCompare::filterRecord(
+//                            txn, RecordDescriptor { vertexId }, currentLevel ? vertexFilter : GraphFilter {},
+//                            currentLevel ? vertexClassFilter : ClassFilter {});
+//                        if (vertexRdesc != RecordDescriptor {}) {
+//                            vertexRdesc._depth = currentLevel;
+//                            result.emplace_back(vertexRdesc);
+//                        }
+//                    }
+//
+//                    if (currentLevel < maxDepth) {
+//                        ++currentLevel;
+//                        if (currentLevel == stack.size()) {
+//                            stack.emplace_back(decltype(stack)::value_type());
+//                        }
+//
+//                        const auto incidentEdges = RecordCompare::filterIncidentEdges(
+//                            txn, vertexId, direction, edgeFilter, edgeClassFilter);
+//                        for (auto it = incidentEdges.crbegin(); it != incidentEdges.crend(); ++it) {
+//                            const RecordDescriptor& edge = *it;
+//                            RecordId nextVertex;
+//                            auto srcDstVertex = txn._interface->graph()->getSrcDstVertices(edge.rid);
+//                            switch (direction) {
+//                            case Direction::IN:
+//                                nextVertex = srcDstVertex.first;
+//                                break;
+//                            case Direction::OUT:
+//                                nextVertex = srcDstVertex.second;
+//                                break;
+//                            case Direction::ALL:
+//                                nextVertex = srcDstVertex.first != vertexId ? srcDstVertex.first : srcDstVertex.second;
+//                                break;
+//                            }
+//                            if (visited.find(nextVertex) != visited.cend())
+//                                continue;
+//                            stack[currentLevel].emplace_back(std::move(nextVertex));
+//                        }
+//                    }
+//                }
+//
+//                while (currentLevel && stack[currentLevel].empty()) {
+//                    --currentLevel;
+//                }
+//            }
+//        } catch (const Error& err) {
+//            if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+//                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
+//            } else {
+//                throw NOGDB_FATAL_ERROR(err);
+//            }
+//        }
+//        return result;
+//    }
+
+    ResultSet
+    GraphTraversal::bfsShortestPath(const Transaction& txn,
+        const ClassAccessInfo& srcVertexClassInfo,
+        const ClassAccessInfo& dstVertexClassInfo,
+        const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        const auto searchResultDescriptor = bfsShortestPathRdesc(
+            txn, srcVertexClassInfo, dstVertexClassInfo,
+            srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
+
+        ResultSet result(searchResultDescriptor.size());
+        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
+            [&txn](const RecordDescriptor& descriptor) {
+                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
+                return Result(descriptor, record);
+            });
+
+        return result;
+    }
+
+    std::vector<RecordDescriptor>
+    GraphTraversal::bfsShortestPathRdesc(const Transaction& txn,
+        const ClassAccessInfo& srcVertexClassInfo,
+        const ClassAccessInfo& dstVertexClassInfo,
+        const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        auto result = std::vector<RecordDescriptor> {};
+        try {
+            if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
+                result.emplace_back(srcVertexRecordDescriptor);
+            } else {
+                auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+                auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
+                auto found = false;
+                auto visited = std::unordered_map<RecordId, std::pair<RecordDescriptor, RecordId>, RecordIdHash> {};
+                visited.insert({ srcVertexRecordDescriptor.rid, { RecordDescriptor {}, RecordId {} } });
+                auto queue = std::queue<RecordId> {};
+                queue.push(srcVertexRecordDescriptor.rid);
+                while (!queue.empty() && !found) {
+                    auto vertex = queue.front();
+                    queue.pop();
+
+                    for (const auto& edgeNeighbour :
+                        RecordCompare::filterIncidentEdges(txn, vertex, Direction::OUT, edgeFilter, edgeClassFilter)) {
+                        auto nextVertex = edgeNeighbour.second.rid;
+                        if (visited.find(nextVertex) == visited.cend()) {
+                            auto vertexRdesc = RecordCompare::filterRecord(
+                                txn, nextVertex, vertexFilter, vertexClassFilter);
+                            if (vertexRdesc != RecordDescriptor {}) {
+                                visited.insert({ nextVertex, { vertexRdesc, vertex } });
+                                queue.push(nextVertex);
+                            }
+                        }
+                        if (nextVertex == dstVertexRecordDescriptor.rid) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    auto vertex = dstVertexRecordDescriptor.rid;
+                    while (vertex != srcVertexRecordDescriptor.rid) {
+                        auto data = visited.at(vertex);
+                        result.emplace_back(data.first);
+                        vertex = data.second;
+                    }
+                    result.emplace_back(srcVertexRecordDescriptor);
+                    std::reverse(result.begin(), result.end());
+                    auto currentLevel = 0U;
+                    for (auto& res : result) {
+                        res._depth = currentLevel++;
+                    }
+                }
+            }
+        } catch (const Error& err) {
+            if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
+            } else {
+                throw NOGDB_FATAL_ERROR(err);
+            }
+        }
+        return result;
     }
 
 }
-
-
+}

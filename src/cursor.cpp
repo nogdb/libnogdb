@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -21,154 +21,169 @@
 
 #include <iterator>
 
-#include "generic.hpp"
+#include "datarecord.hpp"
 #include "schema.hpp"
 
-#include "nogdb_errors.h"
-#include "nogdb_types.h"
+#include "nogdb/nogdb_errors.h"
+#include "nogdb/nogdb_types.h"
 
 namespace nogdb {
 
-    ResultSetCursor::ResultSetCursor(Txn &txn_)
-            : txn{txn_}, currentIndex{-1} {
-        classPropertyInfos = std::unique_ptr<ClassPropertyCache>(new ClassPropertyCache());
-    }
+ResultSetCursor::ResultSetCursor(const Transaction& txn_)
+    : txn { &txn_ }
+    , currentIndex { -1 }
+{
+}
 
-    ResultSetCursor::~ResultSetCursor() noexcept {}
+ResultSetCursor::~ResultSetCursor() noexcept {}
 
-    ResultSetCursor::ResultSetCursor(const ResultSetCursor &rc) : txn{rc.txn} {
-        metadata = rc.metadata;
-        classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
-        currentIndex = rc.currentIndex;
-    }
+ResultSetCursor::ResultSetCursor(ResultSetCursor&& rc) noexcept
+    : txn { rc.txn }
+{
+    metadata = std::move(rc.metadata);
+    currentIndex = rc.currentIndex;
+}
 
-    ResultSetCursor &ResultSetCursor::operator=(const ResultSetCursor &rc) {
-        if (this != &rc) {
-            txn = rc.txn;
-            classPropertyInfos.reset(new ClassPropertyCache(*rc.classPropertyInfos));
-            metadata = rc.metadata;
-            currentIndex = rc.currentIndex;
-        }
-        return *this;
-    }
-
-    ResultSetCursor::ResultSetCursor(ResultSetCursor &&rc) noexcept: txn{rc.txn} {
+ResultSetCursor& ResultSetCursor::operator=(ResultSetCursor&& rc) noexcept
+{
+    if (this != &rc) {
         txn = rc.txn;
         metadata = std::move(rc.metadata);
         currentIndex = rc.currentIndex;
-        classPropertyInfos = std::move(rc.classPropertyInfos);
-        rc.classPropertyInfos = nullptr;
     }
+    return *this;
+}
 
-    ResultSetCursor &ResultSetCursor::operator=(ResultSetCursor &&rc) noexcept {
-        if (this != &rc) {
-            txn = rc.txn;
-            metadata = std::move(rc.metadata);
-            currentIndex = rc.currentIndex;
-            classPropertyInfos = std::move(rc.classPropertyInfos);
-            rc.classPropertyInfos = nullptr;
-        }
-        return *this;
-    }
+bool ResultSetCursor::hasNext() const
+{
+    return !(metadata.empty()) && (currentIndex < static_cast<long long>(metadata.size() - 1));
+}
 
-    bool ResultSetCursor::hasNext() const {
-        return !(metadata.empty()) && (currentIndex < static_cast<long long>(metadata.size() - 1));
-    }
+bool ResultSetCursor::hasPrevious() const
+{
+    return !(metadata.empty()) && (currentIndex > 0);
+}
 
-    bool ResultSetCursor::hasPrevious() const {
-        return !(metadata.empty()) && (currentIndex > 0);
-    }
+bool ResultSetCursor::hasAt(unsigned long index) const
+{
+    return !(metadata.empty()) && (index < metadata.size() - 1);
+}
 
-    bool ResultSetCursor::hasAt(unsigned long index) const {
-        return !(metadata.empty()) && (index < metadata.size() - 1);
-    }
+bool ResultSetCursor::next()
+{
+    BEGIN_VALIDATION(txn)
+        .isTxnCompleted();
 
-    bool ResultSetCursor::next() {
-        if (!metadata.empty() && (currentIndex == -1)) {
-            currentIndex = 0;
-        } else if (hasNext()) {
-            ++currentIndex;
-        } else {
-            return false;
-        }
-        auto cursor = metadata.begin() + currentIndex;
-        result = Generic::getRecordResult(txn, resolveClassPropertyInfo(cursor->rid.first), *(cursor));
-        return true;
+    if (!metadata.empty() && (currentIndex == -1)) {
+        currentIndex = 0;
+    } else if (hasNext()) {
+        ++currentIndex;
+    } else {
+        return false;
     }
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result { recordDescriptor, record };
+    return true;
+}
 
-    bool ResultSetCursor::previous() {
-        if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
-            currentIndex = static_cast<long long>(metadata.size() - 1);
-        } else if (hasPrevious()) {
-            --currentIndex;
-        } else {
-            return false;
-        }
-        auto cursor = metadata.begin() + currentIndex;
-        result = Generic::getRecordResult(txn, resolveClassPropertyInfo(cursor->rid.first), *(cursor));
-        return true;
-    }
+bool ResultSetCursor::previous()
+{
+    BEGIN_VALIDATION(txn)
+        .isTxnCompleted();
 
-    bool ResultSetCursor::empty() const {
-        return metadata.empty();
+    if (!metadata.empty() && (currentIndex >= static_cast<long long>(metadata.size()))) {
+        currentIndex = static_cast<long long>(metadata.size() - 1);
+    } else if (hasPrevious()) {
+        --currentIndex;
+    } else {
+        return false;
     }
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result { recordDescriptor, record };
+    return true;
+}
 
-    size_t ResultSetCursor::size() const {
-        return metadata.size();
-    }
+bool ResultSetCursor::empty() const
+{
+    return metadata.empty();
+}
 
-    size_t ResultSetCursor::count() const {
-        return size();
-    }
+size_t ResultSetCursor::size() const
+{
+    return metadata.size();
+}
 
-    void ResultSetCursor::first() {
-        if (!metadata.empty()) {
-            currentIndex = 0;
-            auto cursor = metadata.begin();
-            auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-            result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
-        }
-    }
+size_t ResultSetCursor::count() const
+{
+    return size();
+}
 
-    void ResultSetCursor::last() {
-        if (!metadata.empty()) {
-            currentIndex = static_cast<long long>(metadata.size() - 1);
-            auto cursor = metadata.end() - 1;
-            auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-            result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
-        }
-    }
+void ResultSetCursor::first()
+{
+    BEGIN_VALIDATION(txn)
+        .isTxnCompleted();
 
-    bool ResultSetCursor::to(unsigned long index) {
-        if (index >= metadata.size()) {
-            return false;
-        }
-        currentIndex = index;
-        auto cursor = metadata.begin() + currentIndex;
-        auto classPropertyInfo = resolveClassPropertyInfo(cursor->rid.first);
-        result = Generic::getRecordResult(txn, classPropertyInfo, *(cursor));
-        return true;
+    if (!metadata.empty()) {
+        currentIndex = 0;
+        auto cursor = metadata.begin();
+        auto recordDescriptor = *(cursor);
+        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+        result = Result { recordDescriptor, record };
     }
+}
 
-    const Result &ResultSetCursor::operator*() const {
-        return result;
-    }
+void ResultSetCursor::last()
+{
+    BEGIN_VALIDATION(txn)
+        .isTxnCompleted();
 
-    const Result *ResultSetCursor::operator->() const {
-        return &(operator*());
+    if (!metadata.empty()) {
+        currentIndex = static_cast<long long>(metadata.size() - 1);
+        auto cursor = metadata.end() - 1;
+        auto recordDescriptor = *(cursor);
+        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+        result = Result { recordDescriptor, record };
     }
+}
 
-    const ClassPropertyInfo ResultSetCursor::resolveClassPropertyInfo(ClassId classId) {
-        auto classPropertyInfo = ClassPropertyInfo{};
-        auto findCacheClassInfo = classPropertyInfos->find(classId);
-        if (findCacheClassInfo == classPropertyInfos->cend()) {
-            auto classDescriptor = Generic::getClassDescriptor(txn, classId, ClassType::UNDEFINED);
-            auto classPropertyInfo = Generic::getClassMapProperty(*txn.txnBase, classDescriptor);
-            classPropertyInfos->emplace(classId, classPropertyInfo);
-            return classPropertyInfo;
-        } else {
-            return findCacheClassInfo->second;
-        }
+bool ResultSetCursor::to(unsigned long index)
+{
+    BEGIN_VALIDATION(txn)
+        .isTxnCompleted();
+
+    if (index >= metadata.size()) {
+        return false;
     }
+    currentIndex = index;
+    auto cursor = metadata.begin() + currentIndex;
+    auto recordDescriptor = *(cursor);
+    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
+    result = Result { recordDescriptor, record };
+    return true;
+}
+
+const Result& ResultSetCursor::operator*() const
+{
+    return result;
+}
+
+const Result* ResultSetCursor::operator->() const
+{
+    return &(operator*());
+}
 
 }

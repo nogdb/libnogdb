@@ -35,6 +35,10 @@ New header and source files can be added if necessary. Make sure that they would
 
 ## Code style
 We usually develop NogDB by following [CppCoreGuidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md). However, we are pleased to accept any of your code style if it is quite reasonable and doesn't break any C++ best practice and common rules. Only few things that we strongly concern:
+ - Use `clang-format` for the default formatting style complying with WebKit's style guide.
+ ```bash
+ clang-format -i -style=WebKit *
+ ```
  - For namespace, always use lower-case letters without special characters and try to have only single word.
  ```cpp
  // good
@@ -72,24 +76,6 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
  // bad
  void write_to_file(std::vector<RecordDescriptor>& vertex_descriptors);
  ```
- - Beware of `using namespace` to avoid name hiding, especially in header files.
- ```cpp
- // good
- std::cout << "Hello, World";
- 
- // avoid in *.cpp files
- using namespace std;
- cout << "Hello, World";
- 
- // bad in *.h/*.hpp files
- using namespace std;
- cout << "Hello, World";
- 
- // okay (one of exceptional cases)
- using namespace std::string_literals;
- std::string str = "abc\0\0def"s;
- std::cout << str << "\n";
- ```
  - Use `auto` as much as possible to increase code readability.
  ```cpp
  // good
@@ -114,40 +100,12 @@ We usually develop NogDB by following [CppCoreGuidelines](https://github.com/iso
  // bad
  RecordDescriptor *recordDescriptorPtr = new RecordDescriptor();
  ```
- - Prefer to have a left curly brace in the same line. 
- ```cpp
- // good
- if (x == 1) {
-    ...
- } else {
-    ...
- }
- 
- // bad
- if (x == 1)
- {
-    ...
- }
- else
- {
-    ...
- }
-
- ```
  - Do not use Boost libraries if a required functionality provided in standard C++11. If really needed, prefer to include only associated Boost header files (and do not forget to add them in `lib`).
  - Follow the rule of three/five/zero as much as possible. Declare its copy constructor and assignment operator with `= delete` if your type/class/struct is non-copyable.
- - Add a define guard `#define __<HEADER FILE NAMME>_<HEADER FILE EXTENSION>_INCLUDED_` in header files.
- ```cpp
- // in nogdb.h
- #ifndef __NOGDB_H_INCLUDED_
- #define __NOGDB_H_INCLUDED_
- ...
- #endif
- ```
+ - Use `#pragma once` instead of a define guard with `#ifndef` and `#define` in header files.
  - Prefer to include header files in the following order:
    - C system headers (`<unistd.h>`, etc.)
    - Standard C++ headers (`<vector>`, `<algorithm>`, etc.)
-   - Boost headers (`"boost/shared_mutex.hpp"`, etc.)
    - Local (internal) headers (`"generic.hpp"`, `"graph.hpp"`, etc.)
    - Global (exposing) headers (`"nogdb.h"`, `"nogdb_errors.h"`, etc.)
  - Prefer to include all dependencies to in \*.h/\*.hpp/\*.cpp files if only required.

@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <kasidej dot bu at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,63 +19,98 @@
  *
  */
 
-#ifndef __NOGDB_SQL_H_INCLUDED_
-#define __NOGDB_SQL_H_INCLUDED_
+#pragma once
+
+#include <memory>
+#include <string>
+
+#include "nogdb_errors.h"
+#include "nogdb_types.h"
 
 namespace nogdb {
 
-    namespace sql_parser { class Context; }
-
-    struct SQL {
-        SQL() = delete;
-
-        ~SQL() noexcept = delete;
-
-        SQL &operator=(const SQL &_) = delete;
-
-        class Result {
-        public:
-            friend class sql_parser::Context;
-
-            Result() : t(NO_RESULT), value(nullptr) {}
-
-            enum Type {
-                NO_RESULT,
-                ERROR,
-                CLASS_DESCRIPTOR,
-                PROPERTY_DESCRIPTOR,
-                RECORD_DESCRIPTORS,
-                RESULT_SET
-            };
-
-            inline Type type() const {
-                return this->t;
-            }
-
-            template<typename T>
-            inline T &get() const {
-                return *std::static_pointer_cast<T>(this->value);
-            }
-
-        protected:
-            Result(Type type_, std::shared_ptr<void> value_) : t(type_), value(value_) {}
-
-            Result(Error *error) : t(ERROR), value(error) {}
-
-            Result(ClassDescriptor *classDescriptor) : t(CLASS_DESCRIPTOR), value(classDescriptor) {}
-
-            Result(PropertyDescriptor *propertyDescriptor) : t(PROPERTY_DESCRIPTOR), value(propertyDescriptor) {}
-
-            Result(std::vector<RecordDescriptor> *recordDescriptor) : t(RECORD_DESCRIPTORS), value(recordDescriptor) {}
-
-            Result(ResultSet *resultSet) : t(RESULT_SET), value(resultSet) {}
-
-            Type t;
-            std::shared_ptr<void> value;
-        };
-
-        static const Result execute(Txn &txn, const std::string &sql);
-    };
+namespace sql_parser {
+    class Context;
 }
 
-#endif
+struct SQL {
+    SQL() = delete;
+
+    ~SQL() noexcept = delete;
+
+    SQL& operator=(const SQL& _) = delete;
+
+    class Result {
+    public:
+        friend class sql_parser::Context;
+
+        Result()
+            : t(NO_RESULT)
+            , value(nullptr)
+        {
+        }
+
+        enum Type {
+            NO_RESULT,
+            ERROR,
+            CLASS_DESCRIPTOR,
+            PROPERTY_DESCRIPTOR,
+            RECORD_DESCRIPTORS,
+            RESULT_SET
+        };
+
+        inline Type type() const
+        {
+            return this->t;
+        }
+
+        template <typename T>
+        inline T& get() const
+        {
+            return *std::static_pointer_cast<T>(this->value);
+        }
+
+    protected:
+        Result(Type type_, std::shared_ptr<void> value_)
+            : t(type_)
+            , value(value_)
+        {
+        }
+
+        Result(Error* error)
+            : t(ERROR)
+            , value(error)
+        {
+        }
+
+        Result(ClassDescriptor* classDescriptor)
+            : t(CLASS_DESCRIPTOR)
+            , value(classDescriptor)
+        {
+        }
+
+        Result(PropertyDescriptor* propertyDescriptor)
+            : t(PROPERTY_DESCRIPTOR)
+            , value(propertyDescriptor)
+        {
+        }
+
+        Result(std::vector<RecordDescriptor>* recordDescriptor)
+            : t(RECORD_DESCRIPTORS)
+            , value(recordDescriptor)
+        {
+        }
+
+        Result(ResultSet* resultSet)
+            : t(RESULT_SET)
+            , value(resultSet)
+        {
+        }
+
+        Type t;
+        std::shared_ptr<void> value;
+    };
+
+    static const Result execute(Transaction& txn, const std::string& sql);
+};
+}

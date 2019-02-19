@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,58 +19,69 @@
  *
  */
 
-#ifndef __VALIDATE_HPP_INCLUDED_
-#define __VALIDATE_HPP_INCLUDED_
+#pragma once
 
-#include "schema.hpp"
-#include "base_txn.hpp"
+#include "constant.hpp"
+#include <regex>
 
-#include "nogdb_errors.h"
-#include "nogdb_context.h"
-#include "nogdb_types.h"
-#include "nogdb_txn.h"
+#include "nogdb/nogdb.h"
+#include "nogdb/nogdb_errors.h"
+
+#define BEGIN_VALIDATION(_txn) nogdb::validate::Validator(_txn)
+#define CLASS_ID_UPPER_LIMIT UINT16_MAX - 1
 
 namespace nogdb {
-    struct Validate {
-        Validate() = delete;
 
-        ~Validate() noexcept = delete;
+namespace validate {
 
-        static void isTransactionValid(const Txn &txn);
+    using namespace adapter::schema;
 
-        static void isClassNameValid(const std::string &className);
+    class Validator {
+    public:
+        Validator(const Transaction* txn)
+            : _txn { txn }
+        {
+        }
 
-        static void isPropertyNameValid(const std::string &propName);
+        virtual ~Validator() noexcept = default;
 
-        static bool isNameValid(const std::string& name);
+        Validator& isTxnValid();
 
-        static void isClassTypeValid(const ClassType &type);
+        Validator& isTxnCompleted();
 
-        static void isPropertyTypeValid(const PropertyType &type);
+        Validator& isClassIdMaxReach();
 
-        static void isNotDuplicatedClass(const Txn &txn, const std::string &className);
+        Validator& isPropertyIdMaxReach();
 
-        static std::shared_ptr<Schema::ClassDescriptor> isExistingClass(const Txn &txn, const std::string &className);
+        Validator& isIndexIdMaxReach();
 
-        static std::shared_ptr<Schema::ClassDescriptor> isExistingClass(const Txn &txn, const ClassId &classId);
+        Validator& isClassNameValid(const std::string& className);
 
-        static void isNotDuplicatedProperty(const BaseTxn &txn,
-                                            const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                            const std::string &propertyName);
+        Validator& isPropertyNameValid(const std::string& propName);
 
-        static Schema::PropertyDescriptor isExistingProperty(const BaseTxn &txn,
-                                                             const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                                             const std::string &propertyName);
+        Validator& isClassTypeValid(const ClassType& type);
 
-        static std::pair<ClassId, Schema::PropertyDescriptor>
-        isExistingPropertyExtend(const BaseTxn &txn,
-                                 const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                 const std::string &propertyName);
+        Validator& isPropertyTypeValid(const PropertyType& type);
 
-        static void isNotOverridenProperty(const BaseTxn &txn,
-                                           const std::shared_ptr<Schema::ClassDescriptor> &classDescriptor,
-                                           const std::string &propertyName);
+        Validator& isNotDuplicatedClass(const std::string& className);
+
+        Validator& isNotDuplicatedProperty(const ClassId& classId, const std::string& propertyName);
+
+        Validator& isNotOverriddenProperty(const ClassId& classId, const std::string& propertyName);
+
+        Validator& isExistingSrcVertex(const RecordDescriptor& vertex);
+
+        Validator& isExistingDstVertex(const RecordDescriptor& vertex);
+
+        Validator& isExistingVertex(const RecordDescriptor& vertex);
+
+    private:
+        const Transaction* _txn;
+
+        inline static bool isNameValid(const std::string& name)
+        {
+            return std::regex_match(name, GLOBAL_VALID_NAME_PATTERN);
+        }
     };
 }
-
-#endif
+}

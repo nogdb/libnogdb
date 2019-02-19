@@ -1,31 +1,30 @@
-# NogDB
+# NogDB - Native Graph Database (C++) Library 
 
+[![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/nogdb/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nogdb/libnogdb.svg?branch=develop)](https://travis-ci.org/nogdb/libnogdb)
-[![Version](https://img.shields.io/badge/version-0.12.0%20beta-blue.svg)]()
-[![Production Status](https://img.shields.io/badge/status-unstable-red.svg)]()
+[![Version](https://img.shields.io/badge/version-1.0.0%20beta-blue.svg)]()
+[![Production Status](https://img.shields.io/badge/status-stable-green.svg)]()
 
 ## Welcome
 **NogDB is a fast & lightweight native graph database library that provides features in graph manipulations.**
 
 ## Key Features
-* Fast graph database written in C++
+* Considerably fast graph database written in C++
 * Lightweight and native with no client-server protocols needed
-* Rapid graph traversal with vertex and edge relations cached in memory
 * Transactions with MVCC (full ACID semantics in data storage)
 * Multiple readers and single writer (no blocking between readers and writer)
-* SQL support for performing graph execution and querying graph information
+* SQL support for performing graph executions and querying graph information
 * Inheritance support for vertex and edge classes
 * Basic database indexing support based on B+Tree
-* Multiple platforms support, e.g. Unix, Linux, BSD and Mac OS X (macOS)
+* Aim to support for multiple platforms (currently available on Unix, Linux, BSD, and Mac OS X/macOS, Windows is under experiment)
 
 ## Dependencies
 * GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
 * On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above)
-* [Google Test](https://github.com/google/googletest)
+* [Google Test](https://github.com/google/googletest) - for development only
 
 ## Limitations
-* A particular database can be opened and accessed by only one single process at a time. For a multi-threaded application, the database context must be created as a singleton and shared between threads. However, the application can open multiple different databases by using separated database contexts.
-* The current datastore architecture supports only up to 65,535 classes and 65,536 properties.
+* The current data storage architecture supports only up to 65,535 classes and 65,536 properties.
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
@@ -66,7 +65,7 @@ NogDB is an open source project that allows you to contribute to the project by 
 See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/develop/CONTRIBUTING.md) for more details about the workflow, how to prepare your pull request, and some sorts of code conventions plus style, 
 
 ## License & copyright
-Copyright (c) 2018 NogDB contributors.
+Copyright (c) 2019 NogDB contributors.
 
 ![](https://www.gnu.org/graphics/agplv3-155x51.png)
 ![](https://www.openldap.org/images/headers/LDAPlogo.gif)

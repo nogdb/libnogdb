@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,51 +19,123 @@
  *
  */
 
-#ifndef __UTILS_HPP_INCLUDED_
-#define __UTILS_HPP_INCLUDED_
+#pragma once
 
-#include <iostream>
-#include <string>
-#include <vector>
+#include <algorithm>
 #include <chrono>
+#include <ctime>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <sys/file.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <unordered_map>
+#include <vector>
+
+#include "nogdb/nogdb_errors.h"
 
 namespace nogdb {
 
-    struct Profiler {
+namespace utils {
+    // unordered_map cache
+    namespace caching {
 
-        using Duration = std::chrono::duration<double>;
+        template <typename K, typename V>
+        class UnorderedCache {
+        public:
+            UnorderedCache() = default;
 
-        Profiler(const std::string &name_)
-                : name{name_}, start{std::chrono::high_resolution_clock::now()} {}
+            virtual ~UnorderedCache() noexcept = default;
 
-        ~Profiler() noexcept {
-            ;
-            auto d = std::chrono::high_resolution_clock::now() - start;
-            std::cout << name << ": " << std::chrono::duration_cast<Duration>(d).count() * 1000 << std::endl;
-        }
+            V get(const K& key, std::function<V(void)> callback) const
+            {
+                auto found = _underlying.find(key);
+                if (found != _underlying.cend()) {
+                    return found->second;
+                } else {
+                    auto value = callback();
+                    _underlying.emplace(key, value);
+                    return value;
+                }
+            }
 
-        std::string name;
-        std::chrono::high_resolution_clock::time_point start;
-    };
+            void set(const K& key, const V& val)
+            {
+                _underlying[key] = val;
+            }
+
+            void unset(const K& key)
+            {
+                _underlying.erase(key);
+            }
+
+            void clear() noexcept
+            {
+                _underlying.clear();
+            }
+
+        private:
+            mutable std::unordered_map<K, V> _underlying {};
+        };
+    }
+
+    // profiler
+    namespace profiler {
 
 #define PROFILE_BLOCK(pbn) Profiler _pf(pbn)
 
-    unsigned long long currentTimestamp();
+        struct Profiler {
 
-    bool fileExists(const std::string &fileName);
+            using Duration = std::chrono::duration<double>;
 
-    std::vector<std::string> split(const std::string &string, char delimeter);
+            Profiler(const std::string& name_)
+                : name { name_ }
+                , start { std::chrono::high_resolution_clock::now() }
+            {
+            }
 
-    void replaceAll(std::string &string, const std::string &from, const std::string &to);
+            ~Profiler() noexcept
+            {
+                auto d = std::chrono::high_resolution_clock::now() - start;
+                std::cout << name << ": " << std::chrono::duration_cast<Duration>(d).count() * 1000 << std::endl;
+            }
 
-    void require(bool cmp);
+            std::string name;
+            std::chrono::high_resolution_clock::time_point start;
+        };
+    }
 
-    int mkdir(const char*, int);
+    // date & time
+    namespace datetime {
+        unsigned long long currentTimestamp();
+    }
 
-    int openLockFile(const char*);
+    // string utilities
+    namespace string {
+        std::vector<std::string> split(const std::string& str, char delimeter);
+        void replaceAll(std::string& string, const std::string& from, const std::string& to);
+        void toUpperCase(std::string& str);
+        std::string frontPadding(const std::string& str, const size_t length, const char paddingChar);
+    }
 
-    int unlockFile(int);
+    // assertion
+    namespace assertion {
+        void require(bool cmp);
+    }
+
+    // input/output
+    namespace io {
+        bool fileExists(const std::string& fileName);
+        int mkdir(const char* pathname, int mode);
+        int openLockFile(const char* pathname);
+        int unlockFile(int fd);
+        void writeBinaryFile(const char* pathname, const char* data, size_t size);
+        const char* readBinaryFile(const char* pathname, size_t size);
+    }
+
 }
-
-#endif
+}

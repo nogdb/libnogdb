@@ -2,14 +2,14 @@ CC		?= gcc
 CXX		?= g++
 AR		= ar
 CXXFLAGS	= -std=c++11
-TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option
+TCFLAGS		= -fPIC -W -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-warning-option -Wno-c++1z-extensions
 DEBUGFLAGS  ?= -ggdb
 OPTFLAGS    ?= 
 EXTFLAGS	=
 SRCDIR		= src
 BUILDDIR	= build
 TARGETDIR	= bin
-TESTDIR	    = test/apitest
+TESTDIR	    = test/functest
 TESTUNITDIR = test/unittest
 LIBPATH		= lib
 SRCEXT		= cpp
@@ -25,8 +25,9 @@ SONAME		= $(TARGETDIR)/libnogdb.so
 DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
-TESTPREFIX	?= apitest
-TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_INDEX_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS
+TESTPREFIX	?= functest
+TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS -DTEST_INDEX_OPERATIONS
+EXTTESTFLAGS    ?=
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
 CCNAME      = $(shell $(CXX) --version 2> /dev/null | grep -oe 'clang')
 LEMONDIR	= $(LIBPATH)/lemonxx
@@ -61,6 +62,7 @@ verbose:
 	@echo "OPTFLAGS=$(OPTFLAGS)"
 	@echo "EXTFLAGS=$(EXTFLAGS)"
 	@echo "TESTPREFIX=$(TESTPREFIX)"
+	@echo "EXTTESTFLAGS=$(EXTTESTFLAGS)"
 
 lmdb:
 	@echo "Compiling dependencies..."
@@ -93,8 +95,8 @@ $(LEMONPP): $(LEMONDIR)/lemon.c $(LEMONDIR)/lempar.cxx
 
 #test: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 test: verbose lmdb $(ANAME) $(TESTOBJS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
-#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(EXTTESTFLAGS) $(ANAME) -o $(TESTPREFIX) $(LDFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(EXTTESTFLAGS) -o $(TESTPREFIX) $(SONAME) $(LDFLAGS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
 test_unit: verbose lmdb $(ANAME) $(TESTUNITOBJS)
@@ -103,15 +105,15 @@ test_unit: verbose lmdb $(ANAME) $(TESTUNITOBJS)
 
 #test_address: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 test_address: verbose lmdb $(ANAME) $(TESTOBJS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
-#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(EXTTESTFLAGS) $(ANAME) -o $(TESTPREFIX)_debug_address $(LDFLAGS) $(EXTFLAGS)
+#	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTOBJS) $(EXTTESTFLAGS) -o $(TESTPREFIX)_debug_address $(SONAME) $(LDFLAGS) $(EXTFLAGS)
 	@./$(TESTPREFIX)_debug_address; rm -rf $(TESTPREFIX).db
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(TESTFLAGS) $(HEADERS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(TESTFLAGS) $(EXTTESTFLAGS) $(HEADERS) -c $< -o $@
 
 $(TESTUNITDIR)/%.o: $(TESTUNITDIR)/%.$(SRCEXT)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(EXTTESTFLAGS) -c $< -o $@
 
 install:
 	@printf "Installing libnogdb..."

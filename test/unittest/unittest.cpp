@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018, Throughwave (Thailand) Co., Ltd.
- *  <peerawich at throughwave dot co dot th>
+ *  Copyright (C) 2019, NogDB <https://nogdb.org>
+ *  <nogdb at throughwave dot co dot th>
  *
  *  This file is part of libnogdb, the NogDB core library in C++.
  *
@@ -19,15 +19,14 @@
  *
  */
 
-#include <iostream>
-#include <cassert>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "../../include/nogdb/nogdb.h"
+#include <cassert>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <iostream>
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-
-
