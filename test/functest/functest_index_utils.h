@@ -29,6 +29,7 @@
 #include <string>
 #include <type_traits>
 
+#include "functest_utils.h"
 #include "functest_config.h"
 #include "functest_cursor_utils.h"
 
