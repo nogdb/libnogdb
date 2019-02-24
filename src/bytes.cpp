@@ -179,7 +179,7 @@ Bytes Bytes::merge(const Bytes& bytes1, const Bytes& bytes2)
 Bytes Bytes::merge(const std::vector<Bytes>& bytes)
 {
 
-    size_t total_size = 0u;
+    size_t total_size = 0U;
     for (const Bytes& b : bytes) {
         total_size += b.size();
     }

@@ -115,6 +115,18 @@ namespace compare {
             const MultiCondition& conditions,
             bool searchIndexOnly = false);
 
+        static unsigned int compareConditionCount(const Transaction& txn,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
+            const Condition& condition,
+            bool searchIndexOnly = false);
+
+        static unsigned int compareMultiConditionCount(const Transaction& txn,
+            const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyNameMapInfo,
+            const MultiCondition& conditions,
+            bool searchIndexOnly = false);
+
         static ResultSet compareEdgeCondition(const Transaction& txn,
             const RecordDescriptor& recordDescriptor,
             const Direction& direction,
