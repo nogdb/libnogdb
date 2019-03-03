@@ -8,7 +8,7 @@
 :Date: 01/01/2019
 :cpp: C++
 
-[big]#**CAUTION:** This manuaCl is only _partially_ written. This message will be removed when it is completed.#
+[big]#**CAUTION:** This manual is only _partially_ written. This message will be removed when it is completed.#
 
 == Database Context
 

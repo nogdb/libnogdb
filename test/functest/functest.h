@@ -148,6 +148,8 @@ extern void test_version_update_src_dst_edge();
 extern void test_version_remove_vertex_edge();
 extern void test_version_remove_all_vertex_edge();
 extern void test_version_drop_vertex_edge();
+extern void test_get_count_vertex();
+extern void test_get_count_edge();
 #endif
 
 // graph operations testing

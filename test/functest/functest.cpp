@@ -180,6 +180,8 @@ int main()
     exec(test_add_delete_prop_with_records, "adding/deleting properties with records");
     exec(test_alter_class_with_records, "modifying a class name with records");
     exec(test_drop_class_with_relations, "dropping a class with some relations and reloading the database");
+    exec(test_get_count_vertex, "getting a number of vertex records in result set via count()");
+    exec(test_get_count_edge, "getting a number of edge records in result set via count()");
 
     std::cout << "\n\x1B[96mEnd-to-end tests for create/update/delete operations with record versioning should:\x1B[0m\n";
     exec(test_version_add_vertex_edge, "adding new vertices and edges with record versioning");
