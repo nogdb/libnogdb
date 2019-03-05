@@ -131,6 +131,34 @@ inline void assertNotEqual(
     }
 }
 
+#define ASSERT_TRUE(_val) assertTrue(_val, __FUNCTION__, __LINE__, __FILE__)
+
+inline void assertTrue(
+    const bool value, const std::string& funcName, const int lineNumber, const std::string& fileName)
+{
+    if (value == 0) {
+        std::cout << "\x1B[31m"
+                  << "\n[error] Expect:\ttrue in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << value << ".\x1B[0m\n";
+        assert(0);
+    }
+}
+
+#define ASSERT_FALSE(_val) assertFalse(_val, __FUNCTION__, __LINE__, __FILE__)
+
+inline void assertFalse(
+    const bool value, const std::string& funcName, const int lineNumber, const std::string& fileName)
+{
+    if (value != 0) {
+        std::cout << "\x1B[31m"
+                  << "\n[error] Expect:\tfalse in " << funcName << ", file " << fileName << ", line "
+                  << std::dec << lineNumber << ".\n"
+                  << "        Actual:\t" << value << ".\x1B[0m\n";
+        assert(0);
+    }
+}
+
 inline void verbose(const nogdb::ResultSet& rs)
 {
     std::cout << "\nSize:" << rs.size() << '\n';
@@ -254,4 +282,12 @@ inline bool rdescCompare(const std::string& propertyName, const nogdb::ResultSet
         }
     }
     return compareRes;
+}
+
+template<typename T, typename std::enable_if<std::is_base_of<nogdb::OperationBuilder, T>::value>::type* = nullptr>
+inline bool resultSetCountCompare(T& queryBuilder) {
+    auto res = queryBuilder.get();
+    auto resCursor = queryBuilder.getCursor();
+    auto resCount = queryBuilder.count();
+    return (resCount == res.size()) && (resCount == resCursor.size());
 }

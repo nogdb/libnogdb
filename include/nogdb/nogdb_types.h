@@ -1343,7 +1343,7 @@ protected:
     virtual ResultSetCursor getCursor() const = 0;
 
     //TODO: improve the performance of record retrieval by having count(parallel = n);
-    //    virtual unsigned int count() const = 0;
+    virtual unsigned long count() const = 0;
 
     const Transaction* _txn;
 };
@@ -1394,7 +1394,7 @@ public:
 
     ResultSetCursor getCursor() const;
 
-    //    unsigned int count() const;
+    unsigned long count() const;
 
 private:
     friend class Transaction;
@@ -1453,7 +1453,7 @@ public:
 
     ResultSetCursor getCursor() const;
 
-    //    unsigned int count() const;
+    unsigned long count() const;
 
 private:
     friend class Transaction;
@@ -1512,7 +1512,7 @@ public:
 
     ResultSetCursor getCursor() const;
 
-    //    unsigned int count() const;
+    unsigned long count() const;
 
 private:
     friend class Transaction;
@@ -1574,7 +1574,7 @@ public:
 
     ResultSetCursor getCursor() const;
 
-    //    unsigned int count() const;
+    unsigned long count() const;
 
 private:
     friend class Transaction;

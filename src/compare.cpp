@@ -359,6 +359,64 @@ namespace compare {
         return std::vector<RecordDescriptor> {};
     }
 
+    unsigned int RecordCompare::compareConditionCount(const Transaction& txn,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
+        const Condition& condition,
+        bool searchIndexOnly)
+    {
+        auto foundProperty = propertyNameMapInfo.find(condition.propName);
+        if (foundProperty == propertyNameMapInfo.cend()) {
+            return 0;
+        }
+        auto propertyInfo = foundProperty->second;
+        auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
+        if (foundIndex.first) {
+            //TODO: improve this by calling getCountRecord
+            return txn._interface->index()->getRecord(propertyInfo, foundIndex.second, condition).size();
+        } else {
+            if (!searchIndexOnly) {
+                //TODO: improve this by calling getCountRecordByCondition
+                return txn._interface->record()->getRecordDescriptorByCondition(classInfo, propertyInfo.type, condition).size();
+            }
+        }
+        return 0;
+    }
+
+    unsigned int RecordCompare::compareMultiConditionCount(const Transaction& txn,
+        const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyNameMapInfo,
+        const MultiCondition& conditions,
+        bool searchIndexOnly)
+    {
+        auto conditionProperties = PropertyNameMapInfo {};
+        for (const auto& conditionNode : conditions.conditions) {
+            auto conditionNodePtr = conditionNode.lock();
+            require(conditionNodePtr != nullptr);
+            auto& condition = conditionNodePtr->getCondition();
+            auto foundConditionProperty = conditionProperties.find(condition.propName);
+            if (foundConditionProperty == conditionProperties.cend()) {
+                auto foundProperty = propertyNameMapInfo.find(condition.propName);
+                if (foundProperty != propertyNameMapInfo.cend()) {
+                    conditionProperties.emplace(condition.propName, foundProperty->second);
+                }
+            }
+        }
+
+        auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, conditions);
+        if (foundIndex.first) {
+            //TODO: improve this by calling getCountRecord
+            return txn._interface->index()->getRecord(conditionProperties, foundIndex.second, conditions).size();
+        } else {
+            if (!searchIndexOnly) {
+                //TODO: improve this by calling getCountRecordByMultiCondition
+                return txn._interface->record()->getRecordDescriptorByMultiCondition(
+                    classInfo, conditionProperties, conditions).size();
+            }
+        }
+        return 0;
+    }
+
     ResultSet RecordCompare::compareEdgeCondition(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,

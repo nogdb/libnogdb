@@ -36,10 +36,10 @@
 
 namespace nogdb {
 
-using adapter::schema::ClassAccessInfo;
 using adapter::datarecord::DataRecord;
-using parser::RecordParser;
+using adapter::schema::ClassAccessInfo;
 using compare::RecordCompare;
+using parser::RecordParser;
 
 const RecordDescriptor Transaction::addVertex(const std::string& className, const Record& record)
 {
@@ -193,7 +193,7 @@ void Transaction::updateSrc(const RecordDescriptor& recordDescriptor,
             }
             // update version of new src vertex
             if (_updatedRecords.find(newSrcVertexRecordDescriptor.rid) == _updatedRecords.cend()) {
-                auto newSrcVertexDataRecord =DataRecord(
+                auto newSrcVertexDataRecord = DataRecord(
                     _txnBase, newSrcVertexRecordDescriptor.rid.first, ClassType::VERTEX);
                 auto newSrcVertexRecordResult = newSrcVertexDataRecord.getResult(newSrcVertexRecordDescriptor.rid.second);
                 auto versionId = RecordParser::parseRawDataVersionId(newSrcVertexRecordResult);
@@ -628,6 +628,63 @@ ResultSetCursor FindOperationBuilder::getCursor() const
     }
 }
 
+unsigned long FindOperationBuilder::count() const
+{
+    BEGIN_VALIDATION(_txn)
+        .isTxnCompleted()
+        .isClassNameValid(_className);
+
+    auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
+    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
+    switch (_conditionType) {
+    case ConditionType::CONDITION: {
+        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto result = RecordCompare::compareConditionCount(*_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
+        for (const auto& classNameMapInfo : classInfoExtend) {
+            auto& currentClassInfo = classNameMapInfo.second;
+            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            result += RecordCompare::compareConditionCount(*_txn, classInfo, currentPropertyInfo, *_condition, _indexed);
+        }
+        return result;
+    }
+    case ConditionType::MULTI_CONDITION: {
+        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto result = RecordCompare::compareMultiConditionCount(
+            *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
+        for (const auto& classNameMapInfo : classInfoExtend) {
+            auto& currentClassInfo = classNameMapInfo.second;
+            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            result += RecordCompare::compareMultiConditionCount(
+                *_txn, classInfo, currentPropertyInfo, *_multiCondition, _indexed);
+        }
+        return result;
+    }
+    case ConditionType::COMPARE_FUNCTION: {
+        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        //TODO: improve this by calling getCountRecordByCmpFunction
+        auto result = _txn->_interface->record()->getRecordDescriptorByCmpFunction(classInfo, _function).size();
+        for (const auto& classNameMapInfo : classInfoExtend) {
+            auto& currentClassInfo = classNameMapInfo.second;
+            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            //TODO: improve this by calling getCountRecordByCmpFunction
+            result += _txn->_interface->record()->getRecordDescriptorByCmpFunction(currentClassInfo, _function).size();
+        }
+        return result;
+    }
+    default: {
+        //TODO: improve this by calling getCountRecord
+        auto result = _txn->_interface->record()->getResultSetCursor(classInfo).size();
+        if (_includeSubClassOf) {
+            for (const auto& classNameMapInfo : classInfoExtend) {
+                //TODO: improve this by calling getCountRecord
+                result += _txn->_interface->record()->getResultSetCursor(classNameMapInfo.second).size();
+            }
+        }
+        return static_cast<unsigned long>(result);
+    }
+    }
+}
+
 ResultSet FindEdgeOperationBuilder::get() const
 {
     BEGIN_VALIDATION(_txn)
@@ -706,6 +763,45 @@ ResultSetCursor FindEdgeOperationBuilder::getCursor() const
     return result;
 }
 
+unsigned long FindEdgeOperationBuilder::count() const
+{
+    BEGIN_VALIDATION(_txn)
+        .isTxnCompleted()
+        .isExistingVertex(_rdesc);
+
+    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
+    auto edgeRecordIds = std::vector<RecordId> {};
+    switch (_direction) {
+    case EdgeDirection::IN: {
+        edgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
+        break;
+    }
+    case EdgeDirection::OUT: {
+        edgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        break;
+    }
+    default: {
+        auto recordIds = std::set<RecordId> {};
+        auto inEdgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
+        auto outEdgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        recordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
+        recordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
+        edgeRecordIds.assign(recordIds.cbegin(), recordIds.cend());
+        break;
+    }
+    }
+    auto result = 0UL;
+    auto classFilter = RecordCompare::getFilterClasses(*_txn, _filter);
+    for (const auto& recordId : edgeRecordIds) {
+        auto edgeRecordDescriptor = RecordDescriptor { recordId };
+        auto filterRecord = RecordCompare::filterRecord(*_txn, edgeRecordDescriptor, _filter, classFilter);
+        if (filterRecord != RecordDescriptor {}) {
+            ++result;
+        }
+    }
+    return result;
+}
+
 ResultSet TraverseOperationBuilder::get() const
 {
     BEGIN_VALIDATION(_txn)
@@ -753,6 +849,11 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
 }
 
+unsigned long TraverseOperationBuilder::count() const
+{
+    return static_cast<unsigned long>(getCursor().count());
+}
+
 ResultSet ShortestPathOperationBuilder::get() const
 {
     BEGIN_VALIDATION(_txn)
@@ -778,6 +879,11 @@ ResultSetCursor ShortestPathOperationBuilder::getCursor() const
     auto result = algorithm::GraphTraversal::bfsShortestPathRdesc(
         *_txn, srcVertexClassInfo, dstVertexClassInfo, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
+}
+
+unsigned long ShortestPathOperationBuilder::count() const
+{
+    return static_cast<unsigned long>(getCursor().count());
 }
 
 }
