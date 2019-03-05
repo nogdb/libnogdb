@@ -1319,3 +1319,74 @@ void test_version_drop_vertex_edge()
         assert(false);
     }
 }
+
+void test_get_count_vertex() {
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addClass("mytest_count", nogdb::ClassType::VERTEX);
+        txn.addProperty("mytest_count", "prop", nogdb::PropertyType::TEXT);
+
+        txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello1"));
+        txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello2"));
+        txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello3"));
+        txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello4"));
+        txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello5"));
+
+        auto query = txn.find("mytest_count");
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count").where(nogdb::Condition("prop").eq("hello1"));
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count").where(
+            nogdb::Condition("prop").eq("hello1") and nogdb::Condition("prop").eq("hello2"));
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count").where([](const nogdb::Record& r){
+            return r.getText("prop") == "hello1";
+        });
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+}
+
+void test_get_count_edge() {
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addClass("mytest_count", nogdb::ClassType::VERTEX);
+        txn.addProperty("mytest_count", "prop", nogdb::PropertyType::TEXT);
+        txn.addClass("mytest_count_edge", nogdb::ClassType::EDGE);
+        txn.addProperty("mytest_count_edge", "prop", nogdb::PropertyType::TEXT);
+
+        auto v1 = txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello1"));
+        auto v2 = txn.addVertex("mytest_count", nogdb::Record{}.set("prop", "hello2"));
+
+        txn.addEdge("mytest_count_edge", v1, v2, nogdb::Record{}.set("prop", "world1"));
+        txn.addEdge("mytest_count_edge", v1, v2, nogdb::Record{}.set("prop", "world2"));
+        txn.addEdge("mytest_count_edge", v1, v2, nogdb::Record{}.set("prop", "world3"));
+
+        auto query = txn.find("mytest_count_edge");
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count_edge").where(nogdb::Condition("prop").eq("world1"));
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count_edge").where(
+            nogdb::Condition("prop").eq("world1") and nogdb::Condition("prop").eq("world2"));
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        query = txn.find("mytest_count_edge").where([](const nogdb::Record& r){
+          return r.getText("prop") == "world1";
+        });
+        ASSERT_TRUE(resultSetCountCompare(query));
+
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+}
