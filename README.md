@@ -1,46 +1,40 @@
-# NogDB
+# NogDB - Native Graph Database (C++) Library 
 
-[![Build Status](https://img.shields.io/badge/build-passing-green.svg)]()
-[![Testing Status](https://img.shields.io/badge/test-passing-green.svg)]()
-[![Version](https://img.shields.io/badge/version-0.10.0%20beta-blue.svg)]()
-[![Production Status](https://img.shields.io/badge/status-unstable-red.svg)]()
+[![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/nogdb/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/nogdb/libnogdb.svg?branch=develop)](https://travis-ci.org/nogdb/libnogdb)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
+[![Production Status](https://img.shields.io/badge/status-stable-green.svg)]()
 
 ## Welcome
 **NogDB is a fast & lightweight native graph database library that provides features in graph manipulations.**
 
 ## Key Features
-* Fast graph database written in C++
+* Considerably fast graph database written in C++
 * Lightweight and native with no client-server protocols needed
-* Rapid graph traversal with vertex and edge relations cached in memory
 * Transactions with MVCC (full ACID semantics in data storage)
 * Multiple readers and single writer (no blocking between readers and writer)
+* SQL support for performing graph executions and querying graph information
 * Inheritance support for vertex and edge classes
 * Basic database indexing support based on B+Tree
-* Multiple platforms support, e.g. Unix, Linux, BSD and Mac OS X (macOS)
+* Aim to support for multiple platforms (currently available on Unix, Linux, BSD, and Mac OS X/macOS, Windows is under experiment)
 
-## Dependency
-* GCC (gcc/g++) or LLVM (clang/clang++ 3.8.0 or above) compiler that supports C++11
+## Dependencies
+* GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
+* On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above)
+* [Google Test](https://github.com/google/googletest) - for development only
 
 ## Limitations
-* A particular database can be opened and accessed by only one single process at a time. For a multi-threaded application, the database context must be created as a singleton and shared between threads. However, the application can open multiple different databases by using separated database contexts.
-* The current datastore architecture supports only up to 65,535 classes and 65,536 properties.
+* The current data storage architecture supports only up to 65,535 classes and 65,536 properties.
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
-### With Makefile
 ```
-$ sh install_make.sh
-$ make && make test
-$ sudo make install
-$ make clean
-```
-
-### With CMake
-```
+$ git clone https://github.com/nogdb/nogdb
+$ cd nogdb
 $ cmake .
-$ make && make test
+$ cmake --build .
+$ ctest --verbose
 $ sudo make install
-$ make clean
 ```
 
 ## Usage
@@ -60,16 +54,22 @@ See the [NogDB Docs](https://github.com/nogdb/nogdb/wiki) on Wiki pages for more
 ## Getting support
 We are happy to help you using NogDB library. If you have any questions, you can find help by just simply [opening a Github issue here](https://github.com/nogdb/nogdb/issues) on this repository.
 
+For feature requests and bug reports, before you create an issue, please search existing issues in case perhaps it has already been created or even fixed. When you are going to create feature requests, please be clear about your requirements. It would be perfect if you can provide some use cases and examples of proposing features. 
+In the other hands, when you are going to create bug reports, please include information as much as possible. They could be, for example, the version of NogDB, details of your environment (OS, CPU, memory, the version of compiler, etc.), some test cases to demonstrate the issue, and/or anything you see it is useful to make us reproduce the problem easier if applicable.
+
 ## Contributing
 Contributions are very welcome!
 
 NogDB is an open source project that allows you to contribute to the project by creating additional features, or even fixing bugs if you see an issue and would like to implement it.
 
-See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/master/CONTRIBUTING.md) for more details about the workflow, how to prepare your pull request, and some sorts of code conventions plus style, 
+See the [Contributing Guidelines](https://github.com/nogdb/nogdb/blob/develop/CONTRIBUTING.md) for more details about the workflow, how to prepare your pull request, and some sorts of code conventions plus style, 
 
 ## License & copyright
-Copyright (c) 2018 NogDB contributors.
+Copyright (c) 2019 NogDB contributors.
 
-NogDB is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html). See the included LICENSE file for more details.
+![](https://www.gnu.org/graphics/agplv3-155x51.png)
+![](https://www.openldap.org/images/headers/LDAPlogo.gif)
+
+NogDB is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). See the included LICENSE file for more details.
 
 NogDB library build and distribution include LMDB, which is licensed under [The OpenLDAP Public License](http://www.openldap.org/software/release/license.html).

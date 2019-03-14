@@ -1,0 +1,132 @@
+sudo: required
+language: cpp
+dist: trusty
+
+branches:
+  only:
+    - master
+    - develop
+    - /^feature\/.*$/
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+
+matrix:
+  include:
+    - name: "Linux / GCC / CI_Make"
+      os: linux
+      addons:
+        apt:
+          sources: [ ubuntu-toolchain-r-test ]
+          packages: [ gcc-6, g++-6, gcc-multilib, valgrind ]
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
+    - name: "Linux / GCC / CMake"
+      os: linux
+      addons:
+        apt:
+          sources: [ ubuntu-toolchain-r-test ]
+          packages: [ gcc-6, g++-6 ]
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && BUILD_CMAKE=ON"
+
+    - name: "Linux / Clang / CI_Make"
+      os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: [ ubuntu-toolchain-r-test ]
+          packages: [ libstdc++-6-dev, valgrind ]
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
+
+    - name: "Linux / Clang / CMake"
+      os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: [ ubuntu-toolchain-r-test ]
+          packages: [ libstdc++-6-dev ]
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++ && BUILD_CMAKE=ON"
+
+    - name: "OSX / CI_Make"
+      os: osx
+      osx_image: xcode8
+
+    - name: "OSX / CMake"
+      os: osx
+      osx_image: xcode8
+      env:
+        - BUILD_CMAKE=ON
+
+
+# execute all of the commands which need to be executed before installing dependencies
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update > /dev/null;
+    fi
+
+
+# install all of the dependencies
+install:
+  # get Valgrind (only for systems with brew - OSX)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew install valgrind;
+    fi
+
+  # install gtest
+  - curl https://codeload.github.com/google/googletest/tar.gz/release-1.8.0 -o googletest-release-1.8.0.tar.gz
+  - tar xf googletest-release-1.8.0.tar.gz
+  - cd googletest-release-1.8.0
+  - cmake .
+  - make && sudo make install
+  - cd ..
+
+
+# execute all of the commands which need to be executed before running actual tests
+before_script:
+  - eval "${MATRIX_EVAL}"
+  - ${CC} --version
+  - ${CXX} --version
+  - cmake --version
+  - export TESTPREFIX="functest"
+
+
+# execute all of the commands which should make the build pass or fail
+script:
+  # Build with CI_Make
+  - |
+    if [[ "${BUILD_CMAKE}" == "" ]]; then
+      sh install_ci_make.sh &&
+      make CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" &&
+      make test_unit CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" &&
+      make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="-ggdb" OPTFLAGS="" &&
+      if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX}
+      else
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" TESTPREFIX=${TESTPREFIX}
+      fi &&
+      valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX} &&
+
+      make clean &&
+      make CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" &&
+      make test CXX=${CXX} CC=${CC} TESTPREFIX=${TESTPREFIX} DEBUGFLAGS="-ggdb" OPTFLAGS="" EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION" &&
+      if [ "$CXX" == "g++-6" ] && [ "$TRAVIS_OS_NAME" != "osx" ]; then
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" LDFLAGS="-pthread -latomic -fuse-ld=gold" TESTPREFIX=${TESTPREFIX} EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION"
+      else
+        make test_address CXX=${CXX} CC=${CC} DEBUGFLAGS="-ggdb" OPTFLAGS="" TESTPREFIX=${TESTPREFIX} EXTTESTFLAGS="-DENABLE_TEST_RECORD_VERSION"
+      fi &&
+      valgrind --track-origins=yes --leak-check=full ./${TESTPREFIX}
+    fi
+
+  # Build with CMake
+  - |
+    if [[ "${BUILD_CMAKE}" == ON ]]; then
+      mkdir build-cmake             &&
+      cd build-cmake                &&
+      cmake ..                      &&
+      cmake --build . --target all  &&
+      cmake --build . --target nogdb_functest_object &&
+      ctest --verbose
+    fi
