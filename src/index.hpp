@@ -105,10 +105,21 @@ namespace index {
             const Condition& condition,
             bool isNegative = false) const;
 
+        size_t
+        getCountRecord(const PropertyAccessInfo& propertyInfo,
+                       const IndexAccessInfo& indexInfo,
+                       const Condition& condition,
+                       bool isNegative = false) const;
+
         std::vector<RecordDescriptor>
         getRecord(const PropertyNameMapInfo& propertyInfos,
             const PropertyIdMapIndex& propertyIndexInfo,
             const MultiCondition& conditions) const;
+
+        size_t
+        getCountRecord(const PropertyNameMapInfo& propertyInfos,
+                       const PropertyIdMapIndex& propertyIndexInfo,
+                       const MultiCondition& conditions) const;
 
     protected:
         const std::vector<Condition::Comparator> validComparators {

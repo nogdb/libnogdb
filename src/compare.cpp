@@ -372,8 +372,7 @@ namespace compare {
         auto propertyInfo = foundProperty->second;
         auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
         if (foundIndex.first) {
-            //TODO: improve this by calling getCountRecord
-            return txn._interface->index()->getRecord(propertyInfo, foundIndex.second, condition).size();
+            return txn._interface->index()->getCountRecord(propertyInfo, foundIndex.second, condition);
         } else {
             if (!searchIndexOnly) {
                 //TODO: improve this by calling getCountRecordByCondition
@@ -405,8 +404,7 @@ namespace compare {
 
         auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, conditions);
         if (foundIndex.first) {
-            //TODO: improve this by calling getCountRecord
-            return txn._interface->index()->getRecord(conditionProperties, foundIndex.second, conditions).size();
+            return txn._interface->index()->getCountRecord(conditionProperties, foundIndex.second, conditions);
         } else {
             if (!searchIndexOnly) {
                 //TODO: improve this by calling getCountRecordByMultiCondition
