@@ -375,8 +375,7 @@ namespace compare {
             return txn._interface->index()->getCountRecord(propertyInfo, foundIndex.second, condition);
         } else {
             if (!searchIndexOnly) {
-                //TODO: improve this by calling getCountRecordByCondition
-                return txn._interface->record()->getRecordDescriptorByCondition(classInfo, propertyInfo.type, condition).size();
+                return txn._interface->record()->getCountRecordByCondition(classInfo, propertyInfo.type, condition);
             }
         }
         return 0;
@@ -407,9 +406,8 @@ namespace compare {
             return txn._interface->index()->getCountRecord(conditionProperties, foundIndex.second, conditions);
         } else {
             if (!searchIndexOnly) {
-                //TODO: improve this by calling getCountRecordByMultiCondition
-                return txn._interface->record()->getRecordDescriptorByMultiCondition(
-                    classInfo, conditionProperties, conditions).size();
+                return txn._interface->record()->getCountRecordByMultiCondition(
+                    classInfo, conditionProperties, conditions);
             }
         }
         return 0;

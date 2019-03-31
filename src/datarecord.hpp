@@ -54,12 +54,19 @@ namespace datarecord {
 
         ResultSetCursor getResultSetCursor(const ClassAccessInfo& classInfo) const;
 
+        size_t getCountRecord(const ClassAccessInfo& classInfo) const;
+
         ResultSet getResultSetByCondition(const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
             const Condition& condition) const;
 
         std::vector<RecordDescriptor>
         getRecordDescriptorByCondition(const ClassAccessInfo& classInfo,
+            const PropertyType& propertyType,
+            const Condition& condition) const;
+
+        size_t
+        getCountRecordByCondition(const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
             const Condition& condition) const;
 
@@ -72,11 +79,21 @@ namespace datarecord {
             const PropertyNameMapInfo& propertyInfos,
             const MultiCondition& multiCondition) const;
 
+        size_t
+        getCountRecordByMultiCondition(const ClassAccessInfo& classInfo,
+            const PropertyNameMapInfo& propertyInfos,
+            const MultiCondition& multiCondition) const;
+
+
         ResultSet getResultSetByCmpFunction(const ClassAccessInfo& classInfo,
             bool (*condition)(const Record& record)) const;
 
         std::vector<RecordDescriptor>
         getRecordDescriptorByCmpFunction(const ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record)) const;
+
+        size_t
+        getCountRecordByCmpFunction(const ClassAccessInfo& classInfo,
             bool (*condition)(const Record& record)) const;
 
     private:
