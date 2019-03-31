@@ -449,12 +449,111 @@ namespace index {
         return std::vector<RecordDescriptor> {};
     }
 
+  size_t
+  IndexInterface::getCountRecord(const PropertyAccessInfo& propertyInfo,
+                                 const IndexAccessInfo& indexInfo,
+                                 const Condition& condition,
+                                 bool isNegative) const
+  {
+    auto isApplyNegative = condition.isNegative ^ isNegative;
+    switch (condition.comp) {
+      case Condition::Comparator::EQUAL: {
+        if (!isApplyNegative) {
+          return getEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::LESS_EQUAL: {
+        if (!isApplyNegative) {
+          return getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getGreaterThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::LESS: {
+        if (!isApplyNegative) {
+          return getLessThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::GREATER_EQUAL: {
+        if (!isApplyNegative) {
+          return getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getLessThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::GREATER: {
+        if (!isApplyNegative) {
+          return getGreaterThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_BOUND: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { false, false }).size();
+        } else {
+          auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { true, true }).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_UPPER: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { true, false }).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_LOWER: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { false, true }).size();
+        } else {
+          auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      default:
+        break;
+    }
+    return size_t {0};
+  }
+
     std::vector<RecordDescriptor>
     IndexInterface::getRecord(const PropertyNameMapInfo& propertyInfos,
         const PropertyIdMapIndex& propertyIndexInfo,
         const MultiCondition& conditions) const
     {
         return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false);
+    }
+
+    size_t
+    IndexInterface::getCountRecord(const PropertyNameMapInfo& propertyInfos,
+                                   const PropertyIdMapIndex& propertyIndexInfo,
+                                   const MultiCondition& conditions) const
+    {
+      return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false).size();
     }
 
     IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo& indexInfo) const

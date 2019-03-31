@@ -82,7 +82,6 @@ namespace datarecord {
     ResultSetCursor DataRecordInterface::getResultSetCursor(const ClassAccessInfo& classInfo) const
     {
         auto vertexDataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
-        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
@@ -90,6 +89,18 @@ namespace datarecord {
             };
         vertexDataRecord.resultSetIter(callback);
         return resultSetCursor;
+    }
+
+    size_t DataRecordInterface::getCountRecord(const ClassAccessInfo& classInfo) const
+    {
+        auto vertexDataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto count = size_t {0};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+            [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                ++count;
+            };
+        vertexDataRecord.resultSetIter(callback);
+        return count;
     }
 
     ResultSet
@@ -132,6 +143,27 @@ namespace datarecord {
             };
         dataRecord.resultSetIter(callback);
         return recordDescriptors;
+    }
+
+    size_t
+    DataRecordInterface::getCountRecordByCondition(const ClassAccessInfo& classInfo,
+        const PropertyType& propertyType,
+        const Condition& condition) const
+    {
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+        auto count = size_t {0};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+            [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                auto rid = RecordId { classInfo.id, positionId };
+                auto record = RecordParser::parseRawDataWithBasicInfo(
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
+                    ++count;
+                }
+            };
+        dataRecord.resultSetIter(callback);
+        return count;
     }
 
     ResultSet
@@ -184,6 +216,31 @@ namespace datarecord {
         return recordDescriptors;
     }
 
+    size_t
+    DataRecordInterface::getCountRecordByMultiCondition(const ClassAccessInfo& classInfo,
+        const PropertyNameMapInfo& propertyInfos,
+        const MultiCondition& multiCondition) const
+    {
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyTypes = PropertyMapType {};
+        for (const auto& property : propertyInfos) {
+            propertyTypes.emplace(property.first, property.second.type);
+        }
+        auto count = size_t {0};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+            [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                auto rid = RecordId { classInfo.id, positionId };
+                auto record = RecordParser::parseRawDataWithBasicInfo(
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                if (multiCondition.execute(record, propertyTypes)) {
+                    ++count;
+                }
+            };
+        dataRecord.resultSetIter(callback);
+        return count;
+    }
+
     ResultSet
     DataRecordInterface::getResultSetByCmpFunction(const ClassAccessInfo& classInfo,
         bool (*condition)(const Record& record)) const
@@ -222,6 +279,26 @@ namespace datarecord {
             };
         dataRecord.resultSetIter(callback);
         return recordDescriptors;
+    }
+
+    size_t
+    DataRecordInterface::getCountRecordByCmpFunction(const ClassAccessInfo& classInfo,
+        bool (*condition)(const Record& record)) const
+    {
+        auto dataRecord = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type);
+        auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+        auto count = size_t {0};
+        std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
+            [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
+                auto rid = RecordId { classInfo.id, positionId };
+                auto record = RecordParser::parseRawDataWithBasicInfo(
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                if ((*condition)(record)) {
+                    ++count;
+                }
+            };
+        dataRecord.resultSetIter(callback);
+        return count;
     }
 
 }

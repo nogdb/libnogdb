@@ -661,23 +661,19 @@ unsigned long FindOperationBuilder::count() const
     }
     case ConditionType::COMPARE_FUNCTION: {
         auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        //TODO: improve this by calling getCountRecordByCmpFunction
-        auto result = _txn->_interface->record()->getRecordDescriptorByCmpFunction(classInfo, _function).size();
+        auto result = _txn->_interface->record()->getCountRecordByCmpFunction(classInfo, _function);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
             auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            //TODO: improve this by calling getCountRecordByCmpFunction
-            result += _txn->_interface->record()->getRecordDescriptorByCmpFunction(currentClassInfo, _function).size();
+            result += _txn->_interface->record()->getCountRecordByCmpFunction(currentClassInfo, _function);
         }
         return result;
     }
     default: {
-        //TODO: improve this by calling getCountRecord
-        auto result = _txn->_interface->record()->getResultSetCursor(classInfo).size();
+        auto result = _txn->_interface->record()->getCountRecord(classInfo);
         if (_includeSubClassOf) {
             for (const auto& classNameMapInfo : classInfoExtend) {
-                //TODO: improve this by calling getCountRecord
-                result += _txn->_interface->record()->getResultSetCursor(classNameMapInfo.second).size();
+                result += _txn->_interface->record()->getCountRecord(classNameMapInfo.second);
             }
         }
         return static_cast<unsigned long>(result);
