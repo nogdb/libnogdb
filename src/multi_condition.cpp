@@ -122,11 +122,11 @@ MultiCondition::MultiCondition(const Condition& c, const MultiCondition& e, Oper
 
 MultiCondition::MultiCondition(const Condition& c1, bool (*cmpFunc)(const Record& r), Operator opt)
 {
-  auto conditionPtr = std::make_shared<ConditionNode>(c1);
-  auto cmpFunctionPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
-  root = std::make_shared<CompositeNode>(conditionPtr, cmpFunctionPtr, opt);
-  conditions.push_back(conditionPtr);
-  cmpFunctions.push_back(cmpFunctionPtr);
+    auto conditionPtr = std::make_shared<ConditionNode>(c1);
+    auto cmpFunctionPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
+    root = std::make_shared<CompositeNode>(conditionPtr, cmpFunctionPtr, opt);
+    conditions.push_back(conditionPtr);
+    cmpFunctions.push_back(cmpFunctionPtr);
 }
 
 MultiCondition::ExprNode::ExprNode(const ExprNodeType type)

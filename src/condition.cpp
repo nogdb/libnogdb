@@ -66,12 +66,12 @@ MultiCondition Condition::operator||(const MultiCondition& e) const
 
 MultiCondition Condition::operator&&(bool (*cmpFunc)(const Record& r)) const
 {
-  return MultiCondition { *this, cmpFunc, MultiCondition::Operator::AND };
+    return MultiCondition { *this, cmpFunc, MultiCondition::Operator::AND };
 }
 
 MultiCondition Condition::operator||(bool (*cmpFunc)(const Record& r)) const
 {
-  return MultiCondition { *this, cmpFunc, MultiCondition::Operator::OR };
+    return MultiCondition { *this, cmpFunc, MultiCondition::Operator::OR };
 }
 
 }
