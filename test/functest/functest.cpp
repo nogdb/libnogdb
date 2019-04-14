@@ -232,6 +232,7 @@ int main()
     exec(test_range_expression, "constructing condition with range comparators correctly");
     exec(test_extra_string_expression, "constructing condition with additional comparators for string type correctly");
     exec(test_negative_expression, "constructing negative condition/expression and filtering a record correctly");
+    exec(test_cmp_function_expression, "constructing expression with conditional comparing functions correctly");
     exec(init_test_find, "initiating a graph for testing find operations");
     exec(test_create_informative_graph, "creating an informative graph");
     exec(test_find_vertex, "finding records from a vertex class with a given condition");

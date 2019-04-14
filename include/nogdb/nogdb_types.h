@@ -1245,17 +1245,17 @@ public:
 
     MultiCondition() = delete;
 
-    MultiCondition& operator&&(const MultiCondition& e);
+    MultiCondition operator&&(const MultiCondition& e) const;
 
-    MultiCondition& operator&&(const Condition& c);
+    MultiCondition operator&&(const Condition& c) const;
 
-    MultiCondition& operator||(const MultiCondition& e);
+    MultiCondition operator||(const MultiCondition& e) const;
 
-    MultiCondition& operator||(const Condition& c);
+    MultiCondition operator||(const Condition& c) const;
 
-    MultiCondition& operator&&(bool (*cmpFunc)(const Record& r));
+    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
 
-    MultiCondition& operator||(bool (*cmpFunc)(const Record& r));
+    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
 
     MultiCondition operator!() const;
 
