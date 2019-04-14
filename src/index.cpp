@@ -294,32 +294,37 @@ namespace index {
         const PropertyNameMapInfo& propertyInfos,
         const MultiCondition& conditions) const
     {
-        auto isFoundAll = true;
-        auto result = PropertyIdMapIndex {};
-        auto conditionPropNames = std::unordered_set<std::string> {};
-        for (const auto& condition : conditions.conditions) {
-            if (auto conditionPtr = condition.lock()) {
-                auto propertyName = conditionPtr->getCondition().propName;
-                if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
-                    auto propertyInfo = propertyInfos.find(propertyName);
-                    if (propertyInfo == propertyInfos.cend())
-                        continue;
-                    conditionPropNames.emplace(propertyName);
-                    auto searchIndexResult = hasIndex(classInfo, propertyInfo->second, conditionPtr->getCondition());
-                    if (searchIndexResult.first) {
-                        auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
-                        result.emplace(propertyId, searchIndexResult.second);
-                    } else {
-                        isFoundAll = false;
-                        break;
+        if (conditions.cmpFunctions.empty()) {
+            auto isFoundAll = true;
+            auto result = PropertyIdMapIndex{};
+            auto conditionPropNames = std::unordered_set<std::string>{};
+            for (const auto &condition : conditions.conditions) {
+                if (auto conditionPtr = condition.lock()) {
+                    auto propertyName = conditionPtr->getCondition().propName;
+                    if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
+                        auto propertyInfo = propertyInfos.find(propertyName);
+                        if (propertyInfo == propertyInfos.cend())
+                            continue;
+                        conditionPropNames.emplace(propertyName);
+                        auto searchIndexResult = hasIndex(classInfo, propertyInfo->second,
+                                                          conditionPtr->getCondition());
+                        if (searchIndexResult.first) {
+                            auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
+                            result.emplace(propertyId, searchIndexResult.second);
+                        } else {
+                            isFoundAll = false;
+                            break;
+                        }
                     }
+                } else {
+                    isFoundAll = false;
+                    break;
                 }
-            } else {
-                isFoundAll = false;
-                break;
             }
+            return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
+        } else {
+            return std::make_pair(false, PropertyIdMapIndex{});
         }
-        return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex {});
     }
 
     std::vector<RecordDescriptor>
