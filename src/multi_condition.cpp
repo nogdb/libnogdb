@@ -92,21 +92,26 @@ MultiCondition::MultiCondition(const Condition& c, const MultiCondition& e, Oper
     std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
 }
 
-MultiCondition::ExprNode::ExprNode(bool isCondition_)
-    : isCondition { isCondition_ }
+MultiCondition::ExprNode::ExprNode(const ExprNodeType type)
+    : nodeType { type }
 {
 }
 
 bool MultiCondition::ExprNode::checkIfCondition() const
 {
-    return isCondition;
+    return nodeType == ExprNodeType::CONDITION;
+}
+
+bool MultiCondition::ExprNode::checkIfCmpFunction() const
+{
+    return nodeType == ExprNodeType::CMP_FUNCTION;
 }
 
 MultiCondition::CompositeNode::CompositeNode(const std::shared_ptr<ExprNode>& left_,
     const std::shared_ptr<ExprNode>& right_,
     Operator opt_,
     bool isNegative_)
-    : ExprNode(false)
+    : ExprNode(ExprNodeType::MULTI_CONDITION)
     , left { left_ }
     , right { right_ }
     , opt { opt_ }
@@ -118,7 +123,7 @@ bool MultiCondition::CompositeNode::check(const Record& r, const PropertyMapType
 {
     if (opt == Operator::AND) {
         // check if right is condition, do right first, otherwise, do left
-        if (right->checkIfCondition()) {
+        if (right->checkIfCondition() || right->checkIfCmpFunction()) {
             if (!right->check(r, propType)) {
                 return isNegative;
             } else {
@@ -133,7 +138,7 @@ bool MultiCondition::CompositeNode::check(const Record& r, const PropertyMapType
         }
     } else if (opt == Operator::OR) {
         // check if right is condition, do right first, otherwise, do left
-        if (right->checkIfCondition()) {
+        if (right->checkIfCondition() || right->checkIfCmpFunction()) {
             if (right->check(r, propType)) {
                 return !isNegative;
             } else {
@@ -172,7 +177,7 @@ bool MultiCondition::CompositeNode::getIsNegative() const
 }
 
 MultiCondition::ConditionNode::ConditionNode(const Condition& cond_)
-    : ExprNode(true)
+    : ExprNode(ExprNodeType::CONDITION)
     , cond { cond_ }
 {
 }
@@ -204,6 +209,17 @@ bool MultiCondition::ConditionNode::check(const Record& r, const PropertyMapType
 const Condition& MultiCondition::ConditionNode::getCondition() const
 {
     return cond;
+}
+
+MultiCondition::CmpFunctionNode::CmpFunctionNode(bool (*cmpFunc_)(const Record& record))
+  : ExprNode(ExprNodeType::CMP_FUNCTION)
+  , cmpFunc { cmpFunc_ }
+{
+}
+
+bool MultiCondition::CmpFunctionNode::check(const Record& r, const PropertyMapType& propType) const
+{
+    return cmpFunc(r);
 }
 
 }
