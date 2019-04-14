@@ -1186,6 +1186,10 @@ public:
 
     MultiCondition operator||(const MultiCondition& e) const;
 
+    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
+
+    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
+
     Condition operator!() const;
 
 private:
@@ -1249,6 +1253,10 @@ public:
 
     MultiCondition& operator||(const Condition& c);
 
+    MultiCondition& operator&&(bool (*cmpFunc)(const Record& r));
+
+    MultiCondition& operator||(bool (*cmpFunc)(const Record& r));
+
     MultiCondition operator!() const;
 
     operator GraphFilter() { return GraphFilter(*this); }
@@ -1258,10 +1266,13 @@ public:
 private:
     std::shared_ptr<CompositeNode> root;
     std::vector<std::weak_ptr<ConditionNode>> conditions;
+    std::vector<std::weak_ptr<CmpFunctionNode>> cmpFunctions;
 
     MultiCondition(const Condition& c1, const Condition& c2, Operator opt);
 
     MultiCondition(const Condition& c, const MultiCondition& e, Operator opt);
+
+    MultiCondition(const Condition& c, bool (*cmpFunc)(const Record& r), Operator opt);
 
     enum ExprNodeType {
         CONDITION,

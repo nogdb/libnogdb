@@ -26,13 +26,6 @@ namespace nogdb {
 
 using compare::RecordCompare;
 
-MultiCondition& MultiCondition::operator&&(const MultiCondition& e)
-{
-    auto newRoot = std::make_shared<CompositeNode>(root, e.root, Operator::AND);
-    root = newRoot;
-    std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
-    return *this;
-}
 
 MultiCondition& MultiCondition::operator&&(const Condition& c)
 {
@@ -43,20 +36,48 @@ MultiCondition& MultiCondition::operator&&(const Condition& c)
     return *this;
 }
 
-MultiCondition& MultiCondition::operator||(const MultiCondition& e)
-{
-    auto newRoot = std::make_shared<CompositeNode>(root, e.root, Operator::OR);
-    root = newRoot;
-    std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
-    return *this;
-}
-
 MultiCondition& MultiCondition::operator||(const Condition& c)
 {
     auto conditionPtr = std::make_shared<ConditionNode>(c);
     auto newRoot = std::make_shared<CompositeNode>(root, conditionPtr, Operator::OR);
     root = newRoot;
     conditions.push_back(conditionPtr);
+    return *this;
+}
+
+MultiCondition& MultiCondition::operator&&(const MultiCondition& e)
+{
+    auto newRoot = std::make_shared<CompositeNode>(root, e.root, Operator::AND);
+    root = newRoot;
+    std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
+    std::copy(e.cmpFunctions.cbegin(), e.cmpFunctions.cend(), std::back_inserter(cmpFunctions));
+    return *this;
+}
+
+MultiCondition& MultiCondition::operator||(const MultiCondition& e)
+{
+    auto newRoot = std::make_shared<CompositeNode>(root, e.root, Operator::OR);
+    root = newRoot;
+    std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
+    std::copy(e.cmpFunctions.cbegin(), e.cmpFunctions.cend(), std::back_inserter(cmpFunctions));
+    return *this;
+}
+
+MultiCondition& MultiCondition::operator&&(bool (*cmpFunc)(const Record& r))
+{
+    auto cmpFuncPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
+    auto newRoot = std::make_shared<CompositeNode>(root, cmpFuncPtr, Operator::AND);
+    root = newRoot;
+    cmpFunctions.push_back(cmpFuncPtr);
+    return *this;
+}
+
+MultiCondition& MultiCondition::operator||(bool (*cmpFunc)(const Record& r))
+{
+    auto cmpFuncPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
+    auto newRoot = std::make_shared<CompositeNode>(root, cmpFuncPtr, Operator::OR);
+    root = newRoot;
+    cmpFunctions.push_back(cmpFuncPtr);
     return *this;
 }
 
@@ -90,6 +111,16 @@ MultiCondition::MultiCondition(const Condition& c, const MultiCondition& e, Oper
     root = std::make_shared<CompositeNode>(conditionPtr, e.root, opt);
     conditions.push_back(conditionPtr);
     std::copy(e.conditions.cbegin(), e.conditions.cend(), std::back_inserter(conditions));
+    std::copy(e.cmpFunctions.cbegin(), e.cmpFunctions.cend(), std::back_inserter(cmpFunctions));
+}
+
+MultiCondition::MultiCondition(const Condition& c1, bool (*cmpFunc)(const Record& r), Operator opt)
+{
+  auto conditionPtr = std::make_shared<ConditionNode>(c1);
+  auto cmpFunctionPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
+  root = std::make_shared<CompositeNode>(conditionPtr, cmpFunctionPtr, opt);
+  conditions.push_back(conditionPtr);
+  cmpFunctions.push_back(cmpFunctionPtr);
 }
 
 MultiCondition::ExprNode::ExprNode(const ExprNodeType type)
