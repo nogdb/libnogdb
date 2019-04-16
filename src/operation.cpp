@@ -802,9 +802,9 @@ ResultSet TraverseOperationBuilder::get() const
 {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
-        .isExistingVertex(_rdesc);
+        .isExistingVertex(*_rdescs.begin()); //TODO: issue-13 make it support multiple rdesc
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;
     switch (_direction) {
     case EdgeDirection::IN:
@@ -818,16 +818,16 @@ ResultSet TraverseOperationBuilder::get() const
     }
 
     return algorithm::GraphTraversal::breadthFirstSearch(
-        *_txn, vertexClassInfo, _rdesc, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+        *_txn, vertexClassInfo, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
 }
 
 ResultSetCursor TraverseOperationBuilder::getCursor() const
 {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
-        .isExistingVertex(_rdesc);
+        .isExistingVertex(*_rdescs.begin()); //TODO: issue-13 make it support multiple rdesc
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
+    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;
     switch (_direction) {
     case EdgeDirection::IN:
@@ -841,7 +841,7 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
     }
 
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
-        *_txn, vertexClassInfo, _rdesc, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+        *_txn, vertexClassInfo, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
 }
 

@@ -34,15 +34,16 @@ namespace algorithm {
     ResultSet
     GraphTraversal::breadthFirstSearch(const Transaction& txn,
         const ClassAccessInfo& classInfo,
-        const RecordDescriptor& recordDescriptor,
+        const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
         const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
+        //TODO: issue-13 make it support multiple rdesc
         const auto searchResultDescriptor = breadthFirstSearchRdesc(
-            txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+            txn, classInfo, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
             [&txn](const RecordDescriptor& descriptor) {
@@ -58,19 +59,20 @@ namespace algorithm {
     std::vector<RecordDescriptor>
     GraphTraversal::breadthFirstSearchRdesc(const Transaction& txn,
         const ClassAccessInfo& classInfo,
-        const RecordDescriptor& recordDescriptor,
+        const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
         const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
+        //TODO: issue-13 make it support multiple rdesc
         auto result = std::vector<RecordDescriptor> {};
-        auto visited = std::unordered_set<RecordId, RecordIdHash> { recordDescriptor.rid };
+        auto visited = std::unordered_set<RecordId, RecordIdHash> { recordDescriptors.begin()->rid };
         auto queue = std::queue<RecordId> {};
         auto currentLevel = 0U;
-        auto firstRecordId = RecordId { recordDescriptor.rid };
-        queue.push(recordDescriptor.rid);
+        auto firstRecordId = RecordId { recordDescriptors.begin()->rid };
+        queue.push(recordDescriptors.begin()->rid);
 
         try {
             auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
@@ -94,14 +96,14 @@ namespace algorithm {
             };
 
             if (minDepth == 0) {
-                result.emplace_back(recordDescriptor);
+                result.emplace_back(*recordDescriptors.begin());
             }
             while (!queue.empty()) {
                 auto vertexId = queue.front();
                 queue.pop();
 
                 if (vertexId == firstRecordId) {
-                    currentLevel += (vertexId != recordDescriptor.rid);
+                    currentLevel += (vertexId != recordDescriptors.begin()->rid);
                     firstRecordId = RecordId {};
                 }
 
