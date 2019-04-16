@@ -1186,6 +1186,10 @@ public:
 
     MultiCondition operator||(const MultiCondition& e) const;
 
+    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
+
+    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
+
     Condition operator!() const;
 
 private:
@@ -1228,6 +1232,8 @@ private:
 
     class ConditionNode;
 
+    class CmpFunctionNode;
+
 public:
     friend class Condition;
 
@@ -1239,13 +1245,17 @@ public:
 
     MultiCondition() = delete;
 
-    MultiCondition& operator&&(const MultiCondition& e);
+    MultiCondition operator&&(const MultiCondition& e) const;
 
-    MultiCondition& operator&&(const Condition& c);
+    MultiCondition operator&&(const Condition& c) const;
 
-    MultiCondition& operator||(const MultiCondition& e);
+    MultiCondition operator||(const MultiCondition& e) const;
 
-    MultiCondition& operator||(const Condition& c);
+    MultiCondition operator||(const Condition& c) const;
+
+    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
+
+    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
 
     MultiCondition operator!() const;
 
@@ -1256,14 +1266,23 @@ public:
 private:
     std::shared_ptr<CompositeNode> root;
     std::vector<std::weak_ptr<ConditionNode>> conditions;
+    std::vector<std::weak_ptr<CmpFunctionNode>> cmpFunctions;
 
     MultiCondition(const Condition& c1, const Condition& c2, Operator opt);
 
     MultiCondition(const Condition& c, const MultiCondition& e, Operator opt);
 
+    MultiCondition(const Condition& c, bool (*cmpFunc)(const Record& r), Operator opt);
+
+    enum ExprNodeType {
+        CONDITION,
+        MULTI_CONDITION,
+        CMP_FUNCTION
+    };
+
     class ExprNode {
     public:
-        explicit ExprNode(bool isCondition_);
+        explicit ExprNode(const ExprNodeType type);
 
         virtual ~ExprNode() noexcept = default;
 
@@ -1271,8 +1290,10 @@ private:
 
         bool checkIfCondition() const;
 
+        bool checkIfCmpFunction() const;
+
     private:
-        bool isCondition;
+      ExprNodeType nodeType;
     };
 
     class ConditionNode : public ExprNode {
@@ -1287,6 +1308,18 @@ private:
 
     private:
         Condition cond;
+    };
+
+    class CmpFunctionNode : public ExprNode {
+    public:
+        explicit CmpFunctionNode(bool (*cmpFunc_)(const Record& record));
+
+        ~CmpFunctionNode() noexcept override = default;
+
+        virtual bool check(const Record& r, const PropertyMapType& propType) const override;
+
+    private:
+        bool (*cmpFunc)(const Record& record);
     };
 
     class CompositeNode : public ExprNode {

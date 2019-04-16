@@ -192,6 +192,7 @@ extern void test_expression();
 extern void test_range_expression();
 extern void test_extra_string_expression();
 extern void test_negative_expression();
+extern void test_cmp_function_expression();
 extern void init_test_find();
 extern void test_create_informative_graph();
 extern void test_find_vertex();
