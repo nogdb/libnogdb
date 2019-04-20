@@ -687,7 +687,6 @@ ResultSet FindEdgeOperationBuilder::get() const
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
@@ -726,7 +725,6 @@ ResultSetCursor FindEdgeOperationBuilder::getCursor() const
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
@@ -765,7 +763,6 @@ unsigned long FindEdgeOperationBuilder::count() const
         .isTxnCompleted()
         .isExistingVertex(_rdesc);
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdesc.rid.first, ClassType::VERTEX);
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
@@ -804,7 +801,6 @@ ResultSet TraverseOperationBuilder::get() const
         .isTxnCompleted()
         .isExistingVertices(_rdescs);
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;
     switch (_direction) {
     case EdgeDirection::IN:
@@ -818,7 +814,7 @@ ResultSet TraverseOperationBuilder::get() const
     }
 
     return algorithm::GraphTraversal::breadthFirstSearch(
-        *_txn, vertexClassInfo, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+        *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
 }
 
 ResultSetCursor TraverseOperationBuilder::getCursor() const
@@ -827,7 +823,6 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
         .isTxnCompleted()
         .isExistingVertices(_rdescs);
 
-    auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;
     switch (_direction) {
     case EdgeDirection::IN:
@@ -841,7 +836,7 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
     }
 
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
-        *_txn, vertexClassInfo, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+        *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
 }
 
@@ -857,10 +852,8 @@ ResultSet ShortestPathOperationBuilder::get() const
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 
-    auto srcVertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_srcRdesc.rid.first, ClassType::VERTEX);
-    auto dstVertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_dstRdesc.rid.first, ClassType::VERTEX);
     return algorithm::GraphTraversal::bfsShortestPath(
-        *_txn, srcVertexClassInfo, dstVertexClassInfo, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
+        *_txn, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
 }
 
 ResultSetCursor ShortestPathOperationBuilder::getCursor() const
@@ -870,10 +863,8 @@ ResultSetCursor ShortestPathOperationBuilder::getCursor() const
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 
-    auto srcVertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_srcRdesc.rid.first, ClassType::VERTEX);
-    auto dstVertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_dstRdesc.rid.first, ClassType::VERTEX);
     auto result = algorithm::GraphTraversal::bfsShortestPathRdesc(
-        *_txn, srcVertexClassInfo, dstVertexClassInfo, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
+        *_txn, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
 }
 

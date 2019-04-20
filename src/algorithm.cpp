@@ -30,10 +30,8 @@ using compare::ClassFilter;
 
 namespace algorithm {
 
-
     ResultSet
     GraphTraversal::breadthFirstSearch(const Transaction& txn,
-        const ClassAccessInfo& classInfo,
         const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
@@ -43,12 +41,12 @@ namespace algorithm {
     {
         //TODO: issue-13 make it support multiple rdesc
         const auto searchResultDescriptor = breadthFirstSearchRdesc(
-            txn, classInfo, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+            txn, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
             [&txn](const RecordDescriptor& descriptor) {
-                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(classInfo, descriptor);
                 record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                 return Result(descriptor, record);
             });
@@ -58,7 +56,6 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::breadthFirstSearchRdesc(const Transaction& txn,
-        const ClassAccessInfo& classInfo,
         const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
@@ -125,7 +122,6 @@ namespace algorithm {
     //TODO: DO NOT USE UNTIL "depthFirstSearchRdesc" IS FIXED
 //    ResultSet
 //    GraphTraversal::depthFirstSearch(const Transaction& txn,
-//        const ClassAccessInfo& classInfo,
 //        const RecordDescriptor& recordDescriptor,
 //        unsigned int minDepth,
 //        unsigned int maxDepth,
@@ -150,7 +146,6 @@ namespace algorithm {
     //TODO: a buggy version of DFS, please fix this... DO NOT USE UNTIL IT IS FIXED
 //    std::vector<RecordDescriptor>
 //    GraphTraversal::depthFirstSearchRdesc(const Transaction& txn,
-//        const ClassAccessInfo& classInfo,
 //        const RecordDescriptor& recordDescriptor,
 //        unsigned int minDepth,
 //        unsigned int maxDepth,
@@ -228,22 +223,19 @@ namespace algorithm {
 
     ResultSet
     GraphTraversal::bfsShortestPath(const Transaction& txn,
-        const ClassAccessInfo& srcVertexClassInfo,
-        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
         const auto searchResultDescriptor = bfsShortestPathRdesc(
-            txn, srcVertexClassInfo, dstVertexClassInfo,
-            srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
+            txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
 
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
             [&txn](const RecordDescriptor& descriptor) {
-                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(classInfo, descriptor);
                 record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                 return Result(descriptor, record);
             });
@@ -253,8 +245,6 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::bfsShortestPathRdesc(const Transaction& txn,
-        const ClassAccessInfo& srcVertexClassInfo,
-        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,

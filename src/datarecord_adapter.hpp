@@ -46,8 +46,10 @@ namespace adapter {
             virtual ~DataRecord() noexcept = default;
 
             DataRecord(DataRecord&& other) noexcept
+                : LMDBKeyValAccess(std::move(other))
+                , _classId { other._classId }
+                , _classType { other._classType }
             {
-                *this = std::move(other);
             }
 
             DataRecord& operator=(DataRecord&& other) noexcept
