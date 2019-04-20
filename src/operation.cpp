@@ -802,7 +802,7 @@ ResultSet TraverseOperationBuilder::get() const
 {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
-        .isExistingVertex(*_rdescs.begin()); //TODO: issue-13 make it support multiple rdesc
+        .isExistingVertices(_rdescs);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;
@@ -825,7 +825,7 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
 {
     BEGIN_VALIDATION(_txn)
         .isTxnCompleted()
-        .isExistingVertex(*_rdescs.begin()); //TODO: issue-13 make it support multiple rdesc
+        .isExistingVertices(_rdescs);
 
     auto vertexClassInfo = _txn->_interface->schema()->getValidClassInfo(_rdescs.begin()->rid.first, ClassType::VERTEX);
     auto direction = adapter::relation::Direction::ALL;

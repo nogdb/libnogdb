@@ -20,6 +20,8 @@
  */
 
 #include <regex>
+#include <memory>
+#include <unordered_map>
 
 #include "datarecord_adapter.hpp"
 #include "schema.hpp"
@@ -200,9 +202,8 @@ namespace validate {
     {
         auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
-            auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
-                vertexDataRecord.getBlob(vertex.rid.second);
+                DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX).getBlob(vertex.rid.second);
             } catch (const Error& error) {
                 if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
                     throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
@@ -214,6 +215,44 @@ namespace validate {
         } else {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
         }
+    }
+
+    Validator& Validator::isExistingVertices(const std::set<RecordDescriptor> &vertices)
+    {
+        auto foundClasses = std::unordered_map<ClassId, std::shared_ptr<DataRecord>> {};
+        for(const auto& vertex: vertices) {
+            auto foundClass = foundClasses.find(vertex.rid.first);
+            if (foundClass != foundClasses.cend()) {
+                try {
+                    foundClass->second->getBlob(vertex.rid.second);
+                } catch (const Error& error) {
+                    if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                        throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
+                    } else {
+                        throw NOGDB_FATAL_ERROR(error);
+                    }
+                }
+            } else {
+                auto foundNewClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
+                if (foundNewClass.type == ClassType::VERTEX) {
+                    try {
+                        auto vertexDataRecord = std::make_shared<DataRecord>(
+                            DataRecord(_txn->_txnBase, foundNewClass.id, ClassType::VERTEX));
+                        vertexDataRecord->getBlob(vertex.rid.second);
+                        foundClasses.emplace(foundNewClass.id, vertexDataRecord);
+                    } catch (const Error& error) {
+                        if (error.code() == NOGDB_CTX_NOEXST_RECORD) {
+                            throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_NOEXST_VERTEX);
+                        } else {
+                            throw NOGDB_FATAL_ERROR(error);
+                        }
+                    }
+                } else {
+                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
+                }
+            }
+        }
+        return *this;
     }
 
 }
