@@ -39,7 +39,6 @@ namespace algorithm {
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
-        //TODO: issue-13 make it support multiple rdesc
         const auto searchResultDescriptor = breadthFirstSearchRdesc(
             txn, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
         ResultSet result(searchResultDescriptor.size());
@@ -63,50 +62,42 @@ namespace algorithm {
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
-        //TODO: issue-13 make it support multiple rdesc
         auto result = std::vector<RecordDescriptor> {};
-        auto visited = std::unordered_set<RecordId, RecordIdHash> { recordDescriptors.begin()->rid };
-        auto queue = std::queue<RecordId> {};
-        auto currentLevel = 0U;
-        auto firstRecordId = RecordId { recordDescriptors.begin()->rid };
-        queue.push(recordDescriptors.begin()->rid);
+        auto visited = std::unordered_set<RecordId, RecordIdHash> {};
+        auto queue = std::queue<std::pair<RecordDescriptor, unsigned int>> {};
+        for(const auto& recordDescriptor: recordDescriptors) {
+            visited.insert(recordDescriptor.rid);
+            queue.push(std::make_pair(recordDescriptor, 0));
+        }
 
         try {
             auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
             auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
-            auto addUniqueVertex = [&](const RecordId& vertex) {
-                if (visited.find(vertex) != visited.cend())
+            auto addUniqueVertex = [&](const std::pair<RecordDescriptor, unsigned int>& nextVertexInfo) {
+                auto currentVertex = nextVertexInfo.first;
+                auto currentLevel = nextVertexInfo.second;
+                if (visited.find(currentVertex.rid) != visited.cend())
                     return;
-                auto vertexRdesc = RecordCompare::filterRecord(
-                    txn, RecordDescriptor { vertex }, vertexFilter, vertexClassFilter);
-                if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
-                    vertexRdesc._depth = currentLevel + 1;
+                auto vertexRdesc = RecordCompare::filterRecord(txn, currentVertex, vertexFilter, vertexClassFilter);
+                if ((currentLevel >= minDepth) && (currentLevel <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    vertexRdesc._depth = currentLevel;
                     result.emplace_back(vertexRdesc);
                 }
-                visited.insert(vertex);
-                if (firstRecordId == RecordId {}) {
-                    firstRecordId = vertex;
-                }
-                if ((currentLevel + 1 < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
-                    queue.push(vertex);
+                visited.insert(currentVertex.rid);
+                if ((currentLevel < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    queue.push(std::make_pair(currentVertex.rid, currentLevel));
                 }
             };
 
             if (minDepth == 0) {
-                result.emplace_back(*recordDescriptors.begin());
+                result.assign(recordDescriptors.cbegin(), recordDescriptors.cend());
             }
             while (!queue.empty()) {
-                auto vertexId = queue.front();
+                auto vertex = queue.front();
                 queue.pop();
-
-                if (vertexId == firstRecordId) {
-                    currentLevel += (vertexId != recordDescriptors.begin()->rid);
-                    firstRecordId = RecordId {};
-                }
-
                 for (const auto& edgeNeighbour :
-                    RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
-                    addUniqueVertex(edgeNeighbour.second.rid);
+                    RecordCompare::filterIncidentEdges(txn, vertex.first.rid, direction, edgeFilter, edgeClassFilter)) {
+                    addUniqueVertex(std::make_pair(edgeNeighbour.second, vertex.second + 1));
                 }
             }
         } catch (const Error& err) {
