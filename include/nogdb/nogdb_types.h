@@ -1507,6 +1507,8 @@ public:
 
     virtual ~TraverseOperationBuilder() noexcept = default;
 
+    virtual TraverseOperationBuilder& addSource(const RecordDescriptor& recordDescriptor);
+
     virtual TraverseOperationBuilder& whereV(const GraphFilter& filter);
 
     virtual TraverseOperationBuilder& whereE(const GraphFilter& filter);
@@ -1554,7 +1556,7 @@ private:
         const RecordDescriptor& recordDescriptor,
         const EdgeDirection& direction);
 
-    RecordDescriptor _rdesc;
+    std::set<RecordDescriptor> _rdescs {};
     EdgeDirection _direction;
     unsigned int _minDepth { 0 };
     unsigned int _maxDepth { std::numeric_limits<unsigned int>::max() };

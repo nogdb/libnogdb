@@ -360,7 +360,7 @@ namespace sql_parser {
     struct TraverseArgs {
         string direction;
         set<string> filter;
-        RecordDescriptor root;
+        set<RecordDescriptor> root;
         long long minDepth;
         long long maxDepth;
         string strategy;

@@ -310,7 +310,7 @@ cmd ::= traverse_stmt(stmt) SEMI. {
 %type traverse_stmt { TraverseArgs }
 traverse_stmt(A) ::= TRAVERSE
     IDENTITY(direction) LP class_filter(filter) RP
-    FROM rid(root)
+    FROM rid_set(root)
     min_depth_opt(min_depth) max_depth_opt(max_depth)
     strategy_opt(strategy).
 {

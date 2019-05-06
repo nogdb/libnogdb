@@ -84,9 +84,15 @@ TraverseOperationBuilder::TraverseOperationBuilder(const Transaction* txn,
     const RecordDescriptor& recordDescriptor,
     const EdgeDirection& direction)
     : OperationBuilder { txn }
-    , _rdesc { recordDescriptor }
     , _direction { direction }
 {
+    _rdescs.insert(recordDescriptor);
+}
+
+TraverseOperationBuilder& TraverseOperationBuilder::addSource(const RecordDescriptor& recordDescriptor)
+{
+    _rdescs.insert(recordDescriptor);
+    return *this;
 }
 
 TraverseOperationBuilder& TraverseOperationBuilder::whereV(const GraphFilter& filter)

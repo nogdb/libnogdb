@@ -223,6 +223,9 @@ int main()
     exec(test_shortest_path_with_condition, "finding the shortest path in a graph with conditional functions");
     exec(test_bfs_traverse_cursor_with_condition, "traversing a graph and returning a cursor using bfs algorithm with conditional functions");
     exec(test_shortest_path_cursor_with_condition, "finding a cursor of the shortest path in a graph with conditional functions");
+    exec(test_bfs_traverse_multi_edges_with_condition, "traversing a graph using bfs algorithm with conditional functions for multi-edge vertices");
+    exec(test_bfs_traverse_multi_vertices, "traversing a graph using bfs algorithm with multi-vertex sources");
+    exec(test_bfs_traverse_multi_vertices_with_condition, "traversing a graph using bfs algorithm with multi-vertex sources and conditions");
     exec(destroy_test_graph, "destroying the graph for testing graph operations");
 #endif
     // find

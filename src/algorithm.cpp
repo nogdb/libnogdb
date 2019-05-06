@@ -30,11 +30,9 @@ using compare::ClassFilter;
 
 namespace algorithm {
 
-
     ResultSet
     GraphTraversal::breadthFirstSearch(const Transaction& txn,
-        const ClassAccessInfo& classInfo,
-        const RecordDescriptor& recordDescriptor,
+        const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
         const Direction& direction,
@@ -42,12 +40,12 @@ namespace algorithm {
         const GraphFilter& vertexFilter)
     {
         const auto searchResultDescriptor = breadthFirstSearchRdesc(
-            txn, classInfo, recordDescriptor, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+            txn, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
             [&txn](const RecordDescriptor& descriptor) {
-                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(classInfo, descriptor);
                 record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                 return Result(descriptor, record);
             });
@@ -57,8 +55,7 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::breadthFirstSearchRdesc(const Transaction& txn,
-        const ClassAccessInfo& classInfo,
-        const RecordDescriptor& recordDescriptor,
+        const std::set<RecordDescriptor>& recordDescriptors,
         unsigned int minDepth,
         unsigned int maxDepth,
         const Direction& direction,
@@ -66,48 +63,41 @@ namespace algorithm {
         const GraphFilter& vertexFilter)
     {
         auto result = std::vector<RecordDescriptor> {};
-        auto visited = std::unordered_set<RecordId, RecordIdHash> { recordDescriptor.rid };
-        auto queue = std::queue<RecordId> {};
-        auto currentLevel = 0U;
-        auto firstRecordId = RecordId { recordDescriptor.rid };
-        queue.push(recordDescriptor.rid);
+        auto visited = std::unordered_set<RecordId, RecordIdHash> {};
+        auto queue = std::queue<std::pair<RecordDescriptor, unsigned int>> {};
+        for(const auto& recordDescriptor: recordDescriptors) {
+            visited.insert(recordDescriptor.rid);
+            queue.push(std::make_pair(recordDescriptor, 0));
+        }
 
         try {
             auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
             auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
-            auto addUniqueVertex = [&](const RecordId& vertex) {
-                if (visited.find(vertex) != visited.cend())
+            auto addUniqueVertex = [&](const std::pair<RecordDescriptor, unsigned int>& nextVertexInfo) {
+                auto currentVertex = nextVertexInfo.first;
+                auto currentLevel = nextVertexInfo.second;
+                if (visited.find(currentVertex.rid) != visited.cend())
                     return;
-                auto vertexRdesc = RecordCompare::filterRecord(
-                    txn, RecordDescriptor { vertex }, vertexFilter, vertexClassFilter);
-                if ((currentLevel + 1 >= minDepth) && (currentLevel + 1 <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
-                    vertexRdesc._depth = currentLevel + 1;
+                auto vertexRdesc = RecordCompare::filterRecord(txn, currentVertex, vertexFilter, vertexClassFilter);
+                if ((currentLevel >= minDepth) && (currentLevel <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    vertexRdesc._depth = currentLevel;
                     result.emplace_back(vertexRdesc);
                 }
-                visited.insert(vertex);
-                if (firstRecordId == RecordId {}) {
-                    firstRecordId = vertex;
-                }
-                if ((currentLevel + 1 < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
-                    queue.push(vertex);
+                visited.insert(currentVertex.rid);
+                if ((currentLevel < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                    queue.push(std::make_pair(currentVertex.rid, currentLevel));
                 }
             };
 
             if (minDepth == 0) {
-                result.emplace_back(recordDescriptor);
+                result.assign(recordDescriptors.cbegin(), recordDescriptors.cend());
             }
             while (!queue.empty()) {
-                auto vertexId = queue.front();
+                auto vertex = queue.front();
                 queue.pop();
-
-                if (vertexId == firstRecordId) {
-                    currentLevel += (vertexId != recordDescriptor.rid);
-                    firstRecordId = RecordId {};
-                }
-
                 for (const auto& edgeNeighbour :
-                    RecordCompare::filterIncidentEdges(txn, vertexId, direction, edgeFilter, edgeClassFilter)) {
-                    addUniqueVertex(edgeNeighbour.second.rid);
+                    RecordCompare::filterIncidentEdges(txn, vertex.first.rid, direction, edgeFilter, edgeClassFilter)) {
+                    addUniqueVertex(std::make_pair(edgeNeighbour.second, vertex.second + 1));
                 }
             }
         } catch (const Error& err) {
@@ -123,7 +113,6 @@ namespace algorithm {
     //TODO: DO NOT USE UNTIL "depthFirstSearchRdesc" IS FIXED
 //    ResultSet
 //    GraphTraversal::depthFirstSearch(const Transaction& txn,
-//        const ClassAccessInfo& classInfo,
 //        const RecordDescriptor& recordDescriptor,
 //        unsigned int minDepth,
 //        unsigned int maxDepth,
@@ -148,7 +137,6 @@ namespace algorithm {
     //TODO: a buggy version of DFS, please fix this... DO NOT USE UNTIL IT IS FIXED
 //    std::vector<RecordDescriptor>
 //    GraphTraversal::depthFirstSearchRdesc(const Transaction& txn,
-//        const ClassAccessInfo& classInfo,
 //        const RecordDescriptor& recordDescriptor,
 //        unsigned int minDepth,
 //        unsigned int maxDepth,
@@ -226,22 +214,19 @@ namespace algorithm {
 
     ResultSet
     GraphTraversal::bfsShortestPath(const Transaction& txn,
-        const ClassAccessInfo& srcVertexClassInfo,
-        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
         const auto searchResultDescriptor = bfsShortestPathRdesc(
-            txn, srcVertexClassInfo, dstVertexClassInfo,
-            srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
+            txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
 
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
             [&txn](const RecordDescriptor& descriptor) {
-                const auto edgeClassInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
-                const auto& record = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, descriptor);
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = txn._interface->record()->getRecordWithBasicInfo(classInfo, descriptor);
                 record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
                 return Result(descriptor, record);
             });
@@ -251,8 +236,6 @@ namespace algorithm {
 
     std::vector<RecordDescriptor>
     GraphTraversal::bfsShortestPathRdesc(const Transaction& txn,
-        const ClassAccessInfo& srcVertexClassInfo,
-        const ClassAccessInfo& dstVertexClassInfo,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
         const GraphFilter& edgeFilter,
