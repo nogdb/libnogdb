@@ -1,4 +1,4 @@
-# NogDB Documentation [v1.0.0]
+# NogDB Documentation [v1.1.0]
 ================================
 :toc:
 :toc-placement: preamble
@@ -690,8 +690,8 @@ nogdb::MultiCondition m = multi_condition1 || condition1;
 nogdb::MultiCondition m = multi_condition1.operator||(multi_condition2);
 
 // -- Example 2.
-nogdb::Condition cond1{propName1, value1};
-nogdb::Condition cond2{propName2, value2};
+auto cond1 = nogdb::Condition(propName1).eq(value1);
+auto cond2 = nogdb::Condition(propName2).eq(value2);
 nogdb::MultiCondition mc1 = cond1 && cond2;
 
 // after creating cond3 and cond4
@@ -705,6 +705,34 @@ auto mcond = (cond1 && cond2) || (cond3 && cond4);
 
 // directly execute the multi-condition and return a result as boolean 'true' if conditions match a record
 bool res = mcond.execute(const nogdb::Record& r, const nogdb::PropertyMapType& propertyTypes);
+------------
+
+=== Conditional Function
+
+Other than `Condition` and `MultiCondition` objects, a lambda function `bool (*)(nogdb::Record&)` can be used in where causes of <<Find Operations,Find>>, <<Find Edge Operations,FindEdge>>, <<Traverse Operations,Traverse>>, and <<Shortest Path Operations,Shortest Path>> Operations.
+The `operator&&` and `operator||` can be used to combine a conditional object with the lambda function to create a multi-condition object.
+
+==== Example:
+
+[source,cpp]
+------------
+// create a lambda function bool (*)(nogdb::Record&)
+auto cmp1 = [](const nogdb::Record& record) {
+  return record.getIntU("age") > 30U && record.getInt("salary") > 30000;
+};
+
+auto cmp2 = [](const nogdb::Record& record) {
+  return record.getIntU("age") <= 30U && record.getInt("salary") <= 30000;
+};
+
+// combine a conditional object with a lambda function
+auto cond = nogdb::Condition("gender").eq("male");
+nogdb::MultiCondition mc1 = cond && cmp1;
+nogdb::MultiCondition mc2 = cond || cmp1;
+
+// combine a multi-conditional object with a lambda function
+nogdb::MultiCondition mc3 = mc1 && cmp2;
+nogdb::MultiCondition mc4 = mc2 || cmp2;
 ------------
 
 === GraphFilter
@@ -1558,13 +1586,16 @@ A set of operations that retrieves vertices from a graph traversal with conditio
 nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
 // construct a new TraverseOperationBuilder object to traverse a graph from a vertex
-nogdb::FindEdgeOperationBuilder builder1 = txn.traverse(const RecordDescriptor &recordDescriptor);
+nogdb::TraverseOperationBuilder builder1 = txn.traverse(const RecordDescriptor &recordDescriptor);
 
 // construct a new TraverseOperationBuilder object to traverse a graph from a vertex
-nogdb::FindEdgeOperationBuilder builder2 = txn.traverseIn(const RecordDescriptor &recordDescriptor);
+nogdb::TraverseOperationBuilder builder2 = txn.traverseIn(const RecordDescriptor &recordDescriptor);
 
 // construct a new TraverseOperationBuilder object to traverse a graph from a vertex
-nogdb::FindEdgeOperationBuilder builder3 = txn.traverseOut(const RecordDescriptor &recordDescriptor);
+nogdb::TraverseOperationBuilder builder3 = txn.traverseOut(const RecordDescriptor &recordDescriptor);
+
+// traverse with multiple source vertices
+builder1.addSource(rdesc1).addSource(rdesc2);
 
 // traverse with a condition on vertices
 builder1.whereV(nogdb::GraphFilter{}.only("person"));
@@ -1613,8 +1644,8 @@ A set of operations that retrieves vertices from a shortest path walking with co
 nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
 // construct a new ShortestPathOperationBuilder object to find a shortest path from a source vertex to a destination vertex
-nogdb::FindEdgeOperationBuilder builder1 = txn.shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
-                                                            const RecordDescriptor &dstVertexRecordDescriptor);
+nogdb::ShortestPathOperationBuilder builder1 = txn.shortestPath(const RecordDescriptor &srcVertexRecordDescriptor,
+                                                                const RecordDescriptor &dstVertexRecordDescriptor);
 
 // find a shortest path with a condition on vertices
 builder1.whereV(nogdb::GraphFilter{}.only("person"));

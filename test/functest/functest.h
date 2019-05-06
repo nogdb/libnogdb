@@ -183,6 +183,9 @@ extern void test_bfs_traverse_with_condition();
 extern void test_shortest_path_with_condition();
 extern void test_bfs_traverse_cursor_with_condition();
 extern void test_shortest_path_cursor_with_condition();
+extern void test_bfs_traverse_multi_edges_with_condition();
+extern void test_bfs_traverse_multi_vertices();
+extern void test_bfs_traverse_multi_vertices_with_condition();
 // extern void test_shortest_path_dijkstra();
 #endif
 
@@ -192,6 +195,7 @@ extern void test_expression();
 extern void test_range_expression();
 extern void test_extra_string_expression();
 extern void test_negative_expression();
+extern void test_cmp_function_expression();
 extern void init_test_find();
 extern void test_create_informative_graph();
 extern void test_find_vertex();

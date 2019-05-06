@@ -75,6 +75,8 @@ namespace validate {
 
         Validator& isExistingVertex(const RecordDescriptor& vertex);
 
+        Validator& isExistingVertices(const std::set<RecordDescriptor>& vertices);
+
     private:
         const Transaction* _txn;
 

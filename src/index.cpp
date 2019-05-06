@@ -294,32 +294,37 @@ namespace index {
         const PropertyNameMapInfo& propertyInfos,
         const MultiCondition& conditions) const
     {
-        auto isFoundAll = true;
-        auto result = PropertyIdMapIndex {};
-        auto conditionPropNames = std::unordered_set<std::string> {};
-        for (const auto& condition : conditions.conditions) {
-            if (auto conditionPtr = condition.lock()) {
-                auto propertyName = conditionPtr->getCondition().propName;
-                if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
-                    auto propertyInfo = propertyInfos.find(propertyName);
-                    if (propertyInfo == propertyInfos.cend())
-                        continue;
-                    conditionPropNames.emplace(propertyName);
-                    auto searchIndexResult = hasIndex(classInfo, propertyInfo->second, conditionPtr->getCondition());
-                    if (searchIndexResult.first) {
-                        auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
-                        result.emplace(propertyId, searchIndexResult.second);
-                    } else {
-                        isFoundAll = false;
-                        break;
+        if (conditions.cmpFunctions.empty()) {
+            auto isFoundAll = true;
+            auto result = PropertyIdMapIndex{};
+            auto conditionPropNames = std::unordered_set<std::string>{};
+            for (const auto &condition : conditions.conditions) {
+                if (auto conditionPtr = condition.lock()) {
+                    auto propertyName = conditionPtr->getCondition().propName;
+                    if (conditionPropNames.find(propertyName) == conditionPropNames.cend()) {
+                        auto propertyInfo = propertyInfos.find(propertyName);
+                        if (propertyInfo == propertyInfos.cend())
+                            continue;
+                        conditionPropNames.emplace(propertyName);
+                        auto searchIndexResult = hasIndex(classInfo, propertyInfo->second,
+                                                          conditionPtr->getCondition());
+                        if (searchIndexResult.first) {
+                            auto propertyId = _txn->_adapter->dbProperty()->getId(classInfo.id, propertyName);
+                            result.emplace(propertyId, searchIndexResult.second);
+                        } else {
+                            isFoundAll = false;
+                            break;
+                        }
                     }
+                } else {
+                    isFoundAll = false;
+                    break;
                 }
-            } else {
-                isFoundAll = false;
-                break;
             }
+            return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex{});
+        } else {
+            return std::make_pair(false, PropertyIdMapIndex{});
         }
-        return std::make_pair(isFoundAll, (isFoundAll) ? result : PropertyIdMapIndex {});
     }
 
     std::vector<RecordDescriptor>
@@ -449,12 +454,111 @@ namespace index {
         return std::vector<RecordDescriptor> {};
     }
 
+  size_t
+  IndexInterface::getCountRecord(const PropertyAccessInfo& propertyInfo,
+                                 const IndexAccessInfo& indexInfo,
+                                 const Condition& condition,
+                                 bool isNegative) const
+  {
+    auto isApplyNegative = condition.isNegative ^ isNegative;
+    switch (condition.comp) {
+      case Condition::Comparator::EQUAL: {
+        if (!isApplyNegative) {
+          return getEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueBytes);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueBytes);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::LESS_EQUAL: {
+        if (!isApplyNegative) {
+          return getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getGreaterThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::LESS: {
+        if (!isApplyNegative) {
+          return getLessThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::GREATER_EQUAL: {
+        if (!isApplyNegative) {
+          return getGreaterOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getLessThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::GREATER: {
+        if (!isApplyNegative) {
+          return getGreaterThan(propertyInfo, indexInfo, condition.valueBytes).size();
+        } else {
+          return getLessOrEqual(propertyInfo, indexInfo, condition.valueBytes).size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_BOUND: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { false, false }).size();
+        } else {
+          auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { true, true }).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_UPPER: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { true, false }).size();
+        } else {
+          auto lessResult = getLessThan(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterOrEqual(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      case Condition::Comparator::BETWEEN_NO_LOWER: {
+        if (!isApplyNegative) {
+          return getBetween(
+              propertyInfo, indexInfo, condition.valueSet[0], condition.valueSet[1], { false, true }).size();
+        } else {
+          auto lessResult = getLessOrEqual(propertyInfo, indexInfo, condition.valueSet[0]);
+          auto greaterResult = getGreaterThan(propertyInfo, indexInfo, condition.valueSet[1]);
+          return lessResult.size() + greaterResult.size();
+        }
+      }
+      default:
+        break;
+    }
+    return size_t {0};
+  }
+
     std::vector<RecordDescriptor>
     IndexInterface::getRecord(const PropertyNameMapInfo& propertyInfos,
         const PropertyIdMapIndex& propertyIndexInfo,
         const MultiCondition& conditions) const
     {
         return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false);
+    }
+
+    size_t
+    IndexInterface::getCountRecord(const PropertyNameMapInfo& propertyInfos,
+                                   const PropertyIdMapIndex& propertyIndexInfo,
+                                   const MultiCondition& conditions) const
+    {
+      return getRecordFromMultiCondition(propertyInfos, propertyIndexInfo, conditions.root.get(), false).size();
     }
 
     IndexRecord IndexInterface::openIndexRecordPositive(const IndexAccessInfo& indexInfo) const

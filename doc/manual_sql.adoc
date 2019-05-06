@@ -582,6 +582,10 @@ Retrieves connected records crossing relationships. In many cases, you may find 
 
  TRAVERSE all() FROM #4:1
 
+- Traverse all fields in the multiple root records
+
+ TRAVERSE all() FROM #4:1, #5:1, #6:2
+
 - Specify fields and depth up to the third level, using the BREADTH_FIRST strategy
 
  TRAVERSE out('Friend') FROM #4:1 MAXDEPTH 3 STRATEGY BREADTH_FIRST

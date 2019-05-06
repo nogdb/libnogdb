@@ -1648,9 +1648,17 @@ void test_sql_traverse()
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>() == txn.traverse(v21).depth(0, UINT_MAX).get());
 
+        result = SQL::execute(txn, "TRAVERSE all() FROM " + to_string(v21) + ", " + to_string(v22));
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == txn.traverse(v21).addSource(v22).depth(0, UINT_MAX).get());
+
         result = SQL::execute(txn, "TRAVERSE out() FROM " + to_string(v1));
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>() == txn.traverseOut(v1).depth(0, UINT_MAX).get());
+
+        result = SQL::execute(txn, "TRAVERSE out() FROM " + to_string(v22) + ", " + to_string(v31) + ", " + to_string(v32));
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>() == txn.traverseOut(v22).addSource(v31).addSource(v32).depth(0, UINT_MAX).get());
 
         result = SQL::execute(txn, "TRAVERSE in() FROM " + to_string(v32));
         assert(result.type() == result.RESULT_SET);
@@ -1660,6 +1668,12 @@ void test_sql_traverse()
         assert(result.type() == result.RESULT_SET);
         assert(result.get<ResultSet>()
             == txn.traverseOut(v1).depth(0, UINT_MAX).whereE(nogdb::GraphFilter {}.only("EL")).get());
+
+        result = SQL::execute(txn, "TRAVERSE out('EL') FROM " + to_string(v21) + ", " + to_string(v22));
+        assert(result.type() == result.RESULT_SET);
+        assert(result.get<ResultSet>()
+               == txn.traverseOut(v21).addSource(v22).depth(0, UINT_MAX)
+               .whereE(nogdb::GraphFilter {}.only("EL")).get());
 
         result = SQL::execute(txn, "TRAVERSE in('ER') FROM " + to_string(v33) + " MINDEPTH 2");
         assert(result.type() == result.RESULT_SET);

@@ -2724,3 +2724,306 @@ void test_shortest_path_cursor_with_condition()
 
     txn.commit();
 }
+
+void test_bfs_traverse_multi_edges_with_condition() {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+    try {
+        auto th = txn.addVertex("country", nogdb::Record{}.set("name", "Thailand"));
+        auto la = txn.addVertex("country", nogdb::Record{}.set("name", "Laos"));
+        auto cn = txn.addVertex("country", nogdb::Record{}.set("name", "China"));
+
+        txn.addEdge("path", th, la, nogdb::Record{}.set("distance", 150U));
+        txn.addEdge("path", th, la, nogdb::Record{}.set("distance", 120U));
+        txn.addEdge("path", th, la, nogdb::Record{}.set("distance", 100U));
+        txn.addEdge("path", la, cn, nogdb::Record{}.set("distance", 100U));
+        txn.addEdge("path", la, cn, nogdb::Record{}.set("distance", 120U));
+        txn.addEdge("path", la, cn, nogdb::Record{}.set("distance", 150U));
+
+        auto traverse = txn.traverse(th).maxDepth(10).whereE(nogdb::GraphFilter(nogdb::Condition("distance").gt(140U)));
+        auto res = traverse.get();
+        ASSERT_SIZE(res, 3);
+        ASSERT_EQ(res[0].descriptor.rid, th.rid);
+        ASSERT_EQ(res[0].record.getDepth(), 0U);
+        ASSERT_EQ(res[1].descriptor.rid, la.rid);
+        ASSERT_EQ(res[1].record.getDepth(), 1U);
+        ASSERT_EQ(res[2].descriptor.rid, cn.rid);
+        ASSERT_EQ(res[2].record.getDepth(), 2U);
+
+        auto resCursor = traverse.getCursor();
+        ASSERT_EQ(resCursor.count(), size_t{3});
+        resCursor.first();
+        ASSERT_EQ(resCursor->descriptor.rid, th.rid);
+        ASSERT_EQ(resCursor->record.getDepth(), 0U);
+        resCursor.next();
+        ASSERT_EQ(resCursor->descriptor.rid, la.rid);
+        ASSERT_EQ(resCursor->record.getDepth(), 1U);
+        resCursor.next();
+        ASSERT_EQ(resCursor->descriptor.rid, cn.rid);
+        ASSERT_EQ(resCursor->record.getDepth(), 2U);
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    txn.rollback();
+}
+
+void test_bfs_traverse_multi_vertices() {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
+    try {
+        for (const auto& res : txn.find("folders").get()) {
+            switch (res.record.get("name").toText().c_str()[0]) {
+                case 'A':
+                    A = res.descriptor;
+                    break;
+                case 'B':
+                    B = res.descriptor;
+                    break;
+                case 'C':
+                    C = res.descriptor;
+                    break;
+                case 'D':
+                    D = res.descriptor;
+                    break;
+                case 'E':
+                    E = res.descriptor;
+                    break;
+                case 'F':
+                    F = res.descriptor;
+                    break;
+                case 'G':
+                    G = res.descriptor;
+                    break;
+                case 'H':
+                    H = res.descriptor;
+                    break;
+                case 'Z':
+                    Z = res.descriptor;
+                    break;
+            }
+        }
+
+        for (const auto& res : txn.find("files").get()) {
+            switch (res.record.get("name").toText().c_str()[0]) {
+                case 'a':
+                    a = res.descriptor;
+                    break;
+                case 'b':
+                    b = res.descriptor;
+                    break;
+                case 'c':
+                    c = res.descriptor;
+                    break;
+                case 'd':
+                    d = res.descriptor;
+                    break;
+                case 'e':
+                    e = res.descriptor;
+                    break;
+                case 'f':
+                    f = res.descriptor;
+                    break;
+            }
+        }
+
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto traverse = txn.traverseOut(A).addSource(E).maxDepth(1);
+        auto res = traverse.get();
+        ASSERT_SIZE(res, 7);
+        for(const auto& vertex: res) {
+            if (vertex.descriptor == A) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == B) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == C) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == a) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == E) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == G) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == F) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else {
+                ASSERT_FALSE(true);
+            }
+        }
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto traverse = txn.traverseOut(A).addSource(E).maxDepth(2);
+        auto res = traverse.get();
+        ASSERT_SIZE(res, 14);
+        for(const auto& vertex: res) {
+            if (vertex.descriptor == A) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == B) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == C) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == a) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == E) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == G) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == F) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == D) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == b) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == f) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == d) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == H) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == e) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == c) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else {
+                ASSERT_FALSE(true);
+            }
+        }
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    txn.commit();
+}
+
+void test_bfs_traverse_multi_vertices_with_condition() {
+    auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+    nogdb::RecordDescriptor A, B, C, D, E, F, G, H, Z, a, b, c, d, e, f;
+    try {
+        for (const auto& res : txn.find("folders").get()) {
+            switch (res.record.get("name").toText().c_str()[0]) {
+                case 'A':
+                    A = res.descriptor;
+                    break;
+                case 'B':
+                    B = res.descriptor;
+                    break;
+                case 'C':
+                    C = res.descriptor;
+                    break;
+                case 'D':
+                    D = res.descriptor;
+                    break;
+                case 'E':
+                    E = res.descriptor;
+                    break;
+                case 'F':
+                    F = res.descriptor;
+                    break;
+                case 'G':
+                    G = res.descriptor;
+                    break;
+                case 'H':
+                    H = res.descriptor;
+                    break;
+                case 'Z':
+                    Z = res.descriptor;
+                    break;
+            }
+        }
+
+        for (const auto& res : txn.find("files").get()) {
+            switch (res.record.get("name").toText().c_str()[0]) {
+                case 'a':
+                    a = res.descriptor;
+                    break;
+                case 'b':
+                    b = res.descriptor;
+                    break;
+                case 'c':
+                    c = res.descriptor;
+                    break;
+                case 'd':
+                    d = res.descriptor;
+                    break;
+                case 'e':
+                    e = res.descriptor;
+                    break;
+                case 'f':
+                    f = res.descriptor;
+                    break;
+            }
+        }
+
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto traverse = txn.traverseOut(E).addSource(A).maxDepth(1).whereV(nogdb::GraphFilter().only("folders"));
+        auto res = traverse.get();
+        ASSERT_SIZE(res, 6);
+        for(const auto& vertex: res) {
+            if (vertex.descriptor == A) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == B) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == C) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == E) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == G) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == F) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else {
+                ASSERT_FALSE(true);
+            }
+        }
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto traverse = txn.traverseOut(E).addSource(A).maxDepth(2).whereV(nogdb::GraphFilter().only("folders"));
+        auto res = traverse.get();
+        ASSERT_SIZE(res, 8);
+        for(const auto& vertex: res) {
+            if (vertex.descriptor == A) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == B) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == C) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == E) {
+                ASSERT_EQ(vertex.record.getDepth(), 0U);
+            } else if (vertex.descriptor == G) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == F) {
+                ASSERT_EQ(vertex.record.getDepth(), 1U);
+            } else if (vertex.descriptor == D) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else if (vertex.descriptor == H) {
+                ASSERT_EQ(vertex.record.getDepth(), 2U);
+            } else {
+                ASSERT_FALSE(true);
+            }
+        }
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    txn.commit();
+}

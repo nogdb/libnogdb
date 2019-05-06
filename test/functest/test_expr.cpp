@@ -364,3 +364,64 @@ void test_negative_expression()
         assert(false);
     }
 }
+
+void test_cmp_function_expression()
+{
+    nogdb::PropertyMapType propTypes;
+    propTypes.emplace("firstname", nogdb::PropertyType::TEXT);
+    propTypes.emplace("lastname", nogdb::PropertyType::TEXT);
+    propTypes.emplace("age", nogdb::PropertyType::UNSIGNED_INTEGER);
+    propTypes.emplace("gpa", nogdb::PropertyType::REAL);
+    propTypes.emplace("#awards", nogdb::PropertyType::UNSIGNED_INTEGER);
+    propTypes.emplace("balance", nogdb::PropertyType::INTEGER);
+    propTypes.emplace("status", nogdb::PropertyType::TEXT);
+
+    nogdb::Record r1 {}, r2 {}, r3 {};
+    r1.set("firstname", "hello")
+        .set("lastname", "world")
+        .set("age", 26U)
+        .set("gpa", 3.67)
+        .set("#awards", 3U)
+        .set("balance", -200);
+    r2.set("firstname", "james")
+        .set("lastname", "cookie")
+        .set("age", 56U)
+        .set("gpa", 2.89)
+        .set("#awards", 0U)
+        .set("balance", 100000);
+    r3.set("firstname", "jessica")
+        .set("lastname", "apollo")
+        .set("age", 18U)
+        .set("gpa", 3.24)
+        .set("#awards", 10U)
+        .set("balance", 5000);
+
+    auto baseCondition = nogdb::Condition("status").null();
+    auto multiCondition = baseCondition && nogdb::Condition("firstname").eq("test");
+    auto cmp1 = [](const nogdb::Record& record) {
+      return record.getIntU("age") > 30U && record.getInt("balance") > 0;
+    };
+    auto cmp2 = [](const nogdb::Record& record) {
+      return record.getIntU("age") <= 30U && record.getInt("balance") <= 0;
+    };
+
+    try {
+        assert((baseCondition && cmp1).execute(r1, propTypes) == false);
+        assert((baseCondition && cmp1).execute(r2, propTypes) == true);
+        assert((baseCondition && cmp1).execute(r3, propTypes) == false);
+        assert((baseCondition && cmp2).execute(r1, propTypes) == true);
+        assert((baseCondition && cmp2).execute(r2, propTypes) == false);
+        assert((baseCondition && cmp2).execute(r3, propTypes) == false);
+
+        assert((multiCondition || cmp1).execute(r1, propTypes) == false);
+        assert((multiCondition || cmp1).execute(r2, propTypes) == true);
+        assert((multiCondition || cmp1).execute(r3, propTypes) == false);
+        assert((multiCondition || cmp2).execute(r1, propTypes) == true);
+        assert((multiCondition || cmp2).execute(r2, propTypes) == false);
+        assert((multiCondition || cmp2).execute(r3, propTypes) == false);
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+}

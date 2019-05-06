@@ -665,19 +665,37 @@ ResultSet Context::traversePrivate(const TraverseArgs& args)
         auto func = args.direction + args.strategy;
         utils::string::toUpperCase(func);
         if (func == "INDEPTH_FIRST" || func == "INBREADTH_FIRST") {
-            return this->txn.traverseIn(args.root)
+            auto traverse = this->txn.traverseIn(*args.root.begin());
+            if (args.root.size() > 1) {
+                for(auto rdesc = std::next(args.root.begin()); rdesc != args.root.end(); ++rdesc) {
+                    traverse.addSource(*rdesc);
+                }
+            }
+            return traverse
                 .minDepth(args.minDepth)
                 .maxDepth(args.maxDepth)
                 .whereE(GraphFilter {}.only(args.filter))
                 .get();
         } else if (func == "OUTDEPTH_FIRST" || func == "OUTBREADTH_FIRST") {
-            return this->txn.traverseOut(args.root)
+            auto traverse = this->txn.traverseOut(*args.root.begin());
+            if (args.root.size() > 1) {
+                for(auto rdesc = std::next(args.root.begin()); rdesc != args.root.end(); ++rdesc) {
+                    traverse.addSource(*rdesc);
+                }
+            }
+            return traverse
                 .minDepth(args.minDepth)
                 .maxDepth(args.maxDepth)
                 .whereE(GraphFilter {}.only(args.filter))
                 .get();
         } else if (func == "ALLDEPTH_FIRST" || func == "ALLBREADTH_FIRST") {
-            return this->txn.traverse(args.root)
+            auto traverse = this->txn.traverse(*args.root.begin());
+            if (args.root.size() > 1) {
+                for(auto rdesc = std::next(args.root.begin()); rdesc != args.root.end(); ++rdesc) {
+                    traverse.addSource(*rdesc);
+                }
+            }
+            return traverse
                 .minDepth(args.minDepth)
                 .maxDepth(args.maxDepth)
                 .whereE(GraphFilter {}.only(args.filter))

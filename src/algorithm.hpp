@@ -23,6 +23,7 @@
 
 #include <functional>
 #include <queue>
+#include <set>
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
@@ -53,8 +54,7 @@ namespace algorithm {
         ~GraphTraversal() noexcept = delete;
 
         static ResultSet breadthFirstSearch(const Transaction& txn,
-            const ClassAccessInfo& classInfo,
-            const RecordDescriptor& recordDescriptor,
+            const std::set<RecordDescriptor>& recordDescriptors,
             unsigned int minDepth,
             unsigned int maxDepth,
             const Direction& direction,
@@ -63,36 +63,31 @@ namespace algorithm {
 
         static std::vector<RecordDescriptor>
         breadthFirstSearchRdesc(const Transaction& txn,
-            const ClassAccessInfo& classInfo,
-            const RecordDescriptor& recordDescriptor,
+            const std::set<RecordDescriptor>& recordDescriptors,
             unsigned int minDepth,
             unsigned int maxDepth,
             const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
 
-        static ResultSet depthFirstSearch(const Transaction& txn,
-            const ClassAccessInfo& classInfo,
-            const RecordDescriptor& recordDescriptor,
-            unsigned int minDepth,
-            unsigned int maxDepth,
-            const Direction& direction,
-            const GraphFilter& edgeFilter,
-            const GraphFilter& vertexFilter);
-
-        static std::vector<RecordDescriptor>
-        depthFirstSearchRdesc(const Transaction& txn,
-            const ClassAccessInfo& classInfo,
-            const RecordDescriptor& recordDescriptor,
-            unsigned int minDepth,
-            unsigned int maxDepth,
-            const adapter::relation::Direction& direction,
-            const GraphFilter& edgeFilter,
-            const GraphFilter& vertexFilter);
+//        static ResultSet depthFirstSearch(const Transaction& txn,
+//            const std::set<RecordDescriptor>& recordDescriptors,
+//            unsigned int minDepth,
+//            unsigned int maxDepth,
+//            const Direction& direction,
+//            const GraphFilter& edgeFilter,
+//            const GraphFilter& vertexFilter);
+//
+//        static std::vector<RecordDescriptor>
+//        depthFirstSearchRdesc(const Transaction& txn,
+//            const std::set<RecordDescriptor>& recordDescriptors,
+//            unsigned int minDepth,
+//            unsigned int maxDepth,
+//            const adapter::relation::Direction& direction,
+//            const GraphFilter& edgeFilter,
+//            const GraphFilter& vertexFilter);
 
         static ResultSet bfsShortestPath(const Transaction& txn,
-            const ClassAccessInfo& srcVertexClassInfo,
-            const ClassAccessInfo& dstVertexClassInfo,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
             const GraphFilter& edgeFilter,
@@ -100,8 +95,6 @@ namespace algorithm {
 
         static std::vector<RecordDescriptor>
         bfsShortestPathRdesc(const Transaction& txn,
-            const ClassAccessInfo& srcVertexClassInfo,
-            const ClassAccessInfo& dstVertexClassInfo,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
             const GraphFilter& edgeFilter,
