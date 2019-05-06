@@ -20,4 +20,4 @@
  *
  */
 
-#define NOGDB_LIB_VERSION   "1.1.0"
+#define NOGDB_LIB_VERSION   "1.2.0"
