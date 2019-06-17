@@ -398,35 +398,26 @@ class FatalError : public std::runtime_error {
 public:
     explicit FatalError(const Error& error)
         : std::runtime_error { error.func() + " in " + error.file() + ":" + std::to_string(error.line()) }
+        , _code{error.code()}
+        , _func{error.func()}
+        , _file{error.file()}
+        , _line{error.line()}
+        , _type{error.type()}
+        , _what{error.what()}
     {
-        switch (error.type()) {
-        case ErrorType::INTERNAL_ERROR:
-            _error = new InternalError(dynamic_cast<const InternalError&>(error));
-            break;
-        case ErrorType::STORAGE_ERROR:
-            _error = new StorageError(dynamic_cast<const StorageError&>(error));
-            break;
-        case ErrorType::GRAPH_ERROR:
-            _error = new GraphError(dynamic_cast<const GraphError&>(error));
-            break;
-        case ErrorType::CONTEXT_ERROR:
-            _error = new ContextError(dynamic_cast<const ContextError&>(error));
-            break;
-        case ErrorType::TXN_ERROR:
-            _error = new TxnError(dynamic_cast<const TxnError&>(error));
-            break;
-        case ErrorType::SQL_ERROR:
-            _error = new SQLError(dynamic_cast<const SQLError&>(error));
-            break;
-        default:
-            break;
-        }
+
     }
 
     FatalError(const FatalError& error) noexcept
-        : std::runtime_error { error._error->func() + " in " + error._error->file() + ":" + std::to_string(error._error->line()) }
-        , _error { error._error }
+        : std::runtime_error { error._func + " in " + error._file + ":" + std::to_string(error._line) }
+        , _code{error._code}
+        , _func{error._func}
+        , _file{error._file}
+        , _line{error._line}
+        , _type{error._type}
+        , _what{error._what}
     {
+
     }
 
     FatalError& operator=(const FatalError& error) noexcept
@@ -439,22 +430,20 @@ public:
         return *this;
     }
 
-    virtual ~FatalError() noexcept
-    {
-        if (_error) {
-            delete _error;
-            _error = nullptr;
-        }
-    }
+    virtual ~FatalError() noexcept = default;
 
     virtual const char* what() const noexcept
     {
-        auto what = std::string { _error->what() };
-        return (std::string { "(FATAL) " } + what).c_str();
+        return ("(FATAL) " + _what).c_str();
     }
 
 private:
-    const Error* _error;
+  const int _code;
+  const std::string _func {};
+  const std::string _file {};
+  const int _line;
+  const ErrorType _type;
+  const std::string _what {};
 };
 
 #define NOGDB_INTERNAL_ERROR(error) nogdb::InternalError(error, __FUNCTION__, __FILE__, __LINE__, nogdb::ErrorType::INTERNAL_ERROR)
