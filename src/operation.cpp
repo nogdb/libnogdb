@@ -55,7 +55,7 @@ const RecordDescriptor Transaction::addVertex(const std::string& className, cons
     try {
         auto vertexDataRecord = DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
         auto positionId = PositionId { 0 };
-        if (_txnCtx->isEnableVersion()) {
+        if (_txnCtx->isVersionEnabled()) {
             auto newRecordBlob = RecordParser::parseVertexRecordWithVersion(recordBlob, VersionId { 1 });
             positionId = vertexDataRecord.insert(newRecordBlob);
             _updatedRecords.insert(RecordId { vertexClassInfo.id, positionId });
@@ -93,7 +93,7 @@ const RecordDescriptor Transaction::addEdge(const std::string& className,
         auto vertexBlob = RecordParser::parseEdgeVertexSrcDst(
             srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
         auto positionId = PositionId { 0 };
-        if (_txnCtx->isEnableVersion()) {
+        if (_txnCtx->isVersionEnabled()) {
             auto newRecordBlob = RecordParser::parseEdgeRecordWithVersion(vertexBlob, recordBlob, VersionId { 1 });
             positionId = edgeDataRecord.insert(newRecordBlob);
             _updatedRecords.insert(RecordId { edgeClassInfo.id, positionId });
@@ -125,16 +125,16 @@ void Transaction::update(const RecordDescriptor& recordDescriptor, const Record&
     try {
         auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto existingRecord = RecordParser::parseRawData(
-            recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
+            recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isVersionEnabled());
 
         // insert an updated record
         auto updateRecordBlob = Blob {};
-        if (_txnCtx->isEnableVersion()) {
+        if (_txnCtx->isVersionEnabled()) {
             if (_updatedRecords.find(recordDescriptor.rid) == _updatedRecords.cend()) {
                 auto versionId = RecordParser::parseRawDataVersionId(recordResult);
                 if (classInfo.type == ClassType::EDGE) {
                     auto vertexBlob = RecordParser::parseEdgeRawDataVertexSrcDstAsBlob(
-                        recordResult, _txnCtx->isEnableVersion());
+                        recordResult, _txnCtx->isVersionEnabled());
                     updateRecordBlob = RecordParser::parseEdgeRecordWithVersion(
                         vertexBlob, newRecordBlob, versionId + 1);
                 } else {
@@ -174,14 +174,14 @@ void Transaction::updateSrc(const RecordDescriptor& recordDescriptor,
     auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
+        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isVersionEnabled());
         _interface->graph()->updateSrcRel(
             recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
         auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
         auto updateEdgeRecordBlob = RecordParser::parseOnlyUpdateSrcVertex(
-            recordResult, newSrcVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
-        if (_txnCtx->isEnableVersion()) {
+            recordResult, newSrcVertexRecordDescriptor.rid, _txnCtx->isVersionEnabled());
+        if (_txnCtx->isVersionEnabled()) {
             // update version of old src vertex
             if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
                 auto oldSrcVertexDataRecord = DataRecord(_txnBase, srcDstVertex.first.first, ClassType::VERTEX);
@@ -227,14 +227,14 @@ void Transaction::updateDst(const RecordDescriptor& recordDescriptor,
     auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
-        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isEnableVersion());
+        auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isVersionEnabled());
         _interface->graph()->updateDstRel(
             recordDescriptor.rid, newDstVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
         auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             srcDstVertex.first, newDstVertexRecordDescriptor.rid);
         auto updateEdgeRecordBlob = RecordParser::parseOnlyUpdateDstVertex(
-            recordResult, newDstVertexRecordDescriptor.rid, _txnCtx->isEnableVersion());
-        if (_txnCtx->isEnableVersion()) {
+            recordResult, newDstVertexRecordDescriptor.rid, _txnCtx->isVersionEnabled());
+        if (_txnCtx->isVersionEnabled()) {
             // update version of old dst vertex
             if (_updatedRecords.find(srcDstVertex.second) == _updatedRecords.cend()) {
                 auto oldDstVertexDataRecord = DataRecord(_txnBase, srcDstVertex.second.first, ClassType::VERTEX);
@@ -281,13 +281,13 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
         auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
         auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto record = RecordParser::parseRawData(
-            recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isEnableVersion());
+            recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isVersionEnabled());
 
         if (classInfo.type == ClassType::EDGE) {
             auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
-                recordResult, _txnCtx->isEnableVersion());
+                recordResult, _txnCtx->isVersionEnabled());
             _interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
-            if (_txnCtx->isEnableVersion()) {
+            if (_txnCtx->isVersionEnabled()) {
                 // update version of src vertex
                 if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
                     auto srcVertexDataRecord = DataRecord(
@@ -311,7 +311,7 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
             }
         } else {
             auto neighbours = _interface->graph()->removeRelFromVertex(recordDescriptor.rid);
-            if (_txnCtx->isEnableVersion()) {
+            if (_txnCtx->isVersionEnabled()) {
                 for (const auto& neighbour : neighbours) {
                     if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
                         auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
@@ -352,9 +352,9 @@ void Transaction::removeAll(const std::string& className)
                 auto recordId = RecordId { classInfo.id, positionId };
                 if (classInfo.type == ClassType::EDGE) {
                     auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
-                        result, _txnCtx->isEnableVersion());
+                        result, _txnCtx->isVersionEnabled());
                     _interface->graph()->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
-                    if (_txnCtx->isEnableVersion()) {
+                    if (_txnCtx->isVersionEnabled()) {
                         // update version of src vertex
                         if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
                             auto srcVertexDataRecord = DataRecord(
@@ -380,7 +380,7 @@ void Transaction::removeAll(const std::string& className)
                     }
                 } else {
                     auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
-                    if (_txnCtx->isEnableVersion()) {
+                    if (_txnCtx->isVersionEnabled()) {
                         for (const auto& neighbour : neighbours) {
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
                                 auto neighbourDataRecord = DataRecord(

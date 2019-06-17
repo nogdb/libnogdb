@@ -35,9 +35,9 @@
 namespace nogdb {
 
 struct ContextSetting {
-    unsigned int _maxDB {};
-    unsigned long _maxDBSize {};
-    bool _enableVersion {};
+    unsigned int _maxDb {};
+    unsigned long _maxDbSize {};
+    bool _versionEnabled {};
 };
 
 class Context;
@@ -48,9 +48,9 @@ public:
 
     ~ContextInitializer() = default;
 
-    ContextInitializer& setMaxDB(unsigned int maxDbNum) noexcept;
+    ContextInitializer& setMaxDb(unsigned int maxDbNum) noexcept;
 
-    ContextInitializer& setMaxDBSize(unsigned long maxDbSize) noexcept;
+    ContextInitializer& setMaxDbSize(unsigned long maxDbSize) noexcept;
 
     ContextInitializer& enableVersion() noexcept;
 
@@ -81,13 +81,13 @@ public:
 
     Context& operator=(Context&& ctx) noexcept;
 
-    std::string getDBPath() const { return _dbPath; }
+    std::string getDbPath() const { return _dbPath; }
 
-    unsigned int getMaxDB() const { return _settings._maxDB; }
+    unsigned int getMaxDb() const { return _settings._maxDb; }
 
-    unsigned long getMaxDBSize() const { return _settings._maxDBSize; }
+    unsigned long getMaxDbSize() const { return _settings._maxDbSize; }
 
-    bool isEnableVersion() const { return _settings._enableVersion; }
+    bool isVersionEnabled() const { return _settings._versionEnabled; }
 
     Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 

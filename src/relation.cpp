@@ -129,7 +129,7 @@ namespace relation {
         };
         auto edgeDataRecord = _edgeDataRecordCache.get(recordId.first, callback);
         auto rawData = edgeDataRecord->getResult(recordId.second);
-        return RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isEnableVersion());
+        return RecordParser::parseEdgeRawDataVertexSrcDst(rawData, _txn->_txnCtx->isVersionEnabled());
     }
 }
 }

@@ -793,7 +793,7 @@ void test_invalid_ctx()
 
 void test_multiple_ctx()
 {
-    auto dbPath = ctx->getDBPath();
+    auto dbPath = ctx->getDbPath();
 
     try {
         auto ctx1 = new nogdb::Context { dbPath };

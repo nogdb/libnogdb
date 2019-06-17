@@ -45,26 +45,26 @@ std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying = st
 ContextInitializer::ContextInitializer(const std::string& dbPath)
     : _dbPath { dbPath }
 {
-    _settings._maxDB = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
-    _settings._maxDBSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
-    _settings._enableVersion = false;
+    _settings._maxDb = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
+    _settings._maxDbSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
+    _settings._versionEnabled = false;
 }
 
-ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDbNum) noexcept
+ContextInitializer& ContextInitializer::setMaxDb(unsigned int maxDbNum) noexcept
 {
-    _settings._maxDB = maxDbNum;
+    _settings._maxDb = maxDbNum;
     return *this;
 }
 
-ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDbSize) noexcept
+ContextInitializer& ContextInitializer::setMaxDbSize(unsigned long maxDbSize) noexcept
 {
-    _settings._maxDBSize = maxDbSize;
+    _settings._maxDbSize = maxDbSize;
     return *this;
 }
 
 ContextInitializer& ContextInitializer::enableVersion() noexcept
 {
-    _settings._enableVersion = true;
+    _settings._versionEnabled = true;
     return *this;
 }
 
@@ -100,7 +100,7 @@ Context::Context(const std::string& dbPath)
             if (foundContext == _underlying.cend()) {
                 auto instance = LMDBInstance {};
                 instance._handler = new storage_engine::LMDBEnv(
-                    _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+                    _dbPath, _settings._maxDb, _settings._maxDbSize, DEFAULT_NOGDB_MAX_READERS);
                 instance._refCount = 1;
                 _underlying.emplace(dbPath, instance);
                 _envHandler = instance._handler;
@@ -119,7 +119,7 @@ Context::Context(const std::string& dbPath, const ContextSetting& settings)
     if (foundContext == _underlying.cend()) {
         auto instance = LMDBInstance {};
         instance._handler = new storage_engine::LMDBEnv(
-            _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+            _dbPath, _settings._maxDb, _settings._maxDbSize, DEFAULT_NOGDB_MAX_READERS);
         instance._refCount = 1;
         _underlying.emplace(dbPath, instance);
         _envHandler = instance._handler;

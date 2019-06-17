@@ -36,7 +36,7 @@ namespace datarecord {
     {
         auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto result = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type).getResult(recordDescriptor.rid.second);
-        return RecordParser::parseRawData(result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+        return RecordParser::parseRawData(result, propertyInfos, classInfo.type, _txn->_txnCtx->isVersionEnabled());
     }
 
     Record DataRecordInterface::getRecordWithBasicInfo(const ClassAccessInfo& classInfo,
@@ -45,7 +45,8 @@ namespace datarecord {
         auto propertyInfos = _txn->_interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
         auto result = DataRecord(_txn->_txnBase, classInfo.id, classInfo.type).getResult(recordDescriptor.rid.second);
         return RecordParser::parseRawDataWithBasicInfo(
-            classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+            classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type,
+            _txn->_txnCtx->isVersionEnabled());
     }
 
     ResultSet DataRecordInterface::getResultSet(const ClassAccessInfo& classInfo,
@@ -57,7 +58,8 @@ namespace datarecord {
         for (const auto& recordDescriptor : recordDescriptors) {
             auto result = dataRecord.getResult(recordDescriptor.rid.second);
             auto record = RecordParser::parseRawDataWithBasicInfo(
-                classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                classInfo.name, recordDescriptor.rid, result, propertyInfos, classInfo.type,
+                _txn->_txnCtx->isVersionEnabled());
             resultSet.emplace_back(Result { recordDescriptor, record });
         }
         return resultSet;
@@ -72,7 +74,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto const record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, RecordId { classInfo.id, positionId },
-                    result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 resultSet.emplace_back(Result { RecordDescriptor { classInfo.id, positionId }, record });
             };
         dataRecord.resultSetIter(callback);
@@ -115,7 +117,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
                 }
@@ -136,7 +138,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
                 }
@@ -157,7 +159,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (RecordCompare::compareRecordByCondition(record, propertyType, condition)) {
                     ++count;
                 }
@@ -182,7 +184,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (multiCondition.execute(record, propertyTypes)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
                 }
@@ -207,7 +209,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (multiCondition.execute(record, propertyTypes)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
                 }
@@ -232,7 +234,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if (multiCondition.execute(record, propertyTypes)) {
                     ++count;
                 }
@@ -252,7 +254,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if ((*condition)(record)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
                 }
@@ -272,7 +274,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if ((*condition)(record)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
                 }
@@ -292,7 +294,7 @@ namespace datarecord {
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
-                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isEnableVersion());
+                    classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, _txn->_txnCtx->isVersionEnabled());
                 if ((*condition)(record)) {
                     ++count;
                 }

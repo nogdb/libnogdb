@@ -21,8 +21,8 @@ After initializing the database context, the database connection can be normally
 ------------
 // only required at the first time of database initialization
 auto ctxi = nogdb::ContextInitializer{"mygraph.db"};
-ctxi.setMaxDB(128);
-ctxi.setMaxDBSize(4294967296UL);
+ctxi.setMaxDb(128);
+ctxi.setMaxDbSize(4294967296UL);
 ctxi.enableVersion(); // enable database version tracking
 
 auto ctx = ctxi.init(); // create and return database context

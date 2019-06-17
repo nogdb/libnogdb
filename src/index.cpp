@@ -597,7 +597,7 @@ namespace index {
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto const record = RecordParser::parseRawData(
-                    result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
+                    result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isVersionEnabled());
                 auto value = record.get(propertyInfo.name).toText();
                 if (!value.empty()) {
                     auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));

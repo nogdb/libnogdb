@@ -125,9 +125,9 @@ void Transaction::dropClass(const std::string& className)
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto recordId = RecordId { foundClass.id, positionId };
                 if (foundClass.type == ClassType::EDGE) {
-                    auto vertices = RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
+                    auto vertices = RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isVersionEnabled());
                     _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
-                    if (_txnCtx->isEnableVersion()) {
+                    if (_txnCtx->isVersionEnabled()) {
                         // update version of src vertex
                         if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
                             auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
@@ -151,7 +151,7 @@ void Transaction::dropClass(const std::string& className)
                     }
                 } else {
                     auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
-                    if (_txnCtx->isEnableVersion()) {
+                    if (_txnCtx->isVersionEnabled()) {
                         for (const auto& neighbour : neighbours) {
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
                                 auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
