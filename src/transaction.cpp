@@ -150,17 +150,25 @@ Transaction::~Transaction() noexcept
 }
 
 Transaction::Transaction(Transaction&& txn) noexcept
+    : _txnMode { txn._txnMode }
+    , _txnCtx { txn._txnCtx }
+    , _txnBase { txn._txnBase }
+    , _adapter { txn._adapter }
+    , _interface { txn._interface }
 {
-    *this = std::move(txn);
+    txn._txnCtx = nullptr;
+    txn._txnBase = nullptr;
+    txn._adapter = nullptr;
+    txn._interface = nullptr;
 }
 
 Transaction& Transaction::operator=(Transaction&& txn) noexcept
 {
     if (this != &txn) {
-        try {
-            rollback();
-        } catch (...) {
-        }
+        delete _txnBase;
+        delete _adapter;
+        _interface->destroy();
+        delete _interface;
 
         _txnCtx = txn._txnCtx;
         _txnMode = txn._txnMode;
@@ -171,7 +179,6 @@ Transaction& Transaction::operator=(Transaction&& txn) noexcept
         txn._txnCtx = nullptr;
         txn._txnBase = nullptr;
         txn._adapter = nullptr;
-        txn._interface->destroy();
         delete txn._interface;
         txn._interface = nullptr;
     }

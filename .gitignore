@@ -3,6 +3,7 @@
 *.so
 *.a
 *.o
+*.out
 runtest
 runtest_*
 boost_*
@@ -63,6 +64,3 @@ functest_txn
 *_debug_address
 *_enable_version
 gtest_installer.sh
-example
-example/*
-**/example/*

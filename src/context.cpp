@@ -113,7 +113,7 @@ Context::Context(const std::string& dbPath)
 }
 
 Context::Context(const std::string& dbPath, const ContextSetting& settings)
-    : _dbPath { dbPath }
+    : _dbPath { dbPath }, _settings { settings }
 {
     auto foundContext = _underlying.find(dbPath);
     if (foundContext == _underlying.cend()) {
