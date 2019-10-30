@@ -358,9 +358,9 @@ namespace storage_engine {
             TransactionHandler* _handle { nullptr };
         };
 
-        class Dbi {
+        class DBi {
         public:
-            static Dbi open(TransactionHandler* const txnHandler,
+            static DBi open(TransactionHandler* const txnHandler,
                 const std::string& dbName,
                 bool numericKey = false,
                 bool unique = true)
@@ -370,21 +370,21 @@ namespace storage_engine {
                 if (auto error = mdb_open(txnHandler, dbName.c_str(), MDB_CREATE | flags, &dbHandler)) {
                     throw NOGDB_STORAGE_ERROR(error);
                 } else {
-                    return Dbi { txnHandler, dbHandler };
+                    return DBi { txnHandler, dbHandler };
                 }
             }
 
-            Dbi() = default;
+            DBi() = default;
 
-            Dbi(TransactionHandler* const txnHandler, const DBHandler handle) noexcept
+            DBi(TransactionHandler* const txnHandler, const DBHandler handle) noexcept
                 : _handle { handle }
                 , _txn { txnHandler }
             {
             }
 
-            ~Dbi() noexcept {}
+            ~DBi() noexcept {}
 
-            Dbi(Dbi&& other) noexcept
+            DBi(DBi&& other) noexcept
             {
                 using std::swap;
                 swap(_handle, other._handle);
@@ -392,7 +392,7 @@ namespace storage_engine {
                 other._txn = nullptr;
             }
 
-            Dbi& operator=(Dbi&& other) noexcept
+            DBi& operator=(DBi&& other) noexcept
             {
                 if (this != &other) {
                     using std::swap;
@@ -439,7 +439,7 @@ namespace storage_engine {
                 }
             }
 
-            Dbi& setCompareFunc(MDB_cmp_func* const cmp = nullptr)
+            DBi& setCompareFunc(MDB_cmp_func* const cmp = nullptr)
             {
                 if (auto error = mdb_set_compare(_txn, _handle, cmp)) {
                     throw NOGDB_STORAGE_ERROR(error);
@@ -447,7 +447,7 @@ namespace storage_engine {
                 return *this;
             }
 
-            Dbi& setDupSortFunc(MDB_cmp_func* const cmp = nullptr)
+            DBi& setDupSortFunc(MDB_cmp_func* const cmp = nullptr)
             {
                 if (auto error = mdb_set_dupsort(_txn, _handle, cmp)) {
                     throw NOGDB_STORAGE_ERROR(error);

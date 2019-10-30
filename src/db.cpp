@@ -33,12 +33,12 @@ namespace nogdb {
 
 using adapter::schema::PropertyAccessInfo;
 
-const DbInfo Transaction::getDbInfo() const
+const DBInfo Transaction::getDBInfo() const
 {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto dbInfo = DbInfo {};
+    auto dbInfo = DBInfo {};
     dbInfo.maxClassId = _adapter->dbInfo()->getMaxClassId();
     dbInfo.maxPropertyId = _adapter->dbInfo()->getMaxPropertyId();
     dbInfo.maxIndexId = _adapter->dbInfo()->getMaxIndexId();

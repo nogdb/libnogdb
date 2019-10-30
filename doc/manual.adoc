@@ -21,8 +21,8 @@ After initializing the database context, the database connection can be normally
 ------------
 // only required at the first time of database initialization
 auto ctxi = nogdb::ContextInitializer{"mygraph.db"};
-ctxi.setMaxDb(128);
-ctxi.setMaxDbSize(4294967296UL);
+ctxi.setMaxDB(128);
+ctxi.setMaxDBSize(4294967296UL);
 ctxi.enableVersion(); // enable database version tracking
 
 auto ctx = ctxi.init(); // create and return database context
@@ -33,7 +33,7 @@ auto ctx = new nogdb::Context{"mygraph.db"};
 
 == Database Information
 
-An object `nogdb::DbInfo` contains all database metadata and associated information in a database context which consists of the following attributes:
+An object `nogdb::DBInfo` contains all database metadata and associated information in a database context which consists of the following attributes:
 
 [source,cpp]
 ------------
@@ -44,7 +44,7 @@ namespace nogdb {
     typedef uint32_t PositionId;
     typedef uint32_t IndexId;
 
-    struct DbInfo {
+    struct DBInfo {
         std::string dbPath;
         ClassId maxClassId;
         ClassId numClass;
@@ -58,7 +58,7 @@ namespace nogdb {
 
 // tag::b-col-indv[]
 [cols="1,2,3", options="header"]
-.Attributes of `nogdb::DbInfo`
+.Attributes of `nogdb::DBInfo`
 |===
 |Name
 |Type
@@ -1116,14 +1116,14 @@ txn.commit();
 ------------
 nogdb::Transaction txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
 
-const nogdb::DbInfo dbInfo = txn.getDbInfo();
+const nogdb::DBInfo dbInfo = txn.getDBInfo();
 
 txn.rollback();
 ------------
 * Description:
 ** To retrieve all database (metadata) information.
 * Returns:
-** `nogdb::DbInfo` - A database information.
+** `nogdb::DBInfo` - A database information.
 * Exceptions:
 ** `NOGDB_TXN_COMPLETED` - A transaction is already completed.
 

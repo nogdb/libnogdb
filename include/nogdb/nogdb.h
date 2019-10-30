@@ -34,12 +34,6 @@
 
 namespace nogdb {
 
-struct ContextSetting {
-    unsigned int _maxDb {};
-    unsigned long _maxDbSize {};
-    bool _versionEnabled {};
-};
-
 class Context;
 
 class ContextInitializer {
@@ -48,9 +42,9 @@ public:
 
     ~ContextInitializer() = default;
 
-    ContextInitializer& setMaxDb(unsigned int maxDbNum) noexcept;
+    ContextInitializer& setMaxDB(unsigned int maxDBNum) noexcept;
 
-    ContextInitializer& setMaxDbSize(unsigned long maxDbSize) noexcept;
+    ContextInitializer& setMaxDBSize(unsigned long maxDBSize) noexcept;
 
     ContextInitializer& enableVersion() noexcept;
 
@@ -58,7 +52,9 @@ public:
 
 private:
     std::string _dbPath {};
-    ContextSetting _settings {};
+    unsigned int _maxDB {};
+    unsigned long _maxDBSize {};
+    bool _versionEnabled {};
 };
 
 class Context {
@@ -81,21 +77,24 @@ public:
 
     Context& operator=(Context&& ctx) noexcept;
 
-    std::string getDbPath() const { return _dbPath; }
+    std::string getDBPath() const { return _dbPath; }
 
-    unsigned int getMaxDb() const { return _settings._maxDb; }
+    unsigned int getMaxDB() const { return _maxDB; }
 
-    unsigned long getMaxDbSize() const { return _settings._maxDbSize; }
+    unsigned long getMaxDBSize() const { return _maxDBSize; }
 
-    bool isVersionEnabled() const { return _settings._versionEnabled; }
+    bool isVersionEnabled() const { return _versionEnabled; }
 
     Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 
 private:
-    Context(const std::string& dbPath, const ContextSetting& settings);
+    Context(const std::string& dbPath, unsigned int maxDB, unsigned long maxDBSize, bool versionEnabled);
 
     std::string _dbPath {};
-    ContextSetting _settings {};
+    unsigned int _maxDB {};
+    unsigned long _maxDBSize {};
+    bool _versionEnabled {};
+
     storage_engine::LMDBEnv* _envHandler;
 
     struct LMDBInstance {
@@ -168,7 +167,7 @@ public:
 
     void dropIndex(const std::string& className, const std::string& propertyName);
 
-    const DbInfo getDbInfo() const;
+    const DBInfo getDBInfo() const;
 
     const std::vector<ClassDescriptor> getClasses() const;
 

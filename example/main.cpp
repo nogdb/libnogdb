@@ -5,7 +5,6 @@
  *
  */
 
-#include <iostream>
 #include <unistd.h>
 
 #include <nogdb/nogdb.h>

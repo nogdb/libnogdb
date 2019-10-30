@@ -29,7 +29,7 @@ TEST_F(LMDBBasicOperations, put_get_string_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_string_string", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_string_string", false, true);
     dbi.put(std::string { "hello1" }, std::string { "world1" });
     dbi.put(std::string { "hello2" }, std::string { "world2" });
     dbi.put(std::string { "hello3" }, std::string { "world3" });
@@ -56,7 +56,7 @@ TEST_F(LMDBBasicOperations, put_get_numeric_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_numeric_string", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_numeric_string", true, true);
     dbi.put(1UL, std::string { "world1" });
     dbi.put(2UL, std::string { "world2" });
     dbi.put(3UL, std::string { "world3" });
@@ -93,7 +93,7 @@ TEST_F(LMDBBasicOperations, put_get_decimal_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_decimal_string", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_decimal_string", true, true);
     dbi.put(1.1, std::string { "world1" });
     dbi.put(-2.2, std::string { "world2" });
     dbi.put(3.3, std::string { "world3" });
@@ -151,7 +151,7 @@ TEST_F(LMDBBasicOperations, put_get_string_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_string_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_string_blob", false, true);
     dbi.put(std::string { "hello" }, blob);
 
     auto res = dbi.get(std::string { "hello" });
@@ -172,7 +172,7 @@ TEST_F(LMDBBasicOperations, put_get_numeric_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_numeric_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_numeric_blob", false, true);
     dbi.put(1UL, blob);
 
     auto res = dbi.get(1UL);
@@ -193,7 +193,7 @@ TEST_F(LMDBBasicOperations, put_get_decimal_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_decimal_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_decimal_blob", false, true);
     dbi.put(-123.4567, blob);
 
     auto res = dbi.get(-123.4567);
@@ -213,7 +213,7 @@ TEST_F(LMDBBasicOperations, put_get_string_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_string_numeric", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_string_numeric", false, true);
     dbi.put(std::string { "hello1" }, 100UL);
     dbi.put(std::string { "hello2" }, 200UL);
     dbi.put(std::string { "hello3" }, 300UL);
@@ -240,7 +240,7 @@ TEST_F(LMDBBasicOperations, put_get_numeric_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_numeric_numeric", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_numeric_numeric", true, true);
     dbi.put(1UL, 100UL);
     dbi.put(2UL, 200UL);
     dbi.put(3UL, 300UL);
@@ -267,7 +267,7 @@ TEST_F(LMDBBasicOperations, put_get_decimal_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_numeric_numeric", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_numeric_numeric", true, true);
     dbi.put(1.1, 100UL);
     dbi.put(-2.2, 200UL);
     dbi.put(3.3, 300UL);
@@ -294,7 +294,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_string", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_string", false, true);
     dbi.put(std::string { "hello1" }, std::string { "world1" });
     dbi.put(std::string { "hello2" }, std::string { "world2" });
     dbi.put(std::string { "hello3" }, std::string { "world3" });
@@ -321,7 +321,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_string", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_string", true, true);
     dbi.put(1UL, std::string { "world1" });
     dbi.put(2UL, std::string { "world2" });
     dbi.put(3UL, std::string { "world3" });
@@ -355,7 +355,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_string)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_string", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_string", true, true);
     dbi.put(1.1, std::string { "world1" });
     dbi.put(-2.2, std::string { "world2" });
     dbi.put(3.3, std::string { "world3" });
@@ -390,7 +390,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_blob", false, true);
     dbi.put(std::string { "hello" }, blob);
 
     dbi.del(std::string { "hello" });
@@ -405,7 +405,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_blob", false, true);
     dbi.put(1UL, blob);
 
     dbi.del(1UL);
@@ -420,7 +420,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_blob)
     beforeEach();
 
     auto blob = setBlob("world", 128);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_blob", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_blob", false, true);
     dbi.put(-123.4567, blob);
 
     dbi.del(-123.4567);
@@ -434,7 +434,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_numeric", false, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_numeric", false, true);
     dbi.put(std::string { "hello1" }, 100UL);
     dbi.put(std::string { "hello2" }, 200UL);
     dbi.put(std::string { "hello3" }, 300UL);
@@ -458,7 +458,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_numeric", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_numeric", true, true);
     dbi.put(1UL, 100UL);
     dbi.put(2UL, 200UL);
     dbi.put(3UL, 300UL);
@@ -482,7 +482,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_numeric)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_numeric", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_numeric", true, true);
     dbi.put(1.1, 100UL);
     dbi.put(-2.2, 200UL);
     dbi.put(3.3, 300UL);
@@ -506,7 +506,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_string_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_string_dup", false, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_string_dup", false, false);
     dbi.put(std::string { "hello1" }, std::string { "world1" });
     dbi.put(std::string { "hello2" }, std::string { "world2" });
     dbi.put(std::string { "hello1" }, std::string { "world3" });
@@ -527,7 +527,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_string_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_string_dup", true, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_string_dup", true, false);
     dbi.put(1UL, std::string { "world1" });
     dbi.put(2UL, std::string { "world2" });
     dbi.put(1UL, std::string { "world3" });
@@ -548,7 +548,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_string_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_string_dup", true, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_string_dup", true, false);
     dbi.put(1.1, std::string { "world1" });
     dbi.put(-2.2, std::string { "world2" });
     dbi.put(1.1, std::string { "world3" });
@@ -571,7 +571,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_blob_dup)
 
     auto blob1 = setBlob("world1", 128);
     auto blob2 = setBlob("world2", 256);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_blob_dup", false, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_blob_dup", false, false);
     dbi.put(std::string { "hello" }, blob1);
     dbi.put(std::string { "hello" }, blob2);
 
@@ -588,7 +588,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_blob_dup)
 
     auto blob1 = setBlob("world1", 128);
     auto blob2 = setBlob("world2", 256);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_blob_dup", true, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_blob_dup", true, false);
     dbi.put(1UL, blob1);
     dbi.put(1UL, blob2);
 
@@ -606,7 +606,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_blob_dup)
 
     auto blob1 = setBlob("world1", 128);
     auto blob2 = setBlob("world2", 256);
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_blob_dup", true, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_blob_dup", true, false);
     dbi.put(1.234, blob1);
     dbi.put(1.234, blob2);
 
@@ -622,7 +622,7 @@ TEST_F(LMDBBasicOperations, put_get_del_string_numeric_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_string_numeric_dup", false, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_string_numeric_dup", false, false);
     dbi.put(std::string { "hello1" }, 100UL);
     dbi.put(std::string { "hello1" }, 200UL);
     dbi.put(std::string { "hello1" }, 300UL);
@@ -638,7 +638,7 @@ TEST_F(LMDBBasicOperations, put_get_del_numeric_numeric_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_numeric_numeric_dup", true, false);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_numeric_numeric_dup", true, false);
     dbi.put(1UL, 100UL);
     dbi.put(1UL, 200UL);
     dbi.put(1UL, 300UL);
@@ -654,7 +654,7 @@ TEST_F(LMDBBasicOperations, put_get_del_decimal_numeric_dup)
 {
     beforeEach();
 
-    auto dbi = txn->openDbi("LMDBBasicOperations::put_get_del_decimal_numeric_dup", true, true);
+    auto dbi = txn->openDBi("LMDBBasicOperations::put_get_del_decimal_numeric_dup", true, true);
     dbi.put(-1.1, 100UL);
     dbi.put(-1.1, 200UL);
     dbi.put(-1.1, 300UL);

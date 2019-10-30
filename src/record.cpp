@@ -21,7 +21,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <iostream>
 
 #include "constant.hpp"
 #include "validate.hpp"

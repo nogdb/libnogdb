@@ -19,7 +19,6 @@
  *
  */
 
-#include <iostream> // for debugging
 #include <memory>
 
 #include "datarecord.hpp"

@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -45,9 +44,9 @@ namespace adapter {
         using namespace utils::string;
 
         /**
-       * Raw record format in lmdb data storage:
-       * {name<string>} -> {id<uint16>}{superClassId<uint16>}{type<char>}
-       */
+         * Raw record format in lmdb data storage:
+         * {name<string>} -> {id<uint16>}{superClassId<uint16>}{type<char>}
+         */
         struct ClassAccessInfo {
             ClassAccessInfo() = default;
 

@@ -45,7 +45,7 @@ namespace storage_engine {
                 , _append { append }
                 , _overwrite { overwrite }
             {
-                _dbi = txn->openDbi(dbName, numericKey, unique);
+                _dbi = txn->openDBi(dbName, numericKey, unique);
             }
 
             virtual ~LMDBKeyValAccess() noexcept = default;
@@ -125,7 +125,7 @@ namespace storage_engine {
 
         private:
             const LMDBTxn* _txn;
-            lmdb::Dbi _dbi {};
+            lmdb::DBi _dbi {};
             bool _append { false };
             bool _overwrite { true };
         };

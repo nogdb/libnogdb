@@ -27,7 +27,7 @@ TEST_F(LMDBCursorOperations, put_find_get_string_string)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_string_string", false, true);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_string_string", false, true);
         dbi.put(std::string { "hello1" }, std::string { "world1" });
         dbi.put(std::string { "hello2" }, std::string { "world2" });
         dbi.put(std::string { "hello3" }, std::string { "world3" });
@@ -125,7 +125,7 @@ TEST_F(LMDBCursorOperations, put_find_get_uint64_string)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_uint64_string", true, true);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_uint64_string", true, true);
         dbi.put(1ULL, std::string { "world1" });
         dbi.put(2ULL, std::string { "world2" });
         dbi.put(3ULL, std::string { "world3" });
@@ -223,7 +223,7 @@ TEST_F(LMDBCursorOperations, put_find_get_int64_string)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_int64_string", true, true);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_int64_string", true, true);
         dbi.put(-50LL, std::string { "world1" });
         dbi.put(-40LL, std::string { "world2" });
         dbi.put(-30LL, std::string { "world3" });
@@ -321,7 +321,7 @@ TEST_F(LMDBCursorOperations, put_find_get_decimal_string)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_decimal_string", true, true);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_decimal_string", true, true);
         dbi.put(1.1, std::string { "world1" });
         dbi.put(2.2, std::string { "world2" });
         dbi.put(3.3, std::string { "world3" });
@@ -419,7 +419,7 @@ TEST_F(LMDBCursorOperations, put_find_get_string_string_dup)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_string_string_dup", false, false);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_string_string_dup", false, false);
         dbi.put(std::string { "hello1" }, std::string { "world1-1" });
         dbi.put(std::string { "hello1" }, std::string { "world1-2" });
         dbi.put(std::string { "hello2" }, std::string { "world2-1" });
@@ -528,7 +528,7 @@ TEST_F(LMDBCursorOperations, put_find_get_uint64_string_dup)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_uint64_string_dup", true, false);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_uint64_string_dup", true, false);
         dbi.put(1ULL, std::string { "world1-1" });
         dbi.put(1ULL, std::string { "world1-2" });
         dbi.put(2ULL, std::string { "world2-1" });
@@ -647,7 +647,7 @@ TEST_F(LMDBCursorOperations, put_find_get_int64_string_dup)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_int64_string_dup", true, false);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_int64_string_dup", true, false);
         dbi.put(-30LL, std::string { "world1-1" });
         dbi.put(-30LL, std::string { "world1-2" });
         dbi.put(-20LL, std::string { "world2-1" });
@@ -766,7 +766,7 @@ TEST_F(LMDBCursorOperations, put_find_get_decimal_string_dup)
 {
     beforeEach();
     {
-        auto dbi = txn->openDbi("LMDBCursorOperations::put_find_get_decimal_string_dup", true, false);
+        auto dbi = txn->openDBi("LMDBCursorOperations::put_find_get_decimal_string_dup", true, false);
         dbi.put(1.1, std::string { "world1-1" });
         dbi.put(1.1, std::string { "world1-2" });
         dbi.put(2.2, std::string { "world2-1" });

@@ -134,7 +134,7 @@ typedef uint32_t IndexId;
 typedef uint64_t VersionId;
 typedef std::map<std::string, PropertyType> PropertyMapType;
 
-struct DbInfo {
+struct DBInfo {
     std::string dbPath;
     ClassId maxClassId;
     ClassId numClass;
