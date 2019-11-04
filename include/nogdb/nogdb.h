@@ -60,7 +60,6 @@ private:
 class Context {
 public:
     friend class ContextInitializer;
-
     friend class Transaction;
 
     Context() = default;
@@ -108,19 +107,8 @@ private:
 class Transaction {
 public:
     friend class ResultSetCursor;
-
     friend class compare::RecordCompare;
-
     friend class validate::Validator;
-
-    friend class schema::SchemaInterface;
-
-    friend class relation::GraphInterface;
-
-    friend class index::IndexInterface;
-
-    friend class datarecord::DataRecordInterface;
-
     friend class algorithm::GraphTraversal;
 
     Transaction(Context& ctx, const TxnMode& mode);
@@ -231,12 +219,13 @@ public:
 
 private:
     friend class FindOperationBuilder;
-
     friend class FindEdgeOperationBuilder;
-
     friend class TraverseOperationBuilder;
-
     friend class ShortestPathOperationBuilder;
+
+    friend struct schema::SchemaUtils;
+    friend struct datarecord::DataRecordUtils;
+    friend struct index::IndexUtils;
 
     class Adapter {
     public:
@@ -265,41 +254,11 @@ private:
         adapter::schema::IndexAccess* _index;
     };
 
-    class Interface {
-    public:
-        Interface();
-
-        Interface(const Transaction* txn);
-
-        ~Interface() noexcept;
-
-        Interface(Interface&& other) noexcept = delete;
-
-        Interface& operator=(Interface&& other) noexcept = delete;
-
-        schema::SchemaInterface* schema() const { return _schema; }
-
-        index::IndexInterface* index() const { return _index; }
-
-        relation::GraphInterface* graph() const { return _graph; }
-
-        datarecord::DataRecordInterface* record() const { return _record; }
-
-        void destroy();
-
-    private:
-        const Transaction* _txn;
-        schema::SchemaInterface* _schema;
-        datarecord::DataRecordInterface* _record;
-        relation::GraphInterface* _graph;
-        index::IndexInterface* _index;
-    };
-
     TxnMode _txnMode;
     const Context* _txnCtx;
     storage_engine::LMDBTxn* _txnBase;
     Adapter* _adapter;
-    Interface* _interface;
+    relation::GraphUtils* _graph;
 
     std::unordered_set<RecordId, RecordIdHash> _updatedRecords {};
 };

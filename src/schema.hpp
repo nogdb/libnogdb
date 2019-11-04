@@ -31,35 +31,29 @@
 
 namespace nogdb {
 
-using adapter::schema::ClassAccessInfo;
-using adapter::schema::IndexAccessInfo;
-using adapter::schema::PropertyAccessInfo;
-using adapter::schema::PropertyIdMapInfo;
-using adapter::schema::PropertyNameMapInfo;
-
 namespace schema {
 
-    class SchemaInterface {
-    public:
-        SchemaInterface(const Transaction* txn)
-            : _txn { txn }
+    using namespace adapter::schema;
+
+    struct SchemaUtils {
+
+        static ClassAccessInfo getExistingClass(const Transaction *txn, const std::string& className);
+
+        static ClassAccessInfo getExistingClass(const Transaction *txn, const ClassId& classId);
+
+        static PropertyAccessInfo getExistingProperty(const Transaction *txn,
+            const ClassId& classId,
+            const std::string& propertyName);
+
+        static PropertyAccessInfo getExistingPropertyExtend(const Transaction *txn,
+            const ClassId& classId,
+            const std::string& propertyName);
+
+        template <typename T>static ClassAccessInfo getValidClassInfo(const Transaction *txn,
+            const T& classSearchKey,
+            ClassType type = ClassType::UNDEFINED)
         {
-        }
-
-        virtual ~SchemaInterface() noexcept = default;
-
-        ClassAccessInfo getExistingClass(const std::string& className);
-
-        ClassAccessInfo getExistingClass(const ClassId& classId);
-
-        PropertyAccessInfo getExistingProperty(const ClassId& classId, const std::string& propertyName);
-
-        PropertyAccessInfo getExistingPropertyExtend(const ClassId& classId, const std::string& propertyName);
-
-        template <typename T>
-        ClassAccessInfo getValidClassInfo(const T& classSearchKey, ClassType type = ClassType::UNDEFINED)
-        {
-            auto foundClass = getExistingClass(classSearchKey);
+            auto foundClass = getExistingClass(txn, classSearchKey);
             if (type != ClassType::UNDEFINED) {
                 if (foundClass.type != type) {
                     throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_MISMATCH_CLASSTYPE);
@@ -68,26 +62,28 @@ namespace schema {
             return foundClass;
         }
 
-        std::map<std::string, ClassAccessInfo> getSubClassInfos(const ClassId& classId);
+        static std::map<std::string, ClassAccessInfo> getSubClassInfos(const Transaction *txn, const ClassId& classId);
 
-        std::vector<PropertyAccessInfo> getNativePropertyInfo(const ClassId& classId);
+        static std::vector<PropertyAccessInfo> getNativePropertyInfo(const Transaction *txn, const ClassId& classId);
 
-        std::vector<PropertyAccessInfo>
-        getInheritPropertyInfo(const ClassId& superClassId, const std::vector<PropertyAccessInfo>& result);
+        static std::vector<PropertyAccessInfo> getInheritPropertyInfo(const Transaction *txn,
+            const ClassId& superClassId,
+            const std::vector<PropertyAccessInfo>& result);
 
-        PropertyNameMapInfo
-        getPropertyNameMapInfo(const ClassId& classId, const ClassId& superClassId);
+        static PropertyNameMapInfo getPropertyNameMapInfo(const Transaction *txn,
+            const ClassId& classId, const ClassId& superClassId);
 
-        PropertyIdMapInfo
-        getPropertyIdMapInfo(const ClassId& classId, const ClassId& superClassId);
+        static PropertyIdMapInfo getPropertyIdMapInfo(const Transaction *txn,
+            const ClassId& classId,
+            const ClassId& superClassId);
 
-        IndexAccessInfo
-        getIndexInfo(const ClassId& classId, const PropertyId& propertyId);
+        static IndexAccessInfo getIndexInfo(const Transaction *txn,
+            const ClassId& classId,
+            const PropertyId& propertyId);
 
     private:
-        const Transaction* _txn;
 
-        inline PropertyNameMapInfo& addBasicInfo(PropertyNameMapInfo& propertyInfo)
+        static inline PropertyNameMapInfo& addBasicInfo(PropertyNameMapInfo& propertyInfo)
         {
             propertyInfo[CLASS_NAME_PROPERTY] = PropertyAccessInfo(
                 0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);
@@ -98,7 +94,7 @@ namespace schema {
             return propertyInfo;
         }
 
-        inline PropertyIdMapInfo& addBasicInfo(PropertyIdMapInfo& propertyInfo)
+        static inline PropertyIdMapInfo& addBasicInfo(PropertyIdMapInfo& propertyInfo)
         {
             propertyInfo[CLASS_NAME_PROPERTY_ID] = PropertyAccessInfo(
                 0, CLASS_NAME_PROPERTY, CLASS_NAME_PROPERTY_ID, PropertyType::TEXT);

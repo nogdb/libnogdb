@@ -25,41 +25,44 @@ namespace nogdb {
 
 namespace schema {
 
-    ClassAccessInfo SchemaInterface::getExistingClass(const std::string& className)
+    ClassAccessInfo SchemaUtils::getExistingClass(const Transaction *txn, const std::string& className)
     {
-        auto foundClass = _txn->_adapter->dbClass()->getInfo(className);
+        auto foundClass = txn->_adapter->dbClass()->getInfo(className);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
 
-    ClassAccessInfo SchemaInterface::getExistingClass(const ClassId& classId)
+    ClassAccessInfo SchemaUtils::getExistingClass(const Transaction *txn, const ClassId& classId)
     {
-        auto foundClass = _txn->_adapter->dbClass()->getInfo(classId);
+        auto foundClass = txn->_adapter->dbClass()->getInfo(classId);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
         }
         return foundClass;
     }
 
-    PropertyAccessInfo SchemaInterface::getExistingProperty(const ClassId& classId, const std::string& propertyName)
+    PropertyAccessInfo SchemaUtils::getExistingProperty(const Transaction *txn,
+        const ClassId& classId,
+        const std::string& propertyName)
     {
-        auto foundProperty = _txn->_adapter->dbProperty()->getInfo(classId, propertyName);
+        auto foundProperty = txn->_adapter->dbProperty()->getInfo(classId, propertyName);
         if (foundProperty.type == PropertyType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
         }
         return foundProperty;
     }
 
-    PropertyAccessInfo
-    SchemaInterface::getExistingPropertyExtend(const ClassId& classId, const std::string& propertyName)
+    PropertyAccessInfo SchemaUtils::getExistingPropertyExtend(const Transaction *txn,
+        const ClassId& classId,
+        const std::string& propertyName)
     {
-        auto foundProperty = _txn->_adapter->dbProperty()->getInfo(classId, propertyName);
+        auto foundProperty = txn->_adapter->dbProperty()->getInfo(classId, propertyName);
         if (foundProperty.type == PropertyType::UNDEFINED) {
-            auto superClassId = _txn->_adapter->dbClass()->getSuperClassId(classId);
+            auto superClassId = txn->_adapter->dbClass()->getSuperClassId(classId);
             if (superClassId != ClassId {}) {
-                return getExistingPropertyExtend(superClassId, propertyName);
+                return getExistingPropertyExtend(txn, superClassId, propertyName);
             } else {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
@@ -68,71 +71,74 @@ namespace schema {
         }
     }
 
-    std::map<std::string, ClassAccessInfo> SchemaInterface::getSubClassInfos(const ClassId& classId)
+    std::map<std::string, ClassAccessInfo> SchemaUtils::getSubClassInfos(const Transaction *txn, const ClassId& classId)
     {
         auto tmpResult = std::map<std::string, ClassAccessInfo> {};
-        for (const auto& subClassInfo : _txn->_adapter->dbClass()->getSubClassInfos(classId)) {
+        for (const auto& subClassInfo : txn->_adapter->dbClass()->getSubClassInfos(classId)) {
             tmpResult.emplace(subClassInfo.name, subClassInfo);
-            auto partialResult = getSubClassInfos(subClassInfo.id);
+            auto partialResult = getSubClassInfos(txn, subClassInfo.id);
             tmpResult.insert(partialResult.cbegin(), partialResult.cend());
         }
         return tmpResult;
     }
 
-    std::vector<PropertyAccessInfo> SchemaInterface::getNativePropertyInfo(const ClassId& classId)
+    std::vector<PropertyAccessInfo> SchemaUtils::getNativePropertyInfo(const Transaction *txn, const ClassId& classId)
     {
         auto result = std::vector<PropertyAccessInfo> {};
-        for (const auto& propertyInfo : _txn->_adapter->dbProperty()->getInfos(classId)) {
+        for (const auto& propertyInfo : txn->_adapter->dbProperty()->getInfos(classId)) {
             result.emplace_back(propertyInfo);
         }
         return result;
     }
 
-    std::vector<PropertyAccessInfo>
-    SchemaInterface::getInheritPropertyInfo(const ClassId& superClassId,
+    std::vector<PropertyAccessInfo> SchemaUtils::getInheritPropertyInfo(const Transaction *txn,
+        const ClassId& superClassId,
         const std::vector<PropertyAccessInfo>& result)
     {
         if (superClassId != ClassId {}) {
             auto tmpResult = result;
-            auto partialResult = _txn->_adapter->dbProperty()->getInfos(superClassId);
+            auto partialResult = txn->_adapter->dbProperty()->getInfos(superClassId);
             tmpResult.insert(tmpResult.cend(), partialResult.cbegin(), partialResult.cend());
-            return getInheritPropertyInfo(_txn->_adapter->dbClass()->getSuperClassId(superClassId), tmpResult);
+            return getInheritPropertyInfo(txn, txn->_adapter->dbClass()->getSuperClassId(superClassId), tmpResult);
         }
         return result;
     }
 
-    PropertyNameMapInfo
-    SchemaInterface::getPropertyNameMapInfo(const ClassId& classId, const ClassId& superClassId)
+    PropertyNameMapInfo SchemaUtils::getPropertyNameMapInfo(const Transaction *txn,
+        const ClassId& classId,
+        const ClassId& superClassId)
     {
         auto result = PropertyNameMapInfo {};
-        for (const auto& property : getNativePropertyInfo(classId)) {
+        for (const auto& property : getNativePropertyInfo(txn, classId)) {
             result[property.name] = property;
         }
-        auto inheritResult = getInheritPropertyInfo(superClassId, std::vector<PropertyAccessInfo> {});
+        auto inheritResult = getInheritPropertyInfo(txn, superClassId, std::vector<PropertyAccessInfo> {});
         for (const auto& property : inheritResult) {
             result[property.name] = property;
         }
         return addBasicInfo(result);
     }
 
-    PropertyIdMapInfo
-    SchemaInterface::getPropertyIdMapInfo(const ClassId& classId, const ClassId& superClassId)
+    PropertyIdMapInfo SchemaUtils::getPropertyIdMapInfo(const Transaction *txn,
+        const ClassId& classId,
+        const ClassId& superClassId)
     {
         auto result = PropertyIdMapInfo {};
-        for (const auto& property : getNativePropertyInfo(classId)) {
+        for (const auto& property : getNativePropertyInfo(txn, classId)) {
             result[property.id] = property;
         }
-        auto inheritResult = getInheritPropertyInfo(superClassId, std::vector<PropertyAccessInfo> {});
+        auto inheritResult = getInheritPropertyInfo(txn, superClassId, std::vector<PropertyAccessInfo> {});
         for (const auto& property : inheritResult) {
             result[property.id] = property;
         }
         return addBasicInfo(result);
     }
 
-    IndexAccessInfo
-    SchemaInterface::getIndexInfo(const ClassId& classId, const PropertyId& propertyId)
+    IndexAccessInfo SchemaUtils::getIndexInfo(const Transaction *txn,
+        const ClassId& classId,
+        const PropertyId& propertyId)
     {
-        auto foundIndexInfo = _txn->_adapter->dbIndex()->getInfo(classId, propertyId);
+        auto foundIndexInfo = txn->_adapter->dbIndex()->getInfo(classId, propertyId);
         if (foundIndexInfo.id == IndexId {}) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_INDEX);
         }

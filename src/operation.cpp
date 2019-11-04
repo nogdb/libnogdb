@@ -36,8 +36,11 @@
 
 namespace nogdb {
 
-using adapter::datarecord::DataRecord;
-using adapter::schema::ClassAccessInfo;
+using namespace adapter::datarecord;
+using namespace adapter::schema;
+using namespace schema;
+using namespace datarecord;
+using namespace index;
 using compare::RecordCompare;
 using parser::RecordParser;
 
@@ -48,9 +51,9 @@ const RecordDescriptor Transaction::addVertex(const std::string& className, cons
         .isTxnCompleted()
         .isClassNameValid(className);
 
-    auto vertexClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::VERTEX);
-    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
-        vertexClassInfo.id, vertexClassInfo.superClassId);
+    auto vertexClassInfo = SchemaUtils::getValidClassInfo(this, className, ClassType::VERTEX);
+    auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(
+        this, vertexClassInfo.id, vertexClassInfo.superClassId);
     auto recordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
         auto vertexDataRecord = DataRecord(_txnBase, vertexClassInfo.id, ClassType::VERTEX);
@@ -63,8 +66,8 @@ const RecordDescriptor Transaction::addVertex(const std::string& className, cons
             positionId = vertexDataRecord.insert(recordBlob);
         }
         auto recordDescriptor = RecordDescriptor { vertexClassInfo.id, positionId };
-        auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
-        _interface->index()->insert(recordDescriptor, record, indexInfos);
+        auto indexInfos = IndexUtils::getIndexInfos(this, recordDescriptor, record, propertyNameMapInfo);
+        IndexUtils::insert(this, recordDescriptor, record, indexInfos);
         return recordDescriptor;
     } catch (const Error& error) {
         rollback();
@@ -84,9 +87,9 @@ const RecordDescriptor Transaction::addEdge(const std::string& className,
         .isExistingSrcVertex(srcVertexRecordDescriptor)
         .isExistingDstVertex(dstVertexRecordDescriptor);
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(className, ClassType::EDGE);
-    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(
-        edgeClassInfo.id, edgeClassInfo.superClassId);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, className, ClassType::EDGE);
+    auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(
+        this, edgeClassInfo.id, edgeClassInfo.superClassId);
     auto recordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
         auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
@@ -101,9 +104,9 @@ const RecordDescriptor Transaction::addEdge(const std::string& className,
             positionId = edgeDataRecord.insert(vertexBlob + recordBlob);
         }
         auto recordDescriptor = RecordDescriptor { edgeClassInfo.id, positionId };
-        _interface->graph()->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
-        auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
-        _interface->index()->insert(recordDescriptor, record, indexInfos);
+        _graph->addRel(recordDescriptor.rid, srcVertexRecordDescriptor.rid, dstVertexRecordDescriptor.rid);
+        auto indexInfos = IndexUtils::getIndexInfos(this, recordDescriptor, record, propertyNameMapInfo);
+        IndexUtils::insert(this, recordDescriptor, record, indexInfos);
         return recordDescriptor;
     } catch (const Error& error) {
         rollback();
@@ -117,13 +120,13 @@ void Transaction::update(const RecordDescriptor& recordDescriptor, const Record&
         .isTxnValid()
         .isTxnCompleted();
 
-    auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    auto classInfo = SchemaUtils::getExistingClass(this, recordDescriptor.rid.first);
     auto dataRecord = DataRecord(_txnBase, classInfo.id, classInfo.type);
     auto recordResult = dataRecord.getResult(recordDescriptor.rid.second);
-    auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+    auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(this, classInfo.id, classInfo.superClassId);
     auto newRecordBlob = RecordParser::parseRecord(record, propertyNameMapInfo);
     try {
-        auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(this, classInfo.id, classInfo.superClassId);
         auto existingRecord = RecordParser::parseRawData(
             recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isVersionEnabled());
 
@@ -152,10 +155,10 @@ void Transaction::update(const RecordDescriptor& recordDescriptor, const Record&
         dataRecord.update(recordDescriptor.rid.second, updateRecordBlob);
 
         // remove index if applied in existing record
-        auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
-        _interface->index()->remove(recordDescriptor, existingRecord, indexInfos);
+        auto indexInfos = IndexUtils::getIndexInfos(this, recordDescriptor, record, propertyNameMapInfo);
+        IndexUtils::remove(this, recordDescriptor, existingRecord, indexInfos);
         // add index if applied in new record
-        _interface->index()->insert(recordDescriptor, record, indexInfos);
+        IndexUtils::insert(this, recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
         rollback();
         throw NOGDB_FATAL_ERROR(error);
@@ -170,12 +173,12 @@ void Transaction::updateSrc(const RecordDescriptor& recordDescriptor,
         .isTxnCompleted()
         .isExistingSrcVertex(newSrcVertexRecordDescriptor);
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
         auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isVersionEnabled());
-        _interface->graph()->updateSrcRel(
+        _graph->updateSrcRel(
             recordDescriptor.rid, newSrcVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
         auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             newSrcVertexRecordDescriptor.rid, srcDstVertex.second);
@@ -223,12 +226,12 @@ void Transaction::updateDst(const RecordDescriptor& recordDescriptor,
         .isTxnCompleted()
         .isExistingDstVertex(newDstVertexRecordDescriptor);
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first, ClassType::EDGE);
     auto edgeDataRecord = DataRecord(_txnBase, edgeClassInfo.id, ClassType::EDGE);
     auto recordResult = edgeDataRecord.getResult(recordDescriptor.rid.second);
     try {
         auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(recordResult, _txnCtx->isVersionEnabled());
-        _interface->graph()->updateDstRel(
+        _graph->updateDstRel(
             recordDescriptor.rid, newDstVertexRecordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
         auto newVertexBlob = RecordParser::parseEdgeVertexSrcDst(
             srcDstVertex.first, newDstVertexRecordDescriptor.rid);
@@ -274,19 +277,19 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
         .isTxnValid()
         .isTxnCompleted();
 
-    auto classInfo = _interface->schema()->getExistingClass(recordDescriptor.rid.first);
+    auto classInfo = SchemaUtils::getExistingClass(this, recordDescriptor.rid.first);
     auto dataRecord = DataRecord(_txnBase, classInfo.id, classInfo.type);
     auto recordResult = dataRecord.getResult(recordDescriptor.rid.second);
     try {
-        auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto propertyIdMapInfo = _interface->schema()->getPropertyIdMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(this, classInfo.id, classInfo.superClassId);
+        auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(this, classInfo.id, classInfo.superClassId);
         auto record = RecordParser::parseRawData(
             recordResult, propertyIdMapInfo, classInfo.type == ClassType::EDGE, _txnCtx->isVersionEnabled());
 
         if (classInfo.type == ClassType::EDGE) {
             auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
                 recordResult, _txnCtx->isVersionEnabled());
-            _interface->graph()->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
+            _graph->removeRelFromEdge(recordDescriptor.rid, srcDstVertex.first, srcDstVertex.second);
             if (_txnCtx->isVersionEnabled()) {
                 // update version of src vertex
                 if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
@@ -310,7 +313,7 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
                 }
             }
         } else {
-            auto neighbours = _interface->graph()->removeRelFromVertex(recordDescriptor.rid);
+            auto neighbours = _graph->removeRelFromVertex(recordDescriptor.rid);
             if (_txnCtx->isVersionEnabled()) {
                 for (const auto& neighbour : neighbours) {
                     if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
@@ -327,8 +330,8 @@ void Transaction::remove(const RecordDescriptor& recordDescriptor)
         dataRecord.remove(recordDescriptor.rid.second);
 
         // remove index if applied in the record
-        auto indexInfos = _interface->index()->getIndexInfos(recordDescriptor, record, propertyNameMapInfo);
-        _interface->index()->remove(recordDescriptor, record, indexInfos);
+        auto indexInfos = IndexUtils::getIndexInfos(this, recordDescriptor, record, propertyNameMapInfo);
+        IndexUtils::remove(this, recordDescriptor, record, indexInfos);
     } catch (const Error& error) {
         rollback();
         throw NOGDB_FATAL_ERROR(error);
@@ -342,10 +345,10 @@ void Transaction::removeAll(const std::string& className)
         .isTxnCompleted()
         .isClassNameValid(className);
 
-    auto classInfo = _interface->schema()->getExistingClass(className);
+    auto classInfo = SchemaUtils::getExistingClass(this, className);
     try {
         auto dataRecord = DataRecord(_txnBase, classInfo.id, ClassType::VERTEX);
-        auto propertyNameMapInfo = _interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(this, classInfo.id, classInfo.superClassId);
         auto result = std::map<RecordId, std::pair<RecordId, RecordId>> {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
@@ -353,7 +356,7 @@ void Transaction::removeAll(const std::string& className)
                 if (classInfo.type == ClassType::EDGE) {
                     auto srcDstVertex = RecordParser::parseEdgeRawDataVertexSrcDst(
                         result, _txnCtx->isVersionEnabled());
-                    _interface->graph()->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
+                    _graph->removeRelFromEdge(recordId, srcDstVertex.first, srcDstVertex.second);
                     if (_txnCtx->isVersionEnabled()) {
                         // update version of src vertex
                         if (_updatedRecords.find(srcDstVertex.first) == _updatedRecords.cend()) {
@@ -379,7 +382,7 @@ void Transaction::removeAll(const std::string& className)
                         }
                     }
                 } else {
-                    auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
+                    auto neighbours = _graph->removeRelFromVertex(recordId);
                     if (_txnCtx->isVersionEnabled()) {
                         for (const auto& neighbour : neighbours) {
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
@@ -400,7 +403,7 @@ void Transaction::removeAll(const std::string& className)
         dataRecord.destroy();
 
         // drop indexes
-        _interface->index()->drop(classInfo.id, propertyNameMapInfo);
+        IndexUtils::drop(this, classInfo.id, propertyNameMapInfo);
     } catch (const Error& error) {
         rollback();
         throw NOGDB_FATAL_ERROR(error);
@@ -412,13 +415,13 @@ Result Transaction::fetchSrc(const RecordDescriptor& recordDescriptor) const
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first, ClassType::EDGE);
+    auto srcDstVertex = _graph->getSrcDstVertices(recordDescriptor.rid);
     auto srcVertexRecordDescriptor = RecordDescriptor { srcDstVertex.first };
-    auto srcVertexClassInfo = _interface->schema()->getExistingClass(srcVertexRecordDescriptor.rid.first);
+    auto srcVertexClassInfo = SchemaUtils::getExistingClass(this, srcVertexRecordDescriptor.rid.first);
     return Result {
         srcVertexRecordDescriptor,
-        _interface->record()->getRecordWithBasicInfo(srcVertexClassInfo, srcVertexRecordDescriptor)
+        DataRecordUtils::getRecordWithBasicInfo(this, srcVertexClassInfo, srcVertexRecordDescriptor)
     };
 }
 
@@ -427,13 +430,13 @@ Result Transaction::fetchDst(const RecordDescriptor& recordDescriptor) const
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first, ClassType::EDGE);
+    auto srcDstVertex = _graph->getSrcDstVertices(recordDescriptor.rid);
     auto dstVertexRecordDescriptor = RecordDescriptor { srcDstVertex.second };
-    auto dstVertexClassInfo = _interface->schema()->getExistingClass(dstVertexRecordDescriptor.rid.first);
+    auto dstVertexClassInfo = SchemaUtils::getExistingClass(this, dstVertexRecordDescriptor.rid.first);
     return Result {
         dstVertexRecordDescriptor,
-        _interface->record()->getRecordWithBasicInfo(dstVertexClassInfo, dstVertexRecordDescriptor)
+        DataRecordUtils::getRecordWithBasicInfo(this, dstVertexClassInfo, dstVertexRecordDescriptor)
     };
 }
 
@@ -442,16 +445,16 @@ ResultSet Transaction::fetchSrcDst(const RecordDescriptor& recordDescriptor) con
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto edgeClassInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first, ClassType::EDGE);
-    auto srcDstVertex = _interface->graph()->getSrcDstVertices(recordDescriptor.rid);
+    auto edgeClassInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first, ClassType::EDGE);
+    auto srcDstVertex = _graph->getSrcDstVertices(recordDescriptor.rid);
     auto srcVertexRecordDescriptor = RecordDescriptor { srcDstVertex.first };
-    auto srcVertexClassInfo = _interface->schema()->getExistingClass(srcVertexRecordDescriptor.rid.first);
+    auto srcVertexClassInfo = SchemaUtils::getExistingClass(this, srcVertexRecordDescriptor.rid.first);
     auto dstVertexRecordDescriptor = RecordDescriptor { srcDstVertex.second };
-    auto dstVertexClassInfo = _interface->schema()->getExistingClass(dstVertexRecordDescriptor.rid.first);
-    auto srcVertexResult = _interface->record()->getRecordWithBasicInfo(
-        srcVertexClassInfo, srcVertexRecordDescriptor);
-    auto dstVertexResult = _interface->record()->getRecordWithBasicInfo(
-        dstVertexClassInfo, dstVertexRecordDescriptor);
+    auto dstVertexClassInfo = SchemaUtils::getExistingClass(this, dstVertexRecordDescriptor.rid.first);
+    auto srcVertexResult = DataRecordUtils::getRecordWithBasicInfo(
+        this, srcVertexClassInfo, srcVertexRecordDescriptor);
+    auto dstVertexResult = DataRecordUtils::getRecordWithBasicInfo(
+        this, dstVertexClassInfo, dstVertexRecordDescriptor);
     return ResultSet {
         Result { srcVertexRecordDescriptor, srcVertexResult },
         Result { dstVertexRecordDescriptor, dstVertexResult }
@@ -510,15 +513,17 @@ ResultSet FindOperationBuilder::get() const
         .isTxnCompleted()
         .isClassNameValid(_className);
 
-    auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
-    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
+    auto classInfo = SchemaUtils::getExistingClass(_txn, _className);
+    auto classInfoExtend = (_includeSubClassOf) ?
+        SchemaUtils::getSubClassInfos(_txn, classInfo.id) : std::map<std::string, ClassAccessInfo> {};
     switch (_conditionType) {
     case ConditionType::CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto resultSet = RecordCompare::compareCondition(*_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareCondition(
                 *_txn, currentClassInfo, currentPropertyInfo, *_condition, _indexed);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
@@ -526,12 +531,13 @@ ResultSet FindOperationBuilder::get() const
         return resultSet;
     }
     case ConditionType::MULTI_CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto resultSet = RecordCompare::compareMultiCondition(
             *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareMultiCondition(
                 *_txn, currentClassInfo, currentPropertyInfo, *_multiCondition, _indexed);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
@@ -539,20 +545,21 @@ ResultSet FindOperationBuilder::get() const
         return resultSet;
     }
     case ConditionType::COMPARE_FUNCTION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto resultSet = _txn->_interface->record()->getResultSetByCmpFunction(classInfo, _function);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
+        auto resultSet = DataRecordUtils::getResultSetByCmpFunction(_txn, classInfo, _function);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = _txn->_interface->record()->getResultSetByCmpFunction(classInfo, _function);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
+            auto resultSetExtend = DataRecordUtils::getResultSetByCmpFunction(_txn, classInfo, _function);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
         }
         return resultSet;
     }
     default: {
-        auto resultSet = _txn->_interface->record()->getResultSet(classInfo);
+        auto resultSet = DataRecordUtils::getResultSet(_txn, classInfo);
         for (const auto& classNameMapInfo : classInfoExtend) {
-            auto resultSetExtend = _txn->_interface->record()->getResultSet(classNameMapInfo.second);
+            auto resultSetExtend = DataRecordUtils::getResultSet(_txn, classNameMapInfo.second);
             resultSet.insert(resultSet.cend(), resultSetExtend.cbegin(), resultSetExtend.cend());
         }
         return resultSet;
@@ -566,18 +573,20 @@ ResultSetCursor FindOperationBuilder::getCursor() const
         .isTxnCompleted()
         .isClassNameValid(_className);
 
-    auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
-    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
+    auto classInfo = SchemaUtils::getExistingClass(_txn, _className);
+    auto classInfoExtend = (_includeSubClassOf) ?
+        SchemaUtils::getSubClassInfos(_txn, classInfo.id) : std::map<std::string, ClassAccessInfo> {};
     switch (_conditionType) {
     case ConditionType::CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
         auto result = RecordCompare::compareConditionRdesc(
             *_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
         resultSetCursor.addMetadata(result);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareConditionRdesc(
                 *_txn, classInfo, currentPropertyInfo, *_condition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
@@ -585,14 +594,15 @@ ResultSetCursor FindOperationBuilder::getCursor() const
         return resultSetCursor;
     }
     case ConditionType::MULTI_CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
         auto result = RecordCompare::compareMultiConditionRdesc(
             *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
         resultSetCursor.addMetadata(result);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareMultiConditionRdesc(
                 *_txn, classInfo, currentPropertyInfo, *_multiCondition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
@@ -600,27 +610,29 @@ ResultSetCursor FindOperationBuilder::getCursor() const
         return resultSetCursor;
     }
     case ConditionType::COMPARE_FUNCTION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto resultSetCursor = ResultSetCursor { *_txn };
-        auto result = _txn->_interface->record()->getRecordDescriptorByCmpFunction(classInfo, _function);
+        auto result = DataRecordUtils::getRecordDescriptorByCmpFunction(_txn, classInfo, _function);
         resultSetCursor.addMetadata(result);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            auto resultSetExtend = _txn->_interface->record()->getRecordDescriptorByCmpFunction(currentClassInfo, _function);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
+            auto resultSetExtend =
+                DataRecordUtils::getRecordDescriptorByCmpFunction(_txn, currentClassInfo, _function);
             resultSetCursor.addMetadata(resultSetExtend);
         }
         return resultSetCursor;
     }
     default: {
-        auto resultSetCursor = _txn->_interface->record()->getResultSetCursor(classInfo);
+        auto resultSetCursor = DataRecordUtils::getResultSetCursor(_txn, classInfo);
         if (!_includeSubClassOf) {
             return resultSetCursor;
         } else {
             auto resultSetExtend = ResultSetCursor { *_txn };
             resultSetExtend.addMetadata(resultSetCursor);
             for (const auto& classNameMapInfo : classInfoExtend) {
-                resultSetExtend.addMetadata(_txn->_interface->record()->getResultSetCursor(classNameMapInfo.second));
+                resultSetExtend.addMetadata(DataRecordUtils::getResultSetCursor(_txn, classNameMapInfo.second));
             }
             return resultSetExtend;
         }
@@ -634,46 +646,50 @@ unsigned long FindOperationBuilder::count() const
         .isTxnCompleted()
         .isClassNameValid(_className);
 
-    auto classInfo = _txn->_interface->schema()->getExistingClass(_className);
-    auto classInfoExtend = (_includeSubClassOf) ? _txn->_interface->schema()->getSubClassInfos(classInfo.id) : std::map<std::string, ClassAccessInfo> {};
+    auto classInfo = SchemaUtils::getExistingClass(_txn, _className);
+    auto classInfoExtend = (_includeSubClassOf) ?
+        SchemaUtils::getSubClassInfos(_txn, classInfo.id) : std::map<std::string, ClassAccessInfo> {};
     switch (_conditionType) {
     case ConditionType::CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto result = RecordCompare::compareConditionCount(*_txn, classInfo, propertyNameMapInfo, *_condition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             result += RecordCompare::compareConditionCount(*_txn, classInfo, currentPropertyInfo, *_condition, _indexed);
         }
         return result;
     }
     case ConditionType::MULTI_CONDITION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
         auto result = RecordCompare::compareMultiConditionCount(
             *_txn, classInfo, propertyNameMapInfo, *_multiCondition, _indexed);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             result += RecordCompare::compareMultiConditionCount(
                 *_txn, classInfo, currentPropertyInfo, *_multiCondition, _indexed);
         }
         return result;
     }
     case ConditionType::COMPARE_FUNCTION: {
-        auto propertyNameMapInfo = _txn->_interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
-        auto result = _txn->_interface->record()->getCountRecordByCmpFunction(classInfo, _function);
+        auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(_txn, classInfo.id, classInfo.superClassId);
+        auto result = DataRecordUtils::getCountRecordByCmpFunction(_txn, classInfo, _function);
         for (const auto& classNameMapInfo : classInfoExtend) {
             auto& currentClassInfo = classNameMapInfo.second;
-            auto currentPropertyInfo = _txn->_interface->schema()->getPropertyNameMapInfo(currentClassInfo.id, currentClassInfo.superClassId);
-            result += _txn->_interface->record()->getCountRecordByCmpFunction(currentClassInfo, _function);
+            auto currentPropertyInfo =
+                SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
+            result += DataRecordUtils::getCountRecordByCmpFunction(_txn, currentClassInfo, _function);
         }
         return result;
     }
     default: {
-        auto result = _txn->_interface->record()->getCountRecord(classInfo);
+        auto result = DataRecordUtils::getCountRecord(_txn, classInfo);
         if (_includeSubClassOf) {
             for (const auto& classNameMapInfo : classInfoExtend) {
-                result += _txn->_interface->record()->getCountRecord(classNameMapInfo.second);
+                result += DataRecordUtils::getCountRecord(_txn, classNameMapInfo.second);
             }
         }
         return static_cast<unsigned long>(result);
@@ -690,17 +706,17 @@ ResultSet FindEdgeOperationBuilder::get() const
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
-        edgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
         break;
     }
     case EdgeDirection::OUT: {
-        edgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         break;
     }
     default: {
         auto recordIds = std::set<RecordId> {};
-        auto inEdgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
-        auto outEdgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        auto inEdgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
+        auto outEdgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         recordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
         recordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
         edgeRecordIds.assign(recordIds.cbegin(), recordIds.cend());
@@ -728,17 +744,17 @@ ResultSetCursor FindEdgeOperationBuilder::getCursor() const
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
-        edgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
         break;
     }
     case EdgeDirection::OUT: {
-        edgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         break;
     }
     default: {
         auto recordIds = std::set<RecordId> {};
-        auto inEdgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
-        auto outEdgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        auto inEdgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
+        auto outEdgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         recordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
         recordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
         edgeRecordIds.assign(recordIds.cbegin(), recordIds.cend());
@@ -766,17 +782,17 @@ unsigned long FindEdgeOperationBuilder::count() const
     auto edgeRecordIds = std::vector<RecordId> {};
     switch (_direction) {
     case EdgeDirection::IN: {
-        edgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
         break;
     }
     case EdgeDirection::OUT: {
-        edgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        edgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         break;
     }
     default: {
         auto recordIds = std::set<RecordId> {};
-        auto inEdgeRecordIds = _txn->_interface->graph()->getInEdges(_rdesc.rid);
-        auto outEdgeRecordIds = _txn->_interface->graph()->getOutEdges(_rdesc.rid);
+        auto inEdgeRecordIds = _txn->_graph->getInEdges(_rdesc.rid);
+        auto outEdgeRecordIds = _txn->_graph->getOutEdges(_rdesc.rid);
         recordIds.insert(inEdgeRecordIds.cbegin(), inEdgeRecordIds.cend());
         recordIds.insert(outEdgeRecordIds.cbegin(), outEdgeRecordIds.cend());
         edgeRecordIds.assign(recordIds.cbegin(), recordIds.cend());

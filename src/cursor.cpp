@@ -29,6 +29,9 @@
 
 namespace nogdb {
 
+using namespace schema;
+using namespace datarecord;
+
 ResultSetCursor::ResultSetCursor(const Transaction& txn_)
     : txn { &txn_ }
     , currentIndex { -1 }
@@ -83,8 +86,8 @@ bool ResultSetCursor::next()
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    auto classInfo = SchemaUtils::getExistingClass(txn, recordDescriptor.rid.first);
+    auto record = DataRecordUtils::getRecordWithBasicInfo(txn, classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
     result = Result { recordDescriptor, record };
     return true;
@@ -104,8 +107,8 @@ bool ResultSetCursor::previous()
     }
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    auto classInfo = SchemaUtils::getExistingClass(txn, recordDescriptor.rid.first);
+    auto record = DataRecordUtils::getRecordWithBasicInfo(txn, classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
     result = Result { recordDescriptor, record };
     return true;
@@ -135,8 +138,8 @@ void ResultSetCursor::first()
         currentIndex = 0;
         auto cursor = metadata.begin();
         auto recordDescriptor = *(cursor);
-        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        auto classInfo = SchemaUtils::getExistingClass(txn, recordDescriptor.rid.first);
+        auto record = DataRecordUtils::getRecordWithBasicInfo(txn, classInfo, recordDescriptor);
         record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
         result = Result { recordDescriptor, record };
     }
@@ -151,8 +154,8 @@ void ResultSetCursor::last()
         currentIndex = static_cast<long long>(metadata.size() - 1);
         auto cursor = metadata.end() - 1;
         auto recordDescriptor = *(cursor);
-        auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-        auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        auto classInfo = SchemaUtils::getExistingClass(txn, recordDescriptor.rid.first);
+        auto record = DataRecordUtils::getRecordWithBasicInfo(txn, classInfo, recordDescriptor);
         record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
         result = Result { recordDescriptor, record };
     }
@@ -169,8 +172,8 @@ bool ResultSetCursor::to(unsigned long index)
     currentIndex = index;
     auto cursor = metadata.begin() + currentIndex;
     auto recordDescriptor = *(cursor);
-    auto classInfo = txn->_interface->schema()->getExistingClass(recordDescriptor.rid.first);
-    auto record = txn->_interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    auto classInfo = SchemaUtils::getExistingClass(txn, recordDescriptor.rid.first);
+    auto record = DataRecordUtils::getRecordWithBasicInfo(txn, classInfo, recordDescriptor);
     record.setBasicInfo(DEPTH_PROPERTY, recordDescriptor._depth);
     result = Result { recordDescriptor, record };
     return true;

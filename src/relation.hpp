@@ -32,23 +32,24 @@
 
 namespace nogdb {
 
-using namespace adapter::schema;
-using namespace adapter::relation;
-using namespace adapter::datarecord;
-using utils::caching::UnorderedCache;
-
 namespace relation {
 
-    class GraphInterface {
+    using namespace adapter::schema;
+    using namespace adapter::relation;
+    using namespace adapter::datarecord;
+    using utils::caching::UnorderedCache;
+
+    class GraphUtils {
     public:
-        explicit GraphInterface(const Transaction* txn)
+        explicit GraphUtils(const storage_engine::LMDBTxn* txn, bool isVersionEnabled)
             : _txn { txn }
-            , _inRel { new RelationAccess(txn->_txnBase, Direction::IN) }
-            , _outRel { new RelationAccess(txn->_txnBase, Direction::OUT) }
+            , _inRel { new RelationAccess(txn, Direction::IN) }
+            , _outRel { new RelationAccess(txn, Direction::OUT) }
+            , _isVersionEnabled { isVersionEnabled }
         {
         }
 
-        virtual ~GraphInterface() noexcept
+        virtual ~GraphUtils() noexcept
         {
             if (_inRel) {
                 delete _inRel;
@@ -60,9 +61,7 @@ namespace relation {
             }
         };
 
-        void addRel(const RecordId& edgeRid,
-            const RecordId& srcRid,
-            const RecordId& dstRid);
+        void addRel(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid);
 
         void updateSrcRel(const RecordId& edgeRid,
             const RecordId& newSrcRid,
@@ -89,9 +88,10 @@ namespace relation {
         std::pair<RecordId, RecordId> getSrcDstVertices(const RecordId& recordId) const;
 
     private:
-        const Transaction* _txn;
+        const storage_engine::LMDBTxn* _txn;
         RelationAccess* _inRel;
         RelationAccess* _outRel;
+        bool _isVersionEnabled;
 
         using InternalCache = UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;
         InternalCache _edgeDataRecordCache {};
