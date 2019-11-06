@@ -127,6 +127,6 @@ script:
       cd build-cmake                &&
       cmake ..                      &&
       cmake --build . --target all  &&
-      cmake --build . --target nogdb_functest_object &&
+      cmake --build . --target nogdb_func_test_object &&
       ctest --verbose
     fi

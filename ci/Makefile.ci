@@ -25,7 +25,7 @@ SONAME		= $(TARGETDIR)/libnogdb.so
 DEPOBJECTS	= $(LIBPATH)/lmdb/*.o
 DEPENDENCIES	= $(LIBPATH)/lmdb/liblmdb.a
 LDFLAGS		?=
-TESTPREFIX	?= functest
+TESTPREFIX	?= func_test
 TESTFLAGS   = -DTEST_CONTEXT_OPERATIONS -DTEST_SCHEMA_OPERATIONS -DTEST_RECORD_OPERATIONS -DTEST_MISC_OPERATIONS -DTEST_GRAPH_OPERATIONS -DTEST_FIND_OPERATIONS -DTEST_INHERITANCE_OPERATIONS -DTEST_SCHEMA_TXN_OPERATIONS -DTEST_TXN_OPERATIONS -DTEST_SQL_OPERATIONS -DTEST_INDEX_OPERATIONS
 EXTTESTFLAGS    ?=
 UNAME_OS	= $(shell cat /etc/os-release 2> /dev/null | grep -e '^ID=' | cut -d'=' -f2 | tr -cd '[[:alnum:]]._-')
@@ -100,8 +100,8 @@ test: verbose lmdb $(ANAME) $(TESTOBJS)
 	@./$(TESTPREFIX); rm -rf $(TESTPREFIX).db
 
 test_unit: verbose lmdb $(ANAME) $(TESTUNITOBJS)
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTUNITOBJS) $(ANAME) -o unittest $(LDFLAGS) -lgmock -lgtest
-	@./unittest; rm -rf test_*.db
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(OPTFLAGS) $(TCFLAGS) $(HEADERS) $(TESTUNITOBJS) $(ANAME) -o unit_test $(LDFLAGS) -lgmock -lgtest
+	@./unit_test; rm -rf test_*.db
 
 #test_address: verbose lmdb $(ANAME) $(SONAME) $(TESTOBJS)
 test_address: verbose lmdb $(ANAME) $(TESTOBJS)
@@ -134,7 +134,7 @@ uninstall:
 clean:
 	@printf "Cleaning all executable objects and libs..."
 	@rm -f $(TESTPREFIX) $(TESTPREFIX)_debug_address
-	@rm -f unittest
+	@rm -f unit_test
 	@find * -name "*.o" -type f -exec rm -f {} \;
 	@find * -name "*.a" -type f -exec rm -f {} \;
 	@find * -name "*.so" -type f -exec rm -f {} \;

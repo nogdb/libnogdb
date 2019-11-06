@@ -90,7 +90,7 @@ if(NOT APPLE)
 endif()
 
 ## TARGET unit_test
-set(UNITTEST_COMPILE_OPTIONS
+set(UNIT_TEST_COMPILE_OPTIONS
     -std=c++11
     -W
     -Wall
