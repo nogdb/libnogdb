@@ -19,7 +19,7 @@
  *
  */
 
-#include "functest.h"
+#include "func_test.h"
 
 void assert_class(const nogdb::Transaction& txn, const std::string& className, const std::string& superClassName,
     size_t sizeOfSubClasses, size_t sizeOfProperties)

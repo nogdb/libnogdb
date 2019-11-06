@@ -90,7 +90,7 @@ before_script:
   - ${CC} --version
   - ${CXX} --version
   - cmake --version
-  - export TESTPREFIX="functest"
+  - export TESTPREFIX="func_test"
 
 
 # execute all of the commands which should make the build pass or fail

@@ -37,9 +37,7 @@
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
 namespace index {
-
     using namespace adapter::schema;
     using namespace adapter::datarecord;
     using namespace schema;
@@ -588,5 +586,4 @@ namespace index {
     };
 
 }
-
 }

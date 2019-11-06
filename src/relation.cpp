@@ -22,10 +22,8 @@
 #include "relation.hpp"
 
 namespace nogdb {
-
-using parser::RecordParser;
-
 namespace relation {
+    using parser::RecordParser;
 
     void GraphUtils::addRel(const RecordId& edgeRid,
         const RecordId& srcRid,

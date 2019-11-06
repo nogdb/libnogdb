@@ -39,10 +39,8 @@
 #define DEFAULT_NOGDB_MAX_READERS 65536U
 
 namespace nogdb {
-
-using namespace utils::assertion;
-
 namespace storage_engine {
+    using namespace utils::assertion;
 
     class LMDBEnv {
     public:

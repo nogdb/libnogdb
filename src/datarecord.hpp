@@ -27,9 +27,7 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 namespace datarecord {
-
     using namespace adapter::datarecord;
     using namespace adapter::schema;
 
@@ -99,5 +97,4 @@ namespace datarecord {
     };
 
 }
-
 }

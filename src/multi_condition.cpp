@@ -23,9 +23,7 @@
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
 using compare::RecordCompare;
-
 
 MultiCondition MultiCondition::operator&&(const Condition& c) const
 {

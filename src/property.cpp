@@ -21,18 +21,14 @@
 
 #include <memory>
 
-#include "constant.hpp"
 #include "index.hpp"
-#include "index_adapter.hpp"
 #include "lmdb_engine.hpp"
-#include "parser.hpp"
 #include "schema.hpp"
 #include "validate.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace adapter::schema;
 using namespace schema;
 using namespace index;

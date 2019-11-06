@@ -22,7 +22,6 @@
 #include "schema.hpp"
 
 namespace nogdb {
-
 namespace schema {
 
     ClassAccessInfo SchemaUtils::getExistingClass(const Transaction *txn, const std::string& className)
@@ -146,5 +145,4 @@ namespace schema {
     }
 
 }
-
 }

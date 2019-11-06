@@ -26,110 +26,108 @@
 #include "storage_engine.hpp"
 
 namespace nogdb {
-
 namespace storage_engine {
+namespace adapter {
 
-    namespace adapter {
+    class LMDBKeyValAccess {
+    public:
+        LMDBKeyValAccess() = default;
 
-        class LMDBKeyValAccess {
-        public:
-            LMDBKeyValAccess() = default;
+        LMDBKeyValAccess(const LMDBTxn* txn,
+            const std::string& dbName,
+            bool numericKey = false,
+            bool unique = true,
+            bool append = false,
+            bool overwrite = true)
+            : _txn { txn }
+            , _append { append }
+            , _overwrite { overwrite }
+        {
+            _dbi = txn->openDBi(dbName, numericKey, unique);
+        }
 
-            LMDBKeyValAccess(const LMDBTxn* txn,
-                const std::string& dbName,
-                bool numericKey = false,
-                bool unique = true,
-                bool append = false,
-                bool overwrite = true)
-                : _txn { txn }
-                , _append { append }
-                , _overwrite { overwrite }
-            {
-                _dbi = txn->openDBi(dbName, numericKey, unique);
+        virtual ~LMDBKeyValAccess() noexcept = default;
+
+        LMDBKeyValAccess(LMDBKeyValAccess&& other) noexcept
+            : _txn { other._txn }
+            , _dbi { std::move(other._dbi) }
+            , _append { other._append }
+            , _overwrite { other._overwrite }
+        {
+        }
+
+        LMDBKeyValAccess& operator=(LMDBKeyValAccess&& other) noexcept
+        {
+            if (this != &other) {
+                using std::swap;
+                swap(*this, other);
             }
+            return *this;
+        }
 
-            virtual ~LMDBKeyValAccess() noexcept = default;
-
-            LMDBKeyValAccess(LMDBKeyValAccess&& other) noexcept
-                : _txn { other._txn }
-                , _dbi { std::move(other._dbi) }
-                , _append { other._append }
-                , _overwrite { other._overwrite }
-            {
+    protected:
+        template <typename K, typename V>
+        void put(const K& key, const V& val)
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
             }
+            _dbi.put(key, val, _append, _overwrite);
+        }
 
-            LMDBKeyValAccess& operator=(LMDBKeyValAccess&& other) noexcept
-            {
-                if (this != &other) {
-                    using std::swap;
-                    swap(*this, other);
-                }
-                return *this;
+        template <typename K>
+        lmdb::Result get(const K& key) const
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
             }
+            return _dbi.get(key);
+        }
 
-        protected:
-            template <typename K, typename V>
-            void put(const K& key, const V& val)
-            {
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                _dbi.put(key, val, _append, _overwrite);
+        template <typename K>
+        void del(const K& key)
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
             }
+            _dbi.del(key);
+        }
 
-            template <typename K>
-            lmdb::Result get(const K& key) const
-            {
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                return _dbi.get(key);
+        template <typename K, typename V>
+        void del(const K& key, const V& val)
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
             }
-
-            template <typename K>
-            void del(const K& key)
-            {
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                _dbi.del(key);
-            }
-
-            template <typename K, typename V>
-            void del(const K& key, const V& val)
-            {
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                _dbi.del(key, val);
-            };
-
-            void drop(const bool del = false)
-            {
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                _dbi.drop(del);
-            }
-
-            lmdb::Cursor cursor() const
-            {
-                if (_txn == nullptr) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_NULL_TXN);
-                }
-                if (_dbi == 0) {
-                    throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
-                }
-                return _txn->openCursor(_dbi);
-            }
-
-        private:
-            const LMDBTxn* _txn;
-            lmdb::DBi _dbi {};
-            bool _append { false };
-            bool _overwrite { true };
+            _dbi.del(key, val);
         };
 
-    }
+        void drop(const bool del = false)
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+            }
+            _dbi.drop(del);
+        }
+
+        lmdb::Cursor cursor() const
+        {
+            if (_txn == nullptr) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_NULL_TXN);
+            }
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+            }
+            return _txn->openCursor(_dbi);
+        }
+
+    private:
+        const LMDBTxn* _txn;
+        lmdb::DBi _dbi {};
+        bool _append { false };
+        bool _overwrite { true };
+    };
+
+}
 }
 }

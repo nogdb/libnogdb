@@ -27,9 +27,7 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 namespace sql_parser {
-
     using namespace std;
 
     /* Forward declaration */

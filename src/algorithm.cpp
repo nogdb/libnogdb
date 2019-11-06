@@ -22,9 +22,7 @@
 #include "algorithm.hpp"
 
 namespace nogdb {
-
 namespace algorithm {
-
     using namespace adapter::schema;
     using namespace adapter::relation;
     using namespace datarecord;
@@ -194,6 +192,5 @@ namespace algorithm {
         }
         return result;
     }
-
 }
 }

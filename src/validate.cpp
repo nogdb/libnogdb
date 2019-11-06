@@ -19,17 +19,14 @@
  *
  */
 
-#include <regex>
 #include <memory>
 #include <unordered_map>
 
 #include "datarecord_adapter.hpp"
 #include "schema.hpp"
-#include "schema_adapter.hpp"
 #include "validate.hpp"
 
 namespace nogdb {
-
 namespace validate {
     using namespace adapter::schema;
     using namespace adapter::datarecord;

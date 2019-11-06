@@ -27,133 +27,133 @@
 #include "storage_adapter.hpp"
 
 namespace nogdb {
-
 namespace adapter {
+namespace datarecord {
+    using namespace internal_data_type;
+    using namespace utils::assertion;
 
-    namespace datarecord {
+    class DataRecord : public storage_engine::adapter::LMDBKeyValAccess {
+    public:
+        DataRecord(const storage_engine::LMDBTxn* const txn,
+            const ClassId& classId,
+            const ClassType& classType = ClassType::UNDEFINED)
+            : LMDBKeyValAccess(txn, std::to_string(classId), true, true, false, true)
+            , _classId { classId }
+            , _classType { classType }
+        {
+        }
 
-        class DataRecord : public storage_engine::adapter::LMDBKeyValAccess {
-        public:
-            DataRecord(const storage_engine::LMDBTxn* const txn,
-                const ClassId& classId,
-                const ClassType& classType = ClassType::UNDEFINED)
-                : LMDBKeyValAccess(txn, std::to_string(classId), true, true, false, true)
-                , _classId { classId }
-                , _classType { classType }
-            {
+        virtual ~DataRecord() noexcept = default;
+
+        DataRecord(DataRecord&& other) noexcept
+            : LMDBKeyValAccess(std::move(other))
+            , _classId { other._classId }
+            , _classType { other._classType }
+        {
+        }
+
+        DataRecord& operator=(DataRecord&& other) noexcept
+        {
+            if (this != &other) {
+                using std::swap;
+                swap(*this, other);
             }
+            return *this;
+        }
 
-            virtual ~DataRecord() noexcept = default;
+        void init()
+        {
+            put(MAX_RECORD_NUM_EM, PositionId { 1 });
+        }
 
-            DataRecord(DataRecord&& other) noexcept
-                : LMDBKeyValAccess(std::move(other))
-                , _classId { other._classId }
-                , _classType { other._classType }
-            {
-            }
+        PositionId insert(const Blob& blob)
+        {
+            auto result = get(MAX_RECORD_NUM_EM);
+            require(!result.empty);
+            auto posid = result.data.numeric<PositionId>();
+            put(posid, blob);
+            put(MAX_RECORD_NUM_EM, posid + PositionId { 1 });
+            return posid;
+        }
 
-            DataRecord& operator=(DataRecord&& other) noexcept
-            {
-                if (this != &other) {
-                    using std::swap;
-                    swap(*this, other);
-                }
-                return *this;
-            }
-
-            void init()
-            {
-                put(MAX_RECORD_NUM_EM, PositionId { 1 });
-            }
-
-            PositionId insert(const Blob& blob)
-            {
-                auto result = get(MAX_RECORD_NUM_EM);
-                require(!result.empty);
-                auto posid = result.data.numeric<PositionId>();
+        void update(const PositionId& posid, const Blob& blob)
+        {
+            auto result = get(posid);
+            if (!result.empty) {
                 put(posid, blob);
-                put(MAX_RECORD_NUM_EM, posid + PositionId { 1 });
-                return posid;
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
             }
+        }
 
-            void update(const PositionId& posid, const Blob& blob)
-            {
-                auto result = get(posid);
-                if (!result.empty) {
-                    put(posid, blob);
-                } else {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-                }
+        void remove(const PositionId& posid)
+        {
+            auto result = get(posid);
+            if (!result.empty) {
+                del(posid);
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
             }
+        }
 
-            void remove(const PositionId& posid)
-            {
-                auto result = get(posid);
-                if (!result.empty) {
-                    del(posid);
-                } else {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-                }
+        void destroy()
+        {
+            drop(true);
+        }
+
+        Blob getBlob(const PositionId& posid)
+        {
+            auto result = get(posid);
+            if (!result.empty) {
+                return result.data.blob();
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
             }
+        }
 
-            void destroy()
-            {
-                drop(true);
+        storage_engine::lmdb::Result getResult(const PositionId& posid)
+        {
+            auto result = get(posid);
+            if (!result.empty) {
+                return result;
+            } else {
+                throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
             }
+        }
 
-            Blob getBlob(const PositionId& posid)
-            {
-                auto result = get(posid);
-                if (!result.empty) {
-                    return result.data.blob();
-                } else {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-                }
+        storage_engine::lmdb::Cursor getCursor() const
+        {
+            return cursor();
+        }
+
+        void resultSetIter(std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback)
+        {
+            auto cursorHandler = getCursor();
+            for (auto keyValue = cursorHandler.getNext();
+                 !keyValue.empty();
+                 keyValue = cursorHandler.getNext()) {
+                auto key = keyValue.key.data.numeric<PositionId>();
+                if (key == MAX_RECORD_NUM_EM)
+                    continue;
+                callback(key, keyValue.val);
             }
+        }
 
-            storage_engine::lmdb::Result getResult(const PositionId& posid)
-            {
-                auto result = get(posid);
-                if (!result.empty) {
-                    return result;
-                } else {
-                    throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_RECORD);
-                }
-            }
+        const ClassId& getClassId() const
+        {
+            return _classId;
+        }
 
-            storage_engine::lmdb::Cursor getCursor() const
-            {
-                return cursor();
-            }
+        const ClassType& getClassType() const
+        {
+            return _classType;
+        }
 
-            void resultSetIter(std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback)
-            {
-                auto cursorHandler = getCursor();
-                for (auto keyValue = cursorHandler.getNext();
-                     !keyValue.empty();
-                     keyValue = cursorHandler.getNext()) {
-                    auto key = keyValue.key.data.numeric<PositionId>();
-                    if (key == MAX_RECORD_NUM_EM)
-                        continue;
-                    callback(key, keyValue.val);
-                }
-            }
+    private:
+        ClassId _classId {};
+        ClassType _classType { ClassType::UNDEFINED };
+    };
 
-            const ClassId& getClassId() const
-            {
-                return _classId;
-            }
-
-            const ClassType& getClassType() const
-            {
-                return _classType;
-            }
-
-        private:
-            ClassId _classId {};
-            ClassType _classType { ClassType::UNDEFINED };
-        };
-
-    }
+}
 }
 }

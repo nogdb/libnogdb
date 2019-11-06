@@ -22,9 +22,7 @@
 #include "index.hpp"
 
 namespace nogdb {
-
 namespace index {
-
     using namespace adapter::index;
     using namespace adapter::datarecord;
     using parser::RecordParser;
@@ -1020,5 +1018,4 @@ namespace index {
     };
 
 }
-
 }

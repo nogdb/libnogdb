@@ -59,9 +59,6 @@ private:
 
 class Context {
 public:
-    friend class ContextInitializer;
-    friend class Transaction;
-
     Context() = default;
 
     ~Context() noexcept;
@@ -87,6 +84,9 @@ public:
     Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 
 private:
+    friend class ContextInitializer;
+    friend class Transaction;
+
     Context(const std::string& dbPath, unsigned int maxDB, unsigned long maxDBSize, bool versionEnabled);
 
     std::string _dbPath {};
@@ -106,11 +106,6 @@ private:
 
 class Transaction {
 public:
-    friend class ResultSetCursor;
-    friend class compare::RecordCompare;
-    friend class validate::Validator;
-    friend class algorithm::GraphTraversal;
-
     Transaction(Context& ctx, const TxnMode& mode);
 
     ~Transaction() noexcept;
@@ -218,6 +213,10 @@ public:
         const RecordDescriptor& dstVertexRecordDescriptor) const;
 
 private:
+    friend class ResultSetCursor;
+    friend class compare::RecordCompare;
+    friend class validate::Validator;
+    friend class algorithm::GraphTraversal;
     friend class FindOperationBuilder;
     friend class FindEdgeOperationBuilder;
     friend class TraverseOperationBuilder;

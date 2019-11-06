@@ -34,11 +34,8 @@
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
-using adapter::schema::PropertyIdMapInfo;
-using adapter::schema::PropertyNameMapInfo;
-
 namespace parser {
+    using namespace adapter::schema;
 
     constexpr size_t UINT8_BITS_COUNT = 8 * sizeof(uint8_t);
     constexpr size_t UINT16_BITS_COUNT = 8 * sizeof(uint16_t);

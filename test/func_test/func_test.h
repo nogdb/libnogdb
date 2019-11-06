@@ -32,10 +32,10 @@
 
 #include "nogdb/nogdb.h"
 
-#include "functest_config.h"
-#include "functest_cursor_utils.h"
-#include "functest_index_utils.h"
-#include "functest_utils.h"
+#include "func_test_config.h"
+#include "func_test_cursor_utils.h"
+#include "func_test_index_utils.h"
+#include "func_test_utils.h"
 
 extern nogdb::Context* ctx;
 

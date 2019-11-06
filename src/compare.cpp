@@ -29,7 +29,6 @@
 #include "schema.hpp"
 
 namespace nogdb {
-
 namespace compare {
     using namespace adapter::schema;
     using namespace adapter::relation;
@@ -514,8 +513,7 @@ namespace compare {
         return resultSet;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         const Condition& condition)
@@ -552,8 +550,7 @@ namespace compare {
         return recordDescriptors;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         bool (*condition)(const Record&))
@@ -581,8 +578,7 @@ namespace compare {
         return recordDescriptors;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeMultiConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeMultiConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         const MultiCondition& multiCondition)
@@ -616,6 +612,5 @@ namespace compare {
         }
         return recordDescriptors;
     }
-
 }
 }

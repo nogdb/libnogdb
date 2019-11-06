@@ -30,9 +30,7 @@
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
 namespace schema {
-
     using namespace adapter::schema;
 
     struct SchemaUtils {
@@ -107,5 +105,4 @@ namespace schema {
     };
 
 }
-
 }

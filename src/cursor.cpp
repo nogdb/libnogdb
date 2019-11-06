@@ -24,11 +24,9 @@
 #include "datarecord.hpp"
 #include "schema.hpp"
 
-#include "nogdb/nogdb_errors.h"
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
 using namespace schema;
 using namespace datarecord;
 

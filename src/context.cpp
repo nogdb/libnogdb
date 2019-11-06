@@ -19,13 +19,8 @@
  *
  */
 
-#include <ctime>
-#include <iomanip>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <sys/file.h>
-#include <sys/stat.h>
 
 #include "constant.hpp"
 #include "schema.hpp"
@@ -36,11 +31,17 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace nogdb::utils::assertion;
 using namespace utils::io;
 
-std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying = std::unordered_map<std::string, Context::LMDBInstance> {};
+struct ContextSetting {
+    unsigned int maxDB {};
+    unsigned long maxDBSize {};
+    bool versionEnabled {};
+};
+
+std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying =
+    std::unordered_map<std::string, Context::LMDBInstance> {};
 
 ContextInitializer::ContextInitializer(const std::string& dbPath)
     : _dbPath { dbPath }
@@ -67,12 +68,6 @@ ContextInitializer& ContextInitializer::enableVersion() noexcept
     _versionEnabled = true;
     return *this;
 }
-
-struct ContextSetting {
-    unsigned int maxDB {};
-    unsigned long maxDBSize {};
-    bool versionEnabled {};
-};
 
 Context ContextInitializer::init()
 {

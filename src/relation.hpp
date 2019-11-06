@@ -31,9 +31,7 @@
 #include "utils.hpp"
 
 namespace nogdb {
-
 namespace relation {
-
     using namespace adapter::schema;
     using namespace adapter::relation;
     using namespace adapter::datarecord;

@@ -22,15 +22,12 @@
 #include <vector>
 
 #include "datarecord.hpp"
-#include "datarecord_adapter.hpp"
 #include "lmdb_engine.hpp"
-#include "parser.hpp"
 #include "schema.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace adapter::schema;
 using namespace schema;
 using namespace datarecord;

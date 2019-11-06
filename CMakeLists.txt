@@ -5,12 +5,12 @@ project(nogdb VERSION 1.2.0 LANGUAGES C CXX)
 file(GLOB nogdb_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 file(GLOB nogdb_SOURCE_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
 file(GLOB nogdb_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/nogdb/*.h)
-file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/functest/*.cpp)
-file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/functest/*.h)
-file(GLOB nogdb_UNIT_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.cpp)
-file(GLOB nogdb_UNIT_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/*.h)
-file(GLOB nogdb_UNIT_TEST_LMDB ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/lmdb_engine/*.cpp)
-file(GLOB nogdb_UNIT_TEST_LMDB_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unittest/lmdb_engine/*.h)
+file(GLOB nogdb_API_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/func_test/*.cpp)
+file(GLOB nogdb_API_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/func_test/*.h)
+file(GLOB nogdb_UNIT_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/*.cpp)
+file(GLOB nogdb_UNIT_TEST_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/*.h)
+file(GLOB nogdb_UNIT_TEST_LMDB ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/lmdb_engine/*.cpp)
+file(GLOB nogdb_UNIT_TEST_LMDB_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/lmdb_engine/*.h)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED OFF)
@@ -89,7 +89,7 @@ if(NOT APPLE)
     target_link_libraries(nogdb atomic)
 endif()
 
-## TARGET unittest
+## TARGET unit_test
 set(UNITTEST_COMPILE_OPTIONS
     -std=c++11
     -W
@@ -102,8 +102,8 @@ set(UNITTEST_COMPILE_OPTIONS
     -march=native
 )
 
-## TARGET functest
-set(FUNCTEST_COMPILE_OPTIONS
+## TARGET func_test
+set(FUNC_TEST_COMPILE_OPTIONS
     -std=c++11
     -W
     -Wall
@@ -115,44 +115,44 @@ set(FUNCTEST_COMPILE_OPTIONS
     -march=native
 )
 
-set(FUNCTEST_PATH "test/functest/functest.cpp")
-string(REPLACE ${FUNCTEST_PATH} "" nogdb_API_TEST "${nogdb_API_TEST}")
-add_library(nogdb_functest_object OBJECT EXCLUDE_FROM_ALL
+set(FUNC_TEST_PATH "test/func_test/func_test.cpp")
+string(REPLACE ${FUNC_TEST_PATH} "" nogdb_API_TEST "${nogdb_API_TEST}")
+add_library(nogdb_func_test_object OBJECT EXCLUDE_FROM_ALL
     ${nogdb_API_TEST}
     ${nogdb_API_TEST_HEADER}
 )
-target_include_directories(nogdb_functest_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(nogdb_func_test_object PRIVATE $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>)
 
-# functest_executable(name)
-function(functest_executable name)
+# func_test_executable(name)
+function(func_test_executable name)
     string(TOUPPER ${name} upper_name)
-    add_executable(functest_${name} EXCLUDE_FROM_ALL ${FUNCTEST_PATH} $<TARGET_OBJECTS:nogdb_functest_object>)
-    target_link_libraries(functest_${name} nogdb)
-    target_compile_options(functest_${name}
+    add_executable(func_test_${name} EXCLUDE_FROM_ALL ${FUNC_TEST_PATH} $<TARGET_OBJECTS:nogdb_func_test_object>)
+    target_link_libraries(func_test_${name} nogdb)
+    target_compile_options(func_test_${name}
         PRIVATE
-            ${FUNCTEST_COMPILE_OPTIONS}
+            ${FUNC_TEST_COMPILE_OPTIONS}
             -DTEST_${upper_name}_OPERATIONS
     )
-    add_test(build_functest_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target functest_${name})
-    add_test(NAME test_${name} COMMAND functest_${name})
-    set_tests_properties(test_${name} PROPERTIES DEPENDS ctest_build_test_${name})
+    add_test(build_func_test_${name} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target func_test_${name})
+    add_test(NAME ${name}_test COMMAND func_test_${name})
+    set_tests_properties(${name}_test PROPERTIES DEPENDS ctest_build_test_${name})
 endfunction()
 
 if(nogdb_BuildTests)
     enable_testing()
-    functest_executable(context)
-    functest_executable(schema)
-    functest_executable(record)
-    functest_executable(misc)
-    functest_executable(graph)
-    functest_executable(find)
-    functest_executable(inheritance)
-    functest_executable(index)
-    functest_executable(schema_txn)
-    functest_executable(txn)
-    functest_executable(sql)
+    func_test_executable(context)
+    func_test_executable(schema)
+    func_test_executable(record)
+    func_test_executable(misc)
+    func_test_executable(graph)
+    func_test_executable(find)
+    func_test_executable(inheritance)
+    func_test_executable(index)
+    func_test_executable(schema_txn)
+    func_test_executable(txn)
+    func_test_executable(sql)
 
-    add_executable(unittest_all EXCLUDE_FROM_ALL
+    add_executable(unit_test_all EXCLUDE_FROM_ALL
         ${nogdb_UNIT_TEST}
         ${nogdb_UNIT_TEST_HEADER}
         ${nogdb_UNIT_TEST_LMDB}
@@ -161,18 +161,18 @@ if(nogdb_BuildTests)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     )
-    target_include_directories(unittest_all
+    target_include_directories(unit_test_all
         PRIVATE
             $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
     )
     find_library(gtest_LIB gtest)
     find_library(gmock_LIB gmock)
-    target_link_libraries(unittest_all lmdb ${gtest_LIB} ${gmock_LIB} pthread)
+    target_link_libraries(unit_test_all lmdb ${gtest_LIB} ${gmock_LIB} pthread)
     if (NOT APPLE)
-        target_link_libraries(unittest_all atomic)
+        target_link_libraries(unit_test_all atomic)
     endif()
-    add_test(build_unittest_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unittest_all)
-    add_test(NAME unittest_all COMMAND unittest_all)
+    add_test(build_unit_test_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_test_all)
+    add_test(NAME unit_test_all COMMAND unit_test_all)
 endif()
 
 

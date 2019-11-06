@@ -19,8 +19,8 @@
  *
  */
 
-#include "functest.h"
-#include "test_prepare.h"
+#include "func_test.h"
+#include "setup_cleanup.h"
 
 void test_get_set_empty_value()
 {

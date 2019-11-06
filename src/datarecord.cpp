@@ -22,12 +22,10 @@
 #include "datarecord.hpp"
 
 namespace nogdb {
-
 namespace datarecord {
-    
     using parser::RecordParser;
     using compare::RecordCompare;
-    using schema::SchemaUtils;
+    using namespace schema;
 
     Record DataRecordUtils::getRecord(const Transaction *txn,
         const ClassAccessInfo& classInfo,
@@ -305,5 +303,4 @@ namespace datarecord {
     }
 
 }
-
 }

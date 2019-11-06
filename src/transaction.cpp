@@ -26,7 +26,6 @@
 #include "index.hpp"
 #include "lmdb_engine.hpp"
 #include "relation.hpp"
-#include "schema.hpp"
 #include "schema_adapter.hpp"
 
 #include "nogdb/nogdb.h"

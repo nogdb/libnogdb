@@ -21,9 +21,9 @@
 
 #include <string.h>
 
-#include "functest.h"
-#include "functest_utils.h"
-#include "test_prepare.h"
+#include "func_test.h"
+#include "func_test_utils.h"
+#include "setup_cleanup.h"
 
 using namespace std;
 using namespace nogdb;

@@ -27,14 +27,11 @@
 #include "parser.hpp"
 #include "relation.hpp"
 #include "schema.hpp"
-#include "storage_engine.hpp"
-#include "utils.hpp"
 #include "validate.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace utils::assertion;
 using namespace adapter::schema;
 using namespace adapter::datarecord;

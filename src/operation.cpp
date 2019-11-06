@@ -35,7 +35,6 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace adapter::datarecord;
 using namespace adapter::schema;
 using namespace schema;
