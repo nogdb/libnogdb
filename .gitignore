@@ -38,7 +38,7 @@ lemon++
 *.gcov
 *.gcno
 *.gcda
-test/unit_test
+unit_test
 unit_test_all
 func_test
 func_test.db
