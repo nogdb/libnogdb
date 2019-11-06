@@ -1,4 +1,4 @@
-# NogDB Documentation [v1.2.0]
+# NogDB Documentation [v1.2.1]
 ================================
 :toc:
 :toc-placement: preamble
