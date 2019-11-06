@@ -19,7 +19,7 @@
  *
  */
 
-#include "functest.h"
+#include "func_test.h"
 
 struct ClassSchema {
 
@@ -37,7 +37,7 @@ struct ClassSchema {
     std::vector<nogdb::IndexDescriptor> indexDescriptors {};
 };
 
-void assert_dbinfo(const nogdb::DbInfo& info1, const nogdb::DbInfo& info2)
+void assert_dbinfo(const nogdb::DBInfo& info1, const nogdb::DBInfo& info2)
 {
     assert(info1.numClass == info2.numClass);
     assert(info1.numProperty == info2.numProperty);
@@ -90,8 +90,8 @@ void assert_ctx(const nogdb::Context& ctx1, const nogdb::Context& ctx2)
 {
     auto txn1 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
     auto txn2 = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-    auto info1 = txn1.getDbInfo();
-    auto info2 = txn2.getDbInfo();
+    auto info1 = txn1.getDBInfo();
+    auto info2 = txn2.getDBInfo();
     assert_dbinfo(info1, info2);
 }
 
@@ -109,7 +109,7 @@ void test_context()
 void test_ctx_move()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         txn.addClass("files", nogdb::ClassType::VERTEX);
@@ -118,7 +118,7 @@ void test_ctx_move()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -136,7 +136,7 @@ void test_ctx_move()
             for (const auto& cdesc : txn.getClasses()) {
                 schema_r.emplace_back(ClassSchema { txn, cdesc });
             }
-            auto info_r = txn.getDbInfo();
+            auto info_r = txn.getDBInfo();
             txn.rollback();
             assert_dbinfo(info, info_r);
             assert_schema(schema, schema_r);
@@ -155,7 +155,7 @@ void test_ctx_move()
             for (const auto& cdesc : txn.getClasses()) {
                 schema_r.emplace_back(ClassSchema { txn, cdesc });
             }
-            auto info_r = txn.getDbInfo();
+            auto info_r = txn.getDBInfo();
             txn.rollback();
             assert_dbinfo(info, info_r);
             assert_schema(schema, schema_r);
@@ -180,7 +180,7 @@ void test_ctx_move()
 void test_reopen_ctx()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         txn.addClass("files", nogdb::ClassType::VERTEX);
@@ -193,7 +193,7 @@ void test_reopen_ctx()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -210,14 +210,14 @@ void test_reopen_ctx()
     }
 
     auto schema_r = std::vector<ClassSchema> {};
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
         schema_r.clear();
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         txn.rollback();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
@@ -256,7 +256,7 @@ struct myobject {
 void test_reopen_ctx_v2()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         txn.addClass("test1", nogdb::ClassType::VERTEX);
@@ -278,7 +278,7 @@ void test_reopen_ctx_v2()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -295,14 +295,14 @@ void test_reopen_ctx_v2()
     }
 
     auto schema_r = std::vector<ClassSchema> {};
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         schema_r.clear();
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
 
@@ -346,7 +346,7 @@ void test_reopen_ctx_v2()
 void test_reopen_ctx_v3()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     auto tmp = nogdb::RecordDescriptor {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
@@ -372,7 +372,7 @@ void test_reopen_ctx_v3()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -388,7 +388,7 @@ void test_reopen_ctx_v3()
         assert(false);
     }
 
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     auto schema_r = std::vector<ClassSchema> {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
@@ -396,7 +396,7 @@ void test_reopen_ctx_v3()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
 
@@ -457,7 +457,7 @@ void test_reopen_ctx_v4()
     auto t1 = nogdb::ClassDescriptor {};
     auto p1 = nogdb::PropertyDescriptor {};
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         t1 = txn.addClass("test1", nogdb::ClassType::VERTEX);
@@ -482,7 +482,7 @@ void test_reopen_ctx_v4()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
 
         txn.commit();
     } catch (const nogdb::Error& ex) {
@@ -493,7 +493,7 @@ void test_reopen_ctx_v4()
     delete ctx;
 
     auto schema_r = std::vector<ClassSchema> {};
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     try {
         ctx = new nogdb::Context(DATABASE_PATH);
     } catch (const nogdb::Error& ex) {
@@ -507,7 +507,7 @@ void test_reopen_ctx_v4()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
 
@@ -518,7 +518,7 @@ void test_reopen_ctx_v4()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -528,7 +528,7 @@ void test_reopen_ctx_v4()
     delete ctx;
 
     auto schema_rr = std::vector<ClassSchema> {};
-    auto info_rr = nogdb::DbInfo {};
+    auto info_rr = nogdb::DBInfo {};
     try {
         ctx = new nogdb::Context(DATABASE_PATH);
     } catch (const nogdb::Error& ex) {
@@ -542,7 +542,7 @@ void test_reopen_ctx_v4()
         for (const auto& cdesc : txn.getClasses()) {
             schema_rr.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_rr = txn.getDbInfo();
+        info_rr = txn.getDBInfo();
         assert_dbinfo(info_rr, info_r);
         assert_schema(schema_rr, schema_r);
 
@@ -577,7 +577,7 @@ void test_reopen_ctx_v4()
 void test_reopen_ctx_v5()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
         txn.addClass("vertex1", nogdb::ClassType::VERTEX);
@@ -603,7 +603,7 @@ void test_reopen_ctx_v5()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         txn.commit();
     } catch (const nogdb::Error& ex) {
         std::cout << "\nError: " << ex.what() << std::endl;
@@ -613,7 +613,7 @@ void test_reopen_ctx_v5()
     delete ctx;
 
     auto schema_r = std::vector<ClassSchema> {};
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     try {
         ctx = new nogdb::Context(DATABASE_PATH);
     } catch (const nogdb::Error& ex) {
@@ -627,7 +627,7 @@ void test_reopen_ctx_v5()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
 
@@ -658,7 +658,7 @@ void test_reopen_ctx_v5()
 void test_reopen_ctx_v6()
 {
     auto schema = std::vector<ClassSchema> {};
-    auto info = nogdb::DbInfo {};
+    auto info = nogdb::DBInfo {};
     nogdb::ClassDescriptor vertex1, vertex2, edge1, edge2;
     nogdb::PropertyDescriptor propVertex1, propVertex2, propEdge1, propEdge2;
     nogdb::IndexDescriptor v_index1, v_index2, v_index3, e_index1, e_index2, e_index3;
@@ -686,7 +686,7 @@ void test_reopen_ctx_v6()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
 
         assert(v_index1 == txn.getIndex(vertex1.name, propVertex1.name));
         assert(v_index2 == txn.getIndex(vertex2.name, propVertex1.name));
@@ -704,7 +704,7 @@ void test_reopen_ctx_v6()
     delete ctx;
 
     auto schema_r = std::vector<ClassSchema> {};
-    auto info_r = nogdb::DbInfo {};
+    auto info_r = nogdb::DBInfo {};
     try {
         ctx = new nogdb::Context(DATABASE_PATH);
     } catch (const nogdb::Error& ex) {
@@ -717,7 +717,7 @@ void test_reopen_ctx_v6()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
 
@@ -728,7 +728,7 @@ void test_reopen_ctx_v6()
         for (const auto& cdesc : txn.getClasses()) {
             schema.emplace_back(ClassSchema { txn, cdesc });
         }
-        info = txn.getDbInfo();
+        info = txn.getDBInfo();
         assert(txn.getIndexes(vertex1).size() == 1);
         assert(txn.getIndexes(vertex2).size() == 1);
         assert(txn.getIndexes(edge1).size() == 1);
@@ -748,7 +748,7 @@ void test_reopen_ctx_v6()
         for (const auto& cdesc : txn.getClasses()) {
             schema_r.emplace_back(ClassSchema { txn, cdesc });
         }
-        info_r = txn.getDbInfo();
+        info_r = txn.getDBInfo();
         assert_dbinfo(info, info_r);
         assert_schema(schema, schema_r);
         txn.rollback();

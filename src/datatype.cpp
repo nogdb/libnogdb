@@ -20,18 +20,15 @@
  */
 
 #include <algorithm>
-#include <cstdlib>
 #include <cstring>
 #include <new>
 
 #include "datatype.hpp"
 #include "utils.hpp"
 
-using namespace nogdb::utils::assertion;
-
 namespace nogdb {
-
 namespace internal_data_type {
+    using namespace nogdb::utils::assertion;
 
     Blob::Blob(const size_t capacity)
         : _capacity { capacity }
@@ -155,5 +152,4 @@ namespace internal_data_type {
     }
 
 }
-
 }

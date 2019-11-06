@@ -21,10 +21,11 @@
 
 #pragma once
 
-#include "lmdb/lmdb.h"
 #include <exception>
 #include <stdexcept>
 #include <string>
+
+#include "lmdb/lmdb.h"
 
 //*************************************************************
 //*  NogDB errors.                                            *

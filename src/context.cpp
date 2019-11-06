@@ -19,13 +19,8 @@
  *
  */
 
-#include <ctime>
-#include <iomanip>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <sys/file.h>
-#include <sys/stat.h>
 
 #include "constant.hpp"
 #include "schema.hpp"
@@ -36,35 +31,41 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace nogdb::utils::assertion;
 using namespace utils::io;
 
-std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying = std::unordered_map<std::string, Context::LMDBInstance> {};
+struct ContextSetting {
+    unsigned int maxDB {};
+    unsigned long maxDBSize {};
+    bool versionEnabled {};
+};
+
+std::unordered_map<std::string, Context::LMDBInstance> Context::_underlying =
+    std::unordered_map<std::string, Context::LMDBInstance> {};
 
 ContextInitializer::ContextInitializer(const std::string& dbPath)
     : _dbPath { dbPath }
 {
-    _settings._maxDB = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
-    _settings._maxDBSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
-    _settings._enableVersion = false;
+    _maxDB = DEFAULT_NOGDB_MAX_DATABASE_NUMBER;
+    _maxDBSize = DEFAULT_NOGDB_MAX_DATABASE_SIZE;
+    _versionEnabled = false;
 }
 
-ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDbNum) noexcept
+ContextInitializer& ContextInitializer::setMaxDB(unsigned int maxDBNum) noexcept
 {
-    _settings._maxDB = maxDbNum;
+    _maxDB = maxDBNum;
     return *this;
 }
 
-ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDbSize) noexcept
+ContextInitializer& ContextInitializer::setMaxDBSize(unsigned long maxDBSize) noexcept
 {
-    _settings._maxDBSize = maxDbSize;
+    _maxDBSize = maxDBSize;
     return *this;
 }
 
 ContextInitializer& ContextInitializer::enableVersion() noexcept
 {
-    _settings._enableVersion = true;
+    _versionEnabled = true;
     return *this;
 }
 
@@ -75,8 +76,12 @@ Context ContextInitializer::init()
         mkdir(_dbPath.c_str(), 0755);
         auto settingFilePath = _dbPath + DB_SETTING_NAME;
         // write database settings to disk
-        writeBinaryFile(settingFilePath.c_str(), static_cast<const char*>((void*)&_settings), sizeof(_settings));
-        return Context(_dbPath, _settings);
+        auto setting = ContextSetting{};
+        setting.maxDB = _maxDB;
+        setting.maxDBSize = _maxDBSize;
+        setting.versionEnabled = _versionEnabled;
+        writeBinaryFile(settingFilePath.c_str(), static_cast<const char*>((void*)&setting), sizeof(setting));
+        return Context(_dbPath, _maxDB, _maxDBSize, _versionEnabled);
     } else {
         throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_ALREADY_INITIALIZED);
     }
@@ -93,14 +98,18 @@ Context::Context(const std::string& dbPath)
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_UNKNOWN_ERR);
         } else {
             // read database settings from disk
-            auto binary = readBinaryFile(settingFilePath.c_str(), sizeof(_settings));
-            memcpy(&_settings, binary, sizeof(_settings));
+            auto setting = ContextSetting{};
+            auto binary = readBinaryFile(settingFilePath.c_str(), sizeof(setting));
+            memcpy(&setting, binary, sizeof(setting));
             delete [] binary;
+            _maxDB = setting.maxDB;
+            _maxDBSize = setting.maxDBSize;
+            _versionEnabled = setting.versionEnabled;
             auto foundContext = _underlying.find(dbPath);
             if (foundContext == _underlying.cend()) {
                 auto instance = LMDBInstance {};
                 instance._handler = new storage_engine::LMDBEnv(
-                    _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+                    _dbPath, setting.maxDB, setting.maxDBSize, DEFAULT_NOGDB_MAX_READERS);
                 instance._refCount = 1;
                 _underlying.emplace(dbPath, instance);
                 _envHandler = instance._handler;
@@ -112,14 +121,13 @@ Context::Context(const std::string& dbPath)
     }
 }
 
-Context::Context(const std::string& dbPath, const ContextSetting& settings)
-    : _dbPath { dbPath }
+Context::Context(const std::string& dbPath, unsigned int maxDB, unsigned long maxDBSize, bool versionEnabled)
+    : _dbPath { dbPath }, _maxDB { maxDB }, _maxDBSize { maxDBSize }, _versionEnabled { versionEnabled }
 {
     auto foundContext = _underlying.find(dbPath);
     if (foundContext == _underlying.cend()) {
         auto instance = LMDBInstance {};
-        instance._handler = new storage_engine::LMDBEnv(
-            _dbPath, _settings._maxDB, _settings._maxDBSize, DEFAULT_NOGDB_MAX_READERS);
+        instance._handler = new storage_engine::LMDBEnv(_dbPath, _maxDB, _maxDBSize, DEFAULT_NOGDB_MAX_READERS);
         instance._refCount = 1;
         _underlying.emplace(dbPath, instance);
         _envHandler = instance._handler;
@@ -146,7 +154,9 @@ Context::~Context() noexcept
 
 Context::Context(const Context& ctx)
     : _dbPath { ctx._dbPath }
-    , _settings { ctx._settings }
+    , _maxDB { ctx._maxDB }
+    , _maxDBSize { ctx._maxDBSize }
+    , _versionEnabled { ctx._versionEnabled }
     , _envHandler { ctx._envHandler }
 {
     ++_underlying.find(_dbPath)->second._refCount;
@@ -156,7 +166,9 @@ Context& Context::operator=(const Context& ctx)
 {
     if (this != &ctx) {
         _dbPath = ctx._dbPath;
-        _settings = ctx._settings;
+        _maxDB = ctx._maxDBSize;
+        _maxDBSize = ctx._maxDBSize;
+        _versionEnabled = ctx._versionEnabled;
         _envHandler = ctx._envHandler;
         ++_underlying.find(_dbPath)->second._refCount;
     }
@@ -165,7 +177,9 @@ Context& Context::operator=(const Context& ctx)
 
 Context::Context(Context&& ctx) noexcept
     : _dbPath { ctx._dbPath }
-    , _settings { ctx._settings }
+    , _maxDB { ctx._maxDB }
+    , _maxDBSize { ctx._maxDBSize }
+    , _versionEnabled { ctx._versionEnabled }
     , _envHandler { ctx._envHandler }
 {
 }
@@ -175,10 +189,14 @@ Context& Context::operator=(Context&& ctx) noexcept
     if (this != &ctx) {
         _envHandler = ctx._envHandler;
         _dbPath = ctx._dbPath;
-        _settings = ctx._settings;
+        _maxDB = ctx._maxDBSize;
+        _maxDBSize = ctx._maxDBSize;
+        _versionEnabled = ctx._versionEnabled;
         ctx._dbPath = std::string {};
+        ctx._maxDB = 0;
+        ctx._maxDBSize = 0;
+        ctx._versionEnabled = false;
         ctx._envHandler = nullptr;
-        ctx._settings = ContextSetting {};
     }
     return *this;
 }

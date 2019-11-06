@@ -19,8 +19,8 @@
  *
  */
 
-#include "functest.h"
-#include "test_prepare.h"
+#include "func_test.h"
+#include "setup_cleanup.h"
 
 void test_get_set_empty_value()
 {
@@ -836,7 +836,7 @@ void test_version_add_vertex_edge()
         auto v2_1 = txn.addVertex("vertex_version_2", nogdb::Record {}.set("name", "v2_1"));
         auto e11_21 = txn.addEdge("edge_version", v1_1, v2_1, nogdb::Record {}.set("name", "e11->21"));
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 1 });
             res = txn.fetchRecord(v2_1);
@@ -860,7 +860,7 @@ void test_version_add_vertex_edge()
 
     try {
         auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.find("vertex_version_1").where(nogdb::Condition("name").eq("v1_1")).get()[0].record;
             ASSERT_EQ(res.getVersion(), uint64_t { 1 });
             res = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("v2_1")).get()[0].record;
@@ -898,7 +898,7 @@ void test_version_update_vertex_edge()
         txn.update(e11_21.descriptor, nogdb::Record {}.set("name", "11->21"));
         txn.update(e11_21.descriptor, nogdb::Record {}.set("name", "11->21"));
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1.descriptor);
             ASSERT_EQ(res.getVersion(), uint64_t { 2 });
             res = txn.fetchRecord(v2_1.descriptor);
@@ -926,7 +926,7 @@ void test_version_update_vertex_edge()
         auto v2_1 = txn.find("vertex_version_2").where(nogdb::Condition("name").eq("21")).get()[0];
         auto e11_21 = txn.find("edge_version").where(nogdb::Condition("name").eq("11->21")).get()[0];
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1.descriptor);
             ASSERT_EQ(res.getVersion(), uint64_t { 2 });
             res = txn.fetchRecord(v2_1.descriptor);
@@ -964,7 +964,7 @@ void test_version_update_src_dst_edge()
         txn.updateSrc(e11_21, v2_1);
         txn.updateSrc(e12_22, v1_1);
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 3 });
             res = txn.fetchRecord(v2_1);
@@ -1011,7 +1011,7 @@ void test_version_update_src_dst_edge()
         txn.updateSrc(e11_21, v1_1);
         txn.updateSrc(e12_22, v1_2);
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 4 });
             res = txn.fetchRecord(v2_1);
@@ -1058,7 +1058,7 @@ void test_version_update_src_dst_edge()
         txn.updateDst(e11_21, v1_1);
         txn.updateDst(e12_22, v1_1);
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 5 });
             res = txn.fetchRecord(v2_1);
@@ -1105,7 +1105,7 @@ void test_version_update_src_dst_edge()
         txn.updateDst(e11_21, v2_1);
         txn.updateDst(e12_22, v2_2);
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 6 });
             res = txn.fetchRecord(v2_1);
@@ -1155,7 +1155,7 @@ void test_version_remove_vertex_edge()
         txn.remove(v1_1);
         txn.remove(e12_22);
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v2_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 7 });
             res = txn.fetchRecord(v1_2);
@@ -1192,7 +1192,7 @@ void test_version_remove_all_vertex_edge()
 
         txn.removeAll("vertex_version_1");
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v2_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 7 });
             res = txn.fetchRecord(v2_2);
@@ -1222,7 +1222,7 @@ void test_version_remove_all_vertex_edge()
 
         txn.removeAll("edge_version");
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 7 });
             res = txn.fetchRecord(v2_1);
@@ -1263,7 +1263,7 @@ void test_version_drop_vertex_edge()
 
         txn.dropClass("vertex_version_1");
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v2_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 7 });
             res = txn.fetchRecord(v2_2);
@@ -1293,7 +1293,7 @@ void test_version_drop_vertex_edge()
 
         txn.dropClass("edge_version");
 
-        if (ctx->isEnableVersion()) {
+        if (ctx->isVersionEnabled()) {
             auto res = txn.fetchRecord(v1_1);
             ASSERT_EQ(res.getVersion(), uint64_t { 7 });
             res = txn.fetchRecord(v2_1);

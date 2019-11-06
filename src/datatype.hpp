@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 namespace nogdb {
-
 namespace internal_data_type {
 
     class Blob {

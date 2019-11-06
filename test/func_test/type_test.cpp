@@ -19,7 +19,7 @@
  *
  */
 
-#include "functest.h"
+#include "func_test.h"
 #include <cmath>
 
 struct myobject {

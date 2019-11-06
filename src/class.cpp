@@ -27,17 +27,15 @@
 #include "parser.hpp"
 #include "relation.hpp"
 #include "schema.hpp"
-#include "storage_engine.hpp"
-#include "utils.hpp"
 #include "validate.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
 using namespace utils::assertion;
-using adapter::schema::ClassAccessInfo;
-using adapter::datarecord::DataRecord;
+using namespace adapter::schema;
+using namespace adapter::datarecord;
+using namespace schema;
 using parser::RecordParser;
 
 const ClassDescriptor Transaction::addClass(const std::string& className, ClassType type)
@@ -76,7 +74,7 @@ const ClassDescriptor Transaction::addSubClassOf(const std::string& superClass, 
         .isNotDuplicatedClass(className)
         .isClassIdMaxReach();
 
-    auto superClassInfo = _interface->schema()->getExistingClass(superClass);
+    auto superClassInfo = SchemaUtils::getExistingClass(this, superClass);
     try {
         auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId { 1 };
         _adapter->dbClass()->create(ClassAccessInfo { className, classId, superClassInfo.id, superClassInfo.type });
@@ -100,7 +98,7 @@ void Transaction::dropClass(const std::string& className)
         .isTxnCompleted()
         .isClassNameValid(className);
 
-    auto foundClass = _interface->schema()->getExistingClass(className);
+    auto foundClass = SchemaUtils::getExistingClass(this, className);
     // retrieve relevant properties information
     auto propertyInfos = _adapter->dbProperty()->getInfos(foundClass.id);
     for (const auto& property : propertyInfos) {
@@ -125,9 +123,9 @@ void Transaction::dropClass(const std::string& className)
             [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                 auto recordId = RecordId { foundClass.id, positionId };
                 if (foundClass.type == ClassType::EDGE) {
-                    auto vertices = RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isEnableVersion());
-                    _interface->graph()->removeRelFromEdge(recordId, vertices.first, vertices.second);
-                    if (_txnCtx->isEnableVersion()) {
+                    auto vertices = RecordParser::parseEdgeRawDataVertexSrcDst(result, _txnCtx->isVersionEnabled());
+                    _graph->removeRelFromEdge(recordId, vertices.first, vertices.second);
+                    if (_txnCtx->isVersionEnabled()) {
                         // update version of src vertex
                         if (_updatedRecords.find(vertices.first) == _updatedRecords.cend()) {
                             auto srcVertexDataRecord = DataRecord(_txnBase, vertices.first.first, ClassType::VERTEX);
@@ -150,8 +148,8 @@ void Transaction::dropClass(const std::string& className)
                         }
                     }
                 } else {
-                    auto neighbours = _interface->graph()->removeRelFromVertex(recordId);
-                    if (_txnCtx->isEnableVersion()) {
+                    auto neighbours = _graph->removeRelFromVertex(recordId);
+                    if (_txnCtx->isVersionEnabled()) {
                         for (const auto& neighbour : neighbours) {
                             if (_updatedRecords.find(neighbour) == _updatedRecords.cend()) {
                                 auto neighbourDataRecord = DataRecord(_txnBase, neighbour.first, ClassType::VERTEX);
@@ -200,7 +198,7 @@ void Transaction::renameClass(const std::string& oldClassName, const std::string
         .isClassNameValid(newClassName)
         .isNotDuplicatedClass(newClassName);
 
-    auto foundClass = _interface->schema()->getExistingClass(oldClassName);
+    auto foundClass = SchemaUtils::getExistingClass(this, oldClassName);
     try {
         _adapter->dbClass()->alterClassName(oldClassName, newClassName);
     } catch (const Error& err) {

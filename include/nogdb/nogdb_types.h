@@ -65,20 +65,20 @@ namespace adapter {
     }
 }
 
-namespace relation {
-    class GraphInterface;
-}
-
-namespace index {
-    class IndexInterface;
-}
-
 namespace schema {
-    class SchemaInterface;
+    struct SchemaUtils;
 }
 
 namespace datarecord {
-    class DataRecordInterface;
+    struct DataRecordUtils;
+}
+
+namespace relation {
+    class GraphUtils;
+}
+
+namespace index {
+    struct IndexUtils;
 }
 
 namespace validate {
@@ -134,7 +134,7 @@ typedef uint32_t IndexId;
 typedef uint64_t VersionId;
 typedef std::map<std::string, PropertyType> PropertyMapType;
 
-struct DbInfo {
+struct DBInfo {
     std::string dbPath;
     ClassId maxClassId;
     ClassId numClass;
@@ -624,11 +624,8 @@ public:
 
 private:
     friend class parser::RecordParser;
-
     friend class algorithm::GraphTraversal;
-
     friend class sql_parser::Record;
-
     friend class ResultSetCursor;
 
     Record(PropertyToBytesMap properties);
@@ -697,7 +694,6 @@ struct RecordDescriptor {
 
 private:
     friend class algorithm::GraphTraversal;
-
     friend class ResultSetCursor;
 
     unsigned int _depth { 0 };
@@ -771,14 +767,9 @@ typedef std::vector<Result> ResultSet;
 
 class ResultSetCursor {
 public:
-    friend class datarecord::DataRecordInterface;
-
     friend class FindOperationBuilder;
-
     friend class FindEdgeOperationBuilder;
-
     friend class TraverseOperationBuilder;
-
     friend class ShortestPathOperationBuilder;
 
     ResultSetCursor(const Transaction& _txn);
@@ -816,6 +807,8 @@ public:
     const Result* operator->() const;
 
 private:
+    friend struct datarecord::DataRecordUtils;
+
     const Transaction* txn;
     std::vector<RecordDescriptor> metadata {};
     long long currentIndex;
@@ -988,14 +981,9 @@ private:
 
 public:
     friend class MultiCondition;
-
     friend class compare::RecordCompare;
 
-    friend class datarecord::DataRecordInterface;
-
-    friend class index::IndexInterface;
-
-    Condition(const std::string& propName_);
+    Condition(const std::string& _propName);
 
     ~Condition() noexcept = default;
 
@@ -1193,6 +1181,9 @@ public:
     Condition operator!() const;
 
 private:
+    friend struct datarecord::DataRecordUtils;
+    friend struct index::IndexUtils;
+
     std::string propName;
     Bytes valueBytes;
     std::vector<Bytes> valueSet;
@@ -1236,12 +1227,8 @@ private:
 
 public:
     friend class Condition;
-
     friend class compare::RecordCompare;
-
-    friend class datarecord::DataRecordInterface;
-
-    friend class index::IndexInterface;
+    friend struct index::IndexUtils;
 
     MultiCondition() = delete;
 

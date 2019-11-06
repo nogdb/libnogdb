@@ -29,7 +29,7 @@
 #include <string>
 #include <type_traits>
 
-#include "functest_config.h"
+#include "func_test_config.h"
 
 #include "nogdb/nogdb.h"
 

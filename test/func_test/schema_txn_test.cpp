@@ -18,7 +18,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "functest.h"
+#include "func_test.h"
 
 size_t getSizeOfSubClasses(const nogdb::Transaction& txn, const nogdb::ClassDescriptor& classDesc)
 {

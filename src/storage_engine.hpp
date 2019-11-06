@@ -39,10 +39,8 @@
 #define DEFAULT_NOGDB_MAX_READERS 65536U
 
 namespace nogdb {
-
-using namespace utils::assertion;
-
 namespace storage_engine {
+    using namespace utils::assertion;
 
     class LMDBEnv {
     public:
@@ -124,16 +122,16 @@ namespace storage_engine {
             return *this;
         }
 
-        lmdb::Dbi openDbi(const std::string& dbName, bool numericKey = false, bool unique = true) const
+        lmdb::DBi openDBi(const std::string& dbName, bool numericKey = false, bool unique = true) const
         {
             if (_txn.handle()) {
-                return lmdb::Dbi::open(_txn.handle(), dbName, numericKey, unique);
+                return lmdb::DBi::open(_txn.handle(), dbName, numericKey, unique);
             } else {
                 throw NOGDB_STORAGE_ERROR(MDB_BAD_TXN);
             }
         }
 
-        lmdb::Cursor openCursor(const lmdb::Dbi& dbi) const
+        lmdb::Cursor openCursor(const lmdb::DBi& dbi) const
         {
             require(_txn.handle() == dbi.txn());
             return lmdb::Cursor::open(_txn.handle(), dbi.handle());
@@ -141,7 +139,7 @@ namespace storage_engine {
 
         lmdb::Cursor openCursor(const std::string& dbName, bool numericKey = false, bool unique = true) const
         {
-            return openCursor(openDbi(dbName, numericKey, unique));
+            return openCursor(openDBi(dbName, numericKey, unique));
         }
 
         void commit()

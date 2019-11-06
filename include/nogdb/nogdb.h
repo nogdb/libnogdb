@@ -34,12 +34,6 @@
 
 namespace nogdb {
 
-struct ContextSetting {
-    unsigned int _maxDB {};
-    unsigned long _maxDBSize {};
-    bool _enableVersion {};
-};
-
 class Context;
 
 class ContextInitializer {
@@ -48,9 +42,9 @@ public:
 
     ~ContextInitializer() = default;
 
-    ContextInitializer& setMaxDB(unsigned int maxDbNum) noexcept;
+    ContextInitializer& setMaxDB(unsigned int maxDBNum) noexcept;
 
-    ContextInitializer& setMaxDBSize(unsigned long maxDbSize) noexcept;
+    ContextInitializer& setMaxDBSize(unsigned long maxDBSize) noexcept;
 
     ContextInitializer& enableVersion() noexcept;
 
@@ -58,15 +52,13 @@ public:
 
 private:
     std::string _dbPath {};
-    ContextSetting _settings {};
+    unsigned int _maxDB {};
+    unsigned long _maxDBSize {};
+    bool _versionEnabled {};
 };
 
 class Context {
 public:
-    friend class ContextInitializer;
-
-    friend class Transaction;
-
     Context() = default;
 
     ~Context() noexcept;
@@ -83,19 +75,25 @@ public:
 
     std::string getDBPath() const { return _dbPath; }
 
-    unsigned int getMaxDB() const { return _settings._maxDB; }
+    unsigned int getMaxDB() const { return _maxDB; }
 
-    unsigned long getMaxDBSize() const { return _settings._maxDBSize; }
+    unsigned long getMaxDBSize() const { return _maxDBSize; }
 
-    bool isEnableVersion() const { return _settings._enableVersion; }
+    bool isVersionEnabled() const { return _versionEnabled; }
 
     Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 
 private:
-    Context(const std::string& dbPath, const ContextSetting& settings);
+    friend class ContextInitializer;
+    friend class Transaction;
+
+    Context(const std::string& dbPath, unsigned int maxDB, unsigned long maxDBSize, bool versionEnabled);
 
     std::string _dbPath {};
-    ContextSetting _settings {};
+    unsigned int _maxDB {};
+    unsigned long _maxDBSize {};
+    bool _versionEnabled {};
+
     storage_engine::LMDBEnv* _envHandler;
 
     struct LMDBInstance {
@@ -108,22 +106,6 @@ private:
 
 class Transaction {
 public:
-    friend class ResultSetCursor;
-
-    friend class compare::RecordCompare;
-
-    friend class validate::Validator;
-
-    friend class schema::SchemaInterface;
-
-    friend class relation::GraphInterface;
-
-    friend class index::IndexInterface;
-
-    friend class datarecord::DataRecordInterface;
-
-    friend class algorithm::GraphTraversal;
-
     Transaction(Context& ctx, const TxnMode& mode);
 
     ~Transaction() noexcept;
@@ -168,7 +150,7 @@ public:
 
     void dropIndex(const std::string& className, const std::string& propertyName);
 
-    const DbInfo getDbInfo() const;
+    const DBInfo getDBInfo() const;
 
     const std::vector<ClassDescriptor> getClasses() const;
 
@@ -231,13 +213,18 @@ public:
         const RecordDescriptor& dstVertexRecordDescriptor) const;
 
 private:
+    friend class ResultSetCursor;
+    friend class compare::RecordCompare;
+    friend class validate::Validator;
+    friend class algorithm::GraphTraversal;
     friend class FindOperationBuilder;
-
     friend class FindEdgeOperationBuilder;
-
     friend class TraverseOperationBuilder;
-
     friend class ShortestPathOperationBuilder;
+
+    friend struct schema::SchemaUtils;
+    friend struct datarecord::DataRecordUtils;
+    friend struct index::IndexUtils;
 
     class Adapter {
     public:
@@ -266,41 +253,11 @@ private:
         adapter::schema::IndexAccess* _index;
     };
 
-    class Interface {
-    public:
-        Interface();
-
-        Interface(const Transaction* txn);
-
-        ~Interface() noexcept;
-
-        Interface(Interface&& other) noexcept = delete;
-
-        Interface& operator=(Interface&& other) noexcept = delete;
-
-        schema::SchemaInterface* schema() const { return _schema; }
-
-        index::IndexInterface* index() const { return _index; }
-
-        relation::GraphInterface* graph() const { return _graph; }
-
-        datarecord::DataRecordInterface* record() const { return _record; }
-
-        void destroy();
-
-    private:
-        const Transaction* _txn;
-        schema::SchemaInterface* _schema;
-        datarecord::DataRecordInterface* _record;
-        relation::GraphInterface* _graph;
-        index::IndexInterface* _index;
-    };
-
     TxnMode _txnMode;
     const Context* _txnCtx;
     storage_engine::LMDBTxn* _txnBase;
     Adapter* _adapter;
-    Interface* _interface;
+    relation::GraphUtils* _graph;
 
     std::unordered_set<RecordId, RecordIdHash> _updatedRecords {};
 };

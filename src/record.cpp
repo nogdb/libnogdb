@@ -21,11 +21,9 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <iostream>
 
 #include "constant.hpp"
 #include "validate.hpp"
-
 #include "utils.hpp"
 
 #include "nogdb/nogdb_errors.h"

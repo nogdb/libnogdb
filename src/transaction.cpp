@@ -19,7 +19,6 @@
  *
  */
 
-#include <iostream> // for debugging
 #include <memory>
 
 #include "datarecord.hpp"
@@ -27,7 +26,6 @@
 #include "index.hpp"
 #include "lmdb_engine.hpp"
 #include "relation.hpp"
-#include "schema.hpp"
 #include "schema_adapter.hpp"
 
 #include "nogdb/nogdb.h"
@@ -70,52 +68,6 @@ Transaction::Adapter::~Adapter() noexcept
     }
 }
 
-Transaction::Interface::Interface()
-    : _txn { nullptr }
-    , _schema { nullptr }
-    , _record { nullptr }
-    , _graph { nullptr }
-    , _index { nullptr }
-{
-}
-
-Transaction::Interface::Interface(const Transaction* txn)
-    : _txn { txn }
-    , _schema { new schema::SchemaInterface(_txn) }
-    , _record { new datarecord::DataRecordInterface(_txn) }
-    , _graph { new relation::GraphInterface(_txn) }
-    , _index { new index::IndexInterface(_txn) }
-{
-}
-
-Transaction::Interface::~Interface() noexcept
-{
-    if (_txn) {
-        destroy();
-        _txn = nullptr;
-    }
-}
-
-void Transaction::Interface::destroy()
-{
-    if (_schema) {
-        delete _schema;
-        _schema = nullptr;
-    }
-    if (_record) {
-        delete _record;
-        _record = nullptr;
-    }
-    if (_graph) {
-        delete _graph;
-        _graph = nullptr;
-    }
-    if (_index) {
-        delete _index;
-        _index = nullptr;
-    }
-}
-
 Transaction::Transaction(Context& ctx, const TxnMode& mode)
     : _txnMode { mode }
     , _txnCtx { &ctx }
@@ -125,7 +77,7 @@ Transaction::Transaction(Context& ctx, const TxnMode& mode)
             _txnCtx->_envHandler,
             (mode == TxnMode::READ_WRITE) ? storage_engine::lmdb::TXN_RW : storage_engine::lmdb::TXN_RO);
         _adapter = new Adapter(_txnBase);
-        _interface = new Interface(this);
+        _graph = new relation::GraphUtils(_txnBase, _txnCtx->_versionEnabled);
     } catch (const Error& err) {
         try {
             rollback();
@@ -150,30 +102,35 @@ Transaction::~Transaction() noexcept
 }
 
 Transaction::Transaction(Transaction&& txn) noexcept
+    : _txnMode { txn._txnMode }
+    , _txnCtx { txn._txnCtx }
+    , _txnBase { txn._txnBase }
+    , _adapter { txn._adapter }
+    , _graph { txn._graph }
 {
-    *this = std::move(txn);
+    txn._txnCtx = nullptr;
+    txn._txnBase = nullptr;
+    txn._adapter = nullptr;
+    txn._graph = nullptr;
 }
 
 Transaction& Transaction::operator=(Transaction&& txn) noexcept
 {
     if (this != &txn) {
-        try {
-            rollback();
-        } catch (...) {
-        }
+        delete _txnBase;
+        delete _adapter;
+        delete _graph;
 
         _txnCtx = txn._txnCtx;
         _txnMode = txn._txnMode;
         _txnBase = txn._txnBase;
         _adapter = txn._adapter;
-        _interface = new Interface(this);
+        _graph = txn._graph;
 
         txn._txnCtx = nullptr;
         txn._txnBase = nullptr;
         txn._adapter = nullptr;
-        txn._interface->destroy();
-        delete txn._interface;
-        txn._interface = nullptr;
+        txn._graph = nullptr;
     }
     return *this;
 }
@@ -205,10 +162,9 @@ void Transaction::commit()
         delete _adapter;
         _adapter = nullptr;
     }
-    if (_interface) {
-        _interface->destroy();
-        delete _interface;
-        _interface = nullptr;
+    if (_graph) {
+        delete _graph;
+        _graph = nullptr;
     }
 }
 
@@ -223,10 +179,9 @@ void Transaction::rollback() noexcept
         delete _adapter;
         _adapter = nullptr;
     }
-    if (_interface) {
-        _interface->destroy();
-        delete _interface;
-        _interface = nullptr;
+    if (_graph) {
+        delete _graph;
+        _graph = nullptr;
     }
 }
 

@@ -1,10 +1,10 @@
 /*
+ *  runtest_config.h - A configuration of runtest software
+ *
  *  Copyright (C) 2019, NogDB <https://nogdb.org>
  *  <nogdb at throughwave dot co dot th>
  *
- *  This file is part of libnogdb, the NogDB core library in C++.
- *
- *  libnogdb is free software: you can redistribute it and/or modify
+ *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
@@ -19,14 +19,11 @@
  *
  */
 
-#include "../../include/nogdb/nogdb.h"
-#include <cassert>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-#include <iostream>
+#pragma once
 
-int main(int argc, char** argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+#include <string>
+
+const std::string DATABASE_PATH { "./func_test.db" };
+constexpr unsigned int COLUMN_ID_OFFSET = 13;
+constexpr unsigned int COLUMN_NAME_OFFSET = 25;
+constexpr unsigned int COLUMN_TYPE_OFFSET = 13;

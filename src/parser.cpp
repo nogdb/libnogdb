@@ -20,13 +20,13 @@
  */
 
 #include "parser.hpp"
+#include "utils.hpp"
 
 namespace nogdb {
-
-using adapter::schema::PropertyIdMapInfo;
-using adapter::schema::PropertyNameMapInfo;
-
 namespace parser {
+    using namespace internal_data_type;
+    using namespace adapter::schema;
+    using namespace utils::assertion;
 
     Blob RecordParser::parseRecord(const Record& record, const PropertyNameMapInfo& properties)
     {
@@ -306,5 +306,4 @@ namespace parser {
     }
 
 }
-
 }

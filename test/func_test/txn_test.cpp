@@ -18,8 +18,8 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "functest.h"
-#include "test_prepare.h"
+#include "func_test.h"
+#include "setup_cleanup.h"
 
 void test_txn_commit_nothing()
 {

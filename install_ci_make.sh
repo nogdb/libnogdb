@@ -8,7 +8,7 @@ install_lmdb() {
     cp ci/lmdb/Makefile.ci lib/lmdb/Makefile
 }
 
-echo "\n\tInstalling Makefile for CI...\n"
+printf "Installing Makefile for CI..."
 install_main && install_lmdb
 
-echo "[Done]"
+echo " [Done]"

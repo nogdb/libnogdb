@@ -19,8 +19,8 @@
  *
  */
 
-#include "functest.h"
-#include "test_prepare.h"
+#include "func_test.h"
+#include "setup_cleanup.h"
 #include <set>
 
 void init_test_graph()

@@ -23,8 +23,8 @@
 
 namespace nogdb {
 
-Condition::Condition(const std::string& propName_)
-    : propName { propName_ }
+Condition::Condition(const std::string& _propName)
+    : propName { _propName }
     , comp { Comparator::NOT_NULL }
 {
     valueBytes = Bytes {};

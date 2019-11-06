@@ -29,14 +29,14 @@
 #include "schema.hpp"
 
 namespace nogdb {
-
-using adapter::schema::ClassAccessInfo;
-using adapter::schema::PropertyNameMapInfo;
-using adapter::relation::Direction;
-using compare::RecordCompare;
-
 namespace compare {
-
+    using namespace adapter::schema;
+    using namespace adapter::relation;
+    using namespace datarecord;
+    using namespace schema;
+    using namespace index;
+    using compare::RecordCompare;
+  
     bool RecordCompare::compareBytesValue(const Bytes& value, PropertyType type, const Condition& condition)
     {
         if (condition.comp == Condition::Comparator::IN) {
@@ -174,15 +174,15 @@ namespace compare {
             }
         }
 
-        auto record = txn._interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+        auto record = DataRecordUtils::getRecordWithBasicInfo(&txn, classInfo, recordDescriptor);
         if (filter._mode == GraphFilter::FilterMode::CONDITION) {
             auto condition = filter._condition.get();
-            auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(&txn, classInfo.id, classInfo.superClassId);
             auto cmpResult = RecordCompare::compareRecordByCondition(record, propertyNameMapInfo, *condition);
             return cmpResult ? Result { recordDescriptor, record } : Result {};
         } else if (filter._mode == GraphFilter::FilterMode::MULTI_CONDITION) {
             auto multiCondition = filter._multiCondition.get();
-            auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(classInfo.id, classInfo.superClassId);
+            auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(&txn, classInfo.id, classInfo.superClassId);
             auto cmpResult = RecordCompare::compareRecordByMultiCondition(
                 record, propertyNameMapInfo, *multiCondition);
             return cmpResult ? Result { recordDescriptor, record } : Result {};
@@ -194,8 +194,8 @@ namespace compare {
         return Result { recordDescriptor, record };
     }
 
-    std::vector<std::pair<RecordDescriptor, RecordDescriptor>>
-    RecordCompare::filterIncidentEdges(const Transaction& txn,
+    std::vector<std::pair<RecordDescriptor, RecordDescriptor>> RecordCompare::filterIncidentEdges(
+        const Transaction& txn,
         const RecordId& vertex,
         const Direction& direction,
         const GraphFilter& filter,
@@ -205,14 +205,14 @@ namespace compare {
         auto edgeNeighbours = std::vector<std::pair<RecordId, RecordId>> {};
         switch (direction) {
         case Direction::IN:
-            edgeNeighbours = txn._interface->graph()->getInEdgeAndNeighbours(vertex);
+            edgeNeighbours = txn._graph->getInEdgeAndNeighbours(vertex);
             break;
         case Direction::OUT:
-            edgeNeighbours = txn._interface->graph()->getOutEdgeAndNeighbours(vertex);
+            edgeNeighbours = txn._graph->getOutEdgeAndNeighbours(vertex);
             break;
         case Direction::ALL:
-            edgeNeighbours = txn._interface->graph()->getInEdgeAndNeighbours(vertex);
-            auto moreEdges = txn._interface->graph()->getOutEdgeAndNeighbours(vertex);
+            edgeNeighbours = txn._graph->getInEdgeAndNeighbours(vertex);
+            auto moreEdges = txn._graph->getOutEdgeAndNeighbours(vertex);
             edgeNeighbours.insert(edgeNeighbours.cend(), moreEdges.cbegin(), moreEdges.cend());
             break;
         }
@@ -228,20 +228,21 @@ namespace compare {
         return edgeRecordDescriptors;
     }
 
-    std::vector<RecordId>
-    RecordCompare::resolveEdgeRecordIds(const Transaction& txn, const RecordId& recordId, const Direction& direction)
+    std::vector<RecordId> RecordCompare::resolveEdgeRecordIds(const Transaction& txn,
+        const RecordId& recordId,
+        const Direction& direction)
     {
         auto edgeRecordIds = std::vector<RecordId> {};
         switch (direction) {
         case Direction::IN:
-            edgeRecordIds = txn._interface->graph()->getInEdges(recordId);
+            edgeRecordIds = txn._graph->getInEdges(recordId);
             break;
         case Direction::OUT:
-            edgeRecordIds = txn._interface->graph()->getOutEdges(recordId);
+            edgeRecordIds = txn._graph->getOutEdges(recordId);
             break;
         default:
-            edgeRecordIds = txn._interface->graph()->getInEdges(recordId);
-            auto outEdges = txn._interface->graph()->getOutEdges(recordId);
+            edgeRecordIds = txn._graph->getInEdges(recordId);
+            auto outEdges = txn._graph->getOutEdges(recordId);
             edgeRecordIds.insert(edgeRecordIds.cend(), outEdges.cbegin(), outEdges.cend());
             break;
         }
@@ -259,13 +260,13 @@ namespace compare {
             return ResultSet {};
         }
         auto propertyInfo = foundProperty->second;
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, propertyInfo, condition);
         if (foundIndex.first) {
-            auto indexedRecords = txn._interface->index()->getRecord(propertyInfo, foundIndex.second, condition);
-            return txn._interface->record()->getResultSet(classInfo, indexedRecords);
+            auto indexedRecords = IndexUtils::getRecord(&txn, propertyInfo, foundIndex.second, condition);
+            return DataRecordUtils::getResultSet(&txn, classInfo, indexedRecords);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getResultSetByCondition(classInfo, propertyInfo.type, condition);
+                return DataRecordUtils::getResultSetByCondition(&txn, classInfo, propertyInfo.type, condition);
             }
         }
         return ResultSet {};
@@ -291,20 +292,20 @@ namespace compare {
             }
         }
 
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, multiCondition);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, conditionProperties, multiCondition);
         if (foundIndex.first) {
-            auto indexedRecords = txn._interface->index()->getRecord(conditionProperties, foundIndex.second, multiCondition);
-            return txn._interface->record()->getResultSet(classInfo, indexedRecords);
+            auto indexedRecords = IndexUtils::getRecord(&txn, conditionProperties, foundIndex.second, multiCondition);
+            return DataRecordUtils::getResultSet(&txn, classInfo, indexedRecords);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getResultSetByMultiCondition(classInfo, conditionProperties, multiCondition);
+                return DataRecordUtils::getResultSetByMultiCondition(
+                    &txn, classInfo, conditionProperties, multiCondition);
             }
         }
         return ResultSet {};
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareConditionRdesc(const Transaction& txn,
         const ClassAccessInfo& classInfo,
         const PropertyNameMapInfo& propertyNameMapInfo,
         const Condition& condition,
@@ -315,19 +316,18 @@ namespace compare {
             return std::vector<RecordDescriptor> {};
         }
         auto propertyInfo = foundProperty->second;
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, propertyInfo, condition);
         if (foundIndex.first) {
-            return txn._interface->index()->getRecord(propertyInfo, foundIndex.second, condition);
+            return IndexUtils::getRecord(&txn, propertyInfo, foundIndex.second, condition);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getRecordDescriptorByCondition(classInfo, propertyInfo.type, condition);
+                return DataRecordUtils::getRecordDescriptorByCondition(&txn, classInfo, propertyInfo.type, condition);
             }
         }
         return std::vector<RecordDescriptor> {};
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareMultiConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareMultiConditionRdesc(const Transaction& txn,
         const ClassAccessInfo& classInfo,
         const PropertyNameMapInfo& propertyNameMapInfo,
         const MultiCondition& conditions,
@@ -347,13 +347,13 @@ namespace compare {
             }
         }
 
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, conditions);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, conditionProperties, conditions);
         if (foundIndex.first) {
-            return txn._interface->index()->getRecord(conditionProperties, foundIndex.second, conditions);
+            return IndexUtils::getRecord(&txn, conditionProperties, foundIndex.second, conditions);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getRecordDescriptorByMultiCondition(
-                    classInfo, conditionProperties, conditions);
+                return DataRecordUtils::getRecordDescriptorByMultiCondition(
+                    &txn, classInfo, conditionProperties, conditions);
             }
         }
         return std::vector<RecordDescriptor> {};
@@ -370,12 +370,12 @@ namespace compare {
             return 0;
         }
         auto propertyInfo = foundProperty->second;
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, propertyInfo, condition);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, propertyInfo, condition);
         if (foundIndex.first) {
-            return txn._interface->index()->getCountRecord(propertyInfo, foundIndex.second, condition);
+            return IndexUtils::getCountRecord(&txn, propertyInfo, foundIndex.second, condition);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getCountRecordByCondition(classInfo, propertyInfo.type, condition);
+                return DataRecordUtils::getCountRecordByCondition(&txn, classInfo, propertyInfo.type, condition);
             }
         }
         return 0;
@@ -401,13 +401,13 @@ namespace compare {
             }
         }
 
-        auto foundIndex = txn._interface->index()->hasIndex(classInfo, conditionProperties, conditions);
+        auto foundIndex = IndexUtils::hasIndex(&txn, classInfo, conditionProperties, conditions);
         if (foundIndex.first) {
-            return txn._interface->index()->getCountRecord(conditionProperties, foundIndex.second, conditions);
+            return IndexUtils::getCountRecord(&txn, conditionProperties, foundIndex.second, conditions);
         } else {
             if (!searchIndexOnly) {
-                return txn._interface->record()->getCountRecordByMultiCondition(
-                    classInfo, conditionProperties, conditions);
+                return DataRecordUtils::getCountRecordByMultiCondition(
+                    &txn, classInfo, conditionProperties, conditions);
             }
         }
         return 0;
@@ -428,8 +428,8 @@ namespace compare {
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
                 edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
-                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(
-                    edgeClassInfo.id, edgeClassInfo.superClassId);
+                auto propertyNameMapInfo =
+                    SchemaUtils::getPropertyNameMapInfo(&txn, edgeClassInfo.id, edgeClassInfo.superClassId);
                 auto foundProperty = propertyNameMapInfo.find(condition.propName);
                 if (foundProperty == propertyNameMapInfo.cend()) {
                     continue;
@@ -441,7 +441,8 @@ namespace compare {
                 propertyType = foundEdgeInfo->second.second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
                 resultSet.emplace_back(Result { RecordDescriptor { edgeRecordId }, edgeRecord });
             }
@@ -468,7 +469,8 @@ namespace compare {
                 edgeClassInfo = foundEdgeInfo->second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (condition(edgeRecord)) {
                 resultSet.emplace_back(Result { RecordDescriptor { edgeRecordId }, edgeRecord });
             }
@@ -491,7 +493,8 @@ namespace compare {
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
                 edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
-                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+                auto propertyNameMapInfo =
+                    SchemaUtils::getPropertyNameMapInfo(&txn, edgeClassInfo.id, edgeClassInfo.superClassId);
                 for (const auto& property : propertyNameMapInfo) {
                     propertyTypes.emplace(property.first, property.second.type);
                 }
@@ -501,7 +504,8 @@ namespace compare {
                 propertyTypes = foundEdgeInfo->second.second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (multiCondition.execute(edgeRecord, propertyTypes)) {
                 resultSet.emplace_back(Result { RecordDescriptor { edgeRecordId }, edgeRecord });
             }
@@ -509,8 +513,7 @@ namespace compare {
         return resultSet;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         const Condition& condition)
@@ -525,7 +528,8 @@ namespace compare {
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
                 edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
-                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+                auto propertyNameMapInfo =
+                    SchemaUtils::getPropertyNameMapInfo(&txn, edgeClassInfo.id, edgeClassInfo.superClassId);
                 auto foundProperty = propertyNameMapInfo.find(condition.propName);
                 if (foundProperty == propertyNameMapInfo.cend()) {
                     continue;
@@ -537,7 +541,8 @@ namespace compare {
                 propertyType = foundEdgeInfo->second.second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (compareRecordByCondition(edgeRecord, propertyType, condition)) {
                 recordDescriptors.emplace_back(RecordDescriptor { edgeRecordId });
             }
@@ -545,8 +550,7 @@ namespace compare {
         return recordDescriptors;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         bool (*condition)(const Record&))
@@ -565,7 +569,8 @@ namespace compare {
                 edgeClassInfo = foundEdgeInfo->second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (condition(edgeRecord)) {
                 recordDescriptors.emplace_back(RecordDescriptor { edgeRecordId });
             }
@@ -573,8 +578,7 @@ namespace compare {
         return recordDescriptors;
     }
 
-    std::vector<RecordDescriptor>
-    RecordCompare::compareEdgeMultiConditionRdesc(const Transaction& txn,
+    std::vector<RecordDescriptor> RecordCompare::compareEdgeMultiConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
         const MultiCondition& multiCondition)
@@ -589,7 +593,8 @@ namespace compare {
             auto foundEdgeInfo = edgeInfos.find(edgeRecordId.first);
             if (foundEdgeInfo == edgeInfos.cend()) {
                 edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRecordId.first);
-                auto propertyNameMapInfo = txn._interface->schema()->getPropertyNameMapInfo(edgeClassInfo.id, edgeClassInfo.superClassId);
+                auto propertyNameMapInfo =
+                    SchemaUtils::getPropertyNameMapInfo(&txn, edgeClassInfo.id, edgeClassInfo.superClassId);
                 for (const auto& property : propertyNameMapInfo) {
                     propertyTypes.emplace(property.first, property.second.type);
                 }
@@ -599,13 +604,13 @@ namespace compare {
                 propertyTypes = foundEdgeInfo->second.second;
             }
 
-            auto edgeRecord = txn._interface->record()->getRecordWithBasicInfo(edgeClassInfo, RecordDescriptor { edgeRecordId });
+            auto edgeRecord =
+                DataRecordUtils::getRecordWithBasicInfo(&txn, edgeClassInfo, RecordDescriptor { edgeRecordId });
             if (multiCondition.execute(edgeRecord, propertyTypes)) {
                 recordDescriptors.emplace_back(RecordDescriptor { edgeRecordId });
             }
         }
         return recordDescriptors;
     }
-
 }
 }

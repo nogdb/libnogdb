@@ -19,10 +19,9 @@
  *
  */
 
-#ifndef TEST_PREPARE_H_
-#define TEST_PREPARE_H_
+#pragma once
 
-#include "functest.h"
+#include "func_test.h"
 
 inline void init_vertex_book()
 {
@@ -771,5 +770,3 @@ inline void destroy_vertex_index_test()
         assert(false);
     }
 }
-
-#endif

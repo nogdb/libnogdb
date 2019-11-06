@@ -19,21 +19,18 @@
  *
  */
 
-#include <regex>
 #include <memory>
 #include <unordered_map>
 
 #include "datarecord_adapter.hpp"
 #include "schema.hpp"
-#include "schema_adapter.hpp"
 #include "validate.hpp"
 
 namespace nogdb {
-
-using namespace adapter::schema;
-using adapter::datarecord::DataRecord;
-
 namespace validate {
+    using namespace adapter::schema;
+    using namespace adapter::datarecord;
+    using namespace schema;
 
     Validator& Validator::isTxnValid()
     {
@@ -160,7 +157,7 @@ namespace validate {
 
     Validator& Validator::isExistingSrcVertex(const RecordDescriptor& vertex)
     {
-        auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
+        auto foundClass = SchemaUtils::getExistingClass(_txn, vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
             auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
@@ -180,7 +177,7 @@ namespace validate {
 
     Validator& Validator::isExistingDstVertex(const RecordDescriptor& vertex)
     {
-        auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
+        auto foundClass = SchemaUtils::getExistingClass(_txn, vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
             auto vertexDataRecord = DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX);
             try {
@@ -200,7 +197,7 @@ namespace validate {
 
     Validator& Validator::isExistingVertex(const RecordDescriptor& vertex)
     {
-        auto foundClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
+        auto foundClass = SchemaUtils::getExistingClass(_txn, vertex.rid.first);
         if (foundClass.type == ClassType::VERTEX) {
             try {
                 DataRecord(_txn->_txnBase, foundClass.id, ClassType::VERTEX).getBlob(vertex.rid.second);
@@ -233,7 +230,7 @@ namespace validate {
                     }
                 }
             } else {
-                auto foundNewClass = _txn->_interface->schema()->getExistingClass(vertex.rid.first);
+                auto foundNewClass = SchemaUtils::getExistingClass(_txn, vertex.rid.first);
                 if (foundNewClass.type == ClassType::VERTEX) {
                     try {
                         auto vertexDataRecord = std::make_shared<DataRecord>(

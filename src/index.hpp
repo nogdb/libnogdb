@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream> // for debugging
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
@@ -38,126 +37,120 @@
 #include "nogdb/nogdb_types.h"
 
 namespace nogdb {
-
-using namespace adapter::schema;
-using adapter::datarecord::DataRecord;
-using parser::RecordParser;
-
 namespace index {
+    using namespace adapter::schema;
+    using namespace adapter::datarecord;
+    using namespace schema;
+    using parser::RecordParser;
 
     typedef std::map<PropertyId, IndexAccessInfo> PropertyIdMapIndex;
-
     typedef std::map<std::string, std::pair<PropertyAccessInfo, IndexAccessInfo>> PropertyNameMapIndex;
 
-    class IndexInterface {
-    public:
-        IndexInterface(const Transaction* txn)
-            : _txn { txn }
-        {
-        }
+    struct IndexUtils {
 
-        virtual ~IndexInterface() noexcept = default;
-
-        void initialize(const PropertyAccessInfo& propertyInfo,
+        static void initialize(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const ClassId& superClassId,
             const ClassType& classType);
 
-        void drop(const PropertyAccessInfo& propertyInfo, const IndexAccessInfo& indexInfo);
+        static void drop(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
+            const IndexAccessInfo& indexInfo);
 
-        void drop(const ClassId& classId, const PropertyNameMapInfo& propertyNameMapInfo);
+        static void drop(const Transaction *txn,
+            const ClassId& classId,
+            const PropertyNameMapInfo& propertyNameMapInfo);
 
-        void insert(const PropertyAccessInfo& propertyInfo,
+        static void insert(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const PositionId& posId,
             const Bytes& value);
 
-        void insert(const RecordDescriptor& recordDescriptor,
+        static void insert(const Transaction *txn,
+            const RecordDescriptor& recordDescriptor,
             const Record& record,
             const PropertyNameMapIndex& propertyNameMapIndex);
 
-        void remove(const PropertyAccessInfo& propertyInfo,
+        static void remove(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const PositionId& posId,
             const Bytes& value);
 
-        void remove(const RecordDescriptor& recordDescriptor,
+        static void remove(const Transaction *txn,
+            const RecordDescriptor& recordDescriptor,
             const Record& record,
             const PropertyNameMapIndex& propertyNameMapIndex);
 
-        PropertyNameMapIndex getIndexInfos(const RecordDescriptor& recordDescriptor,
+        static PropertyNameMapIndex getIndexInfos(const Transaction *txn,
+            const RecordDescriptor& recordDescriptor,
             const Record& record,
             const PropertyNameMapInfo& propertyNameMapInfo);
 
-        std::pair<bool, IndexAccessInfo>
-        hasIndex(const ClassAccessInfo& classInfo,
+        static std::pair<bool, IndexAccessInfo> hasIndex(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyAccessInfo& propertyInfo,
-            const Condition& condition) const;
+            const Condition& condition);
 
-        std::pair<bool, PropertyIdMapIndex>
-        hasIndex(const ClassAccessInfo& classInfo,
+        static std::pair<bool, PropertyIdMapIndex> hasIndex(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyNameMapInfo& propertyInfos,
-            const MultiCondition& conditions) const;
+            const MultiCondition& conditions);
 
-        std::vector<RecordDescriptor>
-        getRecord(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getRecord(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const Condition& condition,
-            bool isNegative = false) const;
+            bool isNegative = false);
 
-        size_t
-        getCountRecord(const PropertyAccessInfo& propertyInfo,
-                       const IndexAccessInfo& indexInfo,
-                       const Condition& condition,
-                       bool isNegative = false) const;
+        static size_t getCountRecord(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
+            const IndexAccessInfo& indexInfo,
+            const Condition& condition,
+            bool isNegative = false);
 
-        std::vector<RecordDescriptor>
-        getRecord(const PropertyNameMapInfo& propertyInfos,
+        static std::vector<RecordDescriptor> getRecord(const Transaction *txn,
+            const PropertyNameMapInfo& propertyInfos,
             const PropertyIdMapIndex& propertyIndexInfo,
-            const MultiCondition& conditions) const;
+            const MultiCondition& conditions);
 
-        size_t
-        getCountRecord(const PropertyNameMapInfo& propertyInfos,
-                       const PropertyIdMapIndex& propertyIndexInfo,
-                       const MultiCondition& conditions) const;
+        static size_t getCountRecord(const Transaction *txn,
+            const PropertyNameMapInfo& propertyInfos,
+            const PropertyIdMapIndex& propertyIndexInfo,
+            const MultiCondition& conditions);
 
     protected:
-        const std::vector<Condition::Comparator> validComparators {
-            Condition::Comparator::EQUAL//,
-//            Condition::Comparator::BETWEEN_NO_BOUND,
-//            Condition::Comparator::BETWEEN,
-//            Condition::Comparator::BETWEEN_NO_UPPER,
-//            Condition::Comparator::BETWEEN_NO_LOWER,
-//            Condition::Comparator::LESS_EQUAL,
-//            Condition::Comparator::LESS,
-//            Condition::Comparator::GREATER_EQUAL,
-//            Condition::Comparator::GREATER
-        };
+        static const std::vector<Condition::Comparator> validComparators;
 
     private:
-        const Transaction* _txn;
 
-        adapter::index::IndexRecord openIndexRecordPositive(const IndexAccessInfo& indexInfo) const;
+        static adapter::index::IndexRecord openIndexRecordPositive(const Transaction *txn,
+            const IndexAccessInfo& indexInfo);
 
-        adapter::index::IndexRecord openIndexRecordNegative(const IndexAccessInfo& indexInfo) const;
+        static adapter::index::IndexRecord openIndexRecordNegative(const Transaction *txn,
+            const IndexAccessInfo& indexInfo);
 
-        adapter::index::IndexRecord openIndexRecordString(const IndexAccessInfo& indexInfo) const;
+        static adapter::index::IndexRecord openIndexRecordString(const Transaction *txn,
+            const IndexAccessInfo& indexInfo);
 
         template <typename T>
-        void createNumeric(const PropertyAccessInfo& propertyInfo,
+        static void createNumeric(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const ClassId& superClassId,
             const ClassType& classType,
             T (*valueRetrieve)(const Bytes&))
         {
-            auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
+            auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(txn, indexInfo.classId, superClassId);
             require(!propertyIdMapInfo.empty());
-            auto indexAccess = openIndexRecordPositive(indexInfo);
-            auto dataRecord = DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+            auto indexAccess = openIndexRecordPositive(txn, indexInfo);
+            auto dataRecord = DataRecord(txn->_txnBase, indexInfo.classId, classType);
             std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
                 [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                     auto const record = RecordParser::parseRawData(
-                        result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
+                        result, propertyIdMapInfo, classType == ClassType::EDGE, txn->_txnCtx->isVersionEnabled());
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
                         auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -168,21 +161,22 @@ namespace index {
         }
 
         template <typename T>
-        void createSignedNumeric(const PropertyAccessInfo& propertyInfo,
+        static void createSignedNumeric(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const ClassId& superClassId,
             const ClassType& classType,
             T (*valueRetrieve)(const Bytes&))
         {
-            auto propertyIdMapInfo = _txn->_interface->schema()->getPropertyIdMapInfo(indexInfo.classId, superClassId);
+            auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(txn, indexInfo.classId, superClassId);
             require(!propertyIdMapInfo.empty());
-            auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
-            auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
-            auto dataRecord = DataRecord(_txn->_txnBase, indexInfo.classId, classType);
+            auto indexPositiveAccess = openIndexRecordPositive(txn, indexInfo);
+            auto indexNegativeAccess = openIndexRecordNegative(txn, indexInfo);
+            auto dataRecord = DataRecord(txn->_txnBase, indexInfo.classId, classType);
             std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
                 [&](const PositionId& positionId, const storage_engine::lmdb::Result& result) {
                     auto const record = RecordParser::parseRawData(
-                        result, propertyIdMapInfo, classType == ClassType::EDGE, _txn->_txnCtx->isEnableVersion());
+                        result, propertyIdMapInfo, classType == ClassType::EDGE, txn->_txnCtx->isVersionEnabled());
                     auto bytesValue = record.get(propertyInfo.name);
                     if (!bytesValue.empty()) {
                         auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
@@ -194,36 +188,48 @@ namespace index {
             dataRecord.resultSetIter(callback);
         }
 
-        void createString(const PropertyAccessInfo& propertyInfo,
+        static void createString(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const ClassId& superClassId,
             const ClassType& classType);
 
         template <typename T>
-        void insert(const IndexAccessInfo& indexInfo, PositionId positionId, const T& value)
+        static void insert(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            PositionId positionId,
+            const T& value)
         {
-            auto indexAccess = openIndexRecordPositive(indexInfo);
+            auto indexAccess = openIndexRecordPositive(txn, indexInfo);
             auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
             indexAccess.create(value, indexRecord);
         }
 
-        void insert(const IndexAccessInfo& indexInfo, PositionId positionId, const std::string& value);
+        static void insert(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            PositionId positionId,
+            const std::string& value);
 
         template <typename T>
-        void insertSignedNumeric(const IndexAccessInfo& indexInfo, PositionId positionId, const T& value)
+        static void insertSignedNumeric(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            PositionId positionId,
+            const T& value)
         {
             auto indexRecord = Blob(sizeof(PositionId)).append(&positionId, sizeof(PositionId));
             if (value >= 0) {
-                auto indexPositiveAccess = openIndexRecordPositive(indexInfo);
+                auto indexPositiveAccess = openIndexRecordPositive(txn, indexInfo);
                 indexPositiveAccess.create(value, indexRecord);
             } else {
-                auto indexNegativeAccess = openIndexRecordNegative(indexInfo);
+                auto indexNegativeAccess = openIndexRecordNegative(txn, indexInfo);
                 indexNegativeAccess.create(value, indexRecord);
             }
         }
 
         template <typename T>
-        void removeByCursorNumeric(const storage_engine::lmdb::Cursor& cursor, PositionId positionId, const T& value)
+        static void removeByCursorNumeric(const storage_engine::lmdb::Cursor& cursor,
+            PositionId positionId,
+            const T& value)
         {
             for (auto keyValue = cursor.find(value);
                  !keyValue.empty();
@@ -242,20 +248,31 @@ namespace index {
         }
 
         template <typename T>
-        void removeByCursor(const IndexAccessInfo& indexInfo, PositionId positionId, const T& value)
+        static void removeByCursor(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            PositionId positionId,
+            const T& value)
         {
-            auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+            auto indexAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
             removeByCursorNumeric(indexAccessCursor, positionId, value);
         }
 
-        void removeByCursor(const IndexAccessInfo& indexInfo, PositionId positionId, const std::string& value);
+        static void removeByCursor(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            PositionId positionId,
+            const std::string& value);
 
         template <typename T>
-        void removeByCursorWithSignNumeric(const IndexAccessInfo& indexInfo, const PositionId& posId, const T& value)
+        static void removeByCursorWithSignNumeric(const Transaction *txn,
+            const IndexAccessInfo& indexInfo,
+            const PositionId& posId,
+            const T& value)
         {
-            auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-            auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
-            (value < 0) ? removeByCursorNumeric(indexNegativeAccessCursor, posId, value) : removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
+            auto indexPositiveAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
+            auto indexNegativeAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
+            (value < 0) ?
+                removeByCursorNumeric(indexNegativeAccessCursor, posId, value) :
+                removeByCursorNumeric(indexPositiveAccessCursor, posId, value);
         }
 
         inline static void sortByRdesc(std::vector<RecordDescriptor>& recordDescriptors)
@@ -267,69 +284,81 @@ namespace index {
                 });
         };
 
-        inline bool isValidComparator(const Condition& condition) const
+        inline static bool isValidComparator(const Condition& condition)
         {
-            return std::find(validComparators.cbegin(), validComparators.cend(), condition.comp) != validComparators.cend();
+            return std::find(validComparators.cbegin(),
+                validComparators.cend(),
+                condition.comp) != validComparators.cend();
         }
 
-        std::vector<RecordDescriptor>
-        getRecordFromMultiCondition(const PropertyNameMapInfo& propertyInfos,
+        static std::vector<RecordDescriptor> getRecordFromMultiCondition(const Transaction *txn,
+            const PropertyNameMapInfo& propertyInfos,
             const PropertyIdMapIndex& propertyIndexInfo,
             const MultiCondition::CompositeNode* compositeNode,
-            bool isParentNegative) const;
+            bool isParentNegative);
 
-        std::vector<RecordDescriptor>
-        getMultiConditionResult(const PropertyNameMapInfo& propertyInfos,
+        static std::vector<RecordDescriptor> getMultiConditionResult(const Transaction *txn,
+            const PropertyNameMapInfo& propertyInfos,
             const PropertyIdMapIndex& propertyIndexInfo,
             const std::shared_ptr<MultiCondition::ExprNode>& exprNode,
-            bool isNegative) const;
+            bool isNegative);
 
-        std::vector<RecordDescriptor> getLessOrEqual(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getLessOrEqual(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
-            const Bytes& value) const;
+            const Bytes& value);
 
-        std::vector<RecordDescriptor> getLessThan(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getLessThan(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
-            const Bytes& value) const;
+            const Bytes& value);
 
-        std::vector<RecordDescriptor> getEqual(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getEqual(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
-            const Bytes& value) const;
+            const Bytes& value);
 
-        std::vector<RecordDescriptor> getGreaterOrEqual(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getGreaterOrEqual(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
-            const Bytes& value) const;
+            const Bytes& value);
 
-        std::vector<RecordDescriptor> getGreaterThan(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getGreaterThan(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
-            const Bytes& value) const;
+            const Bytes& value);
 
-        std::vector<RecordDescriptor> getBetween(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getBetween(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const Bytes& lowerBound,
             const Bytes& upperBound,
-            const std::pair<bool, bool>& isIncludeBound) const;
+            const std::pair<bool, bool>& isIncludeBound);
 
-        std::vector<RecordDescriptor> getLessCommon(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getLessCommon(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const Bytes& value,
-            bool isEqual) const;
+            bool isEqual);
 
-        std::vector<RecordDescriptor> getGreaterCommon(const PropertyAccessInfo& propertyInfo,
+        static std::vector<RecordDescriptor> getGreaterCommon(const Transaction *txn,
+            const PropertyAccessInfo& propertyInfo,
             const IndexAccessInfo& indexInfo,
             const Bytes& value,
-            bool isEqual) const;
+            bool isEqual);
 
         template <typename T>
-        std::vector<RecordDescriptor>
-        getLessNumeric(const T& value, const IndexAccessInfo& indexInfo, bool includeEqual = false) const
+        static std::vector<RecordDescriptor> getLessNumeric(const Transaction *txn,
+            const T& value,
+            const IndexAccessInfo& indexInfo,
+            bool includeEqual = false)
         {
             if (value < 0) {
-                auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                auto indexAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
                 return backwardSearchIndex(indexAccessCursor, indexInfo.classId, value, false, includeEqual);
             } else {
-                auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-                auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                auto indexPositiveAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
+                auto indexNegativeAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
                 auto positiveResult = backwardSearchIndex(
                     indexPositiveAccessCursor, indexInfo.classId, value, true, includeEqual);
                 auto negativeResult = fullScanIndex(indexNegativeAccessCursor, indexInfo.classId);
@@ -339,46 +368,50 @@ namespace index {
         };
 
         template <typename T>
-        std::vector<RecordDescriptor>
-        getEqualNumeric(const T& value, const IndexAccessInfo& indexInfo) const
+        static std::vector<RecordDescriptor> getEqualNumeric(const Transaction *txn,
+            const T& value,
+            const IndexAccessInfo& indexInfo)
         {
             auto result = std::vector<RecordDescriptor> {};
-            auto indexAccess = (value < 0) ? openIndexRecordNegative(indexInfo) : openIndexRecordPositive(indexInfo);
+            auto indexAccess = (value < 0) ?
+                openIndexRecordNegative(txn, indexInfo) : openIndexRecordPositive(txn, indexInfo);
             return exactMatchIndex(indexAccess.getCursor(), indexInfo.classId, value, result);
         };
 
         template <typename T>
-        std::vector<RecordDescriptor>
-        getGreaterNumeric(const T& value, const IndexAccessInfo& indexInfo, bool includeEqual = false) const
+        static std::vector<RecordDescriptor> getGreaterNumeric(const Transaction *txn,
+            const T& value,
+            const IndexAccessInfo& indexInfo,
+            bool includeEqual = false)
         {
             if (value < 0) {
-                auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-                auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                auto indexPositiveAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
+                auto indexNegativeAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
                 auto positiveResult = fullScanIndex(indexPositiveAccessCursor, indexInfo.classId);
                 auto negativeResult = forwardSearchIndex(
                     indexNegativeAccessCursor, indexInfo.classId, value, false, includeEqual);
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
+                auto indexAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
                 return forwardSearchIndex(indexAccessCursor, indexInfo.classId, value, true, includeEqual);
             }
         };
 
         template <typename T>
-        std::vector<RecordDescriptor>
-        getBetweenNumeric(const T& lowerBound,
+        static std::vector<RecordDescriptor> getBetweenNumeric(const Transaction *txn,
+            const T& lowerBound,
             const T& upperBound,
             const IndexAccessInfo& indexInfo,
-            const std::pair<bool, bool>& isIncludeBound) const
+            const std::pair<bool, bool>& isIncludeBound)
         {
             if (lowerBound < 0 && upperBound < 0) {
-                auto indexAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                auto indexAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
                 return betweenSearchIndex(
                     indexAccessCursor, indexInfo.classId, lowerBound, upperBound, false, isIncludeBound);
             } else if (lowerBound < 0 && upperBound >= 0) {
-                auto indexPositiveAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-                auto indexNegativeAccessCursor = openIndexRecordNegative(indexInfo).getCursor();
+                auto indexPositiveAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
+                auto indexNegativeAccessCursor = openIndexRecordNegative(txn, indexInfo).getCursor();
                 auto positiveResult = betweenSearchIndex(indexPositiveAccessCursor, indexInfo.classId,
                     static_cast<T>(0), upperBound,
                     true, { true, isIncludeBound.second });
@@ -388,14 +421,18 @@ namespace index {
                 positiveResult.insert(positiveResult.end(), negativeResult.cbegin(), negativeResult.cend());
                 return positiveResult;
             } else {
-                auto indexAccessCursor = openIndexRecordPositive(indexInfo).getCursor();
-                return betweenSearchIndex(indexAccessCursor, indexInfo.classId, lowerBound, upperBound, true, isIncludeBound);
+                auto indexAccessCursor = openIndexRecordPositive(txn, indexInfo).getCursor();
+                return betweenSearchIndex(indexAccessCursor,
+                    indexInfo.classId,
+                    lowerBound,
+                    upperBound,
+                    true,
+                    isIncludeBound);
             }
         };
 
         template <typename T>
-        static std::vector<RecordDescriptor>
-        backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> backwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const T& value,
             bool positive,
@@ -433,8 +470,7 @@ namespace index {
         };
 
         template <typename T>
-        static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const T& value,
             std::vector<RecordDescriptor>& result)
@@ -453,18 +489,16 @@ namespace index {
             return std::move(result);
         };
 
-        static std::vector<RecordDescriptor>
-        exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> exactMatchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const std::string& value,
             std::vector<RecordDescriptor>& result);
 
-        static std::vector<RecordDescriptor>
-        fullScanIndex(const storage_engine::lmdb::Cursor& cursorHandler, const ClassId& classId);
+        static std::vector<RecordDescriptor> fullScanIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+            const ClassId& classId);
 
         template <typename T>
-        static std::vector<RecordDescriptor>
-        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const T& value,
             bool positive,
@@ -500,15 +534,13 @@ namespace index {
             return result;
         };
 
-        static std::vector<RecordDescriptor>
-        forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> forwardSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const std::string& value,
             bool isInclude = false);
 
         template <typename T>
-        static std::vector<RecordDescriptor>
-        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const T& lower,
             const T& upper,
@@ -546,8 +578,7 @@ namespace index {
             return result;
         };
 
-        static std::vector<RecordDescriptor>
-        betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
+        static std::vector<RecordDescriptor> betweenSearchIndex(const storage_engine::lmdb::Cursor& cursorHandler,
             const ClassId& classId,
             const std::string& lower,
             const std::string& upper,
@@ -555,5 +586,4 @@ namespace index {
     };
 
 }
-
 }

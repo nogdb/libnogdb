@@ -31,9 +31,7 @@
 #define CLASS_ID_UPPER_LIMIT UINT16_MAX - 1
 
 namespace nogdb {
-
 namespace validate {
-
     using namespace adapter::schema;
 
     class Validator {

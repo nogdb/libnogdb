@@ -29,9 +29,9 @@
 #include <string>
 #include <type_traits>
 
-#include "functest_config.h"
-#include "functest_cursor_utils.h"
-#include "functest_utils.h"
+#include "func_test_config.h"
+#include "func_test_cursor_utils.h"
+#include "func_test_utils.h"
 
 #include "nogdb/nogdb.h"
 

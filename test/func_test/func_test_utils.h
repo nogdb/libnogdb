@@ -32,7 +32,7 @@
 #include <type_traits>
 #include <unistd.h>
 
-#include "functest_config.h"
+#include "func_test_config.h"
 
 #include "nogdb/nogdb.h"
 

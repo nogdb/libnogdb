@@ -27,79 +27,74 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
-
-using adapter::datarecord::DataRecord;
-using adapter::schema::ClassAccessInfo;
-using adapter::schema::PropertyNameMapInfo;
-
 namespace datarecord {
+    using namespace adapter::datarecord;
+    using namespace adapter::schema;
 
-    class DataRecordInterface {
-    public:
-        DataRecordInterface(const Transaction* txn)
-            : _txn { txn }
-        {
-        }
+    struct DataRecordUtils {
 
-        virtual ~DataRecordInterface() noexcept = default;
+        static Record getRecord(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor);
 
-        Record getRecord(const ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
+        static Record getRecordWithBasicInfo(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            const RecordDescriptor& recordDescriptor);
 
-        Record getRecordWithBasicInfo(const ClassAccessInfo& classInfo, const RecordDescriptor& recordDescriptor) const;
+        static ResultSet getResultSet(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            const std::vector<RecordDescriptor>& recordDescriptors);
 
-        ResultSet getResultSet(const ClassAccessInfo& classInfo,
-            const std::vector<RecordDescriptor>& recordDescriptors) const;
+        static ResultSet getResultSet(const Transaction *txn, const ClassAccessInfo& classInfo);
 
-        ResultSet getResultSet(const ClassAccessInfo& classInfo) const;
+        static ResultSetCursor getResultSetCursor(const Transaction *txn, const ClassAccessInfo& classInfo);
 
-        ResultSetCursor getResultSetCursor(const ClassAccessInfo& classInfo) const;
+        static size_t getCountRecord(const Transaction *txn, const ClassAccessInfo& classInfo);
 
-        size_t getCountRecord(const ClassAccessInfo& classInfo) const;
-
-        ResultSet getResultSetByCondition(const ClassAccessInfo& classInfo,
+        static ResultSet getResultSetByCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
-            const Condition& condition) const;
+            const Condition& condition);
 
-        std::vector<RecordDescriptor>
-        getRecordDescriptorByCondition(const ClassAccessInfo& classInfo,
+        static std::vector<RecordDescriptor> getRecordDescriptorByCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
-            const Condition& condition) const;
+            const Condition& condition);
 
-        size_t
-        getCountRecordByCondition(const ClassAccessInfo& classInfo,
+        static size_t getCountRecordByCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyType& propertyType,
-            const Condition& condition) const;
+            const Condition& condition);
 
-        ResultSet getResultSetByMultiCondition(const ClassAccessInfo& classInfo,
+        static ResultSet getResultSetByMultiCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyNameMapInfo& propertyInfos,
-            const MultiCondition& multiCondition) const;
+            const MultiCondition& multiCondition);
 
-        std::vector<RecordDescriptor>
-        getRecordDescriptorByMultiCondition(const ClassAccessInfo& classInfo,
+        static std::vector<RecordDescriptor> getRecordDescriptorByMultiCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyNameMapInfo& propertyInfos,
-            const MultiCondition& multiCondition) const;
+            const MultiCondition& multiCondition);
 
-        size_t
-        getCountRecordByMultiCondition(const ClassAccessInfo& classInfo,
+        static size_t getCountRecordByMultiCondition(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
             const PropertyNameMapInfo& propertyInfos,
-            const MultiCondition& multiCondition) const;
+            const MultiCondition& multiCondition);
 
 
-        ResultSet getResultSetByCmpFunction(const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record)) const;
+        static ResultSet getResultSetByCmpFunction(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record));
 
-        std::vector<RecordDescriptor>
-        getRecordDescriptorByCmpFunction(const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record)) const;
+        static std::vector<RecordDescriptor> getRecordDescriptorByCmpFunction(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record));
 
-        size_t
-        getCountRecordByCmpFunction(const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record)) const;
+        static size_t getCountRecordByCmpFunction(const Transaction *txn,
+            const ClassAccessInfo& classInfo,
+            bool (*condition)(const Record& record));
 
-    private:
-        const Transaction* _txn;
     };
 
 }
-
 }

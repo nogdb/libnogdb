@@ -22,23 +22,22 @@
 #include <vector>
 
 #include "datarecord.hpp"
-#include "datarecord_adapter.hpp"
 #include "lmdb_engine.hpp"
-#include "parser.hpp"
 #include "schema.hpp"
 
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
+using namespace adapter::schema;
+using namespace schema;
+using namespace datarecord;
 
-using adapter::schema::PropertyAccessInfo;
-
-const DbInfo Transaction::getDbInfo() const
+const DBInfo Transaction::getDBInfo() const
 {
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto dbInfo = DbInfo {};
+    auto dbInfo = DBInfo {};
     dbInfo.maxClassId = _adapter->dbInfo()->getMaxClassId();
     dbInfo.maxPropertyId = _adapter->dbInfo()->getMaxPropertyId();
     dbInfo.maxIndexId = _adapter->dbInfo()->getMaxIndexId();
@@ -72,9 +71,9 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const std::stri
         .isClassNameValid(className);
 
     auto result = std::vector<PropertyDescriptor> {};
-    auto foundClass = _interface->schema()->getExistingClass(className);
+    auto foundClass = SchemaUtils::getExistingClass(this, className);
     // native properties
-    for (const auto& property : _interface->schema()->getNativePropertyInfo(foundClass.id)) {
+    for (const auto& property : SchemaUtils::getNativePropertyInfo(this, foundClass.id)) {
         result.emplace_back(
             PropertyDescriptor {
                 property.id,
@@ -83,8 +82,8 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const std::stri
                 false });
     }
     // inherited properties
-    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
-        _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
+    auto inheritResult = SchemaUtils::getInheritPropertyInfo(
+        this, _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
     for (const auto& property : inheritResult) {
         result.emplace_back(
             PropertyDescriptor {
@@ -102,9 +101,9 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDesc
         .isTxnCompleted();
 
     auto result = std::vector<PropertyDescriptor> {};
-    auto foundClass = _interface->schema()->getExistingClass(classDescriptor.id);
+    auto foundClass = SchemaUtils::getExistingClass(this, classDescriptor.id);
     // native properties
-    for (const auto& property : _interface->schema()->getNativePropertyInfo(foundClass.id)) {
+    for (const auto& property : SchemaUtils::getNativePropertyInfo(this, foundClass.id)) {
         result.emplace_back(
             PropertyDescriptor {
                 property.id,
@@ -113,8 +112,8 @@ const std::vector<PropertyDescriptor> Transaction::getProperties(const ClassDesc
                 false });
     }
     // inherited properties
-    auto inheritResult = _interface->schema()->getInheritPropertyInfo(
-        _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
+    auto inheritResult = SchemaUtils::getInheritPropertyInfo(
+        this, _adapter->dbClass()->getSuperClassId(foundClass.id), std::vector<PropertyAccessInfo> {});
     for (const auto& property : inheritResult) {
         result.emplace_back(
             PropertyDescriptor {
@@ -131,7 +130,7 @@ const std::vector<IndexDescriptor> Transaction::getIndexes(const ClassDescriptor
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto classInfo = _interface->schema()->getExistingClass(classDescriptor.id);
+    auto classInfo = SchemaUtils::getExistingClass(this, classDescriptor.id);
     auto indexInfos = _adapter->dbIndex()->getInfos(classInfo.id);
     auto indexDescriptors = std::vector<IndexDescriptor> {};
     for (const auto& indexInfo : indexInfos) {
@@ -150,7 +149,7 @@ const ClassDescriptor Transaction::getClass(const std::string& className) const
         .isTxnCompleted()
         .isClassNameValid(className);
 
-    auto classInfo = _interface->schema()->getExistingClass(className);
+    auto classInfo = SchemaUtils::getExistingClass(this, className);
     return ClassDescriptor {
         classInfo.id,
         classInfo.name,
@@ -164,7 +163,7 @@ const ClassDescriptor Transaction::getClass(const ClassId& classId) const
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto classInfo = _interface->schema()->getExistingClass(classId);
+    auto classInfo = SchemaUtils::getExistingClass(this, classId);
     return ClassDescriptor {
         classInfo.id,
         classInfo.name,
@@ -181,9 +180,9 @@ const PropertyDescriptor Transaction::getProperty(const std::string& className,
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
-    auto classInfo = _interface->schema()->getExistingClass(className);
+    auto classInfo = SchemaUtils::getExistingClass(this, className);
     try {
-        auto propertyInfo = _interface->schema()->getExistingProperty(classInfo.id, propertyName);
+        auto propertyInfo = SchemaUtils::getExistingProperty(this, classInfo.id, propertyName);
         return PropertyDescriptor {
             propertyInfo.id,
             propertyInfo.name,
@@ -192,7 +191,7 @@ const PropertyDescriptor Transaction::getProperty(const std::string& className,
         };
     } catch (const Error& error) {
         if (error.code() == NOGDB_CTX_NOEXST_PROPERTY) {
-            auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
+            auto propertyInfo = SchemaUtils::getExistingPropertyExtend(this, classInfo.id, propertyName);
             return PropertyDescriptor {
                 propertyInfo.id,
                 propertyInfo.name,
@@ -212,9 +211,9 @@ const IndexDescriptor Transaction::getIndex(const std::string& className, const 
         .isClassNameValid(className)
         .isPropertyNameValid(propertyName);
 
-    auto classInfo = _interface->schema()->getExistingClass(className);
-    auto propertyInfo = _interface->schema()->getExistingPropertyExtend(classInfo.id, propertyName);
-    auto indexInfo = _interface->schema()->getIndexInfo(classInfo.id, propertyInfo.id);
+    auto classInfo = SchemaUtils::getExistingClass(this, className);
+    auto propertyInfo = SchemaUtils::getExistingPropertyExtend(this, classInfo.id, propertyName);
+    auto indexInfo = SchemaUtils::getIndexInfo(this, classInfo.id, propertyInfo.id);
     return IndexDescriptor {
         indexInfo.id,
         indexInfo.classId,
@@ -228,8 +227,8 @@ Record Transaction::fetchRecord(const RecordDescriptor& recordDescriptor) const
     BEGIN_VALIDATION(this)
         .isTxnCompleted();
 
-    auto classInfo = _interface->schema()->getValidClassInfo(recordDescriptor.rid.first);
-    return _interface->record()->getRecordWithBasicInfo(classInfo, recordDescriptor);
+    auto classInfo = SchemaUtils::getValidClassInfo(this, recordDescriptor.rid.first);
+    return DataRecordUtils::getRecordWithBasicInfo(this, classInfo, recordDescriptor);
 }
 
 }
