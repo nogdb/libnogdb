@@ -10,6 +10,7 @@
 
 ## Key Features
 * Considerably fast graph database written in C++
+* Low-level graph database operations
 * Lightweight and native with no client-server protocols needed
 * Transactions with MVCC (full ACID semantics in data storage)
 * Multiple readers and single writer (no blocking between readers and writer)
