@@ -65,7 +65,7 @@ MultiCondition MultiCondition::operator||(const MultiCondition& e) const
     return tmp;
 }
 
-MultiCondition MultiCondition::operator&&(bool (*cmpFunc)(const Record& r)) const
+MultiCondition MultiCondition::operator&&(std::function<bool(const Record&)> cmpFunc) const
 {
     auto tmp(*this);
     auto cmpFuncPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
@@ -75,7 +75,7 @@ MultiCondition MultiCondition::operator&&(bool (*cmpFunc)(const Record& r)) cons
     return tmp;
 }
 
-MultiCondition MultiCondition::operator||(bool (*cmpFunc)(const Record& r)) const
+MultiCondition MultiCondition::operator||(std::function<bool(const Record&)> cmpFunc) const
 {
     auto tmp(*this);
     auto cmpFuncPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
@@ -118,7 +118,7 @@ MultiCondition::MultiCondition(const Condition& c, const MultiCondition& e, Oper
     std::copy(e.cmpFunctions.cbegin(), e.cmpFunctions.cend(), std::back_inserter(cmpFunctions));
 }
 
-MultiCondition::MultiCondition(const Condition& c1, bool (*cmpFunc)(const Record& r), Operator opt)
+MultiCondition::MultiCondition(const Condition& c1, std::function<bool(const Record&)> cmpFunc, Operator opt)
 {
     auto conditionPtr = std::make_shared<ConditionNode>(c1);
     auto cmpFunctionPtr = std::make_shared<CmpFunctionNode>(cmpFunc);
@@ -246,9 +246,9 @@ const Condition& MultiCondition::ConditionNode::getCondition() const
     return cond;
 }
 
-MultiCondition::CmpFunctionNode::CmpFunctionNode(bool (*cmpFunc_)(const Record& record))
+MultiCondition::CmpFunctionNode::CmpFunctionNode(std::function<bool(const Record&)> cmpFunc_)
   : ExprNode(ExprNodeType::CMP_FUNCTION)
-  , cmpFunc { cmpFunc_ }
+  , cmpFunc { std::move(cmpFunc_) }
 {
 }
 

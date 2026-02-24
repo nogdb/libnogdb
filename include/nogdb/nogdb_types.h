@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -843,7 +844,7 @@ public:
 
     explicit GraphFilter(const MultiCondition& multiCondition);
 
-    explicit GraphFilter(bool (*function)(const Record& record));
+    explicit GraphFilter(std::function<bool(const Record&)> function);
 
     ~GraphFilter() noexcept = default;
 
@@ -964,10 +965,9 @@ private:
 
     FilterMode _mode;
 
-    //TODO: can be improved by using std::varient in c++17
     std::shared_ptr<Condition> _condition {};
     std::shared_ptr<MultiCondition> _multiCondition {};
-    bool (*_function)(const Record& record);
+    std::function<bool(const Record&)> _function {};
 
     std::set<std::string> _onlyClasses {};
     std::set<std::string> _onlySubOfClasses {};
@@ -1174,9 +1174,9 @@ public:
 
     MultiCondition operator||(const MultiCondition& e) const;
 
-    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
+    MultiCondition operator&&(std::function<bool(const Record&)> cmpFunc) const;
 
-    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
+    MultiCondition operator||(std::function<bool(const Record&)> cmpFunc) const;
 
     Condition operator!() const;
 
@@ -1240,9 +1240,9 @@ public:
 
     MultiCondition operator||(const Condition& c) const;
 
-    MultiCondition operator&&(bool (*cmpFunc)(const Record& r)) const;
+    MultiCondition operator&&(std::function<bool(const Record&)> cmpFunc) const;
 
-    MultiCondition operator||(bool (*cmpFunc)(const Record& r)) const;
+    MultiCondition operator||(std::function<bool(const Record&)> cmpFunc) const;
 
     MultiCondition operator!() const;
 
@@ -1259,7 +1259,7 @@ private:
 
     MultiCondition(const Condition& c, const MultiCondition& e, Operator opt);
 
-    MultiCondition(const Condition& c, bool (*cmpFunc)(const Record& r), Operator opt);
+    MultiCondition(const Condition& c, std::function<bool(const Record&)> cmpFunc, Operator opt);
 
     enum ExprNodeType {
         CONDITION,
@@ -1299,14 +1299,14 @@ private:
 
     class CmpFunctionNode : public ExprNode {
     public:
-        explicit CmpFunctionNode(bool (*cmpFunc_)(const Record& record));
+        explicit CmpFunctionNode(std::function<bool(const Record&)> cmpFunc_);
 
         ~CmpFunctionNode() noexcept override = default;
 
         virtual bool check(const Record& r, const PropertyMapType& propType) const override;
 
     private:
-        bool (*cmpFunc)(const Record& record);
+        std::function<bool(const Record&)> cmpFunc;
     };
 
     class CompositeNode : public ExprNode {
@@ -1356,13 +1356,10 @@ protected:
 
     virtual ~OperationBuilder() noexcept = default;
 
-    //TODO: improve the performance of record retrieval by having get(parallel = n);
     virtual ResultSet get() const = 0;
 
-    //TODO: improve the performance of record retrieval by having getCursor(parallel = n);
     virtual ResultSetCursor getCursor() const = 0;
 
-    //TODO: improve the performance of record retrieval by having count(parallel = n);
     virtual unsigned long count() const = 0;
 
     const Transaction* _txn;
@@ -1378,7 +1375,7 @@ public:
 
     virtual FindOperationBuilder& where(const MultiCondition& multiCondition);
 
-    virtual FindOperationBuilder& where(bool (*condition)(const Record& record));
+    virtual FindOperationBuilder& where(std::function<bool(const Record&)> condition);
 
     virtual FindOperationBuilder& indexed(bool onlyIndex = true);
 
@@ -1427,10 +1424,9 @@ private:
     bool _indexed { false };
     std::vector<std::string> _orderBy {};
 
-    //TODO: can be improved by using std::varient in c++17
     std::shared_ptr<Condition> _condition {};
     std::shared_ptr<MultiCondition> _multiCondition {};
-    bool (*_function)(const Record& record);
+    std::function<bool(const Record&)> _function {};
 };
 
 class FindEdgeOperationBuilder : public OperationBuilder {
@@ -1543,8 +1539,14 @@ private:
         const RecordDescriptor& recordDescriptor,
         const EdgeDirection& direction);
 
+    TraverseOperationBuilder(const Transaction* txn,
+        const RecordDescriptor& recordDescriptor,
+        const EdgeDirection& direction,
+        bool useDFS);
+
     std::set<RecordDescriptor> _rdescs {};
     EdgeDirection _direction;
+    bool _useDFS { false };
     unsigned int _minDepth { 0 };
     unsigned int _maxDepth { std::numeric_limits<unsigned int>::max() };
     GraphFilter _edgeFilter {};
@@ -1561,6 +1563,10 @@ public:
     virtual ShortestPathOperationBuilder& whereV(const GraphFilter& filter);
 
     virtual ShortestPathOperationBuilder& whereE(const GraphFilter& filter);
+
+    virtual ShortestPathOperationBuilder& direction(const EdgeDirection& direction);
+
+    virtual ShortestPathOperationBuilder& withWeight(const std::string& weightPropertyName);
 
     //    virtual ShortestPathOperationBuilder& minDepth(unsigned int depth);
     //
@@ -1607,6 +1613,8 @@ private:
 
     RecordDescriptor _srcRdesc;
     RecordDescriptor _dstRdesc;
+    EdgeDirection _direction { EdgeDirection::OUT };
+    std::string _weightProperty {};
     unsigned int _minDepth { 0 };
     unsigned int _maxDepth { std::numeric_limits<unsigned int>::max() };
     GraphFilter _edgeFilter {};

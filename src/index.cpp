@@ -28,15 +28,15 @@ namespace index {
     using parser::RecordParser;
 
     const std::vector<Condition::Comparator> IndexUtils::validComparators {
-        Condition::Comparator::EQUAL//,
-    //            Condition::Comparator::BETWEEN_NO_BOUND,
-    //            Condition::Comparator::BETWEEN,
-    //            Condition::Comparator::BETWEEN_NO_UPPER,
-    //            Condition::Comparator::BETWEEN_NO_LOWER,
-    //            Condition::Comparator::LESS_EQUAL,
-    //            Condition::Comparator::LESS,
-    //            Condition::Comparator::GREATER_EQUAL,
-    //            Condition::Comparator::GREATER
+        Condition::Comparator::EQUAL,
+        Condition::Comparator::LESS_EQUAL,
+        Condition::Comparator::LESS,
+        Condition::Comparator::GREATER_EQUAL,
+        Condition::Comparator::GREATER,
+        Condition::Comparator::BETWEEN,
+        Condition::Comparator::BETWEEN_NO_UPPER,
+        Condition::Comparator::BETWEEN_NO_LOWER,
+        Condition::Comparator::BETWEEN_NO_BOUND,
     };
 
     void IndexUtils::initialize(const Transaction *txn,

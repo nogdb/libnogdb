@@ -83,6 +83,8 @@ public:
 
     Transaction beginTxn(const TxnMode& txnMode = TxnMode::READ_WRITE);
 
+    Transaction beginBatchTxn();
+
 private:
     friend class ContextInitializer;
     friend class Transaction;
@@ -125,6 +127,8 @@ public:
     TxnMode getTxnMode() const { return _txnMode; }
 
     bool isCompleted() const { return _txnBase == nullptr; }
+
+    void* getSchemaCache() const { return _schemaCache; }
 
     const ClassDescriptor addClass(const std::string& className, ClassType type);
 
@@ -209,6 +213,12 @@ public:
 
     TraverseOperationBuilder traverse(const RecordDescriptor& recordDescriptor) const;
 
+    TraverseOperationBuilder traverseInDFS(const RecordDescriptor& recordDescriptor) const;
+
+    TraverseOperationBuilder traverseOutDFS(const RecordDescriptor& recordDescriptor) const;
+
+    TraverseOperationBuilder traverseDFS(const RecordDescriptor& recordDescriptor) const;
+
     ShortestPathOperationBuilder shortestPath(const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor) const;
 
@@ -258,6 +268,7 @@ private:
     storage_engine::LMDBTxn* _txnBase;
     Adapter* _adapter;
     relation::GraphUtils* _graph;
+    mutable void* _schemaCache { nullptr };
 
     std::unordered_set<RecordId, RecordIdHash> _updatedRecords {};
 };

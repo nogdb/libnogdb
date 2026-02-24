@@ -22,22 +22,58 @@
 #include "schema.hpp"
 
 namespace nogdb {
+struct TransactionSchemaCache {
+    std::unordered_map<std::string, adapter::schema::ClassAccessInfo> byName {};
+    std::unordered_map<ClassId, adapter::schema::ClassAccessInfo> byId {};
+    std::unordered_map<ClassId, adapter::schema::PropertyNameMapInfo> propertyNameMap {};
+    void invalidate() noexcept { byName.clear(); byId.clear(); propertyNameMap.clear(); }
+};
+}
+
+namespace nogdb {
 namespace schema {
+
+    static inline TransactionSchemaCache* schemaCache(const Transaction *txn)
+    {
+        return static_cast<TransactionSchemaCache*>(txn->getSchemaCache());
+    }
 
     ClassAccessInfo SchemaUtils::getExistingClass(const Transaction *txn, const std::string& className)
     {
+        auto* sc = schemaCache(txn);
+        if (sc) {
+            auto it = sc->byName.find(className);
+            if (it != sc->byName.cend()) {
+                return it->second;
+            }
+        }
         auto foundClass = txn->_adapter->dbClass()->getInfo(className);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
+        }
+        if (sc) {
+            sc->byName[className] = foundClass;
+            sc->byId[foundClass.id] = foundClass;
         }
         return foundClass;
     }
 
     ClassAccessInfo SchemaUtils::getExistingClass(const Transaction *txn, const ClassId& classId)
     {
+        auto* sc = schemaCache(txn);
+        if (sc) {
+            auto it = sc->byId.find(classId);
+            if (it != sc->byId.cend()) {
+                return it->second;
+            }
+        }
         auto foundClass = txn->_adapter->dbClass()->getInfo(classId);
         if (foundClass.type == ClassType::UNDEFINED) {
             throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_CLASS);
+        }
+        if (sc) {
+            sc->byId[classId] = foundClass;
+            sc->byName[foundClass.name] = foundClass;
         }
         return foundClass;
     }
@@ -107,6 +143,13 @@ namespace schema {
         const ClassId& classId,
         const ClassId& superClassId)
     {
+        auto* sc = schemaCache(txn);
+        if (sc) {
+            auto it = sc->propertyNameMap.find(classId);
+            if (it != sc->propertyNameMap.cend()) {
+                return it->second;
+            }
+        }
         auto result = PropertyNameMapInfo {};
         for (const auto& property : getNativePropertyInfo(txn, classId)) {
             result[property.name] = property;
@@ -115,7 +158,19 @@ namespace schema {
         for (const auto& property : inheritResult) {
             result[property.name] = property;
         }
-        return addBasicInfo(result);
+        auto& filled = addBasicInfo(result);
+        if (sc) {
+            sc->propertyNameMap[classId] = filled;
+        }
+        return filled;
+    }
+
+    void SchemaUtils::invalidateCache(const Transaction *txn)
+    {
+        auto* sc = schemaCache(txn);
+        if (sc) {
+            sc->invalidate();
+        }
     }
 
     PropertyIdMapInfo SchemaUtils::getPropertyIdMapInfo(const Transaction *txn,

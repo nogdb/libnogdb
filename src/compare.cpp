@@ -187,8 +187,8 @@ namespace compare {
                 record, propertyNameMapInfo, *multiCondition);
             return cmpResult ? Result { recordDescriptor, record } : Result {};
         } else {
-            if (filter._function != nullptr) {
-                return (*filter._function)(record) ? Result { recordDescriptor, record } : Result {};
+            if (filter._function) {
+                return filter._function(record) ? Result { recordDescriptor, record } : Result {};
             }
         }
         return Result { recordDescriptor, record };
@@ -453,7 +453,7 @@ namespace compare {
     ResultSet RecordCompare::compareEdgeCondition(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
-        bool (*condition)(const Record&))
+        std::function<bool(const Record&)> condition)
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto resultSet = ResultSet {};
@@ -553,7 +553,7 @@ namespace compare {
     std::vector<RecordDescriptor> RecordCompare::compareEdgeConditionRdesc(const Transaction& txn,
         const RecordDescriptor& recordDescriptor,
         const Direction& direction,
-        bool (*condition)(const Record&))
+        std::function<bool(const Record&)> condition)
     {
         auto edgeRecordIds = resolveEdgeRecordIds(txn, recordDescriptor.rid, direction);
         auto recordDescriptors = std::vector<RecordDescriptor> {};

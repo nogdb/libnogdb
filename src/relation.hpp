@@ -22,6 +22,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <unordered_set>
 
 #include "datarecord_adapter.hpp"
@@ -41,23 +42,13 @@ namespace relation {
     public:
         explicit GraphUtils(const storage_engine::LMDBTxn* txn, bool isVersionEnabled)
             : _txn { txn }
-            , _inRel { new RelationAccess(txn, Direction::IN) }
-            , _outRel { new RelationAccess(txn, Direction::OUT) }
+            , _inRel { std::unique_ptr<adapter::relation::RelationAccess>(new adapter::relation::RelationAccess(txn, adapter::relation::Direction::IN)) }
+            , _outRel { std::unique_ptr<adapter::relation::RelationAccess>(new adapter::relation::RelationAccess(txn, adapter::relation::Direction::OUT)) }
             , _isVersionEnabled { isVersionEnabled }
         {
         }
 
-        virtual ~GraphUtils() noexcept
-        {
-            if (_inRel) {
-                delete _inRel;
-                _inRel = nullptr;
-            }
-            if (_outRel) {
-                delete _outRel;
-                _outRel = nullptr;
-            }
-        };
+        virtual ~GraphUtils() noexcept = default;
 
         void addRel(const RecordId& edgeRid, const RecordId& srcRid, const RecordId& dstRid);
 
@@ -87,8 +78,8 @@ namespace relation {
 
     private:
         const storage_engine::LMDBTxn* _txn;
-        RelationAccess* _inRel;
-        RelationAccess* _outRel;
+        std::unique_ptr<RelationAccess> _inRel;
+        std::unique_ptr<RelationAccess> _outRel;
         bool _isVersionEnabled;
 
         using InternalCache = UnorderedCache<ClassId, std::shared_ptr<DataRecord>>;

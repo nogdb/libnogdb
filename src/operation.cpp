@@ -346,7 +346,7 @@ void Transaction::removeAll(const std::string& className)
 
     auto classInfo = SchemaUtils::getExistingClass(this, className);
     try {
-        auto dataRecord = DataRecord(_txnBase, classInfo.id, ClassType::VERTEX);
+        auto dataRecord = DataRecord(_txnBase, classInfo.id, classInfo.type);
         auto propertyNameMapInfo = SchemaUtils::getPropertyNameMapInfo(this, classInfo.id, classInfo.superClassId);
         auto result = std::map<RecordId, std::pair<RecordId, RecordId>> {};
         std::function<void(const PositionId&, const storage_engine::lmdb::Result&)> callback =
@@ -500,6 +500,21 @@ TraverseOperationBuilder Transaction::traverse(const RecordDescriptor& recordDes
     return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::UNDIRECTED);
 }
 
+TraverseOperationBuilder Transaction::traverseInDFS(const RecordDescriptor& recordDescriptor) const
+{
+    return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::IN, true);
+}
+
+TraverseOperationBuilder Transaction::traverseOutDFS(const RecordDescriptor& recordDescriptor) const
+{
+    return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::OUT, true);
+}
+
+TraverseOperationBuilder Transaction::traverseDFS(const RecordDescriptor& recordDescriptor) const
+{
+    return TraverseOperationBuilder(this, recordDescriptor, OperationBuilder::EdgeDirection::UNDIRECTED, true);
+}
+
 ShortestPathOperationBuilder Transaction::shortestPath(const RecordDescriptor& srcVertexRecordDescriptor,
     const RecordDescriptor& dstVertexRecordDescriptor) const
 {
@@ -587,7 +602,7 @@ ResultSetCursor FindOperationBuilder::getCursor() const
             auto currentPropertyInfo =
                 SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareConditionRdesc(
-                *_txn, classInfo, currentPropertyInfo, *_condition, _indexed);
+                *_txn, currentClassInfo, currentPropertyInfo, *_condition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
         }
         return resultSetCursor;
@@ -603,7 +618,7 @@ ResultSetCursor FindOperationBuilder::getCursor() const
             auto currentPropertyInfo =
                 SchemaUtils::getPropertyNameMapInfo(_txn, currentClassInfo.id, currentClassInfo.superClassId);
             auto resultSetExtend = RecordCompare::compareMultiConditionRdesc(
-                *_txn, classInfo, currentPropertyInfo, *_multiCondition, _indexed);
+                *_txn, currentClassInfo, currentPropertyInfo, *_multiCondition, _indexed);
             resultSetCursor.addMetadata(resultSetExtend);
         }
         return resultSetCursor;
@@ -828,6 +843,10 @@ ResultSet TraverseOperationBuilder::get() const
         break;
     }
 
+    if (_useDFS) {
+        return algorithm::GraphTraversal::depthFirstSearch(
+            *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+    }
     return algorithm::GraphTraversal::breadthFirstSearch(
         *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
 }
@@ -850,6 +869,11 @@ ResultSetCursor TraverseOperationBuilder::getCursor() const
         break;
     }
 
+    if (_useDFS) {
+        auto result = algorithm::GraphTraversal::depthFirstSearchRdesc(
+            *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
+        return std::move(ResultSetCursor { *_txn }.addMetadata(result));
+    }
     auto result = algorithm::GraphTraversal::breadthFirstSearchRdesc(
         *_txn, _rdescs, _minDepth, _maxDepth, direction, _edgeFilter, _vertexFilter);
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
@@ -867,8 +891,24 @@ ResultSet ShortestPathOperationBuilder::get() const
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 
+    auto direction = adapter::relation::Direction::OUT;
+    switch (_direction) {
+    case EdgeDirection::IN:
+        direction = adapter::relation::Direction::IN;
+        break;
+    case EdgeDirection::UNDIRECTED:
+        direction = adapter::relation::Direction::ALL;
+        break;
+    default:
+        break;
+    }
+
+    if (!_weightProperty.empty()) {
+        return algorithm::GraphTraversal::dijkstraShortestPath(
+            *_txn, _srcRdesc, _dstRdesc, _weightProperty, direction, _edgeFilter, _vertexFilter);
+    }
     return algorithm::GraphTraversal::bfsShortestPath(
-        *_txn, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
+        *_txn, _srcRdesc, _dstRdesc, direction, _edgeFilter, _vertexFilter);
 }
 
 ResultSetCursor ShortestPathOperationBuilder::getCursor() const
@@ -878,8 +918,26 @@ ResultSetCursor ShortestPathOperationBuilder::getCursor() const
         .isExistingSrcVertex(_srcRdesc)
         .isExistingDstVertex(_dstRdesc);
 
-    auto result = algorithm::GraphTraversal::bfsShortestPathRdesc(
-        *_txn, _srcRdesc, _dstRdesc, _edgeFilter, _vertexFilter);
+    auto direction = adapter::relation::Direction::OUT;
+    switch (_direction) {
+    case EdgeDirection::IN:
+        direction = adapter::relation::Direction::IN;
+        break;
+    case EdgeDirection::UNDIRECTED:
+        direction = adapter::relation::Direction::ALL;
+        break;
+    default:
+        break;
+    }
+
+    std::vector<RecordDescriptor> result;
+    if (!_weightProperty.empty()) {
+        result = algorithm::GraphTraversal::dijkstraShortestPathRdesc(
+            *_txn, _srcRdesc, _dstRdesc, _weightProperty, direction, _edgeFilter, _vertexFilter);
+    } else {
+        result = algorithm::GraphTraversal::bfsShortestPathRdesc(
+            *_txn, _srcRdesc, _dstRdesc, direction, _edgeFilter, _vertexFilter);
+    }
     return std::move(ResultSetCursor { *_txn }.addMetadata(result));
 }
 

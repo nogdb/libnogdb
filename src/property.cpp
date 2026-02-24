@@ -50,11 +50,12 @@ const PropertyDescriptor Transaction::addProperty(const std::string& className,
     validators.isNotOverriddenProperty(foundClass.id, propertyName);
 
     try {
-        auto propertyId = _adapter->dbInfo()->getMaxPropertyId() + PropertyId { 1 };
+        auto propertyId = static_cast<PropertyId>(_adapter->dbInfo()->getMaxPropertyId() + PropertyId { 1 });
         auto propertyProps = PropertyAccessInfo { foundClass.id, propertyName, propertyId, type };
         _adapter->dbProperty()->create(propertyProps);
         _adapter->dbInfo()->setMaxPropertyId(propertyId);
-        _adapter->dbInfo()->setNumPropertyId(_adapter->dbInfo()->getNumPropertyId() + PropertyId { 1 });
+        _adapter->dbInfo()->setNumPropertyId(static_cast<PropertyId>(_adapter->dbInfo()->getNumPropertyId() + PropertyId { 1 }));
+        SchemaUtils::invalidateCache(this);
         return PropertyDescriptor { propertyProps.id, propertyName, type, false };
     } catch (const Error& err) {
         rollback();
@@ -83,6 +84,7 @@ void Transaction::renameProperty(const std::string& className,
     auto foundOldProperty = SchemaUtils::getExistingProperty(this, foundClass.id, oldPropertyName);
     try {
         _adapter->dbProperty()->alterPropertyName(foundClass.id, oldPropertyName, newPropertyName);
+        SchemaUtils::invalidateCache(this);
     } catch (const Error& err) {
         rollback();
         throw NOGDB_FATAL_ERROR(err);
@@ -110,6 +112,7 @@ void Transaction::dropProperty(const std::string& className, const std::string& 
     try {
         _adapter->dbProperty()->remove(foundClass.id, propertyName);
         _adapter->dbInfo()->setNumPropertyId(_adapter->dbInfo()->getNumPropertyId() - PropertyId { 1 });
+        SchemaUtils::invalidateCache(this);
     } catch (const Error& err) {
         rollback();
         throw NOGDB_FATAL_ERROR(err);
@@ -148,6 +151,7 @@ const IndexDescriptor Transaction::addIndex(const std::string& className,
         IndexUtils::initialize(this, foundProperty, indexProps, foundClass.superClassId, foundClass.type);
         _adapter->dbInfo()->setMaxIndexId(indexId);
         _adapter->dbInfo()->setNumIndexId(_adapter->dbInfo()->getNumIndexId() + IndexId { 1 });
+        SchemaUtils::invalidateCache(this);
         return IndexDescriptor {
             indexId,
             foundClass.id,
@@ -187,6 +191,7 @@ void Transaction::dropIndex(const std::string& className, const std::string& pro
         // remove all index data from index database
         IndexUtils::drop(this, foundProperty, indexInfo);
         _adapter->dbInfo()->setNumIndexId(_adapter->dbInfo()->getNumIndexId() - IndexId { 1 });
+        SchemaUtils::invalidateCache(this);
     } catch (const Error& err) {
         rollback();
         throw NOGDB_FATAL_ERROR(err);

@@ -38,7 +38,6 @@ namespace parser {
                 throw NOGDB_CONTEXT_ERROR(NOGDB_CTX_NOEXST_PROPERTY);
             }
             dataSize += getRawDataSize(property.second.size());
-            //TODO: check if having any index?
         }
         return parseRecord(record, dataSize, properties);
     }
@@ -133,7 +132,6 @@ namespace parser {
         if (rawDataBlob.capacity() == 0 || rawDataBlob.size() - offset == 1) {
             return Record {};
         } else if (rawDataBlob.capacity() >= 2 * sizeof(uint16_t)) {
-            //TODO: should be concerned about ENDIAN?
             /**
              * NOTE: each property block consists of property id, flag, size, and value
              * when option flag = 0

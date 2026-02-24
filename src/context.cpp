@@ -166,7 +166,7 @@ Context& Context::operator=(const Context& ctx)
 {
     if (this != &ctx) {
         _dbPath = ctx._dbPath;
-        _maxDB = ctx._maxDBSize;
+        _maxDB = ctx._maxDB;
         _maxDBSize = ctx._maxDBSize;
         _versionEnabled = ctx._versionEnabled;
         _envHandler = ctx._envHandler;
@@ -189,7 +189,7 @@ Context& Context::operator=(Context&& ctx) noexcept
     if (this != &ctx) {
         _envHandler = ctx._envHandler;
         _dbPath = ctx._dbPath;
-        _maxDB = ctx._maxDBSize;
+        _maxDB = ctx._maxDB;
         _maxDBSize = ctx._maxDBSize;
         _versionEnabled = ctx._versionEnabled;
         ctx._dbPath = std::string {};
@@ -204,6 +204,11 @@ Context& Context::operator=(Context&& ctx) noexcept
 Transaction Context::beginTxn(const TxnMode& txnMode)
 {
     return Transaction(*this, txnMode);
+}
+
+Transaction Context::beginBatchTxn()
+{
+    return Transaction(*this, TxnMode::READ_WRITE);
 }
 
 }

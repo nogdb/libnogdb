@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include "datatype.hpp"
 #include "storage_engine.hpp"
 
 namespace nogdb {
@@ -100,7 +101,15 @@ namespace adapter {
                 throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
             }
             _dbi.del(key, val);
-        };
+        }
+
+        void del(const std::string& key, const internal_data_type::Blob& blob)
+        {
+            if (_dbi == 0) {
+                throw NOGDB_INTERNAL_ERROR(NOGDB_INTERNAL_EMPTY_DBI);
+            }
+            _dbi.del(key, blob);
+        }
 
         void drop(const bool del = false)
         {

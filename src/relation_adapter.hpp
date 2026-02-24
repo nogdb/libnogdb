@@ -86,13 +86,11 @@ namespace relation {
             del(rid2str(vertexId));
         }
 
-        //TODO: doesn't work as expected
         void remove(const RelationAccessInfo& props)
         {
             del(rid2str(props.vertexId), convertToBlob(props));
         }
 
-        //TODO: this method was created for a temporary fix of the above method (but having worse performance)
         void removeByCursor(const RelationAccessInfo& props)
         {
             auto result = std::vector<RecordId> {};

@@ -79,6 +79,8 @@ namespace schema {
             const ClassId& classId,
             const PropertyId& propertyId);
 
+        static void invalidateCache(const Transaction *txn);
+
     private:
 
         static inline PropertyNameMapInfo& addBasicInfo(PropertyNameMapInfo& propertyInfo)

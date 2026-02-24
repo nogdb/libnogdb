@@ -1802,30 +1802,430 @@ void test_search_by_index_extended_class_cursor_condition()
 
 void test_search_by_index_unique_multicondition()
 {
-    // TODO
+    init_vertex_index_test();
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addIndex("index_test", "index_text", true);
+        txn.addIndex("index_test", "index_int", true);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc2 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "beta")
+                .set("index_int", int32_t { 20 }));
+        rdesc3 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "gamma")
+                .set("index_int", int32_t { 30 }));
+        rdesc4 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "delta")
+                .set("index_int", int32_t { 40 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        auto res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc1 }));
+
+        cond = nogdb::Condition("index_text").eq("beta") and nogdb::Condition("index_int").eq(int32_t { 20 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc2 }));
+
+        cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 20 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, {}));
+
+        cond = nogdb::Condition("index_text").eq("delta") and nogdb::Condition("index_int").eq(int32_t { 40 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc4 }));
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_test", "index_text");
+        txn.dropIndex("index_test", "index_int");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+    destroy_vertex_index_test();
 }
 
 void test_search_by_index_non_unique_multicondition()
 {
-    // TODO
+    init_vertex_index_test();
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addIndex("index_test", "index_text", false);
+        txn.addIndex("index_test", "index_int", false);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3, rdesc4, rdesc5;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc2 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 20 }));
+        rdesc3 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "beta")
+                .set("index_int", int32_t { 10 }));
+        rdesc4 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc5 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "beta")
+                .set("index_int", int32_t { 20 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        auto res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc1, rdesc4 }));
+
+        cond = nogdb::Condition("index_text").eq("beta") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc3 }));
+
+        cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 20 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, { rdesc2 }));
+
+        cond = nogdb::Condition("index_text").eq("gamma") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        res = txn.find("index_test").indexed().where(cond).get();
+        assert(rdescCompare("index_text", res, {}));
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_test", "index_text");
+        txn.dropIndex("index_test", "index_int");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+    destroy_vertex_index_test();
 }
 
 void test_search_by_index_unique_cursor_multicondition()
 {
-    // TODO
+    init_vertex_index_test();
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addIndex("index_test", "index_text", true);
+        txn.addIndex("index_test", "index_int", true);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc2 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "beta")
+                .set("index_int", int32_t { 20 }));
+        rdesc3 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "gamma")
+                .set("index_int", int32_t { 30 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        auto cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 1);
+        cursor.next();
+        assert(cursor.getDescriptor() == rdesc1);
+
+        cond = nogdb::Condition("index_text").eq("beta") and nogdb::Condition("index_int").eq(int32_t { 20 });
+        cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 1);
+        cursor.next();
+        assert(cursor.getDescriptor() == rdesc2);
+
+        cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 30 });
+        cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 0);
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_test", "index_text");
+        txn.dropIndex("index_test", "index_int");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+    destroy_vertex_index_test();
 }
 
 void test_search_by_index_non_unique_cursor_multicondition()
 {
-    // TODO
+    init_vertex_index_test();
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addIndex("index_test", "index_text", false);
+        txn.addIndex("index_test", "index_int", false);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc2 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "alpha")
+                .set("index_int", int32_t { 10 }));
+        rdesc3 = txn.addVertex("index_test",
+            nogdb::Record {}
+                .set("index_text", "beta")
+                .set("index_int", int32_t { 10 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("index_text").eq("alpha") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        auto cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 2);
+
+        cond = nogdb::Condition("index_text").eq("beta") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 1);
+        cursor.next();
+        assert(cursor.getDescriptor() == rdesc3);
+
+        cond = nogdb::Condition("index_text").eq("gamma") and nogdb::Condition("index_int").eq(int32_t { 10 });
+        cursor = txn.find("index_test").indexed().where(cond).getCursor();
+        assert(cursor.count() == 0);
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_test", "index_text");
+        txn.dropIndex("index_test", "index_int");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+    destroy_vertex_index_test();
 }
 
 void test_search_by_index_extended_class_multicondition()
 {
-    // TODO
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addClass("index_mc_base", nogdb::ClassType::VERTEX);
+        txn.addProperty("index_mc_base", "prop_text", nogdb::PropertyType::TEXT);
+        txn.addProperty("index_mc_base", "prop_int", nogdb::PropertyType::INTEGER);
+        txn.addSubClassOf("index_mc_base", "index_mc_sub");
+        txn.addIndex("index_mc_base", "prop_text", true);
+        txn.addIndex("index_mc_sub", "prop_int", true);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "hello")
+                .set("prop_int", int32_t { 1 }));
+        rdesc2 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "world")
+                .set("prop_int", int32_t { 2 }));
+        rdesc3 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "hello")
+                .set("prop_int", int32_t { 2 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("prop_text").eq("hello") and nogdb::Condition("prop_int").eq(int32_t { 1 });
+        auto res = txn.find("index_mc_sub").indexed().where(cond).get();
+        assert(rdescCompare("prop_text", res, { rdesc1 }));
+
+        cond = nogdb::Condition("prop_text").eq("hello") and nogdb::Condition("prop_int").eq(int32_t { 2 });
+        res = txn.find("index_mc_sub").indexed().where(cond).get();
+        assert(rdescCompare("prop_text", res, { rdesc3 }));
+
+        cond = nogdb::Condition("prop_text").eq("world") and nogdb::Condition("prop_int").eq(int32_t { 1 });
+        res = txn.find("index_mc_sub").indexed().where(cond).get();
+        assert(rdescCompare("prop_text", res, {}));
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_mc_base", "prop_text");
+        txn.dropIndex("index_mc_sub", "prop_int");
+        txn.dropClass("index_mc_sub");
+        txn.dropClass("index_mc_base");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
 }
 
 void test_search_by_index_extended_class_cursor_multicondition()
 {
-    // TODO
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.addClass("index_mc_base", nogdb::ClassType::VERTEX);
+        txn.addProperty("index_mc_base", "prop_text", nogdb::PropertyType::TEXT);
+        txn.addProperty("index_mc_base", "prop_int", nogdb::PropertyType::INTEGER);
+        txn.addSubClassOf("index_mc_base", "index_mc_sub");
+        txn.addIndex("index_mc_base", "prop_text", false);
+        txn.addIndex("index_mc_sub", "prop_int", false);
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    nogdb::RecordDescriptor rdesc1, rdesc2, rdesc3;
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        rdesc1 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "foo")
+                .set("prop_int", int32_t { 5 }));
+        rdesc2 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "foo")
+                .set("prop_int", int32_t { 5 }));
+        rdesc3 = txn.addVertex("index_mc_sub",
+            nogdb::Record {}
+                .set("prop_text", "bar")
+                .set("prop_int", int32_t { 5 }));
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_ONLY);
+        auto cond = nogdb::Condition("prop_text").eq("foo") and nogdb::Condition("prop_int").eq(int32_t { 5 });
+        auto cursor = txn.find("index_mc_sub").indexed().where(cond).getCursor();
+        assert(cursor.count() == 2);
+
+        cond = nogdb::Condition("prop_text").eq("bar") and nogdb::Condition("prop_int").eq(int32_t { 5 });
+        cursor = txn.find("index_mc_sub").indexed().where(cond).getCursor();
+        assert(cursor.count() == 1);
+        cursor.next();
+        assert(cursor.getDescriptor() == rdesc3);
+
+        cond = nogdb::Condition("prop_text").eq("baz") and nogdb::Condition("prop_int").eq(int32_t { 5 });
+        cursor = txn.find("index_mc_sub").indexed().where(cond).getCursor();
+        assert(cursor.count() == 0);
+        txn.rollback();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
+
+    try {
+        auto txn = ctx->beginTxn(nogdb::TxnMode::READ_WRITE);
+        txn.dropIndex("index_mc_base", "prop_text");
+        txn.dropIndex("index_mc_sub", "prop_int");
+        txn.dropClass("index_mc_sub");
+        txn.dropClass("index_mc_base");
+        txn.commit();
+    } catch (const nogdb::Error& ex) {
+        std::cout << "\nError: " << ex.what() << std::endl;
+        assert(false);
+    }
 }

@@ -129,7 +129,7 @@ namespace compare {
         static ResultSet compareEdgeCondition(const Transaction& txn,
             const RecordDescriptor& recordDescriptor,
             const Direction& direction,
-            bool (*condition)(const Record&));
+            std::function<bool(const Record&)> condition);
 
         static ResultSet compareEdgeMultiCondition(const Transaction& txn,
             const RecordDescriptor& recordDescriptor,
@@ -144,7 +144,7 @@ namespace compare {
         static std::vector<RecordDescriptor> compareEdgeConditionRdesc(const Transaction& txn,
             const RecordDescriptor& recordDescriptor,
             const Direction& direction,
-            bool (*condition)(const Record&));
+            std::function<bool(const Record&)> condition);
 
         static std::vector<RecordDescriptor> compareEdgeMultiConditionRdesc(const Transaction& txn,
             const RecordDescriptor& recordDescriptor,

@@ -201,7 +201,6 @@ namespace schema {
 
         std::set<ClassId> getSubClassIds(const ClassId& classId) const
         {
-            //TODO: can we improve the performance for this?
             auto result = std::set<ClassId> {};
             auto cursorHandler = cursor();
             for (auto keyValue = cursorHandler.getNext();
@@ -217,7 +216,6 @@ namespace schema {
 
         std::vector<ClassAccessInfo> getSubClassInfos(const ClassId& classId) const
         {
-            //TODO: can we improve the performance for this?
             auto result = std::vector<ClassAccessInfo> {};
             auto cursorHandler = cursor();
             for (auto keyValue = cursorHandler.getNext();

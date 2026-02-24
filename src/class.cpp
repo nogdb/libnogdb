@@ -49,11 +49,12 @@ const ClassDescriptor Transaction::addClass(const std::string& className, ClassT
         .isClassIdMaxReach();
 
     try {
-        auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId { 1 };
+        auto classId = static_cast<ClassId>(_adapter->dbInfo()->getMaxClassId() + ClassId { 1 });
         _adapter->dbClass()->create(ClassAccessInfo { className, classId, ClassId { 0 }, type });
         _adapter->dbInfo()->setMaxClassId(classId);
-        _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId { 1 });
+        _adapter->dbInfo()->setNumClassId(static_cast<ClassId>(_adapter->dbInfo()->getNumClassId() + ClassId { 1 }));
         DataRecord(_txnBase, classId, type).init();
+        SchemaUtils::invalidateCache(this);
         return ClassDescriptor { classId, className, ClassId { 0 }, type };
     } catch (const Error& err) {
         rollback();
@@ -76,11 +77,12 @@ const ClassDescriptor Transaction::addSubClassOf(const std::string& superClass, 
 
     auto superClassInfo = SchemaUtils::getExistingClass(this, superClass);
     try {
-        auto classId = _adapter->dbInfo()->getMaxClassId() + ClassId { 1 };
+        auto classId = static_cast<ClassId>(_adapter->dbInfo()->getMaxClassId() + ClassId { 1 });
         _adapter->dbClass()->create(ClassAccessInfo { className, classId, superClassInfo.id, superClassInfo.type });
         _adapter->dbInfo()->setMaxClassId(classId);
-        _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() + ClassId { 1 });
+        _adapter->dbInfo()->setNumClassId(static_cast<ClassId>(_adapter->dbInfo()->getNumClassId() + ClassId { 1 }));
         DataRecord(_txnBase, classId, superClassInfo.type).init();
+        SchemaUtils::invalidateCache(this);
         return ClassDescriptor { classId, className, superClassInfo.id, superClassInfo.type };
     } catch (const Error& err) {
         rollback();
@@ -115,7 +117,6 @@ void Transaction::dropClass(const std::string& className)
         // delete properties from schema
         for (const auto& property : propertyInfos) {
             _adapter->dbProperty()->remove(property.classId, property.name);
-            //TODO: implement existing index deletion if needed
         }
         // delete all associated relations
         auto table = DataRecord(_txnBase, foundClass.id, foundClass.type);
@@ -180,6 +181,7 @@ void Transaction::dropClass(const std::string& className)
         _adapter->dbInfo()->setNumClassId(_adapter->dbInfo()->getNumClassId() - ClassId { 1 });
         _adapter->dbInfo()->setNumPropertyId(
             _adapter->dbInfo()->getNumPropertyId() - PropertyId { static_cast<uint16_t>(propertyInfos.size()) });
+        SchemaUtils::invalidateCache(this);
     } catch (const Error& err) {
         rollback();
         throw NOGDB_FATAL_ERROR(err);
@@ -201,6 +203,7 @@ void Transaction::renameClass(const std::string& oldClassName, const std::string
     auto foundClass = SchemaUtils::getExistingClass(this, oldClassName);
     try {
         _adapter->dbClass()->alterClassName(oldClassName, newClassName);
+        SchemaUtils::invalidateCache(this);
     } catch (const Error& err) {
         rollback();
         throw NOGDB_FATAL_ERROR(err);

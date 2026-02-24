@@ -52,7 +52,7 @@ FindOperationBuilder& FindOperationBuilder::where(const MultiCondition& multiCon
     return *this;
 }
 
-FindOperationBuilder& FindOperationBuilder::where(bool (*condition)(const Record& record))
+FindOperationBuilder& FindOperationBuilder::where(std::function<bool(const Record&)> condition)
 {
     _conditionType = ConditionType::COMPARE_FUNCTION;
     _function = condition;
@@ -85,6 +85,18 @@ TraverseOperationBuilder::TraverseOperationBuilder(const Transaction* txn,
     const EdgeDirection& direction)
     : OperationBuilder { txn }
     , _direction { direction }
+    , _useDFS { false }
+{
+    _rdescs.insert(recordDescriptor);
+}
+
+TraverseOperationBuilder::TraverseOperationBuilder(const Transaction* txn,
+    const RecordDescriptor& recordDescriptor,
+    const EdgeDirection& direction,
+    bool useDFS)
+    : OperationBuilder { txn }
+    , _direction { direction }
+    , _useDFS { useDFS }
 {
     _rdescs.insert(recordDescriptor);
 }
@@ -144,6 +156,18 @@ ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereV(const GraphFi
 ShortestPathOperationBuilder& ShortestPathOperationBuilder::whereE(const GraphFilter& filter)
 {
     _edgeFilter = filter;
+    return *this;
+}
+
+ShortestPathOperationBuilder& ShortestPathOperationBuilder::direction(const EdgeDirection& direction)
+{
+    _direction = direction;
+    return *this;
+}
+
+ShortestPathOperationBuilder& ShortestPathOperationBuilder::withWeight(const std::string& weightPropertyName)
+{
+    _weightProperty = weightPropertyName;
     return *this;
 }
 

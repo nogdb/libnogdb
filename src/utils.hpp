@@ -85,7 +85,11 @@ namespace caching {
 // profiler
 namespace profiler {
 
+#ifdef NOGDB_ENABLE_PROFILING
 #define PROFILE_BLOCK(pbn) Profiler _pf(pbn)
+#else
+#define PROFILE_BLOCK(pbn) (void)(pbn)
+#endif
 
     struct Profiler {
 

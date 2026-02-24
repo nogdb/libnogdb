@@ -84,15 +84,15 @@ namespace datarecord {
 
         static ResultSet getResultSetByCmpFunction(const Transaction *txn,
             const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record));
+            std::function<bool(const Record&)> condition);
 
         static std::vector<RecordDescriptor> getRecordDescriptorByCmpFunction(const Transaction *txn,
             const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record));
+            std::function<bool(const Record&)> condition);
 
         static size_t getCountRecordByCmpFunction(const Transaction *txn,
             const ClassAccessInfo& classInfo,
-            bool (*condition)(const Record& record));
+            std::function<bool(const Record&)> condition);
 
     };
 

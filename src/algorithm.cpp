@@ -82,7 +82,7 @@ namespace algorithm {
                 }
                 visited.insert(currentVertex.rid);
                 if ((currentLevel < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
-                    queue.push(std::make_pair(currentVertex.rid, currentLevel));
+                    queue.push(std::make_pair(currentVertex, currentLevel));
                 }
             };
 
@@ -110,11 +110,12 @@ namespace algorithm {
     ResultSet GraphTraversal::bfsShortestPath(const Transaction& txn,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
         const auto searchResultDescriptor = bfsShortestPathRdesc(
-            txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, edgeFilter, vertexFilter);
+            txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, direction, edgeFilter, vertexFilter);
 
         ResultSet result(searchResultDescriptor.size());
         std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
@@ -131,6 +132,7 @@ namespace algorithm {
     std::vector<RecordDescriptor> GraphTraversal::bfsShortestPathRdesc(const Transaction& txn,
         const RecordDescriptor& srcVertexRecordDescriptor,
         const RecordDescriptor& dstVertexRecordDescriptor,
+        const Direction& direction,
         const GraphFilter& edgeFilter,
         const GraphFilter& vertexFilter)
     {
@@ -151,7 +153,7 @@ namespace algorithm {
                     queue.pop();
 
                     for (const auto& edgeNeighbour :
-                        RecordCompare::filterIncidentEdges(txn, vertex, Direction::OUT, edgeFilter, edgeClassFilter)) {
+                        RecordCompare::filterIncidentEdges(txn, vertex, direction, edgeFilter, edgeClassFilter)) {
                         auto nextVertex = edgeNeighbour.second.rid;
                         if (visited.find(nextVertex) == visited.cend()) {
                             auto vertexRdesc = RecordCompare::filterRecord(
@@ -181,6 +183,200 @@ namespace algorithm {
                     for (auto& res : result) {
                         res._depth = currentLevel++;
                     }
+                }
+            }
+        } catch (const Error& err) {
+            if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
+            } else {
+                throw NOGDB_FATAL_ERROR(err);
+            }
+        }
+        return result;
+    }
+
+    ResultSet GraphTraversal::depthFirstSearch(const Transaction& txn,
+        const std::set<RecordDescriptor>& recordDescriptors,
+        unsigned int minDepth,
+        unsigned int maxDepth,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        const auto searchResultDescriptor = depthFirstSearchRdesc(
+            txn, recordDescriptors, minDepth, maxDepth, direction, edgeFilter, vertexFilter);
+        ResultSet result(searchResultDescriptor.size());
+        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
+            [&txn](const RecordDescriptor& descriptor) {
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = DataRecordUtils::getRecordWithBasicInfo(&txn, classInfo, descriptor);
+                record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
+                return Result(descriptor, record);
+            });
+        return result;
+    }
+
+    std::vector<RecordDescriptor> GraphTraversal::depthFirstSearchRdesc(const Transaction& txn,
+        const std::set<RecordDescriptor>& recordDescriptors,
+        unsigned int minDepth,
+        unsigned int maxDepth,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        auto result = std::vector<RecordDescriptor> {};
+        auto visited = std::unordered_set<RecordId, RecordIdHash> {};
+        auto stack = std::stack<std::pair<RecordDescriptor, unsigned int>> {};
+        for (const auto& recordDescriptor : recordDescriptors) {
+            visited.insert(recordDescriptor.rid);
+            stack.push(std::make_pair(recordDescriptor, 0));
+        }
+
+        try {
+            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
+
+            if (minDepth == 0) {
+                result.assign(recordDescriptors.cbegin(), recordDescriptors.cend());
+            }
+
+            while (!stack.empty()) {
+                auto vertex = stack.top();
+                stack.pop();
+                auto currentDepth = vertex.second;
+
+                for (const auto& edgeNeighbour :
+                    RecordCompare::filterIncidentEdges(txn, vertex.first.rid, direction, edgeFilter, edgeClassFilter)) {
+                    auto nextVertex = edgeNeighbour.second;
+                    auto nextDepth = currentDepth + 1;
+                    if (visited.find(nextVertex.rid) != visited.cend()) {
+                        continue;
+                    }
+                    auto vertexRdesc = RecordCompare::filterRecord(txn, nextVertex, vertexFilter, vertexClassFilter);
+                    if ((nextDepth >= minDepth) && (nextDepth <= maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                        vertexRdesc._depth = nextDepth;
+                        result.emplace_back(vertexRdesc);
+                    }
+                    visited.insert(nextVertex.rid);
+                    if ((nextDepth < maxDepth) && (vertexRdesc != RecordDescriptor {})) {
+                        stack.push(std::make_pair(nextVertex, nextDepth));
+                    }
+                }
+            }
+        } catch (const Error& err) {
+            if (err.code() == NOGDB_GRAPH_NOEXST_VERTEX) {
+                throw NOGDB_GRAPH_ERROR(NOGDB_GRAPH_UNKNOWN_ERR);
+            } else {
+                throw NOGDB_FATAL_ERROR(err);
+            }
+        }
+        return result;
+    }
+
+    ResultSet GraphTraversal::dijkstraShortestPath(const Transaction& txn,
+        const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor,
+        const std::string& weightPropertyName,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        const auto searchResultDescriptor = dijkstraShortestPathRdesc(
+            txn, srcVertexRecordDescriptor, dstVertexRecordDescriptor, weightPropertyName, direction, edgeFilter, vertexFilter);
+
+        ResultSet result(searchResultDescriptor.size());
+        std::transform(searchResultDescriptor.begin(), searchResultDescriptor.end(), result.begin(),
+            [&txn](const RecordDescriptor& descriptor) {
+                const auto classInfo = txn._adapter->dbClass()->getInfo(descriptor.rid.first);
+                const auto& record = DataRecordUtils::getRecordWithBasicInfo(&txn, classInfo, descriptor);
+                record.setBasicInfo(DEPTH_PROPERTY, descriptor._depth);
+                return Result(descriptor, record);
+            });
+
+        return result;
+    }
+
+    std::vector<RecordDescriptor> GraphTraversal::dijkstraShortestPathRdesc(const Transaction& txn,
+        const RecordDescriptor& srcVertexRecordDescriptor,
+        const RecordDescriptor& dstVertexRecordDescriptor,
+        const std::string& weightPropertyName,
+        const Direction& direction,
+        const GraphFilter& edgeFilter,
+        const GraphFilter& vertexFilter)
+    {
+        auto result = std::vector<RecordDescriptor> {};
+        try {
+            if (srcVertexRecordDescriptor == dstVertexRecordDescriptor) {
+                result.emplace_back(srcVertexRecordDescriptor);
+                return result;
+            }
+
+            auto edgeClassFilter = RecordCompare::getFilterClasses(txn, edgeFilter);
+            auto vertexClassFilter = RecordCompare::getFilterClasses(txn, vertexFilter);
+
+            using DistVertex = std::pair<double, RecordId>;
+            auto pq = std::priority_queue<DistVertex, std::vector<DistVertex>, std::greater<DistVertex>> {};
+            auto dist = std::unordered_map<RecordId, double, RecordIdHash> {};
+            auto prev = std::unordered_map<RecordId, std::pair<RecordDescriptor, RecordId>, RecordIdHash> {};
+
+            dist[srcVertexRecordDescriptor.rid] = 0.0;
+            prev[srcVertexRecordDescriptor.rid] = { RecordDescriptor {}, RecordId {} };
+            pq.push({ 0.0, srcVertexRecordDescriptor.rid });
+
+            while (!pq.empty()) {
+                auto top = pq.top();
+                pq.pop();
+                auto currDist = top.first;
+                auto currVertex = top.second;
+
+                if (currVertex == dstVertexRecordDescriptor.rid) {
+                    break;
+                }
+                if (currDist > dist[currVertex]) {
+                    continue;
+                }
+
+                for (const auto& edgeNeighbour :
+                    RecordCompare::filterIncidentEdges(txn, currVertex, direction, edgeFilter, edgeClassFilter)) {
+                    auto edgeRdesc = edgeNeighbour.first;
+                    auto nextVertex = edgeNeighbour.second.rid;
+
+                    auto vertexRdesc = RecordCompare::filterRecord(txn, nextVertex, vertexFilter, vertexClassFilter);
+                    if (vertexRdesc == RecordDescriptor {}) {
+                        continue;
+                    }
+
+                    auto edgeClassInfo = txn._adapter->dbClass()->getInfo(edgeRdesc.rid.first);
+                    auto edgeRecord = DataRecordUtils::getRecord(&txn, edgeClassInfo, edgeRdesc);
+                    auto weightBytes = edgeRecord.get(weightPropertyName);
+                    auto weight = weightBytes.empty() ? 1.0 : weightBytes.toReal();
+                    if (weight < 0.0) {
+                        weight = 0.0;
+                    }
+
+                    auto newDist = currDist + weight;
+                    auto it = dist.find(nextVertex);
+                    if (it == dist.cend() || newDist < it->second) {
+                        dist[nextVertex] = newDist;
+                        prev[nextVertex] = { vertexRdesc, currVertex };
+                        pq.push({ newDist, nextVertex });
+                    }
+                }
+            }
+
+            if (prev.find(dstVertexRecordDescriptor.rid) != prev.cend()
+                && dstVertexRecordDescriptor.rid != srcVertexRecordDescriptor.rid) {
+                auto vertex = dstVertexRecordDescriptor.rid;
+                while (vertex != srcVertexRecordDescriptor.rid) {
+                    auto data = prev.at(vertex);
+                    result.emplace_back(data.first);
+                    vertex = data.second;
+                }
+                result.emplace_back(srcVertexRecordDescriptor);
+                std::reverse(result.begin(), result.end());
+                auto currentLevel = 0U;
+                for (auto& res : result) {
+                    res._depth = currentLevel++;
                 }
             }
         } catch (const Error& err) {

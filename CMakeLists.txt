@@ -16,12 +16,20 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED OFF)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_CXX_STANDARD 11)
+option(nogdb_CXX17 "Build nogdb with C++17 standard (default: C++11)." OFF)
+
+if(nogdb_CXX17)
+    set(CMAKE_CXX_STANDARD 17)
+    set(NOGDB_CXX_STD_FLAG -std=c++17)
+else()
+    set(CMAKE_CXX_STANDARD 11)
+    set(NOGDB_CXX_STD_FLAG -std=c++11)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(COMPILE_OPTIONS
-    -std=c++11
+    ${NOGDB_CXX_STD_FLAG}
     -W
     -Wall
     -Wno-unused-parameter
@@ -77,8 +85,6 @@ target_include_directories(nogdb
         ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
 target_compile_options(nogdb
-    PUBLIC
-        -std=c++11
     PRIVATE
         ${COMPILE_OPTIONS}
 )
@@ -91,7 +97,6 @@ endif()
 
 ## TARGET unit_test
 set(UNIT_TEST_COMPILE_OPTIONS
-    -std=c++11
     -W
     -Wall
     -Wno-unused-parameter
@@ -152,33 +157,86 @@ if(nogdb_BuildTests)
     func_test_executable(txn)
     func_test_executable(sql)
 
+    find_library(gtest_LIB gtest)
+    find_library(gmock_LIB gmock)
+
+    set(UNIT_TEST_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/unit_test_main.cpp)
+
+    ## unit_test_all — tests for standalone modules (Blob, utils, Bytes)
+    ## Compiled directly without linking the full nogdb library.
     add_executable(unit_test_all EXCLUDE_FROM_ALL
-        ${nogdb_UNIT_TEST}
-        ${nogdb_UNIT_TEST_HEADER}
+        ${UNIT_TEST_MAIN}
         ${nogdb_UNIT_TEST_LMDB}
         ${nogdb_UNIT_TEST_LMDB_HEADER}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/test_blob.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/test_bytes.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/test_utils.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/datatype.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/bytes.cpp
     )
     target_include_directories(unit_test_all
         PRIVATE
             $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            /usr/local/include
+            /opt/homebrew/include
     )
-    find_library(gtest_LIB gtest)
-    find_library(gmock_LIB gmock)
+    set_target_properties(unit_test_all PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_compile_options(unit_test_all PRIVATE ${UNIT_TEST_COMPILE_OPTIONS} -std=c++17)
     target_link_libraries(unit_test_all lmdb ${gtest_LIB} ${gmock_LIB} pthread)
     if (NOT APPLE)
         target_link_libraries(unit_test_all atomic)
     endif()
     add_test(build_unit_test_all "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_test_all)
     add_test(NAME unit_test_all COMMAND unit_test_all)
+
+    ## unit_test_nogdb — tests for modules requiring the full nogdb library (Record, etc.)
+    add_executable(unit_test_nogdb EXCLUDE_FROM_ALL
+        ${UNIT_TEST_MAIN}
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test/test_record.cpp
+    )
+    target_include_directories(unit_test_nogdb
+        PRIVATE
+            $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            /usr/local/include
+            /opt/homebrew/include
+    )
+    set_target_properties(unit_test_nogdb PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_compile_options(unit_test_nogdb PRIVATE ${UNIT_TEST_COMPILE_OPTIONS} -std=c++17)
+    target_link_libraries(unit_test_nogdb nogdb ${gtest_LIB} ${gmock_LIB} pthread)
+    if (NOT APPLE)
+        target_link_libraries(unit_test_nogdb atomic)
+    endif()
+    add_test(build_unit_test_nogdb "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_test_nogdb)
+    add_test(NAME unit_test_nogdb COMMAND unit_test_nogdb)
 endif()
 
+
+## TARGET benchmark
+option(nogdb_BuildBenchmarks "Build the benchmark suite when enabled." OFF)
+if(nogdb_BuildBenchmarks)
+    add_executable(nogdb_bench EXCLUDE_FROM_ALL
+        ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/bench_main.cpp
+    )
+    target_include_directories(nogdb_bench
+        PRIVATE
+            $<TARGET_PROPERTY:nogdb,INTERFACE_INCLUDE_DIRECTORIES>
+            /usr/local/include
+            /opt/homebrew/include
+    )
+    set_target_properties(nogdb_bench PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_compile_options(nogdb_bench PRIVATE ${COMPILE_OPTIONS})
+    target_link_libraries(nogdb_bench nogdb pthread)
+    if(NOT APPLE)
+        target_link_libraries(nogdb_bench atomic)
+    endif()
+endif()
 
 ## TARGET install
 install(TARGETS nogdb DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY lib/lmdb/ DESTINATION include/nogdb/lmdb
-    FILES_MATCHING PATTERN "lib/lmdb/*.h"
+    FILES_MATCHING PATTERN "*.h"
 )

@@ -244,7 +244,7 @@ namespace datarecord {
 
     ResultSet DataRecordUtils::getResultSetByCmpFunction(const Transaction *txn,
         const ClassAccessInfo& classInfo,
-        bool (*condition)(const Record& record))
+        std::function<bool(const Record&)> condition)
     {
         auto dataRecord = DataRecord(txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(txn, classInfo.id, classInfo.superClassId);
@@ -254,7 +254,7 @@ namespace datarecord {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, txn->_txnCtx->isVersionEnabled());
-                if ((*condition)(record)) {
+                if (condition(record)) {
                     resultSet.emplace_back(Result { RecordDescriptor { rid }, record });
                 }
             };
@@ -264,7 +264,7 @@ namespace datarecord {
 
     std::vector<RecordDescriptor> DataRecordUtils::getRecordDescriptorByCmpFunction(const Transaction *txn,
         const ClassAccessInfo& classInfo,
-        bool (*condition)(const Record& record))
+        std::function<bool(const Record&)> condition)
     {
         auto dataRecord = DataRecord(txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(txn, classInfo.id, classInfo.superClassId);
@@ -274,7 +274,7 @@ namespace datarecord {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, txn->_txnCtx->isVersionEnabled());
-                if ((*condition)(record)) {
+                if (condition(record)) {
                     recordDescriptors.emplace_back(RecordDescriptor { rid });
                 }
             };
@@ -284,7 +284,7 @@ namespace datarecord {
 
     size_t DataRecordUtils::getCountRecordByCmpFunction(const Transaction *txn,
         const ClassAccessInfo& classInfo,
-        bool (*condition)(const Record& record))
+        std::function<bool(const Record&)> condition)
     {
         auto dataRecord = DataRecord(txn->_txnBase, classInfo.id, classInfo.type);
         auto propertyIdMapInfo = SchemaUtils::getPropertyIdMapInfo(txn, classInfo.id, classInfo.superClassId);
@@ -294,7 +294,7 @@ namespace datarecord {
                 auto rid = RecordId { classInfo.id, positionId };
                 auto record = RecordParser::parseRawDataWithBasicInfo(
                     classInfo.name, rid, result, propertyIdMapInfo, classInfo.type, txn->_txnCtx->isVersionEnabled());
-                if ((*condition)(record)) {
+                if (condition(record)) {
                     ++count;
                 }
             };

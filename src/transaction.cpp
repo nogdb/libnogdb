@@ -20,6 +20,7 @@
  */
 
 #include <memory>
+#include <unordered_map>
 
 #include "datarecord.hpp"
 #include "dbinfo_adapter.hpp"
@@ -31,6 +32,19 @@
 #include "nogdb/nogdb.h"
 
 namespace nogdb {
+
+struct TransactionSchemaCache {
+    std::unordered_map<std::string, adapter::schema::ClassAccessInfo> byName {};
+    std::unordered_map<ClassId, adapter::schema::ClassAccessInfo> byId {};
+    std::unordered_map<ClassId, adapter::schema::PropertyNameMapInfo> propertyNameMap {};
+
+    void invalidate() noexcept
+    {
+        byName.clear();
+        byId.clear();
+        propertyNameMap.clear();
+    }
+};
 
 Transaction::Adapter::Adapter()
     : _dbInfo { nullptr }
@@ -72,6 +86,7 @@ Transaction::Transaction(Context& ctx, const TxnMode& mode)
     : _txnMode { mode }
     , _txnCtx { &ctx }
 {
+    _schemaCache = new TransactionSchemaCache {};
     try {
         _txnBase = new storage_engine::LMDBTxn(
             _txnCtx->_envHandler,
@@ -99,6 +114,10 @@ Transaction::~Transaction() noexcept
         rollback();
     } catch (...) {
     }
+    if (_schemaCache) {
+        delete static_cast<TransactionSchemaCache*>(_schemaCache);
+        _schemaCache = nullptr;
+    }
 }
 
 Transaction::Transaction(Transaction&& txn) noexcept
@@ -107,11 +126,13 @@ Transaction::Transaction(Transaction&& txn) noexcept
     , _txnBase { txn._txnBase }
     , _adapter { txn._adapter }
     , _graph { txn._graph }
+    , _schemaCache { txn._schemaCache }
 {
     txn._txnCtx = nullptr;
     txn._txnBase = nullptr;
     txn._adapter = nullptr;
     txn._graph = nullptr;
+    txn._schemaCache = nullptr;
 }
 
 Transaction& Transaction::operator=(Transaction&& txn) noexcept
@@ -120,17 +141,20 @@ Transaction& Transaction::operator=(Transaction&& txn) noexcept
         delete _txnBase;
         delete _adapter;
         delete _graph;
+        delete static_cast<TransactionSchemaCache*>(_schemaCache);
 
         _txnCtx = txn._txnCtx;
         _txnMode = txn._txnMode;
         _txnBase = txn._txnBase;
         _adapter = txn._adapter;
         _graph = txn._graph;
+        _schemaCache = txn._schemaCache;
 
         txn._txnCtx = nullptr;
         txn._txnBase = nullptr;
         txn._adapter = nullptr;
         txn._graph = nullptr;
+        txn._schemaCache = nullptr;
     }
     return *this;
 }
@@ -166,6 +190,10 @@ void Transaction::commit()
         delete _graph;
         _graph = nullptr;
     }
+    if (_schemaCache) {
+        delete static_cast<TransactionSchemaCache*>(_schemaCache);
+        _schemaCache = nullptr;
+    }
 }
 
 void Transaction::rollback() noexcept
@@ -182,6 +210,10 @@ void Transaction::rollback() noexcept
     if (_graph) {
         delete _graph;
         _graph = nullptr;
+    }
+    if (_schemaCache) {
+        delete static_cast<TransactionSchemaCache*>(_schemaCache);
+        _schemaCache = nullptr;
     }
 }
 

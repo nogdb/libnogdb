@@ -70,12 +70,46 @@ namespace algorithm {
         static ResultSet bfsShortestPath(const Transaction& txn,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
+            const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
 
         static std::vector<RecordDescriptor> bfsShortestPathRdesc(const Transaction& txn,
             const RecordDescriptor& srcVertexRecordDescriptor,
             const RecordDescriptor& dstVertexRecordDescriptor,
+            const Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
+
+        static ResultSet depthFirstSearch(const Transaction& txn,
+            const std::set<RecordDescriptor>& recordDescriptors,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
+
+        static std::vector<RecordDescriptor> depthFirstSearchRdesc(const Transaction& txn,
+            const std::set<RecordDescriptor>& recordDescriptors,
+            unsigned int minDepth,
+            unsigned int maxDepth,
+            const Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
+
+        static ResultSet dijkstraShortestPath(const Transaction& txn,
+            const RecordDescriptor& srcVertexRecordDescriptor,
+            const RecordDescriptor& dstVertexRecordDescriptor,
+            const std::string& weightPropertyName,
+            const Direction& direction,
+            const GraphFilter& edgeFilter,
+            const GraphFilter& vertexFilter);
+
+        static std::vector<RecordDescriptor> dijkstraShortestPathRdesc(const Transaction& txn,
+            const RecordDescriptor& srcVertexRecordDescriptor,
+            const RecordDescriptor& dstVertexRecordDescriptor,
+            const std::string& weightPropertyName,
+            const Direction& direction,
             const GraphFilter& edgeFilter,
             const GraphFilter& vertexFilter);
     };

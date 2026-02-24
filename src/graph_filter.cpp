@@ -41,9 +41,9 @@ GraphFilter::GraphFilter(const MultiCondition& multiCondition)
     _mode = FilterMode::MULTI_CONDITION;
 }
 
-GraphFilter::GraphFilter(bool (*function)(const Record& record))
+GraphFilter::GraphFilter(std::function<bool(const Record&)> function)
 {
-    _function = function;
+    _function = std::move(function);
     _mode = FilterMode::COMPARE_FUNCTION;
 }
 
@@ -105,8 +105,7 @@ GraphFilter::GraphFilter(GraphFilter&& other) noexcept
         _multiCondition = std::move(other._multiCondition);
         break;
     case FilterMode::COMPARE_FUNCTION:
-        _function = other._function;
-        other._function = nullptr;
+        _function = std::move(other._function);
         break;
     }
 }
@@ -127,8 +126,7 @@ GraphFilter& GraphFilter::operator=(GraphFilter&& other) noexcept
             _multiCondition = std::move(other._multiCondition);
             break;
         case FilterMode::COMPARE_FUNCTION:
-            _function = other._function;
-            other._function = nullptr;
+            _function = std::move(other._function);
             break;
         }
     }
