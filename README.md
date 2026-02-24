@@ -32,8 +32,26 @@
 * [Google Test](https://github.com/google/googletest) — for development/testing only
 
 ## Limitations
-* The current data storage architecture supports only up to 65,535 classes and 65,536 properties.
-* For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
+
+### Schema capacity
+* Up to **65,535 classes** and **65,536 properties** — `ClassId` and `PropertyId` are stored as `uint16_t`. This is a schema-width ceiling, not a record count ceiling. Vertex and edge records within each class are limited only by storage size.
+
+### Storage size
+* The default LMDB memory-mapped file size is **1 GB**. On 64-bit systems LMDB supports files up to the OS virtual address space (effectively unlimited). You must set the size **before** the first write — it cannot be changed while the database is open.
+
+  ```cpp
+  nogdb::ContextInitializer("/data/mydb")
+      .setMaxDBSize(256UL * 1024 * 1024 * 1024)  // 256 GB
+      .setMaxDB(1024)                              // max number of named LMDB sub-databases
+      .init();
+  ```
+
+  > **Rule of thumb:** set `maxDBSize` to the largest size you expect the database to ever reach. Over-provisioning costs nothing — LMDB only allocates pages on demand; the file on disk stays small until data is actually written.
+
+### Other
+* Indexes are single-property only — composite (multi-property) indexes are not supported.
+* Weighted shortest path (`withWeight`) reads its weight from a named edge property; the property must be a numeric type (`INTEGER`, `UNSIGNED_INTEGER`, `BIGINT`, `UNSIGNED_BIGINT`, or `REAL`). Missing or non-numeric values are treated as weight zero.
+* `beginBatchTxn()` is an alias for a standard read-write transaction — write coalescing relies on LMDB's transaction model and does not provide additional WAL buffering beyond what LMDB itself offers.
 
 ## Build and Installation
 
