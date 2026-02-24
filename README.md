@@ -16,36 +16,137 @@
 * Multiple readers and single writer (no blocking between readers and writer)
 * SQL support for performing graph executions and querying graph information
 * Inheritance support for vertex and edge classes
-* Basic database indexing support based on B+Tree
+* B+Tree indexing with support for equality **and range** queries (LESS, GREATER, BETWEEN)
+* **BFS and DFS graph traversal** with configurable depth, edge/vertex filters, and direction (IN / OUT / UNDIRECTED)
+* **Shortest path** — unweighted BFS and **weighted Dijkstra** (reads edge weight from a named property)
+* **Batch write API** (`beginBatchTxn()`) for coalescing multiple writes into a single LMDB transaction
+* **Lambda/closure filter support** — all record filter callbacks use `std::function<bool(const Record&)>`
+* **Transaction-level schema cache** for reduced LMDB lookups on repeated schema access within a transaction
+* Buildable under **C++11** (default) and **C++17** (`-Dnogdb_CXX17=ON`)
 * Aim to support for multiple platforms (currently available on Unix, Linux, BSD, and Mac OS X/macOS, Windows is under experiment)
 
 ## Dependencies
-* GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler that supports C++11
+* GCC (gcc/g++ 5.1.0 or above) or LLVM (clang/clang++) compiler — C++11 or C++17
+* CMake 3.5.1 or above
 * On Windows, use MinGW-w64 (gcc/g++ 7.2, mingw-w64 5.0 or above)
-* [Google Test](https://github.com/google/googletest) - for development only
+* [Google Test](https://github.com/google/googletest) — for development/testing only
 
 ## Limitations
 * The current data storage architecture supports only up to 65,535 classes and 65,536 properties.
 * For a large graph database, a maximum size of a data storage may need to be customized and appropriately defined in advance.
 
 ## Build and Installation
-```
+
+```bash
 $ git clone https://github.com/nogdb/nogdb
 $ cd nogdb
-$ cmake .
-$ cmake --build .
-$ ctest --verbose
-$ sudo make install
+
+# Build (C++11, default)
+$ cmake -B build
+$ cmake --build build
+$ ctest --test-dir build --verbose
+$ sudo cmake --install build
+```
+
+### CMake Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `nogdb_BuildTests` | `ON` | Build functional and unit test suites |
+| `nogdb_CXX17` | `OFF` | Build with C++17 instead of C++11 |
+| `nogdb_BuildBenchmarks` | `OFF` | Build the micro-benchmark executable |
+
+```bash
+# Build with C++17
+$ cmake -B build -Dnogdb_CXX17=ON
+$ cmake --build build
+
+# Build and run micro-benchmarks
+$ cmake -B build -Dnogdb_BuildBenchmarks=ON
+$ cmake --build build --target nogdb_bench
+$ ./build/nogdb_bench
 ```
 
 ## Usage
-* include the following file in a program's header:
-```
+
+Include the main header:
+
+```cpp
 #include <nogdb/nogdb.h>
 ```
-* include the following flags in Makefile:
+
+Link against the library:
+
 ```
 -lnogdb
+```
+
+### Quick Examples
+
+```cpp
+// Open / create a database
+nogdb::ContextInitializer("/tmp/mydb").init();
+nogdb::Context ctx("/tmp/mydb");
+
+// Schema DDL
+auto txn = ctx.beginTxn(nogdb::TxnMode::READ_WRITE);
+txn.addClass("Person",   nogdb::ClassType::VERTEX);
+txn.addClass("Knows",    nogdb::ClassType::EDGE);
+txn.addProperty("Person", "name", nogdb::PropertyType::TEXT);
+txn.addProperty("Person", "age",  nogdb::PropertyType::INTEGER);
+txn.addProperty("Knows",  "since",nogdb::PropertyType::INTEGER);
+txn.commit();
+
+// Insert vertices and an edge
+txn = ctx.beginTxn(nogdb::TxnMode::READ_WRITE);
+auto alice = txn.addVertex("Person", nogdb::Record{}.set("name","Alice").set("age", int32_t{30}));
+auto bob   = txn.addVertex("Person", nogdb::Record{}.set("name","Bob")  .set("age", int32_t{25}));
+txn.addEdge("Knows", alice, bob, nogdb::Record{}.set("since", int32_t{2020}));
+txn.commit();
+
+// Query — find by condition
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto rs = txn.find("Person")
+             .where(nogdb::Condition("age").gt(int32_t{20}))
+             .get();
+for (auto& r : rs) { /* r.record.get("name").toText() */ }
+txn.rollback();
+
+// Query — lambda filter
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto rs2 = txn.find("Person")
+              .where([](const nogdb::Record& r) {
+                  return r.get("age").toInt() > 20;
+              })
+              .get();
+txn.rollback();
+
+// BFS traversal
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto bfs = txn.traverseOut(alice).depth(1, 3).get();
+txn.rollback();
+
+// DFS traversal
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto dfs = txn.traverseOutDFS(alice).depth(1, 5).get();
+txn.rollback();
+
+// Shortest path (BFS unweighted)
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto path = txn.shortestPath(alice, bob).get();
+txn.rollback();
+
+// Shortest path (Dijkstra, weighted)
+txn = ctx.beginTxn(nogdb::TxnMode::READ_ONLY);
+auto wpath = txn.shortestPath(alice, bob).withWeight("since").get();
+txn.rollback();
+
+// Batch insert
+txn = ctx.beginBatchTxn();
+for (int i = 0; i < 10000; ++i) {
+    txn.addVertex("Person", nogdb::Record{}.set("name", std::string("user") + std::to_string(i)));
+}
+txn.commit();
 ```
 
 ## Documentation
